@@ -1,4 +1,5 @@
 name: Publish
+run-name: Publish ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.event.release.prerelease && 'testpypi' || 'testpypi+pypi') }} ${{ inputs.release_tag || github.ref_name }}
 
 on:
   release:
