@@ -10,10 +10,9 @@ on:
         required: false
         type: string
       max_parallel:
-        description: "Device matrix max-parallel"
+        description: "Override matrix max-parallel (default: shard count)"
         required: false
         type: number
-        default: 2
       device_set:
         description: "hero (release default) or all known devices"
         required: false
@@ -30,7 +29,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     outputs:
-      devices: ${{ steps.devices.outputs.devices }}
+      shards: ${{ steps.devices.outputs.shards }}
       max_parallel: ${{ steps.devices.outputs.max_parallel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -55,15 +54,17 @@ jobs:
               exit 1
             fi
           fi
+          MATRIX="$(uv run python -m parch.services.release_pdfs "$SET")"
           {
-            echo "devices<<EOF"
-            uv run python -m parch.services.release_pdfs "$SET"
+            echo "shards<<EOF"
+            printf '%s\n' "$MATRIX"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          WIDTH="$(printf '%s' "$MATRIX" | uv run python -c 'import json,sys; print(len(json.load(sys.stdin)))')"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.max_parallel }}" ]; then
             echo "max_parallel=${{ inputs.max_parallel }}" >> "$GITHUB_OUTPUT"
           else
-            echo "max_parallel=2" >> "$GITHUB_OUTPUT"
+            echo "max_parallel=$WIDTH" >> "$GITHUB_OUTPUT"
           fi
 
   pdf:
@@ -76,10 +77,12 @@ jobs:
       fail-fast: false
       max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}
       matrix:
-        device: ${{ fromJSON(needs.plan.outputs.devices) }}
+        include: ${{ fromJSON(needs.plan.outputs.shards) }}
     env:
       PARCH_TYPST: py
       DEVICE: ${{ matrix.device }}
+      HAND: ${{ matrix.hand }}
+      PAPER: ${{ matrix.paper }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -102,15 +105,15 @@ jobs:
           else
             version="$(uv run python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
           fi
-          pdf="parch-${version}-${DEVICE}-lined-left.pdf"
+          pdf="parch-${version}-${DEVICE}-${PAPER}-${HAND}.pdf"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "pdf=$pdf" >> "$GITHUB_OUTPUT"
-      - name: Press lined-left PDF
+      - name: Press PDF
         run: |
-          uv run parch new --yes --force -d "$DEVICE" -o job.toml --hand left
-          uv run python -c "from pathlib import Path; from parch.services.release_pdfs import set_job_paper; set_job_paper(Path('job.toml'), 'lined')"
-          uv run parch press job.toml -o "${{ steps.meta.outputs.pdf }}" --hand left
+          uv run parch new --yes --force -d "$DEVICE" -o job.toml --hand "$HAND"
+          uv run python -c "from pathlib import Path; import os; from parch.services.release_pdfs import set_job_paper; set_job_paper(Path('job.toml'), os.environ['PAPER'])"
+          uv run parch press job.toml -o "${{ steps.meta.outputs.pdf }}" --hand "$HAND"
           test -s "${{ steps.meta.outputs.pdf }}"
       - name: Attach to Release
         if: github.event_name == 'release' || (inputs.release_tag != '' && inputs.device_set != 'all')

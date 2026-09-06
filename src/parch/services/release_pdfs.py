@@ -1,4 +1,4 @@
-"""Hero-device Release PDF matrix and lined paper overlay."""
+"""Release PDF matrix: devices × paper × hand."""
 
 from __future__ import annotations
 
@@ -24,6 +24,9 @@ HERO_DEVICE_IDS: tuple[str, ...] = (
     "remarkable-2",
 )
 
+HANDS: tuple[str, ...] = ("left", "right")
+PAPERS: tuple[str, ...] = ("lined", "dotted")
+
 
 def device_ids(device_set: str = "hero") -> tuple[str, ...]:
     """Return hero or all known device ids."""
@@ -32,6 +35,21 @@ def device_ids(device_set: str = "hero") -> tuple[str, ...]:
     if device_set == "all":
         return known_device_ids()
     raise ValueError(f"unknown device_set {device_set!r}")
+
+
+def matrix_shards(device_set: str = "hero") -> list[dict[str, str]]:
+    """Expand a device set across both papers and hands."""
+    return [
+        {"device": device, "hand": hand, "paper": paper}
+        for device in device_ids(device_set)
+        for paper in PAPERS
+        for hand in HANDS
+    ]
+
+
+def matrix_json(device_set: str = "hero") -> str:
+    """JSON array of {device, hand, paper} shards for the plan job."""
+    return json.dumps(matrix_shards(device_set))
 
 
 def assert_attach_allowed(
@@ -61,10 +79,10 @@ def set_job_paper(config_path: Path, paper: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Print device ids for a set as a JSON array."""
+    """Print {device, hand, paper} shards as a JSON array."""
     args = sys.argv[1:] if argv is None else argv
     device_set = args[0] if args else "hero"
-    sys.stdout.write(devices_json(device_set) + "\n")
+    sys.stdout.write(matrix_json(device_set) + "\n")
     return 0
 
 
