@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
-          python-version-file: ".python-version"
+          version-file: ".python-version"
           cache-suffix: cli
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
-          python-version-file: ".python-version"
+          version-file: ".python-version"
           cache-suffix: typst-native
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
-          python-version-file: ".python-version"
+          version-file: ".python-version"
           cache-suffix: pages-plan
       - run: uv sync --group dev
       - id: devices
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
-          python-version-file: ".python-version"
+          version-file: ".python-version"
           cache-suffix: pages
       - run: uv sync --group dev
       - name: Build device specimen
@@ -121,7 +121,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
-          python-version-file: ".python-version"
+          version-file: ".python-version"
           cache-suffix: pages
       - run: uv sync --group dev
       - name: Download specimen shards
