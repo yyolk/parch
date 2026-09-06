@@ -95,6 +95,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           cache-suffix: pages
+          save-cache: false
       - run: uv sync --group dev
       - name: Build device specimen
         run: |
