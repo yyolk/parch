@@ -10,7 +10,7 @@ import tomllib
 from parch.cli import _set_job_paper, build_parser, main, samples_dest, specimen_cmd
 from parch.config import load
 from parch.device_frame import FRAME_DEVICE_IDS, frame_svg
-from parch.devices import DEVICES, Device, TOOLBAR_NONE, get_device
+from parch.devices import DEVICES, Device, TOOLBAR_NONE, TOOLBAR_TOP, get_device
 from parch.services.config_file import open_resolved
 from parch.services.job_file import (
     CANONICAL_SECTIONS,
@@ -56,29 +56,8 @@ _FRAME_IDS = (
     "ipad-pro-11",
     "ipad-pro-13",
 )
-_SUPERNOTE = (
-    "supernote-nomad",
-    "supernote-manta",
-    "supernote-a5",
-    "supernote-a5x",
-    "supernote-a6",
-    "supernote-a6x",
-)
-_NO_TOOLBAR = (
-    "kindle-scribe",
-    "remarkable-1",
-    "remarkable-2",
-    "remarkable-paper-pure",
-    "remarkable-paper-pro",
-    "remarkable-paper-pro-move",
-    "kindle-scribe-11",
-    "kindle-scribe-colorsoft",
-    "ipad-mini",
-    "ipad-air-11",
-    "ipad-pro-11",
-    "ipad-pro-13",
-    "158x210",
-)
+_HAS_TOOLBAR = tuple(device.id for device in DEVICES if device.toolbar_edge == TOOLBAR_TOP)
+_NO_TOOLBAR = tuple(device.id for device in DEVICES if device.toolbar_edge == TOOLBAR_NONE)
 
 
 def _local(tag: str) -> str:
@@ -139,7 +118,7 @@ def test_compose_dummy_page_is_identity_scale(device_id):
     assert _by_id(ET.fromstring(out), "screen") is not None
 
 
-@pytest.mark.parametrize("device_id", _SUPERNOTE)
+@pytest.mark.parametrize("device_id", _HAS_TOOLBAR)
 def test_compose_nests_page_before_toolbar(device_id):
     device = get_device(device_id)
     frame = frame_svg(device)
