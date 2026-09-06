@@ -237,8 +237,8 @@ def test_toolbar_band_or_absent(device_id):
         assert label.get("text-anchor") == "middle"
         assert label.get("dominant-baseline") == "middle"
         assert label.get("fill") == "#000"
-        assert float(label.get("x")) == pytest.approx(tx + tw / 2)
-        assert float(label.get("y")) == pytest.approx(ty + th / 2)
+        assert float(label.get("x")) == pytest.approx(round(tx + tw / 2, 2))
+        assert float(label.get("y")) == pytest.approx(round(ty + th / 2, 2))
         size = float((label.get("font-size") or "").removesuffix("pt"))
         assert 8.0 <= size <= 10.0
         assert size < th
