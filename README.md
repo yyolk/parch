@@ -48,7 +48,7 @@ parch new --device supernote-nomad --year 2027 --yes -o mine.toml
 
 ## Devices
 
-Fifteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip side is `mos.side_menu` (default left). Override with `--hand left|right` on `press`, `proof`, `new`, and `edit`. `--hand` does not reverse the well.
+Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip side is `mos.side_menu` (default left). Override with `--hand left|right` on `press`, `proof`, `new`, and `edit`. `--hand` does not reverse the well.
 
 | Device | Notes |
 | --- | --- |
@@ -67,6 +67,10 @@ Fifteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip s
 | `supernote-a6x` | SuperNote A6 X. Same canvas as A6; own name. Alias `a6x` |
 | `kindle-scribe-11` | Kindle Scribe 11. No toolbar (Scribe pack). Alias `scribe-11` |
 | `kindle-scribe-colorsoft` | Kindle Scribe Colorsoft. Same B&W canvas as Scribe 11. Alias `colorsoft` |
+| `ipad-mini` | iPad mini. No toolbar (Scribe pack). Alias `mini` |
+| `ipad-air-11` | iPad Air 11. No toolbar (Scribe pack). Aliases `ipad`, `air-11` |
+| `ipad-pro-11` | iPad Pro 11. No toolbar (Scribe pack). Alias `pro-11` |
+| `ipad-pro-13` | iPad Pro 13. No toolbar (Scribe pack). Alias `pro-13` |
 
 ## Development
 

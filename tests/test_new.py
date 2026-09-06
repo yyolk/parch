@@ -373,6 +373,11 @@ def test_defaults_omit_extras_on_every_device(tmp_path):
         ("a6x", "supernote-a6x", NOMAD_STYLE),
         ("scribe-11", "kindle-scribe-11", COMPACT_STYLE),
         ("colorsoft", "kindle-scribe-colorsoft", COMPACT_STYLE),
+        ("mini", "ipad-mini", NOMAD_STYLE),
+        ("ipad", "ipad-air-11", COMPACT_STYLE),
+        ("air-11", "ipad-air-11", COMPACT_STYLE),
+        ("pro-11", "ipad-pro-11", COMPACT_STYLE),
+        ("pro-13", "ipad-pro-13", COMPACT_STYLE),
     ],
 )
 def test_new_alias_writes_canonical_id(tmp_path, alias, canonical, style):

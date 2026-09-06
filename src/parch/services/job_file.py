@@ -116,6 +116,10 @@ JOB_DEFAULTS: dict[str, DeviceJobDefaults] = {
     "supernote-a6x": DeviceJobDefaults(DEFAULT_SECTIONS, NOMAD_STYLE),
     "kindle-scribe-11": DeviceJobDefaults(DEFAULT_SECTIONS, COMPACT_STYLE),
     "kindle-scribe-colorsoft": DeviceJobDefaults(DEFAULT_SECTIONS, COMPACT_STYLE),
+    "ipad-mini": DeviceJobDefaults(DEFAULT_SECTIONS, NOMAD_STYLE),
+    "ipad-air-11": DeviceJobDefaults(DEFAULT_SECTIONS, COMPACT_STYLE),
+    "ipad-pro-11": DeviceJobDefaults(DEFAULT_SECTIONS, COMPACT_STYLE),
+    "ipad-pro-13": DeviceJobDefaults(DEFAULT_SECTIONS, COMPACT_STYLE),
 }
 
 

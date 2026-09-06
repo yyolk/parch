@@ -4,6 +4,10 @@ from parch import ConfigError
 from parch.config import StrictDict
 from parch.devices import (
     DEVICES,
+    IPAD_AIR_11,
+    IPAD_MINI,
+    IPAD_PRO_11,
+    IPAD_PRO_13,
     KINDLE_SCRIBE,
     KINDLE_SCRIBE_11,
     KINDLE_SCRIBE_COLORSOFT,
@@ -271,6 +275,58 @@ def test_lineage_twins_stay_separate_records():
     assert SUPERNOTE_NOMAD.ppi == 300
     assert SUPERNOTE_MANTA.width_px == 1920
     assert SUPERNOTE_MANTA.height_px == 2560
+
+
+_IPAD = (
+    (IPAD_MINI, "mini", 326, 1488, 2266, "115.94mm", "176.55mm", 115.94, 176.55, 328.64, 500.47),
+    (IPAD_AIR_11, "air-11", 264, 1640, 2360, "157.79mm", "227.06mm", 157.79, 227.06, 447.27, 643.64),
+    (IPAD_PRO_11, "pro-11", 264, 1668, 2420, "160.48mm", "232.83mm", 160.48, 232.83, 454.91, 660.0),
+    (IPAD_PRO_13, "pro-13", 264, 2064, 2752, "198.58mm", "264.78mm", 198.58, 264.78, 562.91, 750.55),
+)
+
+
+@pytest.mark.parametrize(
+    "device, alias, ppi, width_px, height_px, page_width, page_height, width_mm, height_mm, width_pt, height_pt",
+    _IPAD,
+    ids=[row[0].id for row in _IPAD],
+)
+def test_ipad_records_match_glass(
+    device,
+    alias,
+    ppi,
+    width_px,
+    height_px,
+    page_width,
+    page_height,
+    width_mm,
+    height_mm,
+    width_pt,
+    height_pt,
+):
+    assert device.ppi == ppi
+    assert device.width_px == width_px
+    assert device.height_px == height_px
+    assert device.page_width == page_width
+    assert device.page_height == page_height
+    assert device.width_mm == width_mm
+    assert device.height_mm == height_mm
+    assert device.width_pt == width_pt
+    assert device.height_pt == height_pt
+    assert device.toolbar_edge == TOOLBAR_NONE
+    assert device.toolbar_clearance == "0mm"
+    assert device.writing_clearance == "5mm"
+    assert device.mos_width == "10mm"
+    assert get_device(device.id) is device
+    assert get_device(alias) is device
+    assert get_device(alias).id == device.id
+
+
+def test_ipad_aliases_share_air_canvas():
+    assert get_device("ipad") is IPAD_AIR_11
+    assert get_device("air-11") is IPAD_AIR_11
+    assert IPAD_MINI is not IPAD_AIR_11
+    assert IPAD_AIR_11 is not IPAD_PRO_11
+    assert IPAD_PRO_11 is not IPAD_PRO_13
 
 
 def test_every_device_scale_matches_record():

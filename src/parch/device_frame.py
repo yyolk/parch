@@ -10,6 +10,19 @@ FRAME_DEVICE_IDS = frozenset(
         "remarkable-1",
         "remarkable-2",
         "158x210",
+        "remarkable-paper-pure",
+        "remarkable-paper-pro",
+        "remarkable-paper-pro-move",
+        "kindle-scribe-11",
+        "kindle-scribe-colorsoft",
+        "supernote-a5",
+        "supernote-a5x",
+        "supernote-a6",
+        "supernote-a6x",
+        "ipad-mini",
+        "ipad-air-11",
+        "ipad-pro-11",
+        "ipad-pro-13",
     }
 )
 
@@ -204,9 +217,29 @@ def frame_svg(device: Device) -> str:
     match device.id:
         case "158x210":
             return _paper_frame(device)
-        case "kindle-scribe" | "remarkable-1" | "remarkable-2":
+        case (
+            "kindle-scribe"
+            | "remarkable-1"
+            | "remarkable-2"
+            | "remarkable-paper-pure"
+            | "remarkable-paper-pro"
+            | "remarkable-paper-pro-move"
+            | "kindle-scribe-11"
+            | "kindle-scribe-colorsoft"
+            | "ipad-mini"
+            | "ipad-air-11"
+            | "ipad-pro-11"
+            | "ipad-pro-13"
+        ):
             return _scribe_frame(device)
-        case "supernote-nomad" | "supernote-manta":
+        case (
+            "supernote-nomad"
+            | "supernote-manta"
+            | "supernote-a5"
+            | "supernote-a5x"
+            | "supernote-a6"
+            | "supernote-a6x"
+        ):
             return _supernote_frame(device)
         case _:
             known = ", ".join(sorted(FRAME_DEVICE_IDS))
