@@ -51,9 +51,64 @@ jobs:
           uv run parch proof 158x210 --pages 1 -w out/proof-py
           test -s out/proof-py/preview-1.svg
 
+  pages-plan:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      devices: ${{ steps.devices.outputs.devices }}
+      max_parallel: ${{ steps.devices.outputs.max_parallel }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14.7"
+          cache-suffix: pages-plan
+      - run: uv sync --group dev
+      - id: devices
+        run: |
+          DEVICES="$(uv run python -c "from parch.device_frame import FRAME_DEVICE_IDS; import json; print(json.dumps(sorted(FRAME_DEVICE_IDS)))")"
+          {
+            echo "devices<<EOF"
+            printf '%s\n' "$DEVICES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "max_parallel=$(printf '%s' "$DEVICES" | uv run python -c 'import json,sys; print(len(json.load(sys.stdin)))')" >> "$GITHUB_OUTPUT"
+
+  pages-specimen:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [test, pages-plan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(needs.pages-plan.outputs.max_parallel) }}
+      matrix:
+        device: ${{ fromJSON(needs.pages-plan.outputs.devices) }}
+    env:
+      DEVICE: ${{ matrix.device }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14.7"
+          cache-suffix: pages
+      - run: uv sync --group dev
+      - name: Build device specimen
+        run: |
+          uv run parch specimen "$DEVICE" -w out
+          test -s "out/specimens/${DEVICE}/lined-left/cover.svg"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: specimen-${{ matrix.device }}
+          path: out/specimens/${{ matrix.device }}
+          if-no-files-found: error
+
   pages:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: test
+    needs: pages-specimen
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -69,12 +124,24 @@ jobs:
           python-version: "3.14.7"
           cache-suffix: pages
       - run: uv sync --group dev
-      - name: Build specimen catalog
+      - name: Download specimen shards
+        uses: actions/download-artifact@v8
+        with:
+          pattern: specimen-*
+          path: /tmp/specimen-shards
+      - name: Merge catalog and write index
         run: |
-          mapfile -t ids < <(uv run python -c "from parch.device_frame import FRAME_DEVICE_IDS; print('\n'.join(sorted(FRAME_DEVICE_IDS)))")
-          for id in "${ids[@]}"; do
-            uv run parch specimen "$id" -w out
+          mkdir -p out/specimens
+          found=0
+          for shard in /tmp/specimen-shards/specimen-*; do
+            [ -d "$shard" ] || continue
+            device="${shard##*/}"
+            device="${device#specimen-}"
+            mv "$shard" "out/specimens/${device}"
+            found=$((found + 1))
           done
+          test "$found" -gt 0
+          uv run python -c 'from pathlib import Path; from parch.device_frame import FRAME_DEVICE_IDS; from parch.services.specimen import write_catalog_index, listed_catalog_devices; root=Path("out/specimens"); write_catalog_index(root, listed_catalog_devices(root) or sorted(FRAME_DEVICE_IDS))'
           test -s out/specimens/index.html
           test -s out/specimens/158x210/lined-left/cover.svg
           test -s out/specimens/158x210/dotted-right/cover.svg
