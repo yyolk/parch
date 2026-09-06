@@ -263,16 +263,18 @@ def test_supernote_chrome(device_id):
 
 @pytest.mark.parametrize("device_id", _SCRIBE_PACK)
 def test_scribe_is_not_supernote_chrome(device_id):
-    root = _parse(frame_svg(get_device(device_id)))
+    device = get_device(device_id)
+    root = _parse(frame_svg(device))
     body = _by_id(root, "body")
     assert body is not None
     assert float(body.get("rx") or 0) > 0
-    assert _by_id(root, "toolbar") is None
     assert _by_id(root, "sensor") is None
     assert not any(_local(el.tag) == "line" for el in root.iter())
-    assert not _has_pattern(root)
-    assert not any(_local(el.tag) == "text" for el in root.iter())
     assert _by_id(root, "power") is not None
+    if device.toolbar_edge == TOOLBAR_NONE:
+        assert _by_id(root, "toolbar") is None
+        assert not _has_pattern(root)
+        assert not any(_local(el.tag) == "text" for el in root.iter())
 
 
 def test_frame_device_ids_cover_every_device():

@@ -52,11 +52,15 @@ def test_scribe_and_158_generate_bodies_match_only_toolbar_changes():
         dto = load(base_config(stem))
         names = [section["name"] for section in Configurator(dto).enabled_sections()]
         assert names == list(DEFAULT_SECTIONS)
+        device = get_device(stem)
         scale = device_scale(dto["device"])
-        assert scale["toolbar_edge"] == "none"
-        assert scale["toolbar_clearance"] == "0mm"
+        assert scale["toolbar_edge"] == device.toolbar_edge
+        assert scale["toolbar_clearance"] == device.toolbar_clearance
         assert dto["document"]["layout"]["margin"].to_plain() == device_page_margin(scale)
-        assert dto["document"]["layout"]["margin"]["top"] == "0mm"
+        if device.toolbar_edge == TOOLBAR_NONE:
+            assert dto["document"]["layout"]["margin"]["top"] == "0mm"
+        else:
+            assert dto["document"]["layout"]["margin"]["top"] == device.toolbar_clearance
         assert dto["document"]["layout"]["margin"]["right"] == scale["writing_clearance"]
         dims = dto["document"]["layout"]["dimensions"].to_plain()
         assert dims["width"] == scale["width"]
@@ -79,8 +83,8 @@ def test_device_typ_toolbar_edges():
     paper = render_device_typ(get_device("158x210"))
     assert "toolbar-edge = top" in nomad
     assert "toolbar-clearance = 8mm" in nomad
-    assert "toolbar-edge = none" in scribe
-    assert "toolbar-clearance = 0mm" in scribe
+    assert "toolbar-edge = top" in scribe
+    assert "toolbar-clearance = 26.25mm" in scribe
     assert "toolbar-edge = none" in paper
     assert "toolbar-clearance = 0mm" in paper
 

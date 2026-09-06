@@ -110,6 +110,24 @@ def _screen_rect(x: float, y: float, w: float, h: float) -> str:
     )
 
 
+def _toolbar_marks(sx: float, sy: float, sw: float, toolbar_h: float) -> list[str]:
+    if toolbar_h <= 0:
+        return []
+    return [
+        (
+            f'  <rect id="toolbar" x="{_pt(sx)}" y="{_pt(sy)}"'
+            f' width="{_pt(sw)}" height="{_pt(toolbar_h)}"'
+            f' fill="url(#{HATCH_ID})" stroke="#000" stroke-width="1"/>'
+        ),
+        (
+            f'  <text x="{_pt(sx + sw / 2)}" y="{_pt(sy + toolbar_h / 2)}"'
+            f' text-anchor="middle" dominant-baseline="middle" fill="#000"'
+            f' font-size="{_pt(min(10.0, max(8.0, toolbar_h * 0.4)))}"'
+            f' font-family="sans-serif">toolbar</text>'
+        ),
+    ]
+
+
 def _svg(width: float, height: float, inner: list[str]) -> str:
     head = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{_pt(width)}pt"'
@@ -146,9 +164,11 @@ def _scribe_frame(device: Device) -> str:
     bh = round(sh + 2 * bezel, 2)
     nub_x = bw
     nub_y = round(bh * 0.18, 2)
-    return _svg(
-        round(bw + nub_w, 2),
-        bh,
+    toolbar_h = _mm_to_pt(_mm_token(device.toolbar_clearance))
+    inner = []
+    if toolbar_h > 0:
+        inner.extend(_hatch_defs())
+    inner.extend(
         [
             _bezel_path(0, 0, bw, bh, rx, sx, sy, sw, sh),
             _body_rect(0, 0, bw, bh, rx),
@@ -157,9 +177,11 @@ def _scribe_frame(device: Device) -> str:
                 f' width="{_pt(nub_w)}" height="{_pt(nub_h)}"'
                 f' fill="{BODY_FILL}" stroke="#000" stroke-width="1"/>'
             ),
+            *_toolbar_marks(sx, sy, sw, toolbar_h),
             _screen_rect(sx, sy, sw, sh),
-        ],
+        ]
     )
+    return _svg(round(bw + nub_w, 2), bh, inner)
 
 
 def _supernote_frame(device: Device) -> str:
@@ -196,17 +218,7 @@ def _supernote_frame(device: Device) -> str:
             f'  <line x1="{_pt(right_x)}" y1="{_pt(slider_y)}" x2="{_pt(right_x)}"'
             f' y2="{_pt(slider_y + slider_h)}" stroke="#000" stroke-width="1"/>'
         ),
-        (
-            f'  <rect id="toolbar" x="{_pt(sx)}" y="{_pt(toolbar_y)}"'
-            f' width="{_pt(sw)}" height="{_pt(toolbar_h)}"'
-            f' fill="url(#{HATCH_ID})" stroke="#000" stroke-width="1"/>'
-        ),
-        (
-            f'  <text x="{_pt(sx + sw / 2)}" y="{_pt(toolbar_y + toolbar_h / 2)}"'
-            f' text-anchor="middle" dominant-baseline="middle" fill="#000"'
-            f' font-size="{_pt(min(10.0, max(8.0, toolbar_h * 0.4)))}"'
-            f' font-family="sans-serif">toolbar</text>'
-        ),
+        *_toolbar_marks(sx, toolbar_y, sw, toolbar_h),
         _screen_rect(sx, sy, sw, sh),
     ]
     return _svg(bw, round(bh + nub_h, 2), inner)
