@@ -32,7 +32,7 @@ _THEME = ('lang: "toml"', "syntaxes:", "theme:")
 _MARK_RULE = "contents_bars(size:"
 _FOLLOW_SPACING = "spacing: 0.5em"
 _LEAD_PAIR = "lead_pair("
-_MARK_FLUSH = "padded_link(padding: 0pt, <index>"
+_MARK_FLUSH = "padded_link(<index>, contents_bars"
 
 
 def _generate(dto: StrictDict) -> str:
@@ -651,8 +651,8 @@ def test_dump_pagination_seats_follow_below_profile_margin_top():
     assert "place(top + left, pad(top:" in n
     assert "#show: rest" not in n
     assert "header-ascent" not in n
-    assert "pad(top: 26.25mm" in s
-    assert "26.25mm + h1" in s
+    assert "pad(top: 0mm" in s
+    assert "0mm + h1" in s
     assert "8mm" not in s
     assert "pad(top: 0mm" in x
     assert "0mm + h1" in x

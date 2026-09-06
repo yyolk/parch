@@ -76,9 +76,8 @@ def test_device_presets_match_glass():
     assert KINDLE_SCRIBE.width_pt == 446.4
     assert KINDLE_SCRIBE.height_pt == 595.2
     assert SUPERNOTE_NOMAD.toolbar_edge == "top"
-    assert KINDLE_SCRIBE.toolbar_edge == "top"
-    assert KINDLE_SCRIBE.toolbar_clearance == "26.25mm"
-    assert KINDLE_SCRIBE.mos_width == "10mm"
+    assert KINDLE_SCRIBE.toolbar_edge == "none"
+    assert KINDLE_SCRIBE.toolbar_clearance == "0mm"
     assert PAPER_158X210.id == "158x210"
     assert PAPER_158X210.page_width == "158mm"
     assert PAPER_158X210.page_height == "210mm"
@@ -205,7 +204,7 @@ _LINEAGE = (
     (SUPERNOTE_A5X, "a5x", 226, 1404, 1872, "157.79mm", "210.39mm", 157.79, 210.39, 447.29, 596.39, TOOLBAR_TOP),
     (SUPERNOTE_A6, "a6", 300, 1404, 1872, "118.87mm", "158.5mm", 118.87, 158.5, 336.96, 449.28, TOOLBAR_TOP),
     (SUPERNOTE_A6X, "a6x", 300, 1404, 1872, "118.87mm", "158.5mm", 118.87, 158.5, 336.96, 449.28, TOOLBAR_TOP),
-    (KINDLE_SCRIBE_11, "scribe-11", 300, 1980, 2640, "167.64mm", "223.52mm", 167.64, 223.52, 475.2, 633.6, TOOLBAR_TOP),
+    (KINDLE_SCRIBE_11, "scribe-11", 300, 1980, 2640, "167.64mm", "223.52mm", 167.64, 223.52, 475.2, 633.6, TOOLBAR_NONE),
     (
         KINDLE_SCRIBE_COLORSOFT,
         "colorsoft",
@@ -218,7 +217,7 @@ _LINEAGE = (
         223.52,
         475.2,
         633.6,
-        TOOLBAR_TOP,
+        TOOLBAR_NONE,
     ),
 )
 
@@ -252,11 +251,7 @@ def test_lineage_records_match_glass(
     assert device.width_pt == width_pt
     assert device.height_pt == height_pt
     assert device.toolbar_edge == toolbar_edge
-    if device.id.startswith("kindle-scribe"):
-        assert device.toolbar_clearance == "27.94mm"
-        assert device.writing_clearance == "5mm"
-        assert device.mos_width == "10mm"
-    elif toolbar_edge == TOOLBAR_TOP:
+    if toolbar_edge == TOOLBAR_TOP:
         assert device.toolbar_clearance == "8mm"
         assert device.writing_clearance == "4mm"
         assert device.mos_width == "8mm"

@@ -146,18 +146,20 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert contents_bars.startswith(
         "#let contents_bars(thick_stroke: none, size: none) = {\n"
         "  let cap = 0.7 * size\n"
+        "  let wide = 0.844 * size\n"
         "  let gap = (cap - 5 * thick_stroke) / 4\n"
         "  box(\n"
-        "    width: 0.844 * size,\n"
-        "    height: cap,\n"
-        "    align(horizon + left, stack(\n"
+        "    width: wide,\n"
+        "    height: wide,\n"
+        "    fill: luma(0%, 0%),\n"
+        "    align(center + horizon, stack(\n"
         "      dir: ttb,\n"
         "      spacing: gap,\n"
-        "      line(length: 0.844 * size, stroke: thick_stroke + black),\n"
-        "      line(length: 0.844 * size, stroke: thick_stroke + black),\n"
-        "      line(length: 0.844 * size, stroke: thick_stroke + black),\n"
-        "      line(length: 0.844 * size, stroke: thick_stroke + black),\n"
-        "      line(length: 0.844 * size, stroke: thick_stroke + black),\n"
+        "      line(length: wide, stroke: thick_stroke + black),\n"
+        "      line(length: wide, stroke: thick_stroke + black),\n"
+        "      line(length: wide, stroke: thick_stroke + black),\n"
+        "      line(length: wide, stroke: thick_stroke + black),\n"
+        "      line(length: wide, stroke: thick_stroke + black),\n"
         "    ))\n"
         "  )\n"
         "}\n"
@@ -168,6 +170,9 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "0.7em" not in contents_bars
     assert "0.844em" not in contents_bars
     assert contents_bars.count("thick_stroke + black") == 5
+    assert "fill: luma(0%, 0%)" in contents_bars
+    assert "height: cap" not in contents_bars
+    assert "height: wide" in contents_bars
     assert "#let lead_pair(" in house
     assert "#let lead_pair(mark, title, spacing: 6pt)" in house
     assert "#let lead_pair(left, right" not in house
@@ -238,7 +243,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     )
     assert "columns: columns" not in mos_tabs
     assert 'fill: c.at("fill", default: none)' in mos_tabs
-    assert "rotate(turn, origin: center + horizon, c.body)" in mos_tabs
+    assert "rotate(turn, origin: center + horizon, c.body)" not in mos_tabs
+    assert "c.body," in mos_tabs
     assert "rotate(turn, origin: center + horizon, c)" in mos_tabs
     assert "reflow: true" not in mos_tabs
     assert "reflow:" not in mos_tabs
@@ -258,10 +264,18 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert mos_strip.startswith(
         "#let mos_strip(months: none, quarters: none, highlight-months: (), highlight-quarters: (), reverse: false, show-quarters: true, stroke: none, turn: none, gutter: none, padding: none) = {\n"
     )
-    assert "if dest != none { padded_link(padding: padding, dest, label) } else { label }" in mos_strip
+    assert "layout(size =>" not in mos_strip
+    assert "box(width: 100%" in mos_strip
+    assert "v(1fr)" in mos_strip
+    assert "if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }" in mos_strip
+    assert "padded_link(padding: padding, dest, label)" not in mos_strip
     assert "highlights.contains(dest)" in mos_strip
-    assert "table.cell(fill: black, text(white)[#body])" in mos_strip
-    assert "table.cell([#body])" in mos_strip
+    assert "luma(0%, 0%)" in mos_strip
+    assert "rotate(turn, origin: center + horizon, ink)" in mos_strip
+    assert "table.cell(fill: black, body)" in mos_strip
+    assert "table.cell(body)" in mos_strip
+    assert "table.cell(fill: black, text(white)[#body])" not in mos_strip
+    assert "table.cell([#body])" not in mos_strip
     assert "mos_rail(tabs(quarters, highlight-quarters), month-tabs, reverse: reverse, gutter: gutter)" in mos_strip
     assert "mos_tabs(\n    stroke: stroke,\n    turn: turn," in mos_strip
     assert "show-quarters" in mos_strip
@@ -504,8 +518,8 @@ def test_device_typ_is_parameterized_from_python_record():
     assert scribe == (
         "#let page-width = 157.48mm\n"
         "#let page-height = 209.97mm\n"
-        "#let toolbar-edge = top\n"
-        "#let toolbar-clearance = 26.25mm\n"
+        "#let toolbar-edge = none\n"
+        "#let toolbar-clearance = 0mm\n"
         "#let writing-clearance = 5mm\n"
         "#let mos-width = 10mm\n"
     )

@@ -70,11 +70,8 @@ def trail_strip(
     chip: str | None = None,
 ) -> str | None:
     """Mark immediately left of *chip*, or the flush mark alone."""
-    # Chip uses default link padding; a lone mark keeps 0pt so the bars stay tight.
-    mark = contents_mark(
-        manifest, heading_height, body_size, face="h1",
-        link_padding=None if chip else "0pt",
-    )
+    # Default padded_link; house contents_bars is the hit square.
+    mark = contents_mark(manifest, heading_height, body_size, face="h1")
     if mark and chip:
         return f"lead_pair({mark}, {chip})"
     return mark or chip

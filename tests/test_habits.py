@@ -35,7 +35,7 @@ MONTHS = (
     "december",
 )
 _MARK_RULE = "contents_bars(size:"
-_TRAIL_MARK = "padded_link(padding: 0pt, <index>"
+_TRAIL_MARK = "padded_link(<index>, contents_bars"
 _TRAIL_HEADING = "trail_heading("
 _LEAD_PAIR = "lead_pair("
 _SEAT_RTL = "spacing: 1fr, direction: rtl"
