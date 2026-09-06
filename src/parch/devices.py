@@ -298,13 +298,13 @@ KINDLE_SCRIBE_COLORSOFT = Device(
     height_px=2640,
 )
 
-# iPad mini: 1488×2266 @ 326 PPI → 115.91×176.51 mm. No toolbar (Scribe pack).
+# iPad mini: 1488×2266 @ 326 PPI → 115.94×176.55 mm. No toolbar (Scribe pack).
 IPAD_MINI = Device(
     id="ipad-mini",
     name="iPad mini",
     ppi=326,
-    page_width="115.91mm",
-    page_height="176.51mm",
+    page_width="115.94mm",
+    page_height="176.55mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
     writing_clearance="5mm",
@@ -313,13 +313,13 @@ IPAD_MINI = Device(
     height_px=2266,
 )
 
-# iPad Air 11: 1640×2360 @ 264 PPI → 157.76×227.03 mm. No toolbar (Scribe pack).
+# iPad Air 11: 1640×2360 @ 264 PPI → 157.79×227.06 mm. No toolbar (Scribe pack).
 IPAD_AIR_11 = Device(
     id="ipad-air-11",
     name="iPad Air 11",
     ppi=264,
-    page_width="157.76mm",
-    page_height="227.03mm",
+    page_width="157.79mm",
+    page_height="227.06mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
     writing_clearance="5mm",
@@ -328,13 +328,13 @@ IPAD_AIR_11 = Device(
     height_px=2360,
 )
 
-# iPad Pro 11: 1668×2420 @ 264 PPI → 160.45×232.77 mm. No toolbar (Scribe pack).
+# iPad Pro 11: 1668×2420 @ 264 PPI → 160.48×232.83 mm. No toolbar (Scribe pack).
 IPAD_PRO_11 = Device(
     id="ipad-pro-11",
     name="iPad Pro 11",
     ppi=264,
-    page_width="160.45mm",
-    page_height="232.77mm",
+    page_width="160.48mm",
+    page_height="232.83mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
     writing_clearance="5mm",
@@ -343,13 +343,13 @@ IPAD_PRO_11 = Device(
     height_px=2420,
 )
 
-# iPad Pro 13: 2064×2752 @ 264 PPI → 198.55×264.73 mm. No toolbar (Scribe pack).
+# iPad Pro 13: 2064×2752 @ 264 PPI → 198.58×264.78 mm. No toolbar (Scribe pack).
 IPAD_PRO_13 = Device(
     id="ipad-pro-13",
     name="iPad Pro 13",
     ppi=264,
-    page_width="198.55mm",
-    page_height="264.73mm",
+    page_width="198.58mm",
+    page_height="264.78mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
     writing_clearance="5mm",
