@@ -10,7 +10,7 @@ import tomllib
 from parch.cli import _set_job_paper, build_parser, main, samples_dest, specimen_cmd
 from parch.config import load
 from parch.device_frame import FRAME_DEVICE_IDS, frame_svg
-from parch.devices import DEVICES, get_device
+from parch.devices import DEVICES, Device, TOOLBAR_NONE, get_device
 from parch.services.config_file import open_resolved
 from parch.services.job_file import (
     CANONICAL_SECTIONS,
@@ -42,9 +42,43 @@ _FRAME_IDS = (
     "remarkable-1",
     "remarkable-2",
     "158x210",
+    "remarkable-paper-pure",
+    "remarkable-paper-pro",
+    "remarkable-paper-pro-move",
+    "kindle-scribe-11",
+    "kindle-scribe-colorsoft",
+    "supernote-a5",
+    "supernote-a5x",
+    "supernote-a6",
+    "supernote-a6x",
+    "ipad-mini",
+    "ipad-air-11",
+    "ipad-pro-11",
+    "ipad-pro-13",
 )
-_SUPERNOTE = ("supernote-nomad", "supernote-manta")
-_NO_TOOLBAR = ("kindle-scribe", "remarkable-1", "remarkable-2", "158x210")
+_SUPERNOTE = (
+    "supernote-nomad",
+    "supernote-manta",
+    "supernote-a5",
+    "supernote-a5x",
+    "supernote-a6",
+    "supernote-a6x",
+)
+_NO_TOOLBAR = (
+    "kindle-scribe",
+    "remarkable-1",
+    "remarkable-2",
+    "remarkable-paper-pure",
+    "remarkable-paper-pro",
+    "remarkable-paper-pro-move",
+    "kindle-scribe-11",
+    "kindle-scribe-colorsoft",
+    "ipad-mini",
+    "ipad-air-11",
+    "ipad-pro-11",
+    "ipad-pro-13",
+    "158x210",
+)
 
 
 def _local(tag: str) -> str:
@@ -143,12 +177,18 @@ def test_compose_without_toolbar_inserts_before_close(device_id):
     assert out[close:].strip() == "</svg>"
 
 
-@pytest.mark.parametrize(
-    "device",
-    [d for d in DEVICES if d.id not in FRAME_DEVICE_IDS],
-    ids=lambda d: d.id,
-)
-def test_unknown_device_raises(device):
+def test_unknown_device_raises():
+    device = Device(
+        id="not-a-device",
+        name="Not a Device",
+        ppi=300,
+        page_width="100mm",
+        page_height="140mm",
+        toolbar_edge=TOOLBAR_NONE,
+        toolbar_clearance="0mm",
+        writing_clearance="5mm",
+        mos_width="10mm",
+    )
     with pytest.raises(ValueError, match="no device frame"):
         framed_specimen(device, _dummy_page(device))
 
@@ -177,9 +217,9 @@ def test_specimen_help_has_hand(capsys):
 
 
 def test_specimen_rejects_unknown_device_before_press(tmp_path, capsys):
-    code = main(["specimen", "remarkable-paper-pure", "-w", str(tmp_path)])
+    code = main(["specimen", "not-a-device", "-w", str(tmp_path)])
     assert code == 1
-    assert "no device frame" in capsys.readouterr().err
+    assert "unknown device" in capsys.readouterr().err
     assert not (tmp_path / "index.typst").exists()
     assert not (tmp_path / "specimens").exists()
 
@@ -305,10 +345,9 @@ def test_catalog_index_html_is_dumb():
     )
 
 
-def test_catalog_lists_remarkable_when_framed():
-    assert "remarkable-1" in FRAME_DEVICE_IDS
-    assert "remarkable-2" in FRAME_DEVICE_IDS
+def test_catalog_lists_every_device_when_framed():
     assert FRAME_DEVICE_IDS == frozenset(_FRAME_IDS)
+    assert FRAME_DEVICE_IDS == {device.id for device in DEVICES}
 
 
 def test_listed_catalog_devices_prefers_frame_ids(tmp_path):

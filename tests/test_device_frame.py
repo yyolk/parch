@@ -6,7 +6,15 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from parch.device_frame import FRAME_DEVICE_IDS, HATCH_ID, HATCH_STRIPE, frame_svg
-from parch.devices import DEVICES, MM_PER_INCH, PT_PER_INCH, TOOLBAR_NONE, TOOLBAR_TOP, get_device
+from parch.devices import (
+    DEVICES,
+    Device,
+    MM_PER_INCH,
+    PT_PER_INCH,
+    TOOLBAR_NONE,
+    TOOLBAR_TOP,
+    get_device,
+)
 
 _SNAPSHOTS = Path(__file__).resolve().parent / "__snapshots__" / "device_frames"
 
@@ -17,9 +25,42 @@ _FRAME_IDS = (
     "remarkable-1",
     "remarkable-2",
     "158x210",
+    "remarkable-paper-pure",
+    "remarkable-paper-pro",
+    "remarkable-paper-pro-move",
+    "kindle-scribe-11",
+    "kindle-scribe-colorsoft",
+    "supernote-a5",
+    "supernote-a5x",
+    "supernote-a6",
+    "supernote-a6x",
+    "ipad-mini",
+    "ipad-air-11",
+    "ipad-pro-11",
+    "ipad-pro-13",
 )
-_SUPERNOTE = ("supernote-nomad", "supernote-manta")
-_SCRIBE_PACK = ("kindle-scribe", "remarkable-1", "remarkable-2")
+_SUPERNOTE = (
+    "supernote-nomad",
+    "supernote-manta",
+    "supernote-a5",
+    "supernote-a5x",
+    "supernote-a6",
+    "supernote-a6x",
+)
+_SCRIBE_PACK = (
+    "kindle-scribe",
+    "remarkable-1",
+    "remarkable-2",
+    "remarkable-paper-pure",
+    "remarkable-paper-pro",
+    "remarkable-paper-pro-move",
+    "kindle-scribe-11",
+    "kindle-scribe-colorsoft",
+    "ipad-mini",
+    "ipad-air-11",
+    "ipad-pro-11",
+    "ipad-pro-13",
+)
 _NO_TOOLBAR = (*_SCRIBE_PACK, "158x210")
 
 
@@ -234,10 +275,9 @@ def test_scribe_is_not_supernote_chrome(device_id):
     assert _by_id(root, "power") is not None
 
 
-def test_frame_device_ids_include_remarkable():
-    assert "remarkable-1" in FRAME_DEVICE_IDS
-    assert "remarkable-2" in FRAME_DEVICE_IDS
+def test_frame_device_ids_cover_every_device():
     assert FRAME_DEVICE_IDS == frozenset(_FRAME_IDS)
+    assert FRAME_DEVICE_IDS == {device.id for device in DEVICES}
 
 
 def test_paper_is_generic_two_rect():
@@ -257,11 +297,17 @@ def test_frame_svg_snapshot(device_id):
     assert frame_svg(get_device(device_id)) == path.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize(
-    "device",
-    [d for d in DEVICES if d.id not in FRAME_DEVICE_IDS],
-    ids=lambda d: d.id,
-)
-def test_unknown_registry_ids_raise(device):
+def test_unknown_frame_id_raises():
+    device = Device(
+        id="not-a-device",
+        name="Not a Device",
+        ppi=300,
+        page_width="100mm",
+        page_height="140mm",
+        toolbar_edge=TOOLBAR_NONE,
+        toolbar_clearance="0mm",
+        writing_clearance="5mm",
+        mos_width="10mm",
+    )
     with pytest.raises(ValueError, match="no device frame"):
         frame_svg(device)
