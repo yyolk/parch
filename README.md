@@ -94,7 +94,7 @@ Or `uv tool install --with typst==0.15.0 parch`, then `PARCH_TYPST=py parch pres
 
 Regenerate the thumbs above with `parch specimen 158x210`.
 
-Ship steps live in [Releasing](docs/releasing.md). Hero planner PDFs (device × paper × hand) attach from `release-pdfs.yml` (not Pages, not a PyPI gate).
+Ship steps live in [Releasing](RELEASING.md). Hero planner PDFs (device × paper × hand) attach from `release-pdfs.yml` (not Pages, not a PyPI gate).
 
 ## License
 
