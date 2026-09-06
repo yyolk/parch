@@ -42,6 +42,7 @@
 
 #let task_fill(page-width: none, regular_height: none, regular_stroke: none) = tiling(
   size: (page-width, regular_height),
+  relative: "self",
   block(
     width: page-width,
     height: regular_height,
@@ -250,8 +251,20 @@
 )
 
 // Full-bleed writing field. Parent is well_frame's 1fr body (bounded).
-// Tiling fill.
-#let lined_well(pattern) = box(width: 100%, height: 100%, fill: pattern)
+// Tiling fill. Optional tile-height floors to whole tiles; remnant is blank.
+#let lined_well(pattern, tile-height: none) = if tile-height == none {
+  box(width: 100%, height: 100%, fill: pattern)
+} else {
+  layout(size => {
+    let n = calc.floor(size.height / tile-height)
+    grid(
+      columns: 1fr,
+      rows: (tile-height,) * n + (1fr,),
+      ..((box(width: 100%, height: 100%, fill: pattern),) * n),
+      [],
+    )
+  })
+}
 
 // Header on auto; bottom inset is the rule's own thickness. Clipped
 // lined_well fills the 1fr.

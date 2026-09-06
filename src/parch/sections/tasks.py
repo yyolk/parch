@@ -220,7 +220,7 @@ class Tasks:
   {self._heading(manifest, tasks_cell)},
   {quiet},
   {day_strip},
-  lined_well(task_fill)
+  lined_well(task_fill, tile-height: regular_height)
 )"""
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
