@@ -12,6 +12,10 @@ on:
         options:
           - testpypi
           - pypi
+      release_tag:
+        description: "Release tag to attach dist files (empty = skip attach)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -78,7 +82,9 @@ jobs:
 
   attach:
     needs: build
-    if: github.event_name == 'release'
+    if: >-
+      github.event_name == 'release'
+      || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -91,13 +97,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event_name == 'release' && github.ref_name || inputs.release_tag }}
         run: |
-          existing="$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')"
+          existing="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
           for f in dist/*; do
             name="${f##*/}"
             if printf '%s\n' "$existing" | grep -Fxq "$name"; then
               echo "skip $name (already on release)"
               continue
             fi
-            gh release upload "$GITHUB_REF_NAME" "$f"
+            gh release upload "$RELEASE_TAG" "$f"
           done
