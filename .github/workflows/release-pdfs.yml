@@ -67,11 +67,14 @@ jobs:
         id: meta
         run: |
           if [ "${{ github.event_name }}" = "release" ]; then
-            version="${GITHUB_REF_NAME#v}"
             tag="$GITHUB_REF_NAME"
           else
-            version="$(uv run python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
             tag="${{ inputs.release_tag }}"
+          fi
+          if [ -n "$tag" ]; then
+            version="${tag#v}"
+          else
+            version="$(uv run python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
           fi
           pdf="parch-${version}-${DEVICE}-lined-left.pdf"
           echo "version=$version" >> "$GITHUB_OUTPUT"
