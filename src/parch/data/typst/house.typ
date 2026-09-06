@@ -183,7 +183,7 @@
 #let mos_strip(months: none, quarters: none, highlight-months: (), highlight-quarters: (), reverse: false, show-quarters: true, stroke: none, turn: none, gutter: none, padding: none) = {
   // months/quarters: array of (dest, label). dest is none when the page does not exist.
   // highlight-* are dests. show-quarters: false is habits (months only).
-  // Full-cell hit: link wraps a 100% box; rotate the ink inside.
+  // Full-cell hit: width 100% + v(1fr) sandwich; rotate the ink inside.
   let tabs(items, highlights) = mos_tabs(
     stroke: stroke,
     turn: turn,
@@ -192,12 +192,11 @@
       let label = item.at(1)
       let on = highlights.contains(dest)
       let ink = if on { text(white)[#label] } else { label }
-      let seated = box(
-        width: 100%,
-        height: 100%,
-        fill: if on { black } else { luma(0%, 0%) },
-        align(horizon + center, rotate(turn, origin: center + horizon, ink)),
-      )
+      let seated = box(width: 100%, fill: if on { black } else { luma(0%, 0%) }, {
+        v(1fr)
+        align(center, rotate(turn, origin: center + horizon, ink))
+        v(1fr)
+      })
       let body = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
       if on {
         table.cell(fill: black, body)

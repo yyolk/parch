@@ -264,11 +264,12 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert mos_strip.startswith(
         "#let mos_strip(months: none, quarters: none, highlight-months: (), highlight-quarters: (), reverse: false, show-quarters: true, stroke: none, turn: none, gutter: none, padding: none) = {\n"
     )
+    assert "layout(size =>" not in mos_strip
+    assert "box(width: 100%" in mos_strip
+    assert "v(1fr)" in mos_strip
     assert "if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }" in mos_strip
     assert "padded_link(padding: padding, dest, label)" not in mos_strip
     assert "highlights.contains(dest)" in mos_strip
-    assert "width: 100%" in mos_strip
-    assert "height: 100%" in mos_strip
     assert "luma(0%, 0%)" in mos_strip
     assert "rotate(turn, origin: center + horizon, ink)" in mos_strip
     assert "table.cell(fill: black, body)" in mos_strip
