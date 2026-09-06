@@ -1,0 +1,131 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver component to bump
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      publish:
+        description: Published Release after merge (false = draft; tag is still created)
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: bump-version
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump and open PR
+    runs-on: ubuntu-latest
+    env:
+      BUMP: ${{ inputs.bump }}
+      PUBLISH: ${{ inputs.publish }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: master
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Compute next version and open bump PR
+        run: |
+          set -euo pipefail
+
+          NEW_VER="$(uv version --dry-run --bump "$BUMP" --short --no-sync)"
+          NEW_VER="${NEW_VER%%$'\n'}"
+          if [ -z "$NEW_VER" ]; then
+            echo "uv version --dry-run did not print a version" >&2
+            exit 1
+          fi
+          echo "Next version: ${NEW_VER} (bump=${BUMP})"
+
+          if [ -n "$(git ls-remote --tags origin "refs/tags/v${NEW_VER}")" ]; then
+            echo "Tag v${NEW_VER} already exists; never retag." >&2
+            exit 1
+          fi
+
+          open_prs="$(gh pr list --head "bump/v${NEW_VER}" --state open --json number --jq 'length')"
+          if [ "$open_prs" != "0" ]; then
+            echo "An open PR already exists from bump/v${NEW_VER}." >&2
+            gh pr list --head "bump/v${NEW_VER}" --state open
+            exit 1
+          fi
+
+          uv version --bump "$BUMP" --no-sync
+          actual="$(uv version --short --no-sync)"
+          if [ "$actual" != "$NEW_VER" ]; then
+            echo "uv version wrote ${actual}, expected ${NEW_VER}" >&2
+            exit 1
+          fi
+
+          git checkout -b "bump/v${NEW_VER}"
+
+          git add pyproject.toml
+          if ! git diff --quiet -- uv.lock; then
+            git add uv.lock
+          fi
+          if git diff --cached --quiet; then
+            echo "uv version did not change pyproject.toml or uv.lock" >&2
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Bump version to ${NEW_VER}." -m "Co-authored-by: Joseph Chiocchi <joe@yolk.cc>"
+
+          git push -u origin "HEAD:bump/v${NEW_VER}"
+
+          if [ "$PUBLISH" = "true" ]; then
+            mode_comment="<!-- parch-release: publish -->"
+            label="release:publish"
+            mode_word="published"
+          else
+            mode_comment="<!-- parch-release: draft -->"
+            label="release:draft"
+            mode_word="draft"
+          fi
+
+          ensure_label() {
+            local name="$1" color="$2" desc="$3"
+            if gh label list --limit 100 --json name --jq '.[].name' | grep -Fxq "$name"; then
+              return 0
+            fi
+            gh label create "$name" --color "$color" --description "$desc"
+          }
+          ensure_label "release:publish" "0e8a16" "Cut a published GitHub Release when this bump PR merges"
+          ensure_label "release:draft" "fbca04" "Cut a draft GitHub Release when this bump PR merges"
+
+          {
+            echo "Bumps \`[project].version\` with \`uv version --bump ${BUMP}\` to **${NEW_VER}**."
+            echo
+            echo "${mode_comment}"
+            echo
+            echo "Merging this PR triggers **Cut release**, which creates GitHub Release \`v${NEW_VER}\` immediately (${mode_word}; does not wait for Pages CI)."
+            echo
+            echo "A published Release then runs **Publish** (TestPyPI/PyPI) and **Release PDFs**. A draft does not, until someone publishes it in the UI."
+            echo
+            echo "Do not push tags by hand. Never retag."
+          } > "$RUNNER_TEMP/pr-body.md"
+
+          gh pr create \
+            --base master \
+            --head "bump/v${NEW_VER}" \
+            --title "Bump version to ${NEW_VER}" \
+            --label "$label" \
+            --body-file "$RUNNER_TEMP/pr-body.md"
