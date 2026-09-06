@@ -278,7 +278,10 @@ def test_week_page_is_raw_typst_ticked_not_mos():
     typst = _generate(short_january(dto))
     week = _week_page(typst, "2026W01")
     assert "rotate(" not in week
-    assert "lined_well(task_fill)" in week
+    assert "lined_well(task_fill, tile-height: regular_height)" in week
+    assert "lined_well(task_fill)" not in week.replace(
+        "lined_well(task_fill, tile-height: regular_height)", ""
+    )
     assert "$square.stroked$" not in week
     assert "layout(" not in week
     assert "calc.floor" not in week

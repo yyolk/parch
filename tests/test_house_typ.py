@@ -334,6 +334,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "regular-height" not in week_cell
     assert "rect_pattern" not in week_cell
     assert "lined_well(pattern)" in week_cell
+    assert "tile-height" not in week_cell
     week_matrix_sig = house[house.index("#let week_matrix(") : house.index("..contents,")]
     assert "side" not in week_matrix_sig
     assert "row-gutter" not in week_matrix_sig
@@ -342,6 +343,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "regular-height" not in week_matrix
     assert "regular_height" not in week_matrix
     assert "House paper is a tiling fill." in house
+    assert "Optional tile-height floors to whole tiles; remnant is blank." in house
     assert "placed tiles" not in house
     assert "#let dotted(" not in house
     assert "#let lined(" not in house
@@ -393,13 +395,25 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let lined_well(" in house
     lined_start = house.index("#let lined_well(")
     lined_well = house[lined_start : house.index("\n\n", lined_start)]
-    assert lined_well == "#let lined_well(pattern) = box(width: 100%, height: 100%, fill: pattern)"
+    assert lined_well == (
+        "#let lined_well(pattern, tile-height: none) = if tile-height == none {\n"
+        "  box(width: 100%, height: 100%, fill: pattern)\n"
+        "} else {\n"
+        "  layout(size => {\n"
+        "    let n = calc.floor(size.height / tile-height)\n"
+        "    align(top, box(width: 100%, height: n * tile-height, fill: pattern))\n"
+        "  })\n"
+        "}"
+    )
     assert "fill: pattern" in lined_well
     assert "rect_pattern" not in lined_well
     assert "regular-height" not in lined_well
     assert "regular_height" not in lined_well
+    assert "tile-height" in lined_well
     assert "clip" not in lined_well
-    assert "layout" not in lined_well
+    assert "layout(size => {" in lined_well
+    assert "calc.floor(size.height / tile-height)" in lined_well
+    assert "align(top," in lined_well
     assert "for " not in lined_well
     assert "range(" not in lined_well
     assert "inset" not in lined_well

@@ -382,6 +382,50 @@ def test_lined_well_svg_uses_tiling_fill(tmp_path):
     assert 'viewBox="0 0 447.874015748 595.275590551"' in raw
 
 
+def test_lined_well_tile_height_leaves_blank_remnant(tmp_path):
+    from PIL import Image
+
+    from tests.visual import raster_page
+
+    src = tmp_path / "index.typst"
+    src.write_text(
+        '#import "house.typ": task_tick, task_fill, lined_well\n'
+        "#set page(width: 80mm, height: 23mm, margin: 0mm)\n"
+        "#set text(size: 10pt)\n"
+        "#let regular_stroke = 0.4pt\n"
+        "#let regular_height = 5mm\n"
+        "#let task_tick = task_tick.with(regular_stroke: regular_stroke)\n"
+        "#let task_fill = task_fill("
+        "page-width: 80mm, regular_height: regular_height, "
+        "regular_stroke: regular_stroke)\n"
+        "#lined_well(task_fill, tile-height: regular_height)\n",
+        encoding="utf-8",
+    )
+    copy_house_typ(tmp_path, device="158x210")
+    pdf = Compile().compile(tmp_path, tools_dir=REPO / ".tools")
+    png = raster_page(pdf, 1, tmp_path / "well.png", dpi=200)
+    with Image.open(png) as src_im:
+        gray = src_im.convert("L")
+        width, height = gray.size
+        pixels = gray.load()
+    # 23mm page / 5mm tiles → 4 whole rows (20mm). Remnant stays blank.
+    y0 = int(round(height * 20 / 23))
+    painted = sum(
+        1
+        for y in range(0, y0)
+        for x in range(width)
+        if pixels[x, y] <= 64
+    )
+    remnant = sum(
+        1
+        for y in range(y0 + 2, height)
+        for x in range(width)
+        if pixels[x, y] <= 64
+    )
+    assert painted > 80, painted
+    assert remnant == 0, remnant
+
+
 def test_task_fill_svg_has_no_nul(tmp_path):
     src = tmp_path / "index.typst"
     src.write_text(
