@@ -48,7 +48,7 @@ jobs:
       contents: ${{ (github.event_name == 'release' || inputs.release_tag != '') && 'write' || 'read' }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ github.event_name == 'workflow_dispatch' && fromJSON(inputs.max_parallel) || 2 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '2') }}
       matrix:
         device: ${{ fromJSON(needs.plan.outputs.devices) }}
     env:
