@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       devices: ${{ steps.devices.outputs.devices }}
+      max_parallel: ${{ steps.devices.outputs.max_parallel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -48,6 +49,11 @@ jobs:
             uv run python -m parch.services.release_pdfs "$SET"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.max_parallel }}" ]; then
+            echo "max_parallel=${{ inputs.max_parallel }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "max_parallel=2" >> "$GITHUB_OUTPUT"
+          fi
 
   pdf:
     needs: plan
@@ -57,7 +63,7 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: ${{ fromJSON(needs.plan.outputs.max_parallel) }}
       matrix:
         device: ${{ fromJSON(needs.plan.outputs.devices) }}
     env:
