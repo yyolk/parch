@@ -16,7 +16,7 @@ Published Releases also run `.github/workflows/release-pdfs.yml`, which presses 
 
 Hero set (v1): SuperNote `supernote-nomad`, `supernote-manta`, `supernote-a5`, `supernote-a5x`, `supernote-a6`, `supernote-a6x`; Kindle Scribe `kindle-scribe`, `kindle-scribe-11`, `kindle-scribe-colorsoft`; reMarkable `remarkable-1`, `remarkable-2`. Not Paper Pure/Pro/Move, iPad, or `158x210`. Paper is lined; MOS hand is left. Raw `parch press` output (no Ghostscript). The device list lives in `parch.services.release_pdfs`.
 
-To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. Set `max_parallel` (default 2) to try runner parallelism. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version.
+To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. Set `max_parallel` (default 2) to try runner parallelism. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version. Dispatch `device_set=all` for a full-catalog timing/artifact run; published Releases always use hero.
 
 ## Version bumps
 
