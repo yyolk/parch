@@ -140,7 +140,8 @@ jobs:
             mv "$shard" "out/specimens/${device}"
             found=$((found + 1))
           done
-          test "$found" -gt 0
+          expected="$(uv run python -c 'from parch.device_frame import FRAME_DEVICE_IDS; print(len(FRAME_DEVICE_IDS))')"
+          test "$found" -eq "$expected"
           uv run python -c 'from pathlib import Path; from parch.device_frame import FRAME_DEVICE_IDS; from parch.services.specimen import write_catalog_index, listed_catalog_devices; root=Path("out/specimens"); write_catalog_index(root, listed_catalog_devices(root) or sorted(FRAME_DEVICE_IDS))'
           test -s out/specimens/index.html
           test -s out/specimens/158x210/lined-left/cover.svg
