@@ -1,0 +1,100 @@
+name: Release PDFs
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing Release tag to attach PDFs (empty = press only, job artifacts)"
+        required: false
+        type: string
+      max_parallel:
+        description: "Device matrix max-parallel"
+        required: false
+        type: number
+        default: 2
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      devices: ${{ steps.devices.outputs.devices }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.14.7"
+          enable-cache: false
+      - run: uv sync --group dev
+      - id: devices
+        run: |
+          {
+            echo "devices<<EOF"
+            uv run python -m parch.services.release_pdfs
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  pdf:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: ${{ (github.event_name == 'release' || inputs.release_tag != '') && 'write' || 'read' }}
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ github.event_name == 'workflow_dispatch' && fromJSON(inputs.max_parallel) || 2 }}
+      matrix:
+        device: ${{ fromJSON(needs.plan.outputs.devices) }}
+    env:
+      PARCH_TYPST: py
+      DEVICE: ${{ matrix.device }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.14.7"
+          enable-cache: false
+      - run: uv sync --extra typst-native --group dev
+      - name: Resolve version and names
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            tag="$GITHUB_REF_NAME"
+          else
+            version="$(uv run python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+            tag="${{ inputs.release_tag }}"
+          fi
+          pdf="parch-${version}-${DEVICE}-lined-left.pdf"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "pdf=$pdf" >> "$GITHUB_OUTPUT"
+      - name: Press lined-left PDF
+        run: |
+          uv run parch new --yes --force -d "$DEVICE" -o job.toml --hand left
+          uv run python -c "from pathlib import Path; from parch.services.release_pdfs import set_job_paper; set_job_paper(Path('job.toml'), 'lined')"
+          uv run parch press job.toml -o "${{ steps.meta.outputs.pdf }}" --hand left
+          test -s "${{ steps.meta.outputs.pdf }}"
+      - name: Attach to Release
+        if: github.event_name == 'release' || inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${{ steps.meta.outputs.tag }}" "${{ steps.meta.outputs.pdf }}" --clobber
+      - name: Upload job artifact
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.meta.outputs.pdf }}
+          path: ${{ steps.meta.outputs.pdf }}
+      - name: Drop local PDF
+        if: always() && steps.meta.outputs.pdf != ''
+        run: rm -f "${{ steps.meta.outputs.pdf }}"

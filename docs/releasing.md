@@ -10,6 +10,14 @@ Do not `git push origin vX.Y.Z` to ship. Never retag.
 
 Manual TestPyPI-only: **Actions → Publish → `testpypi`**.
 
+## Release PDFs
+
+Published Releases also run `.github/workflows/release-pdfs.yml`, which presses a lined-left planner for each hero device and attaches `parch-<version>-<device>-lined-left.pdf`. Separate from `publish.yml`: it does not block or gate PyPI. Specimens stay on Pages; these PDFs do not.
+
+Hero set (v1): SuperNote `supernote-nomad`, `supernote-manta`, `supernote-a5`, `supernote-a5x`, `supernote-a6`, `supernote-a6x`; Kindle Scribe `kindle-scribe`, `kindle-scribe-11`, `kindle-scribe-colorsoft`; reMarkable `remarkable-1`, `remarkable-2`. Not Paper Pure/Pro/Move, iPad, or `158x210`. Paper is lined; MOS hand is left. Raw `parch press` output (no Ghostscript). The device list lives in `parch.services.release_pdfs`.
+
+To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). Set `max_parallel` (default 2) to try runner parallelism. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release.
+
 ## Version bumps
 
 `uv version` writes `[project].version`. Exact string: `uv version 0.1.2rc1 --no-sync`. Do not hand-edit the field. `parch --version` and `__version__` read the installed package metadata, not a second string.
