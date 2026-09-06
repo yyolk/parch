@@ -44,6 +44,17 @@ jobs:
       - id: devices
         run: |
           SET="${{ github.event_name == 'workflow_dispatch' && inputs.device_set || 'hero' }}"
+          if [ "$SET" = "all" ]; then
+            if [ "${{ github.event_name }}" = "release" ]; then
+              echo "device_set=all is not allowed on release:published (hero only)" >&2
+              exit 1
+            fi
+            TAG="${{ inputs.release_tag }}"
+            if [ -n "$TAG" ]; then
+              echo "device_set=all cannot attach to a Release (release_tag=$TAG). Use empty release_tag for timing, or device_set=hero to upload." >&2
+              exit 1
+            fi
+          fi
           {
             echo "devices<<EOF"
             uv run python -m parch.services.release_pdfs "$SET"
@@ -102,7 +113,7 @@ jobs:
           uv run parch press job.toml -o "${{ steps.meta.outputs.pdf }}" --hand left
           test -s "${{ steps.meta.outputs.pdf }}"
       - name: Attach to Release
-        if: github.event_name == 'release' || inputs.release_tag != ''
+        if: github.event_name == 'release' || (inputs.release_tag != '' && inputs.device_set != 'all')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

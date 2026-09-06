@@ -11,6 +11,7 @@ from parch.devices import known_device_ids
 from parch.services.job_file import emit_job, spec_from_device
 from parch.services.release_pdfs import (
     HERO_DEVICE_IDS,
+    assert_attach_allowed,
     device_ids,
     devices_json,
     set_job_paper,
@@ -61,6 +62,16 @@ def test_device_ids_all_is_known_and_supersets_hero():
 def test_device_ids_unknown_set_raises():
     with pytest.raises(ValueError, match="unknown device_set"):
         device_ids("paper")
+
+
+def test_assert_attach_allowed_blocks_all_on_release():
+    assert_attach_allowed("hero", "release", "v0.2.7")
+    assert_attach_allowed("hero", "workflow_dispatch", "v0.2.7")
+    assert_attach_allowed("all", "workflow_dispatch", "")
+    with pytest.raises(ValueError, match="hero only"):
+        assert_attach_allowed("all", "release", "")
+    with pytest.raises(ValueError, match="cannot attach"):
+        assert_attach_allowed("all", "workflow_dispatch", "v0.2.7")
 
 
 def test_devices_json_matches_hero_tuple():
