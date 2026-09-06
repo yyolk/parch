@@ -42,6 +42,7 @@
 
 #let task_fill(page-width: none, regular_height: none, regular_stroke: none) = tiling(
   size: (page-width, regular_height),
+  relative: "self",
   block(
     width: page-width,
     height: regular_height,
@@ -256,7 +257,12 @@
 } else {
   layout(size => {
     let n = calc.floor(size.height / tile-height)
-    align(top, box(width: 100%, height: n * tile-height, fill: pattern))
+    grid(
+      columns: 1fr,
+      rows: (tile-height,) * n + (1fr,),
+      ..((box(width: 100%, height: 100%, fill: pattern),) * n),
+      [],
+    )
   })
 }
 

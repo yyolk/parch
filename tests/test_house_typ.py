@@ -371,6 +371,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert task_fill.startswith(
         "#let task_fill(page-width: none, regular_height: none, regular_stroke: none) = tiling(\n"
         "  size: (page-width, regular_height),\n"
+        '  relative: "self",\n'
         "  block(\n"
         "    width: page-width,\n"
         "    height: regular_height,\n"
@@ -401,7 +402,12 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
         "} else {\n"
         "  layout(size => {\n"
         "    let n = calc.floor(size.height / tile-height)\n"
-        "    align(top, box(width: 100%, height: n * tile-height, fill: pattern))\n"
+        "    grid(\n"
+        "      columns: 1fr,\n"
+        "      rows: (tile-height,) * n + (1fr,),\n"
+        "      ..((box(width: 100%, height: 100%, fill: pattern),) * n),\n"
+        "      [],\n"
+        "    )\n"
         "  })\n"
         "}"
     )
@@ -413,12 +419,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "clip" not in lined_well
     assert "layout(size => {" in lined_well
     assert "calc.floor(size.height / tile-height)" in lined_well
-    assert "align(top," in lined_well
+    assert "rows: (tile-height,) * n + (1fr,)" in lined_well
     assert "for " not in lined_well
     assert "range(" not in lined_well
     assert "inset" not in lined_well
     assert "side" not in lined_well
-    assert "grid(" not in lined_well
     assert "header" not in lined_well
     assert "#let daily_well(" in house
     daily_well = house[house.index("#let daily_well(") :]

@@ -426,6 +426,61 @@ def test_lined_well_tile_height_leaves_blank_remnant(tmp_path):
     assert remnant == 0, remnant
 
 
+def test_lined_well_tile_height_floors_inside_fr_cell(tmp_path):
+    from PIL import Image
+
+    from tests.visual import raster_page
+
+    src = tmp_path / "index.typst"
+    src.write_text(
+        '#import "house.typ": task_tick, task_fill, lined_well\n'
+        "#set page(width: 118.87mm, height: 158.5mm, margin: "
+        "(top: 8mm, bottom: 0mm, left: 0mm, right: 4mm))\n"
+        "#set text(size: 8pt)\n"
+        "#let regular_stroke = 0.4pt\n"
+        "#let regular_height = 4mm\n"
+        "#let task_tick = task_tick.with(regular_stroke: regular_stroke)\n"
+        "#let task_fill = task_fill("
+        "page-width: 118.87mm, regular_height: regular_height, "
+        "regular_stroke: regular_stroke)\n"
+        "#grid(\n"
+        "  columns: 1fr,\n"
+        "  rows: (auto, auto, auto, 1fr),\n"
+        "  row-gutter: 3mm,\n"
+        "  inset: (left: 4mm, bottom: 4mm),\n"
+        "  [Tasks],\n"
+        "  text(size: 0.85em)[Week 1],\n"
+        "  grid(columns: (1fr,) * 7, rows: 8mm, "
+        "[Mon], [Tue], [Wed], [Thu], [Fri], [Sat], [Sun]),\n"
+        "  lined_well(task_fill, tile-height: regular_height),\n"
+        ")\n",
+        encoding="utf-8",
+    )
+    copy_house_typ(tmp_path, device="158x210")
+    pdf = Compile().compile(tmp_path, tools_dir=REPO / ".tools")
+    png = raster_page(pdf, 1, tmp_path / "fr-well.png", dpi=200)
+    with Image.open(png) as src_im:
+        gray = src_im.convert("L")
+        width, height = gray.size
+        pixels = gray.load()
+    # Checkbox bars are ~24px wide; tile rules are full-width. A whole last
+    # row is a top+bottom pair with no orphan tick sides after the pair.
+    bars = [
+        y
+        for y in range(height)
+        if 16 <= sum(1 for x in range(width) if pixels[x, y] <= 80) <= 80
+    ]
+    assert len(bars) >= 4, bars
+    last_bottom, last_top = bars[-1], bars[-2]
+    assert 6 <= last_bottom - last_top <= 40, (last_top, last_bottom)
+    sides = sum(
+        1
+        for y in range(last_bottom + 1, height)
+        if 1 <= sum(1 for x in range(width) if pixels[x, y] <= 80) <= 4
+    )
+    assert sides == 0, f"partial last tick: {sides} side rows after last bar"
+
+
 def test_task_fill_svg_has_no_nul(tmp_path):
     src = tmp_path / "index.typst"
     src.write_text(
