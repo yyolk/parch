@@ -90,15 +90,15 @@ SUPERNOTE_NOMAD = Device(
     height_px=1872,
 )
 
-# Kindle Scribe: 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar.
+# Kindle Scribe: 1860×2480 @ 300 PPI → 157.48×209.97 mm. Toolbar top 26.25mm (⅛ tap, eWritable).
 KINDLE_SCRIBE = Device(
     id="kindle-scribe",
     name="Kindle Scribe",
     ppi=300,
     page_width="157.48mm",
     page_height="209.97mm",
-    toolbar_edge=TOOLBAR_NONE,
-    toolbar_clearance="0mm",
+    toolbar_edge=TOOLBAR_TOP,
+    toolbar_clearance="26.25mm",
     writing_clearance="5mm",
     mos_width="10mm",
     width_px=1860,
@@ -268,30 +268,30 @@ SUPERNOTE_A6X = Device(
     height_px=1872,
 )
 
-# Kindle Scribe 11: 1980×2640 @ 300 PPI → 167.64×223.52 mm. No toolbar (Scribe pack).
+# Kindle Scribe 11: 1980×2640 @ 300 PPI → 167.64×223.52 mm. Toolbar top 27.94mm (⅛ tap, eWritable).
 KINDLE_SCRIBE_11 = Device(
     id="kindle-scribe-11",
     name="Kindle Scribe 11",
     ppi=300,
     page_width="167.64mm",
     page_height="223.52mm",
-    toolbar_edge=TOOLBAR_NONE,
-    toolbar_clearance="0mm",
+    toolbar_edge=TOOLBAR_TOP,
+    toolbar_clearance="27.94mm",
     writing_clearance="5mm",
     mos_width="10mm",
     width_px=1980,
     height_px=2640,
 )
 
-# Kindle Scribe Colorsoft: same B&W canvas as Kindle Scribe 11. Planner is one-ink.
+# Kindle Scribe Colorsoft: same B&W canvas as Kindle Scribe 11. Toolbar top 27.94mm (⅛ tap, eWritable).
 KINDLE_SCRIBE_COLORSOFT = Device(
     id="kindle-scribe-colorsoft",
     name="Kindle Scribe Colorsoft",
     ppi=300,
     page_width="167.64mm",
     page_height="223.52mm",
-    toolbar_edge=TOOLBAR_NONE,
-    toolbar_clearance="0mm",
+    toolbar_edge=TOOLBAR_TOP,
+    toolbar_clearance="27.94mm",
     writing_clearance="5mm",
     mos_width="10mm",
     width_px=1980,

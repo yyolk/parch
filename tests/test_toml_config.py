@@ -58,8 +58,11 @@ def test_parse_device_job_defaults(path: Path):
     assert "\nwidth = " not in text
     assert "\nheight = " not in text
     assert DEVICE_SCALE["kindle-scribe"]["mos_width"] == "10mm"
-    assert DEVICE_SCALE["kindle-scribe"]["toolbar_edge"] == "none"
-    assert DEVICE_SCALE["kindle-scribe"]["toolbar_clearance"] == "0mm"
+    assert DEVICE_SCALE["kindle-scribe"]["toolbar_edge"] == "top"
+    assert DEVICE_SCALE["kindle-scribe"]["toolbar_clearance"] == "26.25mm"
+    assert DEVICE_SCALE["kindle-scribe-11"]["toolbar_clearance"] == "27.94mm"
+    assert DEVICE_SCALE["kindle-scribe-colorsoft"]["toolbar_clearance"] == "27.94mm"
+    assert DEVICE_SCALE["kindle-scribe"]["writing_clearance"] == "5mm"
     assert DEVICE_SCALE["supernote-nomad"]["mos_width"] == "8mm"
     assert DEVICE_SCALE["supernote-nomad"]["toolbar_edge"] == "top"
     assert DEVICE_SCALE["supernote-manta"]["mos_width"] == "8mm"

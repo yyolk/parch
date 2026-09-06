@@ -504,8 +504,8 @@ def test_device_typ_is_parameterized_from_python_record():
     assert scribe == (
         "#let page-width = 157.48mm\n"
         "#let page-height = 209.97mm\n"
-        "#let toolbar-edge = none\n"
-        "#let toolbar-clearance = 0mm\n"
+        "#let toolbar-edge = top\n"
+        "#let toolbar-clearance = 26.25mm\n"
         "#let writing-clearance = 5mm\n"
         "#let mos-width = 10mm\n"
     )

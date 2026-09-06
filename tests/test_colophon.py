@@ -651,8 +651,8 @@ def test_dump_pagination_seats_follow_below_profile_margin_top():
     assert "place(top + left, pad(top:" in n
     assert "#show: rest" not in n
     assert "header-ascent" not in n
-    assert "pad(top: 0mm" in s
-    assert "0mm + h1" in s
+    assert "pad(top: 26.25mm" in s
+    assert "26.25mm + h1" in s
     assert "8mm" not in s
     assert "pad(top: 0mm" in x
     assert "0mm + h1" in x

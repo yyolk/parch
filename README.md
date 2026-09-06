@@ -53,7 +53,7 @@ Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip 
 | Device | Notes |
 | --- | --- |
 | `supernote-nomad` | SuperNote Nomad (A6 X2). Toolbar top 8mm |
-| `kindle-scribe` | Kindle Scribe. No toolbar |
+| `kindle-scribe` | Kindle Scribe. Toolbar top 26.25mm |
 | `158x210` | 158×210 mm. No toolbar |
 | `supernote-manta` | SuperNote Manta (A5 X2). Toolbar top 8mm |
 | `remarkable-1` | reMarkable 1. No toolbar (Scribe pack). Alias `rm1` |
@@ -65,8 +65,8 @@ Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip 
 | `supernote-a5x` | SuperNote A5 X. Same canvas as A5; own name. Alias `a5x` |
 | `supernote-a6` | SuperNote A6. Toolbar top 8mm (Nomad pack). Alias `a6` |
 | `supernote-a6x` | SuperNote A6 X. Same canvas as A6; own name. Alias `a6x` |
-| `kindle-scribe-11` | Kindle Scribe 11. No toolbar (Scribe pack). Alias `scribe-11` |
-| `kindle-scribe-colorsoft` | Kindle Scribe Colorsoft. Same B&W canvas as Scribe 11. Alias `colorsoft` |
+| `kindle-scribe-11` | Kindle Scribe 11. Toolbar top 27.94mm (Scribe pack). Alias `scribe-11` |
+| `kindle-scribe-colorsoft` | Kindle Scribe Colorsoft. Same B&W canvas as Scribe 11. Toolbar top 27.94mm. Alias `colorsoft` |
 | `ipad-mini` | iPad mini. No toolbar (Scribe pack). Alias `mini` |
 | `ipad-air-11` | iPad Air 11. No toolbar (Scribe pack). Aliases `ipad`, `air-11` |
 | `ipad-pro-11` | iPad Pro 11. No toolbar (Scribe pack). Alias `pro-11` |
