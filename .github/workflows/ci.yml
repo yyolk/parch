@@ -145,9 +145,9 @@ jobs:
           test -s out/specimens/index.html
           test -s out/specimens/158x210/lined-left/cover.svg
           test -s out/specimens/158x210/dotted-right/cover.svg
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: out/specimens
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
