@@ -86,7 +86,7 @@
         left,
         mos_strip(highlight-months: (), highlight-quarters: ()),
         well_frame(
-          trail_heading(text(size: h1)[2026<annual>], padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+          trail_heading(text(size: h1)[2026<annual>], padded_link(<index>, contents_bars(size: h1))),
           block(
         width: 100%,
         height: 1fr,
@@ -119,7 +119,7 @@
     'colophon': '''
       #block[
         #set par(spacing: 0em)
-        #lead_pair(padded_link(padding: 0pt, <index>, contents_bars(size: h1)), text(size: h1, weight: "bold")[About this notebook <colophon>], spacing: 0.5em)
+        #lead_pair(padded_link(<index>, contents_bars(size: h1)), text(size: h1, weight: "bold")[About this notebook <colophon>], spacing: 0.5em)
         #v(1em)
         #context grid(
           columns: (measure(text(weight: "bold")[Version]).width, 1fr),
@@ -153,7 +153,7 @@
         ),
         [*Thursday*],
         padded_link(<2026W01>)[Week 1]
-      ), padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+      ), padded_link(<index>, contents_bars(size: h1))),
           daily_well(left, grid(
         columns: 1fr,
         rows: (auto, 1fr),
@@ -291,7 +291,7 @@
         left,
         mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ()),
         well_frame(
-          trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+          trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], padded_link(<index>, contents_bars(size: h1))),
           week_matrix(
         column-gutter: 5pt,
         pattern: dotted_centered,
@@ -316,7 +316,7 @@
         left,
         mos_strip(highlight-months: (), highlight-quarters: ()),
         well_frame(
-          trail_heading(text(size: h1)[2026<annual>], padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+          trail_heading(text(size: h1)[2026<annual>], padded_link(<index>, contents_bars(size: h1))),
           block(
         width: 100%,
         height: 1fr,
@@ -349,7 +349,7 @@
     'colophon': '''
       #block[
         #set par(spacing: 0em)
-        #lead_pair(padded_link(padding: 0pt, <index>, contents_bars(size: h1)), text(size: h1, weight: "bold")[About this notebook <colophon>], spacing: 0.5em)
+        #lead_pair(padded_link(<index>, contents_bars(size: h1)), text(size: h1, weight: "bold")[About this notebook <colophon>], spacing: 0.5em)
         #v(1em)
         #context grid(
           columns: (measure(text(weight: "bold")[Version]).width, 1fr),
@@ -383,7 +383,7 @@
         ),
         [*Thursday*],
         padded_link(<2026W01>)[Week 1]
-      ), padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+      ), padded_link(<index>, contents_bars(size: h1))),
           daily_well(left, grid(
         columns: 1fr,
         rows: (auto, 1fr),
@@ -521,7 +521,7 @@
         left,
         mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ()),
         well_frame(
-          trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], padded_link(padding: 0pt, <index>, contents_bars(size: h1))),
+          trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], padded_link(<index>, contents_bars(size: h1))),
           week_matrix(
         column-gutter: 4pt,
         pattern: dotted_centered,

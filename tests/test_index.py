@@ -19,7 +19,7 @@ NOMAD_EXTRAS = base_config("supernote-nomad", extras=True)
 _TOC_TITLE = 'weight: "bold")[Contents <index>]'
 _MARK_RULE = "contents_bars(size:"
 _MARK_LINK = "padded_link(<index>"
-_MARK_FLUSH = "padded_link(padding: 0pt, <index>"
+_MARK_FLUSH = "padded_link(<index>, contents_bars"
 _TRAIL_HEADING = "trail_heading("
 _LEAD_PAIR = "lead_pair("
 _FOLLOW_PAIR = "lead_pair("
@@ -210,7 +210,7 @@ def test_trail_strip_emits_lead_pair_or_mark():
     assert trail_strip(off, "h1") is None
     manifest = Manifest()
     manifest.register_source("index")
-    mark = "padded_link(padding: 0pt, <index>, contents_bars(size: h1))"
+    mark = "padded_link(<index>, contents_bars(size: h1))"
     assert trail_strip(manifest, "h1") == mark
     assert "pad(right: 3mm" not in trail_strip(manifest, "h1")
     chip = "text[Q1]"
@@ -446,7 +446,7 @@ def test_trail_heading_rejects_string_edge_fallthrough():
         "trail_heading(text(size: h1)[Tasks], [])"
     )
     assert trail_heading(manifest, "h1", None) == (
-        "padded_link(padding: 0pt, <index>, contents_bars(size: h1))"
+        "padded_link(<index>, contents_bars(size: h1))"
     )
     for bad in ("FOLLOW", HeadingMark.LEAD):
         with pytest.raises(ValueError, match="TRAIL or FOLLOW"):

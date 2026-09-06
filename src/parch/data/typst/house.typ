@@ -59,20 +59,23 @@
   link(target)[#box(inset: padding, content)]
 )
 
+// Hit square: transparent fill so the link covers the box, not only the strokes.
 #let contents_bars(thick_stroke: none, size: none) = {
   let cap = 0.7 * size
+  let wide = 0.844 * size
   let gap = (cap - 5 * thick_stroke) / 4
   box(
-    width: 0.844 * size,
-    height: cap,
-    align(horizon + left, stack(
+    width: wide,
+    height: wide,
+    fill: luma(0%, 0%),
+    align(center + horizon, stack(
       dir: ttb,
       spacing: gap,
-      line(length: 0.844 * size, stroke: thick_stroke + black),
-      line(length: 0.844 * size, stroke: thick_stroke + black),
-      line(length: 0.844 * size, stroke: thick_stroke + black),
-      line(length: 0.844 * size, stroke: thick_stroke + black),
-      line(length: 0.844 * size, stroke: thick_stroke + black),
+      line(length: wide, stroke: thick_stroke + black),
+      line(length: wide, stroke: thick_stroke + black),
+      line(length: wide, stroke: thick_stroke + black),
+      line(length: wide, stroke: thick_stroke + black),
+      line(length: wide, stroke: thick_stroke + black),
     ))
   )
 }
@@ -145,7 +148,7 @@
   )
 }
 
-// MOS strip: one column, n 1fr rows; rotate each cell body.
+// MOS strip: one column, n 1fr rows; rotate bare cells only.
 #let mos_tabs(stroke: none, turn: none, columns: none, ..cells) = {
   let gap = if stroke == none { 0pt } else { std.stroke(stroke).thickness }
   let items = cells.pos()
@@ -160,7 +163,7 @@
       table.cell(
         fill: c.at("fill", default: none),
         align: horizon + center,
-        rotate(turn, origin: center + horizon, c.body),
+        c.body,
       )
     } else {
       rotate(turn, origin: center + horizon, c)
@@ -180,17 +183,26 @@
 #let mos_strip(months: none, quarters: none, highlight-months: (), highlight-quarters: (), reverse: false, show-quarters: true, stroke: none, turn: none, gutter: none, padding: none) = {
   // months/quarters: array of (dest, label). dest is none when the page does not exist.
   // highlight-* are dests. show-quarters: false is habits (months only).
+  // Full-cell hit: link wraps a 100% box; rotate the ink inside.
   let tabs(items, highlights) = mos_tabs(
     stroke: stroke,
     turn: turn,
     ..items.map(item => {
       let dest = item.at(0)
       let label = item.at(1)
-      let body = if dest != none { padded_link(padding: padding, dest, label) } else { label }
-      if highlights.contains(dest) {
-        table.cell(fill: black, text(white)[#body])
+      let on = highlights.contains(dest)
+      let ink = if on { text(white)[#label] } else { label }
+      let seated = box(
+        width: 100%,
+        height: 100%,
+        fill: if on { black } else { luma(0%, 0%) },
+        align(horizon + center, rotate(turn, origin: center + horizon, ink)),
+      )
+      let body = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      if on {
+        table.cell(fill: black, body)
       } else {
-        table.cell([#body])
+        table.cell(body)
       }
     }),
   )

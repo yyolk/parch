@@ -21,7 +21,7 @@ name = "supernote-nomad"
 ppi = 300"""
 
 _MARK_RULE = "contents_bars(size:"
-_TRAIL_MARK = "padded_link(padding: 0pt, <index>"
+_TRAIL_MARK = "padded_link(<index>, contents_bars"
 _LEAD_PAIR = "lead_pair("
 _SEAT_RTL = "spacing: 1fr, direction: rtl"
 _FOLLOW_SPACING = "spacing: 0.5em"

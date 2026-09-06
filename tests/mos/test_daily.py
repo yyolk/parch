@@ -15,8 +15,8 @@ from tests.toml_fixtures import omit_toml_sections
 NOMAD = base_config("supernote-nomad")
 
 _MARK_RULE = "contents_bars(size:"
-_MARK_FLUSH = "padded_link(padding: 0pt, <index>"
-_TRAIL_MARK = "padded_link(padding: 0pt, <index>"
+_MARK_FLUSH = "padded_link(<index>, contents_bars"
+_TRAIL_MARK = "padded_link(<index>, contents_bars"
 _TRAIL_HEADING = "trail_heading("
 
 _BULKY = (
