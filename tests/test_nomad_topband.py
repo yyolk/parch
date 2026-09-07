@@ -195,7 +195,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     typst = _generate("supernote-nomad", extras=True)
     assert "page-shell(" in typst
     assert "section-strip(" in typst
-    assert "tempo-bar(" in typst
+    assert "tempo-row(" in typst
+    assert "tempo-bar(" not in typst
     daily = _page_with(typst, "Thursday · January 1 <2026-01-01>")
     assert "page-shell(" in daily
     assert "section-strip(" in daily
@@ -307,7 +308,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "month_grid(" not in annual
     assert "grid.hline(stroke: regular_stroke + black)" not in annual
     assert "title: none" in annual
-    assert 'tempo-bar((' in annual
+    assert 'tempo-row((' in annual
     assert "[Q1]" in annual
     assert "[Q2]" in annual
     assert "[Q3]" in annual
@@ -344,7 +345,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Q2]" in quarterly
     assert "[Q3]" in quarterly
     assert "[Q4]" in quarterly
-    assert "‹" not in quarterly.split("tempo-bar(")[1].split(")", 1)[0]
+    assert "‹" not in quarterly.split("tempo-row(")[1].split(")", 1)[0]
     projects = _page_with(typst, "#[] <project-1>")
     assert "section-strip(" in projects
     assert "active: none" in projects
@@ -504,7 +505,8 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     typst = Preamble(_cfg("supernote-nomad")).generate()
     assert f"bezel: {BEZEL}" in typst
     assert f"height: {CHROME_H}" in typst
-    assert f"height: {TEMPO_H}" in typst
+    assert "#let tempo-row = tempo-row.with(stroke: regular_stroke)" in typst
+    assert f"height: {TEMPO_H}" not in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert 'font: "Libertinus Serif"' in typst
     assert "mini-month" in typst

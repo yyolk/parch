@@ -432,28 +432,40 @@
   }
 }
 
-// items: array of (dest, label, on)
-#let tempo-bar(items, height: 6mm, stroke: none) = {
-  set text(font: "Liberation Sans")
+// Locked-style discrete tempo chip. Natural height from inset — not TEMPO_H.
+#let chip(label, active: false, dest: none, expand: false, stroke: 0.4pt) = {
+  let hair = if stroke != none { stroke } else { 0.4pt }
+  let body = box(
+    width: if expand { 100% } else { auto },
+    inset: (x: 0.9mm, y: 1.2mm),
+    fill: if active { black } else { white },
+    stroke: hair + black,
+    align(center + horizon,
+      text(
+        font: "Liberation Sans",
+        size: 7.5pt,
+        fill: if active { white } else { black },
+        weight: if active { "bold" } else { "regular" },
+      )[#label],
+    ),
+  )
+  if dest != none { padded_link(padding: 0pt, dest, body) } else { body }
+}
+
+// items: array of (dest, label, on). dest is none when the page does not exist.
+#let tempo-row(items, active: none, stroke: none) = {
   let n = items.len()
   if n == 0 { [] } else {
     grid(
       columns: (1fr,) * n,
-      rows: height,
+      rows: (auto,),
       column-gutter: 1.2mm,
+      align: (center, horizon),
       ..items.map(item => {
         let dest = item.at(0)
         let label = item.at(1)
         let on = item.at(2)
-        let ink = if on { text(fill: white, label) } else { label }
-        let seated = box(
-          width: 100%,
-          height: 100%,
-          fill: if on { black } else { luma(0%, 0%) },
-          stroke: stroke,
-          align(center + horizon, ink),
-        )
-        if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+        chip(label, active: on, dest: dest, expand: true, stroke: stroke)
       }),
     )
   }
@@ -464,6 +476,8 @@
 // strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
 #let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
   set text(font: "Libertinus Serif")
+  set par(spacing: 0pt)
+  set block(spacing: 0pt)
   let crumb = if title == none {
     []
   } else {

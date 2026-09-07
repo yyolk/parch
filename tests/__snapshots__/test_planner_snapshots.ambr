@@ -289,7 +289,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, tempo-bar, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -328,7 +328,7 @@
       #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
       #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
       #let section-strip = section-strip.with(height: 6.5mm, stroke: regular_stroke)
-      #let tempo-bar = tempo-bar.with(height: 6mm, stroke: regular_stroke)
+      #let tempo-row = tempo-row.with(stroke: regular_stroke)
       #let page-shell = page-shell.with(stroke: regular_stroke)
       #let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
       #let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)
@@ -535,7 +535,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, tempo-bar, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance, rail-clearance: 8mm)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -574,7 +574,7 @@
       #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
       #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
       #let section-strip = section-strip.with(height: 6.5mm, stroke: regular_stroke)
-      #let tempo-bar = tempo-bar.with(height: 6mm, stroke: regular_stroke)
+      #let tempo-row = tempo-row.with(stroke: regular_stroke)
       #let page-shell = page-shell.with(stroke: regular_stroke)
       #let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
       #let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)
@@ -623,7 +623,7 @@
         year-month([November], start-wd: 6, days: 30),
         year-month([December], start-wd: 1, days: 31),
       )) <annual>],
-        tempo: tempo-bar(((<quarter-2026-1>, [Q1], false), (none, [Q2], false), (none, [Q3], false), (none, [Q4], false),)),
+        tempo: tempo-row(((<quarter-2026-1>, [Q1], false), (none, [Q2], false), (none, [Q3], false), (none, [Q4], false),)),
         title: none,
         year: none,
       )
@@ -693,7 +693,7 @@
         grid.cell(align: horizon + right, stroke: (bottom: regular_stroke + black), box(inset: (x: 1.4mm, y: 0.35mm), stroke: regular_stroke + black, text(size: 7pt, font: "Liberation Sans", padded_link(<daily-note-2026-01-01-page-1>)[More]))),
         grid.cell(colspan: 2, lined_well(lined_fill))
       )),
-        tempo: tempo-bar(((<2026W01>, [Wk1], false), (<month-2026-01-01>, [Jan], true), (<quarter-2026-1>, [Q1], false),)),
+        tempo: tempo-row(((<2026W01>, [Wk1], false), (<month-2026-01-01>, [Jan], true), (<quarter-2026-1>, [Q1], false),)),
         title: text(size: h1)[Thursday · January 1 <2026-01-01>],
         year: text(size: h1)[2026],
       )
@@ -717,14 +717,14 @@
         block(inset: (top: 0.8mm, bottom: 0.4mm), [Month notes]),
         lined_well(lined_fill, tile-height: regular_height)
       )),
-        tempo: tempo-bar(((none, [‹], false), (<month-2026-01-01>, [Jan], true), (none, [›], false),)),
+        tempo: tempo-row(((none, [‹], false), (<month-2026-01-01>, [Jan], true), (none, [›], false),)),
         title: text(size: h1)[January<month-2026-01-01>],
         year: text(size: h1)[2026],
       )
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, tempo-bar, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance, bezel: 3mm)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -764,7 +764,7 @@
       #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
       #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
       #let section-strip = section-strip.with(height: 6.5mm, stroke: regular_stroke)
-      #let tempo-bar = tempo-bar.with(height: 6mm, stroke: regular_stroke)
+      #let tempo-row = tempo-row.with(stroke: regular_stroke)
       #let page-shell = page-shell.with(stroke: regular_stroke)
       #let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
       #let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)
@@ -782,7 +782,7 @@
         padded_link(<2026-01-04>)[Sun · 4],
         [Week notes],
       ),
-        tempo: tempo-bar(((none, [‹], false), (<2026W01>, [Wk1], true), (<2026W02>, [›], false),)),
+        tempo: tempo-row(((none, [‹], false), (<2026W01>, [Wk1], true), (<2026W02>, [›], false),)),
         title: text(size: h1)[Week 1 <2026W01> · Dec 29 – Jan 4],
         year: text(size: h1)[2026],
       )

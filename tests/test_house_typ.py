@@ -57,6 +57,9 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "mini-month" in names
     assert "nomad_year_grid" in names
     assert "nomad_quarter_well" in names
+    assert "chip" in names
+    assert "tempo-row" in names
+    assert "tempo-bar" not in names
     assert "dotted_centered" in names
     assert "lined_fill" in names
     assert "task_tick" in names
@@ -154,10 +157,14 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "if toolbar-edge == top { toolbar-clearance } else { 0mm }" in house
     assert "if bezel != none { bezel }" in house
     assert "#let section-strip(" in house
-    assert "#let tempo-bar(" in house
+    assert "#let chip(" in house
+    assert "#let tempo-row(" in house
+    assert "#let tempo-bar(" not in house
     assert "#let page-shell(" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
     assert 'set text(font: "Libertinus Serif")' in shell
+    assert "set par(spacing: 0pt)" in shell
+    assert "set block(spacing: 0pt)" in shell
     assert "if strip != none" in shell
     assert "if tempo != none" in shell
     assert "if title != none" in shell
@@ -195,19 +202,26 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert 'image(src, height: 3.1mm)' in house
     assert "inset: (x: 0.6mm, y: 1.1mm)" in house[house.index("#let icon-chip(") :]
     assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
-    strip = house[house.index("#let section-strip(") : house.index("#let tempo-bar(")]
+    strip = house[house.index("#let section-strip(") : house.index("#let chip(")]
     assert "column-gutter: 1.2mm" in strip
     assert "rows: (auto,)" in strip
     assert "0.55mm" not in strip
     assert "padded_link(padding: 0pt, dest, seated)" in strip
-    assert "column-gutter: 1.2mm" in house[house.index("#let tempo-bar(") : house.index("#let page-shell(")]
+    chip = house[house.index("#let chip(") : house.index("#let tempo-row(")]
+    assert "inset: (x: 0.9mm, y: 1.2mm)" in chip
+    assert 'font: "Liberation Sans"' in chip
+    assert "size: 7.5pt" in chip
+    assert "height: 100%" not in chip
+    tempo = house[house.index("#let tempo-row(") : house.index("#let page-shell(")]
+    assert "column-gutter: 1.2mm" in tempo
+    assert "rows: (auto,)" in tempo
+    assert "rows: height" not in tempo
     assert "icons/" in house
     assert "#let icon-menu(" not in house
     assert "#let icon-habits(" not in house
     assert "Notes chip" not in house
     assert "start-wd: 3" in house[house.index("#let year-month(") :]
     assert 'set text(font: "Liberation Sans")' in house[house.index("#let year-month(") :]
-    assert 'set text(font: "Liberation Sans")' in house[house.index("#let tempo-bar(") :]
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
     assert contents_bars.startswith(

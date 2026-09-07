@@ -107,7 +107,7 @@ class Navigation:
         items = self._tempo_items(page_id, kind)
         if not items:
             return "none"
-        return f"tempo-bar(({', '.join(items)},))"
+        return f"tempo-row(({', '.join(items)},))"
 
     def _tempo_items(self, page_id: str | None, kind: str) -> list[str]:
         ctx = context_from_page_id(page_id, self.configurator)
