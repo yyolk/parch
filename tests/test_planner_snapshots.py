@@ -9,7 +9,7 @@ from parch.compose.coordinator import Coordinator
 from tests.helpers import base_config, load_default
 from tests.toml_fixtures import short_january
 
-_PROFILES = ("supernote-nomad", "158x210")
+_PROFILES = ("supernote-nomad", "158x210", "kindle-scribe")
 _CRITICAL = ("annual", "monthly", "weekly", "daily", "colophon")
 
 

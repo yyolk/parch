@@ -1,32 +1,18 @@
 """Contents page (raw Typst, no MOS chrome). Optional section key ``index``."""
 
-from parch.calendar.week import Week
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
+from parch.mos.scribe_nav import INDEX_LABELS, INDEX_SKIP, scribe_hyperpaper_nav, section_dest_id
 from parch.compose.page_data import PageData
-from parch.sections.annual import Annual
 from parch.sections._shared import _length_mm
 
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
 _INDEX_ROW_GUTTER = "3mm"
 
-_SKIP = frozenset({"cover", "index", "daily_notes"})
-
-_HUMAN = {
-    "annual": "Calendar",
-    "quarterly": "Quarters",
-    "monthly": "Months",
-    "weekly": "Weeks",
-    "daily": "Days",
-    "projects": "Projects",
-    "habits": "Habits",
-    "review": "Review",
-    "tasks": "Tasks",
-    "meetings": "Meetings",
-    "colophon": "About this notebook",
-}
+_SKIP = INDEX_SKIP
+_HUMAN = INDEX_LABELS
 
 
 class Index:
@@ -49,18 +35,7 @@ class Index:
         return names
 
     def _dest_id(self, name: str) -> str:
-        if name == "annual":
-            return Annual.ID
-        if name == "quarterly":
-            return self.configurator.start_date().quarter().id
-        if name == "monthly":
-            return self.configurator.start_date().month().id
-        if name == "weekly":
-            first = self.configurator.start_date().beginning_of_month().beginning_of_week()
-            return Week(weekday_start=self.configurator.weekday_start(), day=first).id
-        if name == "daily":
-            return self.configurator.start_date().id
-        return name
+        return section_dest_id(name, self.configurator)
 
     def _row(self, manifest: Manifest, name: str) -> str:
         dest = self._dest_id(name)
@@ -108,6 +83,27 @@ class Index:
         else:
             body = "[]"
         title = 'text(size: h1, weight: "bold")[Contents <index>]'
+        if scribe_hyperpaper_nav(self.configurator):
+            brand = (
+                'text(size: h1, fill: white, weight: "bold")[Contents <index>]'
+            )
+            return f"""#grid(
+  columns: 1fr,
+  rows: (15mm, 1fr),
+  block(
+    width: 100%,
+    height: 100%,
+    fill: black,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}),
+    align(horizon + start, {brand})
+  ),
+  block(
+    width: 100%,
+    height: 100%,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}, bottom: {_INDEX_BOTTOM_INSET}),
+    {body}
+  )
+)"""
         return f"""#grid(
   columns: 1fr,
   rows: (auto, 1fr),

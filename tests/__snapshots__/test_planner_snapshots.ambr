@@ -39,6 +39,46 @@
     }),
   ])
 # ---
+# name: test_shipped_planner_page_tree[kindle-scribe]
+  list([
+    dict({
+      'name': 'cover',
+      'pages': 1,
+    }),
+    dict({
+      'name': 'index',
+      'pages': 1,
+    }),
+    dict({
+      'name': 'annual',
+      'pages': 1,
+    }),
+    dict({
+      'name': 'quarterly',
+      'pages': 4,
+    }),
+    dict({
+      'name': 'monthly',
+      'pages': 12,
+    }),
+    dict({
+      'name': 'weekly',
+      'pages': 53,
+    }),
+    dict({
+      'name': 'daily',
+      'pages': 365,
+    }),
+    dict({
+      'name': 'daily_notes',
+      'pages': 730,
+    }),
+    dict({
+      'name': 'colophon',
+      'pages': 1,
+    }),
+  ])
+# ---
 # name: test_shipped_planner_page_tree[supernote-nomad]
   list([
     dict({
@@ -249,7 +289,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, page-margin
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -285,6 +325,8 @@
       #let week_matrix = week_matrix.with(header-stroke: regular_stroke + black)
       #let daily_well = daily_well.with(column-gutter: regular_column_gutter)
       #let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)
+      #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
+      #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
     ''',
     'weekly': '''
       #mos_frame(
@@ -292,6 +334,246 @@
         mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ()),
         well_frame(
           trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], padded_link(<index>, contents_bars(size: h1))),
+          week_matrix(
+        column-gutter: 5pt,
+        pattern: dotted_centered,
+        [Monday 29],
+        [Tuesday 30],
+        [Wednesday 31],
+        padded_link(<2026-01-01>)[Thursday 1],
+        padded_link(<2026-01-02>)[Friday 2],
+        padded_link(<2026-01-03>)[Saturday 3],
+        padded_link(<2026-01-04>)[Sunday 4],
+        [Notes],
+      ),
+        ),
+      )
+    ''',
+  })
+# ---
+# name: test_short_january_critical_pages[kindle-scribe]
+  dict({
+    'annual': '''
+      #mos_frame(
+        left,
+        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: <annual>, side: left),
+        grid(
+          columns: 1fr,
+          rows: (auto, 1fr),
+          nav_header(lead_pair(lead_pair(padded_link(<index>, contents_bars(size: h1)), padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), spacing: 0.5em), text(size: h1)[2026<annual>], spacing: 0.5em), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])))),
+          block(
+        width: 100%,
+        height: 1fr,
+        grid(
+          columns: (1fr, 1fr, 1fr),
+          rows: (1fr),
+          column-gutter: regular_column_gutter,
+          row-gutter: 5pt,
+      
+          block(width: 100%, height: 100%, month_grid(left,
+        grid.cell(
+          colspan: 8,
+          [January]
+        ),
+      
+        [], [M], [T], [W], [T], [F], [S], [S],
+        padded_link(<2026W01>)[1], [], [], [], padded_link(<2026-01-01>)[1], padded_link(<2026-01-02>)[2], padded_link(<2026-01-03>)[3], padded_link(<2026-01-04>)[4],
+      padded_link(<2026W02>)[2], padded_link(<2026-01-05>)[5], padded_link(<2026-01-06>)[6], padded_link(<2026-01-07>)[7], padded_link(<2026-01-08>)[8], padded_link(<2026-01-09>)[9], padded_link(<2026-01-10>)[10], padded_link(<2026-01-11>)[11],
+      padded_link(<2026W03>)[3], padded_link(<2026-01-12>)[12], padded_link(<2026-01-13>)[13], padded_link(<2026-01-14>)[14], [15], [16], [17], [18],
+      padded_link(<2026W04>)[4], [19], [20], [21], [22], [23], [24], [25],
+      padded_link(<2026W05>)[5], [26], [27], [28], [29], [30], [31], [],
+      [], [], [], [], [], [], [], [],
+        inset: 5pt
+      ))
+        )
+      ),
+        ),
+      )
+    ''',
+    'colophon': '''
+      #block[
+        #set par(spacing: 0em)
+        #lead_pair(padded_link(<index>, contents_bars(size: h1)), text(size: h1, weight: "bold")[About this notebook <colophon>], spacing: 0.5em)
+        #v(1em)
+        #context grid(
+          columns: (measure(text(weight: "bold")[Version]).width, 1fr),
+          column-gutter: regular_column_gutter,
+          rows: regular_height,
+          align: horizon,
+            [*Device*], [Kindle Scribe],
+            [*Year*], padded_link(<annual>)[2026],
+            [*Version*], [VERSION],
+        )
+      ]
+    ''',
+    'daily': '''
+      #mos_frame(
+        left,
+        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: none, side: left),
+        grid(
+          columns: 1fr,
+          rows: (auto, 1fr),
+          nav_header(lead_pair(lead_pair(padded_link(<index>, contents_bars(size: h1)), padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), spacing: 0.5em), grid(
+        columns: (auto, auto),
+        rows: (3fr, 2fr),
+        column-gutter: regular_column_gutter,
+        
+        grid.cell(
+          rowspan: 2,
+          align: center + horizon,
+          rect(
+            stroke: (right: regular_stroke),
+      
+            text(size: h1)[1 <2026-01-01>]
+          )
+        ),
+        [*Thursday*],
+        padded_link(<2026W01>)[Week 1]
+      ), spacing: 0.5em), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
+          daily_well(left, grid(
+        columns: 1fr,
+        rows: (auto, 1fr),
+        row-gutter: 5mm,
+        grid(
+        columns: 1fr,
+        inset: 0mm,
+        grid.cell(
+          stroke: (bottom: regular_stroke + black),
+          box(height: regular_height, align(horizon, [Schedule]))
+        ),
+        grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [ 8]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [ 9]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [10]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [11]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [12]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [13]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [14]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [15]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [16]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [17]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [18]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [19]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+      grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [20]))), box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black))),
+        box(height: regular_height, place(bottom + left, line(length: 3mm, stroke: regular_stroke + black)))
+      ),
+      month_grid(left,
+        grid.cell(
+          colspan: 8,
+          inset: 0pt,
+          []
+        ),
+      
+        [], [M], [T], [W], [T], [F], [S], [S],
+        padded_link(<2026W01>)[1], [], [], [], grid.cell(fill: black, text(white, padded_link(<2026-01-01>)[1])), padded_link(<2026-01-02>)[2], padded_link(<2026-01-03>)[3], padded_link(<2026-01-04>)[4],
+      padded_link(<2026W02>)[2], padded_link(<2026-01-05>)[5], padded_link(<2026-01-06>)[6], padded_link(<2026-01-07>)[7], padded_link(<2026-01-08>)[8], padded_link(<2026-01-09>)[9], padded_link(<2026-01-10>)[10], padded_link(<2026-01-11>)[11],
+      padded_link(<2026W03>)[3], padded_link(<2026-01-12>)[12], padded_link(<2026-01-13>)[13], padded_link(<2026-01-14>)[14], [15], [16], [17], [18],
+      padded_link(<2026W04>)[4], [19], [20], [21], [22], [23], [24], [25],
+      padded_link(<2026W05>)[5], [26], [27], [28], [29], [30], [31], [],
+      [], [], [], [], [], [], [], [],
+        inset: 5pt
+      )
+      ), grid(
+        columns: 1fr,
+        rows: (auto, 1fr),
+        row-gutter: 5mm,
+        grid(
+        columns: 1fr,
+        inset: 0mm,
+        stroke: (_, _) => (bottom: regular_stroke + black),
+      
+        grid.cell(stroke: (bottom: regular_stroke + black), box(height: regular_height, align(horizon, [Priorities]))),
+        box(height: regular_height, align(horizon + start, task_tick())),
+      box(height: regular_height, align(horizon + start, task_tick())),
+      box(height: regular_height, align(horizon + start, task_tick())),
+      box(height: regular_height, align(horizon + start, task_tick())),
+      box(height: regular_height, align(horizon + start, task_tick()))
+      ),
+      grid(
+        columns: (1fr, auto),
+        rows: (5mm, 1fr),
+        grid.cell(align: horizon, stroke: (bottom: regular_stroke + black), [Notes]),
+        grid.cell(align: horizon + right, stroke: (bottom: regular_stroke + black), padded_link(<daily-note-2026-01-01-page-1>)[More]),
+        grid.cell(colspan: 2, lined_well(dotted_centered))
+      )
+      )),
+        ),
+      )
+    ''',
+    'monthly': '''
+      #mos_frame(
+        left,
+        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: <month-2026-01-01>, side: left),
+        grid(
+          columns: 1fr,
+          rows: (auto, 1fr),
+          nav_header(lead_pair(lead_pair(padded_link(<index>, contents_bars(size: h1)), padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), spacing: 0.5em), text(size: h1)[January<month-2026-01-01>], spacing: 0.5em), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
+          grid(
+        columns: 1fr,
+        rows: (1fr, 1fr),
+        grid.hline(y: 1, stroke: regular_stroke + black),
+        month_weeks(left,
+          rows: (regular_height,) + (1fr,) * 5,
+          [], align(center + horizon)[M], align(center + horizon)[T], align(center + horizon)[W], align(center + horizon)[T], align(center + horizon)[F], align(center + horizon)[S], align(center + horizon)[S],
+          align(center + horizon, rotate(90deg)[#padded_link(<2026W01>)[1]]), [], [], [], grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-01>)[1]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-02>)[2]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-03>)[3]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-04>)[4]]),
+      align(center + horizon, rotate(90deg)[#padded_link(<2026W02>)[2]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-05>)[5]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-06>)[6]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-07>)[7]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-08>)[8]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-09>)[9]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-10>)[10]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-11>)[11]]),
+      align(center + horizon, rotate(90deg)[#padded_link(<2026W03>)[3]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-12>)[12]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-13>)[13]]), grid.cell(align: top + left, inset: 3pt, [#padded_link(<2026-01-14>)[14]]), grid.cell(align: top + left, inset: 3pt, [#[15]]), grid.cell(align: top + left, inset: 3pt, [#[16]]), grid.cell(align: top + left, inset: 3pt, [#[17]]), grid.cell(align: top + left, inset: 3pt, [#[18]]),
+      align(center + horizon, rotate(90deg)[#padded_link(<2026W04>)[4]]), grid.cell(align: top + left, inset: 3pt, [#[19]]), grid.cell(align: top + left, inset: 3pt, [#[20]]), grid.cell(align: top + left, inset: 3pt, [#[21]]), grid.cell(align: top + left, inset: 3pt, [#[22]]), grid.cell(align: top + left, inset: 3pt, [#[23]]), grid.cell(align: top + left, inset: 3pt, [#[24]]), grid.cell(align: top + left, inset: 3pt, [#[25]]),
+      align(center + horizon, rotate(90deg)[#padded_link(<2026W05>)[5]]), grid.cell(align: top + left, inset: 3pt, [#[26]]), grid.cell(align: top + left, inset: 3pt, [#[27]]), grid.cell(align: top + left, inset: 3pt, [#[28]]), grid.cell(align: top + left, inset: 3pt, [#[29]]), grid.cell(align: top + left, inset: 3pt, [#[30]]), grid.cell(align: top + left, inset: 3pt, [#[31]]), []
+        ),
+        lined_well(dotted_centered)
+      ),
+        ),
+      )
+    ''',
+    'preamble': '''
+      #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
+      #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
+      #set page(width: page-width, height: page-height, margin: page-margin(left))
+      
+      #set text(
+        size: 10pt
+      )
+      
+      #let regular_stroke = 0.4pt
+      #let thick_stroke = 0.8pt
+      #let regular_height = 5mm
+      #let regular_column_gutter = 10pt
+      
+      #let h1 = 10mm
+      #let link_padding = 8pt
+      
+      #let dotted_centered = dotted_centered(regular_height: regular_height)
+      #let lined_fill = lined_fill.with(regular_height: regular_height, regular_stroke: regular_stroke)
+      #let review_lined = lined_fill(paint: black)
+      #let lined_fill = lined_fill()
+      #let task_tick = task_tick.with(regular_stroke: regular_stroke)
+      #let task_fill = task_fill(page-width: page-width, regular_height: regular_height, regular_stroke: regular_stroke)
+      #let scratch_pad = lined_well(dotted_centered)
+      #let padded_link = padded_link.with(padding: link_padding)
+      #let contents_bars = contents_bars.with(thick_stroke: thick_stroke)
+      #let trail_heading = trail_heading.with(shrink: page-width < 100mm)
+      #let mos_frame = mos_frame.with(mos-width: mos-width, column-gutter: 2mm)
+      #let well_frame = well_frame.with(heading-height: 10mm, row-gutter: 2mm, heading-stroke: regular_stroke)
+      #let mos_tabs = mos_tabs.with(stroke: regular_stroke, turn: 270deg)
+      #let mos_rail = mos_rail.with(gutter: regular_column_gutter)
+      #let mos_strip = mos_strip.with(stroke: regular_stroke, turn: 270deg, gutter: regular_column_gutter, padding: link_padding)
+      #let month_grid = month_grid.with(hline-stroke: regular_stroke + black)
+      #let month_weeks = month_weeks.with(week-col: regular_height, stroke: regular_stroke)
+      #let week_matrix = week_matrix.with(header-stroke: regular_stroke + black)
+      #let daily_well = daily_well.with(column-gutter: regular_column_gutter)
+      #let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)
+      #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
+      #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
+    ''',
+    'weekly': '''
+      #mos_frame(
+        left,
+        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: <2026W01>, side: left),
+        grid(
+          columns: 1fr,
+          rows: (auto, 1fr),
+          nav_header(lead_pair(lead_pair(padded_link(<index>, contents_bars(size: h1)), padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), spacing: 0.5em), text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], spacing: 0.5em), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
           week_matrix(
         column-gutter: 5pt,
         pattern: dotted_centered,
@@ -479,7 +761,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, page-margin
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -515,6 +797,8 @@
       #let week_matrix = week_matrix.with(header-stroke: regular_stroke + black)
       #let daily_well = daily_well.with(column-gutter: regular_column_gutter)
       #let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)
+      #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
+      #let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)
     ''',
     'weekly': '''
       #mos_frame(

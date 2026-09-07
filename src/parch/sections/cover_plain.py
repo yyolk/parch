@@ -2,6 +2,7 @@
 
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
+from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.compose.page_data import PageData
 from parch.sections.annual import Annual
 from parch.sections.index import Index
@@ -19,6 +20,7 @@ def _escape(text: str) -> str:
 class CoverPlain:
     def __init__(self, section_name: str, i18n: I18n, configurator: Configurator, name: str, font_size: str) -> None:
         self.section_name = section_name
+        self.configurator = configurator
         self.name = name
         self.font_size = font_size
 
@@ -59,6 +61,21 @@ class CoverPlain:
             parts = [self._year(size, lines[0], dest, manifest)]
             parts.extend(f"text(size: {size} * 0.45)[{line}]" for line in lines[1:])
             body = f"stack(spacing: {size} * 0.12, {', '.join(parts)})"
+        if scribe_hyperpaper_nav(self.configurator):
+            brand = 'text(size: h1, fill: white, weight: "bold")[parch]'
+            return f"""#grid(
+  columns: 1fr,
+  rows: (15mm, 1fr, 2fr),
+  block(
+    width: 100%,
+    height: 100%,
+    fill: black,
+    inset: (left: 4mm, right: 4mm),
+    align(horizon + start, {brand})
+  ),
+  align(center + horizon, {body}),
+  [],
+)"""
         return f"""#grid(
   columns: 1fr,
   rows: (1fr, 2fr),

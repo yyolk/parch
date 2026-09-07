@@ -49,6 +49,7 @@ class Monthly:
                 PageData(
                     title=page.title(),
                     content=page.content(),
+                    page_id=month.id,
                     highlight_months=[month],
                     highlight_quarters=[],
                     nav_links=[],

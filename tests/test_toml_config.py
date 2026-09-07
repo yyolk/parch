@@ -5,7 +5,7 @@ import pytest
 from parch import ConfigError
 from parch.cli import build_parser
 from parch.config import load
-from parch.devices import DEVICES, TOOLBAR_NONE
+from parch.devices import DEVICES, SCRIBE_FAMILY_IDS, TOOLBAR_NONE
 from parch.models.device import DEVICE_SCALE, device_page_margin, device_scale
 from parch.mos.configurator import Configurator
 from parch.services.job_file import DEFAULT_SECTIONS
@@ -57,7 +57,8 @@ def test_parse_device_job_defaults(path: Path):
     assert "columns = [" not in text
     assert "\nwidth = " not in text
     assert "\nheight = " not in text
-    assert DEVICE_SCALE["kindle-scribe"]["mos_width"] == "10mm"
+    assert DEVICE_SCALE["kindle-scribe"]["mos_width"] == "11mm"
+    assert DEVICE_SCALE["kindle-scribe"]["writing_clearance"] == "0mm"
     assert DEVICE_SCALE["kindle-scribe"]["toolbar_edge"] == "none"
     assert DEVICE_SCALE["kindle-scribe"]["toolbar_clearance"] == "0mm"
     assert DEVICE_SCALE["supernote-nomad"]["mos_width"] == "8mm"
@@ -69,7 +70,12 @@ def test_parse_device_job_defaults(path: Path):
     for device in DEVICES:
         scale = DEVICE_SCALE[device.id]
         assert scale == device.scale()
-        if device.toolbar_edge == TOOLBAR_NONE:
+        if device.id in SCRIBE_FAMILY_IDS:
+            assert scale["toolbar_edge"] == "none"
+            assert scale["toolbar_clearance"] == "0mm"
+            assert scale["writing_clearance"] == "0mm"
+            assert scale["mos_width"] == "11mm"
+        elif device.toolbar_edge == TOOLBAR_NONE:
             assert scale["toolbar_clearance"] == "0mm"
             assert scale["writing_clearance"] == "5mm"
             assert scale["mos_width"] == "10mm"

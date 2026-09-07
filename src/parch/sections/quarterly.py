@@ -49,6 +49,7 @@ class Quarterly:
                 PageData(
                     title=page.title(),
                     content=page.content(),
+                    page_id=quarter.id,
                     highlight_quarters=[quarter],
                     nav_links=[],
                 )

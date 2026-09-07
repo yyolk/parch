@@ -49,6 +49,7 @@ class Weekly:
                 PageData(
                     title=self._title(weekly),
                     content=weekly.content(),
+                    page_id=week.id,
                     highlight_months=[thursday.month()],
                     highlight_quarters=[],
                     nav_links=[],

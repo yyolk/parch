@@ -91,6 +91,7 @@ SUPERNOTE_NOMAD = Device(
 )
 
 # Kindle Scribe: 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar.
+# Exploration (Hyperpaper B): mos-width 11mm section rail; writing-clearance 0mm.
 KINDLE_SCRIBE = Device(
     id="kindle-scribe",
     name="Kindle Scribe",
@@ -99,8 +100,8 @@ KINDLE_SCRIBE = Device(
     page_height="209.97mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
-    writing_clearance="5mm",
-    mos_width="10mm",
+    writing_clearance="0mm",
+    mos_width="11mm",
     width_px=1860,
     height_px=2480,
 )
@@ -269,6 +270,7 @@ SUPERNOTE_A6X = Device(
 )
 
 # Kindle Scribe 11: 1980×2640 @ 300 PPI → 167.64×223.52 mm. No toolbar (Scribe pack).
+# Exploration (Hyperpaper B): same 11mm / 0mm lock as kindle-scribe.
 KINDLE_SCRIBE_11 = Device(
     id="kindle-scribe-11",
     name="Kindle Scribe 11",
@@ -277,8 +279,8 @@ KINDLE_SCRIBE_11 = Device(
     page_height="223.52mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
-    writing_clearance="5mm",
-    mos_width="10mm",
+    writing_clearance="0mm",
+    mos_width="11mm",
     width_px=1980,
     height_px=2640,
 )
@@ -292,8 +294,8 @@ KINDLE_SCRIBE_COLORSOFT = Device(
     page_height="223.52mm",
     toolbar_edge=TOOLBAR_NONE,
     toolbar_clearance="0mm",
-    writing_clearance="5mm",
-    mos_width="10mm",
+    writing_clearance="0mm",
+    mos_width="11mm",
     width_px=1980,
     height_px=2640,
 )
@@ -422,6 +424,23 @@ PRESETS: dict[str, Device] = {
 }
 
 DEFAULT_DEVICE = SUPERNOTE_NOMAD
+
+# Scribe-family Hyperpaper nav/clearance lock. Nomad and every other id stay off.
+SCRIBE_FAMILY_IDS = frozenset(
+    {
+        KINDLE_SCRIBE.id,
+        KINDLE_SCRIBE_11.id,
+        KINDLE_SCRIBE_COLORSOFT.id,
+    }
+)
+
+
+def is_scribe_family(spec: str) -> bool:
+    """True for kindle-scribe / scribe-11 / coloresoft (ids or aliases)."""
+    try:
+        return get_device(spec).id in SCRIBE_FAMILY_IDS
+    except KeyError:
+        return False
 
 
 def known_device_ids() -> tuple[str, ...]:

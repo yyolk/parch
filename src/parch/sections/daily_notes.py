@@ -35,6 +35,7 @@ class DailyNotes:
                 PageData(
                     title=self._title(manifest, note),
                     content=f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})",
+                    page_id=note.id,
                     highlight_months=[note.day.month()],
                     highlight_quarters=[],
                     nav_links=[],

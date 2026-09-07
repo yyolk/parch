@@ -57,6 +57,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "lined_well" in names
     assert "daily_well" in names
     assert "quarter_well" in names
+    assert "nav_header" in names
+    assert "section_rail" in names
     assert "dotted" not in names
     assert "lined" not in names
     assert "rect_pattern" not in names
@@ -83,6 +85,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let lined_well = lined_well.with(regular-height: regular_height)" not in typst
     assert "#let daily_well = daily_well.with(column-gutter: regular_column_gutter)" in typst
     assert "#let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)" in typst
+    assert "#let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)" in typst
+    assert "#let section_rail = section_rail.with(stroke: regular_stroke, turn: 270deg, pad: 4mm)" in typst
     assert "3fr" not in typst
     assert "5fr" not in typst
     assert "2fr" not in typst
@@ -454,7 +458,21 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "height: auto" not in daily_well
     assert "reverse" not in daily_well
     assert "#let quarter_well(" in house
-    quarter_well = house[house.index("#let quarter_well(") :]
+    assert "#let nav_header(" in house
+    nav_header = house[house.index("#let nav_header(") : house.index("#let section_rail(")]
+    assert "height: 10mm" in nav_header
+    assert "air: 5mm" in nav_header
+    assert "grid.hline(y: 2, stroke: stroke)" in nav_header
+    assert "cetz" not in nav_header.lower()
+    assert "#let section_rail(" in house
+    section_rail = house[house.index("#let section_rail(") :]
+    assert "pad: 4mm" in section_rail
+    assert "side: left" in section_rail
+    assert "padded_link(padding: 0pt, dest, seated)" in section_rail
+    assert "v(1fr)" in section_rail
+    assert "mos_strip" not in section_rail
+    assert "cetz" not in section_rail.lower()
+    quarter_well = house[house.index("#let quarter_well(") : house.index("#let nav_header(")]
     assert quarter_well.startswith(
         "#let quarter_well(side, months, pad, column-gutter: none) = if side == left {\n"
         "  grid(columns: (2fr, 3fr), rows: 1fr, column-gutter: column-gutter, months, pad)\n"
@@ -520,8 +538,8 @@ def test_device_typ_is_parameterized_from_python_record():
         "#let page-height = 209.97mm\n"
         "#let toolbar-edge = none\n"
         "#let toolbar-clearance = 0mm\n"
-        "#let writing-clearance = 5mm\n"
-        "#let mos-width = 10mm\n"
+        "#let writing-clearance = 0mm\n"
+        "#let mos-width = 11mm\n"
     )
     for device in DEVICES:
         text = render_device_typ(device)
@@ -571,6 +589,8 @@ def test_copy_house_typ_writes_workdir(tmp_path):
     assert "#let lined_fill(" in text
     assert "#let lined_well(" in text
     assert "#let daily_well(" in text
+    assert "#let nav_header(" in text
+    assert "#let section_rail(" in text
 
 
 def test_press_copies_house_typ_next_to_index(tmp_path, monkeypatch):

@@ -338,3 +338,47 @@
 } else {
   grid(columns: (3fr, 2fr), rows: 1fr, column-gutter: column-gutter, pad, months)
 }
+
+// Scribe Hyperpaper explor: 5mm air + 10mm chip/breadcrumb track, hairline under.
+// Nomad does not call this. Header owns top air (page-margin top stays 0mm).
+#let nav_header(left, right, height: 10mm, air: 5mm, stroke: none) = grid(
+  columns: 1fr,
+  rows: (air, height),
+  [],
+  grid(
+    columns: (1fr, auto),
+    rows: 100%,
+    align: horizon,
+    inset: (x: 2mm),
+    left,
+    right,
+  ),
+  grid.hline(y: 2, stroke: stroke),
+)
+
+// Scribe section rail: rotated section links, full-cell hit, pad from page edge.
+// items: array of (dest, label). highlight is a dest. Not mos_strip months.
+#let section_rail(items, highlight: none, stroke: none, turn: none, pad: 4mm, side: left) = {
+  let edge = if side == left { (left: pad) } else { (right: pad) }
+  mos_tabs(
+    stroke: stroke,
+    turn: turn,
+    ..items.map(item => {
+      let dest = item.at(0)
+      let label = item.at(1)
+      let on = dest != none and dest == highlight
+      let ink = if on { text(white)[#label] } else { label }
+      let seated = box(width: 100%, fill: if on { black } else { luma(0%, 0%) }, inset: edge, {
+        v(1fr)
+        align(center, rotate(turn, origin: center + horizon, ink))
+        v(1fr)
+      })
+      let body = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      if on {
+        table.cell(fill: black, body)
+      } else {
+        table.cell(body)
+      }
+    }),
+  )
+}
