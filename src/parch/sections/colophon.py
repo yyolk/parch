@@ -118,7 +118,7 @@ class Colophon:
                     content=self._nomad_content(manifest),
                     page_id=self.ID,
                     heading_mark=HeadingMark.TRAIL,
-                    strip="none",
+                    strip="quiet",
                 )
             ]
         return [PageData(raw_typst=True, content=self._content(manifest))]

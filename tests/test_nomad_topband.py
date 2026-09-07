@@ -251,10 +251,14 @@ def test_nomad_emit_uses_page_shell_not_mos():
     else:
         assert "text(size: 6pt, fill: white)[T1]" not in tasks
     habits_index = _page_with(typst, "[Habits <habits>]")
-    assert "page-shell(\n  none," in habits_index
+    assert "section-strip(" in habits_index
+    assert "active: none" in habits_index
+    assert "page-shell(\n  none," not in habits_index
     assert 'active: "habits"' not in habits_index
     habits = _page_with(typst, "Habits · January<habits-january>")
-    assert "page-shell(\n  none," in habits
+    assert "section-strip(" in habits
+    assert "active: none" in habits
+    assert "page-shell(\n  none," not in habits
     assert 'active: "habits"' not in habits
     assert "padded_link(<2026-01-01>" in habits
     assert "[Day]" in habits
@@ -318,19 +322,25 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Q4]" in quarterly
     assert "‹" not in quarterly.split("tempo-bar(")[1].split(")", 1)[0]
     projects = _page_with(typst, "#[] <project-1>")
-    assert "page-shell(\n  none," in projects
+    assert "section-strip(" in projects
+    assert "active: none" in projects
+    assert "page-shell(\n  none," not in projects
     assert "[Name]" in projects
     assert projects.count("lined_well(lined_fill)") == 3
     assert "lined_well(dotted_centered)" not in projects
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
-    assert "page-shell(\n  none," in meetings_index
+    assert "section-strip(" in meetings_index
+    assert "active: none" in meetings_index
+    assert "page-shell(\n  none," not in meetings_index
     assert "columns: (2em, 1fr, 16mm)" in meetings_index
     assert "column-gutter: 2mm" in meetings_index
     assert "align: (horizon, bottom, bottom)" in meetings_index
     assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in meetings_index
     assert "stroke: (bottom: regular_stroke + black)" not in meetings_index
     meeting = _page_with(typst, "#[] <meeting-1>")
-    assert "page-shell(\n  none," in meeting
+    assert "section-strip(" in meeting
+    assert "active: none" in meeting
+    assert "page-shell(\n  none," not in meeting
     assert "columns: (1fr, 2fr, 1fr)" not in meeting
     assert "rows: (auto, auto, 1fr, auto)" in meeting
     assert "[Name]" in meeting
@@ -339,15 +349,22 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert meeting.count("task_tick()") == 9
     assert "lined_well(dotted_centered)" not in meeting
     review_index = _page_with(typst, "[Review <review>]")
-    assert "page-shell(\n  none," in review_index
+    assert "section-strip(" in review_index
+    assert "active: none" in review_index
+    assert "page-shell(\n  none," not in review_index
     assert 'active: "review"' not in review_index
-    assert "let row-h = size.height / n" in review_index
-    assert "rows: (row-h,) * n" in review_index
+    assert "let pack = 7.0mm" in review_index
+    assert "weeks.slice(0, n)" in review_index
     assert "rows: (5fr, 8fr)" not in review_index
     assert 'font: "Liberation Sans")[1]' in review_index
+    assert 'font: "Liberation Sans")[13]' in review_index
     assert "columns: (10mm, 1fr)" in review_index
+    assert "[Jan 5 – Jan 11]" in review_index
+    assert "[Jan 5 – 11]" not in review_index
     review = _page_with(typst, "Review · Week 1")
-    assert "page-shell(\n  none," in review
+    assert "section-strip(" in review
+    assert "active: none" in review
+    assert "page-shell(\n  none," not in review
     assert 'active: "review"' not in review
     assert "title: grid(columns: 1fr," in review
     assert "text(size: 0.85em)" in review
@@ -358,7 +375,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "Mon 29" not in review
     assert "Mon 1" not in review
     colo = _page_with(typst, "[About <colophon>]")
-    assert "page-shell(\n  none," in colo
+    assert "section-strip(" in colo
+    assert "active: none" in colo
+    assert "page-shell(\n  none," not in colo
     assert "[*Device*]" in colo
     assert "[*Page*]" in colo
     assert "[*Year*]" in colo

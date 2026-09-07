@@ -72,10 +72,12 @@ class Review:
                 out.append(
                     PageData(
                         title=f'text(size: h1)[{self.i18n.t("review")} <{page_id}>]',
-                        content=self._nomad_index_body(manifest, chunk),
+                        content=self._nomad_index_body(
+                            manifest, self._nomad_index_weeks(chunk)
+                        ),
                         page_id=page_id,
                         heading_mark=HeadingMark.TRAIL,
-                        strip="none",
+                        strip="quiet",
                     )
                 )
             else:
@@ -99,7 +101,7 @@ class Review:
                             content=self._week_body(manifest, week),
                             page_id=page_id,
                             heading_mark=HeadingMark.TRAIL,
-                            strip="none",
+                            strip="quiet",
                         )
                     )
                 else:
@@ -155,9 +157,26 @@ class Review:
     def range_label(self, first: Day, last: Day) -> str:
         first_month = self.i18n.t(f"months.short.{first.month().name}")
         last_month = self.i18n.t(f"months.short.{last.month().name}")
+        if nomad_topband(self.configurator):
+            return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
         if first.day.month == last.day.month and first.day.year == last.day.year:
             return f"{first_month} {first.month_day} {_EN_DASH} {last.month_day}"
         return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
+
+    def _extend_weeks(self, weeks: list[Week], n: int) -> list[Week]:
+        out = list(weeks)
+        cursor = out[-1].day + 7 if out else self.first_week_day
+        while len(out) < n:
+            out.append(Week(weekday_start=self.weekday_start, day=cursor))
+            cursor = cursor + 7
+        return out
+
+    def _nomad_index_weeks(self, chunk: list[Week]) -> list[Week]:
+        """Locked pack: at least 8 rows, prefer weeks_per_page (13)."""
+        target = max(_MIN_PACK_ROWS, self.weeks_per_page)
+        if len(chunk) >= target:
+            return chunk
+        return self._extend_weeks(chunk, target)
 
     def _index_row(self, manifest: Manifest, week: Week) -> str:
         hid = self.week_page_id(week)
@@ -202,18 +221,21 @@ class Review:
         return inner
 
     def _nomad_index_body(self, manifest: Manifest, weeks: list[Week]) -> str:
-        """Equal leftover row-h for every week — locked 12-review fill."""
-        n = len(weeks)
-        if not n:
+        """Locked 12-review pack: 7.0mm row, n = min(weeks, max(8, floor(h/row-h)))."""
+        if not weeks:
             return "[]"
-        rows = ",\n      ".join(self._nomad_index_row(manifest, week) for week in weeks)
+        rows = ",\n    ".join(self._nomad_index_row(manifest, week) for week in weeks)
         return f"""box(width: 100%, height: 100%, clip: true, layout(size => {{
-  let n = {n}
+  let weeks = (
+    {rows},
+  )
+  let pack = 7.0mm
+  let n = calc.min(weeks.len(), calc.max(8, calc.floor(size.height / pack)))
   let row-h = size.height / n
   grid(
     rows: (row-h,) * n,
     row-gutter: 0pt,
-    {rows},
+    ..weeks.slice(0, n),
   )
 }}))"""
 

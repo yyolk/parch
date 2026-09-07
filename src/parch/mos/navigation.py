@@ -94,8 +94,8 @@ class Navigation:
             return "()"
         return f"({', '.join(pairs)},)"
 
-    def section_strip_cell(self, page_id: str | None = None) -> str:
-        active = strip_key_for_page_id(page_id)
+    def section_strip_cell(self, page_id: str | None = None, *, quiet: bool = False) -> str:
+        active = None if quiet else strip_key_for_page_id(page_id)
         highlight = f"\"{active}\"" if active else "none"
         return f"section-strip({self.section_strip_items(page_id)}, active: {highlight})"
 

@@ -254,7 +254,9 @@ def test_annual_has_no_calendar_chip_and_links_to_index():
 def test_colophon_has_mark_and_unchanged_facts():
     typst = _generate(load(NOMAD))
     page = _colophon_page(typst)
-    assert "page-shell(\n  none," in page
+    assert "section-strip(" in page
+    assert "active: none" in page
+    assert "page-shell(\n  none," not in page
     assert "[About <colophon>]" in page
     assert "[*Device*]" in page
     assert "[*Page*]" in page

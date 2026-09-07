@@ -97,7 +97,7 @@ class Meetings:
                         title=f"text(size: h1){self._index_meetings_cell(manifest, page)}",
                         content=self._index_rows(manifest, start, end),
                         page_id=page_id,
-                        strip="none",
+                        strip="quiet",
                     )
                 )
             else:
@@ -110,7 +110,7 @@ class Meetings:
                         title=f"text(size: h1)[{index}]",
                         content=self._meeting_body(manifest, index),
                         page_id=mid,
-                        strip="none",
+                        strip="quiet",
                     )
                 )
             else:

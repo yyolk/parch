@@ -73,11 +73,12 @@ class Builder:
 
     def _layout_nomad_page(self, page_spec: PageData) -> str:
         """page-shell(Topband, tempo, title, body). No side MOS."""
-        strip = (
-            "none"
-            if page_spec.strip == "none"
-            else self.navigation.section_strip_cell(page_spec.page_id)
-        )
+        if page_spec.strip == "none":
+            strip = "none"
+        elif page_spec.strip == "quiet":
+            strip = self.navigation.section_strip_cell(page_spec.page_id, quiet=True)
+        else:
+            strip = self.navigation.section_strip_cell(page_spec.page_id)
         tempo = page_spec.tempo
         if tempo is None:
             tempo = self.navigation.tempo_cell(page_spec.page_id)

@@ -98,7 +98,7 @@ class Projects:
                         title=f"text(size: h1){self._index_projects_cell(manifest, page)}",
                         content=self._index_rows(manifest, start, end),
                         page_id=page_id,
-                        strip="none",
+                        strip="quiet",
                     )
                 )
             else:
@@ -111,7 +111,7 @@ class Projects:
                         title=f"text(size: h1)[{index}]",
                         content=self._board_body(manifest, index),
                         page_id=bid,
-                        strip="none",
+                        strip="quiet",
                     )
                 )
             else:
