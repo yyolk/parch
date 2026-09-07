@@ -397,12 +397,12 @@
 
 #let icon-chip(id, active: false, expand: true, stroke: 0.4pt) = {
   let src = if active { "icons/" + id + "-on.svg" } else { "icons/" + id + ".svg" }
+  let hair = if stroke != none { stroke } else { 0.4pt }
   box(
     width: if expand { 100% } else { auto },
-    height: 100%,
     inset: (x: 0.6mm, y: 1.1mm),
     fill: if active { black } else { white },
-    stroke: stroke + black,
+    stroke: hair + black,
     align(center + horizon, image(src, height: 3.1mm)),
   )
 }
@@ -413,14 +413,14 @@
 
 // items: array of (dest, key). dest is none when the page does not exist.
 #let section-strip(items, active: none, height: 6.5mm, stroke: none) = {
-  let gap = 0.55mm
   let hair = if stroke != none { stroke } else { 0.4pt }
   let n = items.len()
   if n == 0 { [] } else {
     grid(
       columns: (1fr,) * n,
-      rows: height,
-      column-gutter: gap,
+      rows: (auto,),
+      column-gutter: 1.2mm,
+      align: (center, horizon),
       ..items.map(item => {
         let dest = item.at(0)
         let name = item.at(1)
@@ -440,7 +440,7 @@
     grid(
       columns: (1fr,) * n,
       rows: height,
-      column-gutter: 0.8mm,
+      column-gutter: 1.2mm,
       ..items.map(item => {
         let dest = item.at(0)
         let label = item.at(1)

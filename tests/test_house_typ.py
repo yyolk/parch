@@ -184,6 +184,14 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let strip-icon(" in house
     assert "#let icon-chip(" in house
     assert 'image(src, height: 3.1mm)' in house
+    assert "inset: (x: 0.6mm, y: 1.1mm)" in house[house.index("#let icon-chip(") :]
+    assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
+    strip = house[house.index("#let section-strip(") : house.index("#let tempo-bar(")]
+    assert "column-gutter: 1.2mm" in strip
+    assert "rows: (auto,)" in strip
+    assert "0.55mm" not in strip
+    assert "padded_link(padding: 0pt, dest, seated)" in strip
+    assert "column-gutter: 1.2mm" in house[house.index("#let tempo-bar(") : house.index("#let page-shell(")]
     assert "icons/" in house
     assert "#let icon-menu(" not in house
     assert "#let icon-habits(" not in house
