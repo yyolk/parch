@@ -228,8 +228,6 @@ class Navigation:
 
         year = self.configurator.start_date().year
         start = self.configurator.weekday_start()
-        if focus is None:
-            focus = self.configurator.start_date().quarter().number
         chips = []
         for month in (1, 4, 7, 10):
             quarter = Quarter(

@@ -31,6 +31,6 @@ def test_cover_year_sits_in_upper_third(tmp_path):
     box = ink_bbox(png)
     assert box is not None
     _x0, y0, _x1, y1 = box
-    # 48pt year + double hair sit high; "Supernote Nomad" footer sits low.
+    # 48pt year + thick/light double hair sit high. Footer is quiet luma(45%).
     assert y0 < height * 0.25, (box, height)
-    assert y1 > height * 0.70, (box, height)
+    assert y1 < height * 0.45, (box, height)

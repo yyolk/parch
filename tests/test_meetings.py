@@ -335,7 +335,9 @@ def test_nomad_default_is_one_index_page():
     meeting = _meeting_page(typst)
     assert "→" not in index
     assert f"columns: ({_NUM_COL}, 1fr, 16mm)" in index
+    assert "align: (horizon, bottom, bottom)" in index
     assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in index
+    assert "stroke: (bottom: regular_stroke + black)" not in index
     assert "rows: (" + ", ".join(["1fr"] * 16) + ")" in index
     assert "2 * regular_height" not in index
     assert "padded_link(<annual>)" not in index

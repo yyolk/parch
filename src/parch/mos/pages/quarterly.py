@@ -47,21 +47,25 @@ class Quarterly:
   column-gutter: 1.2mm,
   {months}
 )"""
-        ticks = ",\n    ".join(
-            ["box(height: regular_height, align(horizon + start, task_tick()))"] * 6
-        )
-        focus = f"""grid(
-  columns: 1fr,
-  rows: (auto, auto),
-  block(inset: (top: 0.4mm, bottom: 0.3mm), text(weight: "bold")[{self.i18n.t("focus")}]),
-  grid(
-    columns: 1fr,
-    rows: ({", ".join(["regular_height"] * 6)}),
-    stroke: (_, _) => (bottom: regular_stroke + black),
-    inset: 0pt,
-    {ticks}
-  )
-)"""
+        focus = f"""box(width: 100%, height: 100%, clip: true, inset: (top: 0.3mm), {{
+  text(weight: "bold")[{self.i18n.t("focus")}]
+  v(0.35mm)
+  layout(size => {{
+    let row-h = 6.2mm
+    let n = calc.max(4, calc.floor(size.height / row-h))
+    grid(
+      rows: (row-h,) * n,
+      row-gutter: 0pt,
+      ..range(n).map(_ => grid(
+        columns: (auto, 1fr),
+        column-gutter: 1.5mm,
+        align: (horizon, bottom),
+        task_tick(),
+        line(length: 100%, stroke: regular_stroke + black),
+      )),
+    )
+  }})
+}})"""
         notes = f"""grid(
   columns: 1fr,
   rows: (auto, 1fr),

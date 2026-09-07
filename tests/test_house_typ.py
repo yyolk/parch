@@ -170,6 +170,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "(1fr, 1fr, 1fr, 1fr)" in house[house.index("#let nomad_year_grid(") :]
     assert "#let nomad_quarter_well(" in house
     assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
+    assert "0.9fr, 1.2fr" in house[house.index("#let nomad_quarter_well(") :]
     assert "#let nomad_month_well(" in house
     assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]
     assert "#let strip-icon(" in house

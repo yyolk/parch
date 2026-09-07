@@ -262,10 +262,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "page-shell(\n  none," in cover
     assert "text(size: 48pt" in cover
     assert "line(length: 42mm, stroke: thick_stroke + black)" in cover
-    assert "line(length: 42mm, stroke: regular_stroke + black)" in cover
+    assert "line(length: 42mm, stroke: regular_stroke + luma(25%))" in cover
     assert cover.count("line(length: 42mm, stroke: thick_stroke + black)") == 1
-    assert cover.count("line(length: 42mm, stroke: regular_stroke + black)") == 1
-    assert "[Supernote Nomad]" in cover
+    assert "text(size: 7.5pt, fill: luma(45%))[Supernote Nomad]" in cover
     assert "title: none" in cover
     annual = _page_with(typst, "<annual>]")
     assert "nomad_year_grid(" in annual
@@ -278,15 +277,23 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Q2]" in annual
     assert "[Q3]" in annual
     assert "[Q4]" in annual
+    assert "(<quarter-2026-1>, [Q1], false)" in annual
+    assert "(none, [Q2], false)" in annual
+    assert "(none, [Q3], false)" in annual
+    assert "(none, [Q4], false)" in annual
+    assert "(<quarter-2026-1>, [Q1], true)" not in annual
     quarterly = _page_with(typst, "Quarter 1 <quarter-2026-1>")
     assert "nomad_quarter_well(" in quarterly
     assert "quarter_well(left" not in quarterly
     assert "quarter_well(right" not in quarterly
     assert "[Focus]" in quarterly
     assert "[Notes]" in quarterly
-    assert quarterly.count("task_tick()") == 6
     focus = quarterly.split("[Focus]")[1].split("[Notes]")[0]
     assert "lined_well(lined_fill)" not in focus
+    assert "columns: (auto, 1fr)" in focus
+    assert "task_tick()" in focus
+    assert "line(length: 100%, stroke: regular_stroke + black)" in focus
+    assert "6.2mm" in focus
     assert "lined_well(lined_fill)" in quarterly.split("[Notes]")[1]
     assert "[Q1]" in quarterly
     assert "[Q2]" in quarterly
@@ -301,7 +308,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
     assert "page-shell(\n  none," in meetings_index
     assert "columns: (2em, 1fr, 16mm)" in meetings_index
+    assert "align: (horizon, bottom, bottom)" in meetings_index
     assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in meetings_index
+    assert "stroke: (bottom: regular_stroke + black)" not in meetings_index
     meeting = _page_with(typst, "#[] <meeting-1>")
     assert "page-shell(\n  none," in meeting
     assert "columns: (1fr, 2fr, 1fr)" not in meeting
@@ -326,8 +335,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[*Page*]" in colo
     assert "[*Year*]" in colo
     assert "[*Chrome*]" in colo
-    assert "[Nomad Topband]" in colo
-    assert "[Topband]" not in colo.replace("[Nomad Topband]", "")
+    assert "[Topband · no side MOS]" in colo
+    assert "[Nomad Topband]" not in colo
     assert "[*Edition*]" in colo
     assert "[*Version*]" not in colo
     notes = _page_with(typst, "[Notes <daily-note-2026-01-01-page-1>]")

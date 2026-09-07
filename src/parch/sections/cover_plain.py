@@ -102,14 +102,14 @@ class CoverPlain:
   rows: (1fr, 2fr),
   align(center + horizon, stack(
     dir: ttb,
-    spacing: 5mm,
+    spacing: 4mm,
     {year},
     stack(
       dir: ttb,
-      spacing: 1.8mm,
+      spacing: 0.7mm,
       line(length: 42mm, stroke: thick_stroke + black),
-      line(length: 42mm, stroke: regular_stroke + black),
+      line(length: 42mm, stroke: regular_stroke + luma(25%)),
     ),
   )),
-  align(center + bottom, pad(bottom: 8mm, text(size: h1)[Supernote Nomad])),
+  align(center + bottom, pad(bottom: 4mm, text(size: 7.5pt, fill: luma(45%))[Supernote Nomad])),
 )"""

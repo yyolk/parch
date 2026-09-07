@@ -136,15 +136,16 @@ class Meetings:
     def _index_row(self, manifest: Manifest, index: int) -> str:
         mid = self.meeting_id(index)
         if nomad_topband(self.configurator):
+            hair = "line(length: 100%, stroke: regular_stroke + black)"
             inner = (
                 "grid(\n"
                 f"      columns: ({_NUM_COL}, 1fr, {_DATE_COL}),\n"
                 "      rows: 1fr,\n"
-                "      align: horizon + left,\n"
+                "      align: (horizon, bottom, bottom),\n"
                 "      inset: 0pt,\n"
                 f"      [{index}],\n"
-                "      [],\n"
-                "      []\n"
+                f"      {hair},\n"
+                f"      {hair}\n"
                 "    )"
             )
         else:
@@ -173,12 +174,16 @@ class Meetings:
         if not n:
             return "[]"
         rows = [self._index_row(manifest, index) for index in range(start, end + 1)]
+        stroke = (
+            ""
+            if nomad_topband(self.configurator)
+            else "  stroke: (bottom: regular_stroke + black),\n"
+        )
         return f"""grid(
   columns: 1fr,
   rows: ({", ".join(["1fr"] * n)}),
   align: horizon + left,
-  stroke: (bottom: regular_stroke + black),
-  inset: (x: 4pt, y: 2pt),
+{stroke}  inset: (x: 4pt, y: 2pt),
 {",\n".join(rows)}
 )"""
 

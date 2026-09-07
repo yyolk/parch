@@ -695,7 +695,7 @@
         [], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20], [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [], [], [], [], [], [], [], [], [], []
       )),
       )) <annual>],
-        tempo: tempo-bar(((<quarter-2026-1>, [Q1], true), (none, [Q2], false), (none, [Q3], false), (none, [Q4], false),)),
+        tempo: tempo-bar(((<quarter-2026-1>, [Q1], false), (none, [Q2], false), (none, [Q3], false), (none, [Q4], false),)),
         title: none,
         year: none,
       )
@@ -711,7 +711,7 @@
         [*Device*], [SuperNote Nomad],
         [*Page*], [118.87mm × 158.5mm],
         [*Year*], padded_link(<annual>)[2026],
-        [*Chrome*], [Nomad Topband],
+        [*Chrome*], [Topband · no side MOS],
         [*Edition*], [parch VERSION],
       ),
         tempo: none,

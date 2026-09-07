@@ -666,7 +666,7 @@ def test_colophon_last_default_does_not_dump(tmp_path):
     typst_src = _generate(dto)
     assert "SuperNote Nomad" in typst_src
     assert "[*Chrome*]" in typst_src
-    assert "[Nomad Topband]" in typst_src
+    assert "[Topband · no side MOS]" in typst_src
     assert "[*Edition*]" in typst_src
     assert "[section.colophon]" not in typst_src
     assert hashlib.sha256(path.read_bytes()).hexdigest() not in typst_src

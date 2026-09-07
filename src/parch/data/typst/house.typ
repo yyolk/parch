@@ -701,7 +701,7 @@
 // Nomad quarterly: 26mm month strip + Focus / Notes wells. MOS keeps quarter_well.
 #let nomad_quarter_well(months, focus, notes, strip-height: 26mm) = grid(
   columns: 1fr,
-  rows: (strip-height, 1fr, 1fr),
+  rows: (strip-height, 0.9fr, 1.2fr),
   row-gutter: 1.4mm,
   months,
   focus,

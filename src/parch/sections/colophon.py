@@ -136,7 +136,7 @@ class Colophon:
   [*Device*], [{device}],
   [*Page*], [{page}],
   [*Year*], {year_cell},
-  [*Chrome*], [Nomad Topband],
+  [*Chrome*], [Topband · no side MOS],
   [*Edition*], [parch {version}],
 )"""
 
