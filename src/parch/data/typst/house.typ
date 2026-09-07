@@ -402,6 +402,7 @@
 #let tempo-h = 6mm
 #let hair = 0.4pt
 #let ink = luma(0)
+#let hairline = line(length: 100%, stroke: hair + ink)
 #let chip-gutter = 1.2mm
 #let chip-inset-x = 0.9mm
 #let chip-inset-y = 1.2mm
@@ -551,51 +552,58 @@
   notes,
 )
 
-// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. Each band
-// and the Week-notes floor fill with multiple 3.8mm ink hairs (not
-// one centered rule). No rule above Week notes. MOS keeps week_matrix.
+// Nomad weekly: 7×1fr day bands + 18mm week-notes floor (locked 05-weekly.typ).
+// Day tile 3.8mm; notes tile 4.8mm. Stretch row-h to fill leftover (no remnant).
+// No cell top-strokes; no rule above Week notes. MOS keeps week_matrix.
 #let nomad_week_hairs(stroke: none, tile: 3.8mm) = layout(size => {
-  let n = calc.max(calc.floor(size.height / tile), 0)
-  box(width: size.width, height: size.height, clip: true, {
-    for i in range(n) {
-      place(top + start, dy: (i + 1) * tile, line(
-        length: size.width,
-        stroke: stroke,
-      ))
-    }
-  })
+  let n = calc.max(2, calc.floor(size.height / tile))
+  let row-h = size.height / n
+  let rule = if stroke == none { hairline } else { line(length: 100%, stroke: stroke) }
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..range(n).map(_ => align(bottom, rule)),
+  )
 })
 
-#let nomad_week_band(header, stroke: none, tile: 3.8mm) = {
-  grid(
-    columns: 1fr,
-    rows: (auto, 1fr),
-    block(
-      inset: (top: 0.35mm, bottom: 0.2mm),
-      text(weight: "bold", bottom-edge: "descender", header),
-    ),
-    box(
-      width: 100%,
-      height: 100%,
-      clip: true,
-      nomad_week_hairs(stroke: stroke, tile: tile),
-    ),
-  )
-}
+#let nomad_week_day(header, stroke: none, tile: 3.8mm) = box(
+  width: 100%,
+  height: 100%,
+  clip: true,
+  inset: (top: 0.45mm, x: 0.2mm, bottom: 0.2mm),
+  {
+    text(size: 7.5pt, weight: "bold")[#header]
+    v(0.3mm)
+    nomad_week_hairs(stroke: stroke, tile: tile)
+  },
+)
 
-#let nomad_week_bands(stroke: none, notes-height: 18mm, tile: 3.8mm, ..contents) = {
+#let nomad_week_notes(header, stroke: none, tile: 4.8mm) = box(
+  width: 100%,
+  height: 100%,
+  clip: true,
+  inset: (top: 0.65mm),
+  {
+    text(weight: "bold", size: 8pt)[#header]
+    v(0.3mm)
+    nomad_week_hairs(stroke: stroke, tile: tile)
+  },
+)
+
+#let nomad_week_bands(stroke: none, notes-height: 18mm, tile: 3.8mm, notes-tile: 4.8mm, ..contents) = {
   let headers = contents.pos()
   let days = calc.max(headers.len() - 1, 0)
   let day-headers = headers.slice(0, count: days)
   let notes = if headers.len() > days { headers.at(days) } else { [] }
-  // Air between days only — no cell bottom stroke (that doubled in-band hairs).
-  grid(
-    columns: 1fr,
-    rows: (1fr,) * days + (notes-height,),
-    row-gutter: 0.8mm,
-    ..day-headers.map(h => nomad_week_band(h, stroke: stroke, tile: tile)),
-    nomad_week_band(notes, stroke: stroke, tile: tile),
-  )
+  box(width: 100%, height: 100%, {
+    grid(
+      columns: 1fr,
+      rows: (1fr,) * days + (notes-height,),
+      row-gutter: 0.8mm,
+      ..day-headers.map(h => nomad_week_day(h, stroke: stroke, tile: tile)),
+      nomad_week_notes(notes, stroke: stroke, tile: notes-tile),
+    )
+  })
 }
 
 // Daily rail glance. Fonts stay fixed so day-h → height is linear.

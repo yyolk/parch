@@ -47,7 +47,7 @@ class Weekly:
 
     def _nomad_day(self, day: Day) -> str:
         weekday = self.i18n.t(f"weekday.short.{day.weekday_name}")
-        return self.manifest.link_or_content(day.id, f"{weekday} · {day.month_day}")
+        return self.manifest.link_or_content(day.id, f"{weekday}  ·  {day.month_day}")
 
     def _format_day(self, day: Day) -> str:
         weekday = self.i18n.t(f"weekday.full.{day.weekday_name}")

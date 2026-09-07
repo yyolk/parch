@@ -174,6 +174,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let rhythm = 1.2em" in house
     assert "#let hair = 0.4pt" in house
     assert "#let ink = luma(0)" in house
+    assert "#let hairline = line(length: 100%, stroke: hair + ink)" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
     assert 'set text(font: "Libertinus Serif")' in shell
     assert "set par(spacing: rhythm)" in shell
@@ -196,13 +197,26 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let nomad_week_bands(" in house
     week_bands = house[house.index("#let nomad_week_bands(") : house.index("#let year-month(")]
     assert "notes-height: 18mm" in week_bands
+    assert "notes-tile: 4.8mm" in week_bands
     assert "row-gutter: 0.8mm" in week_bands
     assert "grid.cell(stroke: (bottom: stroke)" not in week_bands
-    assert "tile: 3.8mm" in house[house.index("#let nomad_week_hairs(") :]
-    assert "for i in range(n)" in house[house.index("#let nomad_week_hairs(") :]
+    hairs = house[house.index("#let nomad_week_hairs(") : house.index("#let nomad_week_day(")]
+    assert "tile: 3.8mm" in hairs
+    assert "let row-h = size.height / n" in hairs
+    assert "let rule = if stroke == none { hairline }" in hairs
+    assert "for i in range(n)" not in hairs
+    assert "place(top + start" not in hairs
+    day = house[house.index("#let nomad_week_day(") : house.index("#let nomad_week_notes(")]
+    assert "inset: (top: 0.45mm, x: 0.2mm, bottom: 0.2mm)" in day
+    assert 'text(size: 7.5pt, weight: "bold")' in day
+    notes = house[house.index("#let nomad_week_notes(") : house.index("#let nomad_week_bands(")]
+    assert "inset: (top: 0.65mm)" in notes
+    assert 'text(weight: "bold", size: 8pt)' in notes
+    assert "tile: 4.8mm" in notes
     assert "nomad_week_hairs(stroke:" in house
     assert "lined_well(nomad_week_hair" not in house
     assert "#let nomad_week_hair(" not in house
+    assert "#let nomad_week_band(" not in house
     assert "(1fr,) * days + (notes-height,)" in house
     assert "#let year-month(" in house
     assert "#let mini-month(" in house

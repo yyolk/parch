@@ -234,7 +234,11 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "week_matrix(" not in weekly
     assert "pattern: lined_fill" not in weekly
     assert "[Week notes]" in weekly
-    assert "Mon · 29" in weekly
+    assert "Mon  ·  29" in weekly
+    assert 'text(size: 10pt, weight: "bold")[Week 1 <2026W01>  ·  Dec 29 – Jan 4]' in weekly
+    assert 'text(size: h1)[Week 1' not in weekly
+    assert 'text(size: h1)[2026]' not in weekly
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in weekly
     monthly = _page_with(typst, "January 2026 <month-2026-01-01>")
     assert 'active: "mon"' in monthly
     assert "nomad_month_well(" in monthly
@@ -529,6 +533,7 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     assert f"height: {CHROME_H}" in typst
     assert "#let chip = chip.with(stroke: hair)" in typst
     assert "page-shell.with(stroke: hair)" in typst
+    assert "#let nomad_week_bands = nomad_week_bands.with(stroke: hair + ink)" in typst
     assert f"height: {TEMPO_H}" not in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert 'font: "Libertinus Serif"' in typst
@@ -537,6 +542,7 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     paper = Preamble(_cfg("158x210")).generate()
     assert "#let chip = chip.with(stroke: regular_stroke)" in paper
     assert "page-shell.with(stroke: regular_stroke)" in paper
+    assert "#let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)" in paper
     assert "#let lined_fill = lined_fill()" in paper
     assert "bezel:" not in paper
     assert "page-shell" in paper

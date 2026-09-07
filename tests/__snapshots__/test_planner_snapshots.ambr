@@ -781,24 +781,24 @@
       #let chip = chip.with(stroke: hair)
       #let page-shell = page-shell.with(stroke: hair)
       #let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
-      #let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)
+      #let nomad_week_bands = nomad_week_bands.with(stroke: hair + ink)
     ''',
     'weekly': '''
       #page-shell(
         section-strip(((<index>, "contents"), (<annual>, "cal"), (<quarter-2026-1>, "q"), (<month-2026-01-01>, "mon"), (<2026W01>, "wk"), (none, "day"),), active: "wk"),
         nomad_week_bands(
-        [Mon · 29],
-        [Tue · 30],
-        [Wed · 31],
-        padded_link(<2026-01-01>)[Thu · 1],
-        padded_link(<2026-01-02>)[Fri · 2],
-        padded_link(<2026-01-03>)[Sat · 3],
-        padded_link(<2026-01-04>)[Sun · 4],
+        [Mon  ·  29],
+        [Tue  ·  30],
+        [Wed  ·  31],
+        padded_link(<2026-01-01>)[Thu  ·  1],
+        padded_link(<2026-01-02>)[Fri  ·  2],
+        padded_link(<2026-01-03>)[Sat  ·  3],
+        padded_link(<2026-01-04>)[Sun  ·  4],
         [Week notes],
       ),
         tempo: tempo-row((chip([‹], active: false, expand: true), chip([Wk1], active: true, dest: <2026W01>, expand: true), chip([›], active: false, dest: <2026W02>, expand: true),)),
-        title: text(size: h1)[Week 1 <2026W01> · Dec 29 – Jan 4],
-        year: text(size: h1)[2026],
+        title: text(size: 10pt, weight: "bold")[Week 1 <2026W01>  ·  Dec 29 – Jan 4],
+        year: text(size: 7.5pt, weight: "bold")[2026],
       )
     ''',
   })
