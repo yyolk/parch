@@ -182,7 +182,7 @@ class Index:
         more_head = 'text(size: 0.75em, fill: luma(120), tracking: 0.12em)[MORE]'
         return f"""#grid(
   columns: 1fr,
-  rows: ({_NOMAD_BRAND}, auto, auto, auto, 1fr),
+  rows: ({_NOMAD_BRAND}, 1fr),
   block(
     width: 100%,
     height: 100%,
@@ -197,20 +197,14 @@ class Index:
   ),
   block(
     width: 100%,
-    height: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}),
-    {primary_body}
-  ),
-  block(
-    width: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: 3mm, bottom: 1mm),
-    {more_head}
-  ),
-  block(
-    width: 100%,
-    height: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, bottom: {_INDEX_BOTTOM_INSET}),
-    {more_body}
-  ),
-  []
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}, bottom: {_INDEX_BOTTOM_INSET}),
+    grid(
+      columns: 1fr,
+      rows: (auto, auto, auto, 1fr),
+      {primary_body},
+      block(inset: (top: 3mm, bottom: 1mm), {more_head}),
+      {more_body},
+      []
+    )
+  )
 )"""

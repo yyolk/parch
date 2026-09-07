@@ -240,7 +240,8 @@ def test_nomad_hand_right_generate_compiles_with_mos_on_the_right(tmp_path):
     assert "mos_strip(" not in typst_src
     assert "mos_tabs(" not in typst_src
     assert "nomad_daily_well(" in typst_src
-    assert "daily_well(" not in typst_src
+    assert "daily_well(left" not in typst_src
+    assert "daily_well(right" not in typst_src
     well = typst_src[typst_src.index("nomad_daily_well(") :]
     assert well.index("[Schedule]") < well.index("[Priorities]")
     pdf, stderr = compile_pdf(typst_src, tmp_path / "nomad-hand-right")

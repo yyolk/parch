@@ -459,7 +459,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "side" not in lined_well
     assert "header" not in lined_well
     assert "#let daily_well(" in house
-    daily_well = house[house.index("#let daily_well(") :]
+    daily_well = house[house.index("#let daily_well(") : house.index("#let quarter_well(")]
     assert daily_well.startswith(
         "#let daily_well(side, hours, writing, column-gutter: none) = if side == left {\n"
         "  grid(columns: (3fr, 5fr), rows: 1fr, column-gutter: column-gutter, hours, writing)\n"

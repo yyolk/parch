@@ -199,14 +199,13 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section_rail(" not in daily
     assert "nav_header(" not in daily
     assert "nomad_daily_well(" in daily
-    assert "daily_well(" not in daily
-    assert "columns: (2fr, 1fr)" in daily
+    assert "daily_well(left" not in daily
+    assert "daily_well(right" not in daily
     assert "[ 7]" in daily
     assert "[16]" in daily
-    assert "[20]" not in daily
     assert "[ 8]" in daily
-    assert "place(bottom + left, line(length: 3mm" not in daily
     assert "rows: (regular_height,) + (1fr,) * 10" in daily
+    assert "place(bottom + left, line(length: 3mm" not in daily
     assert daily.count("task_tick()") == 6
     assert "rows: (1fr, auto)" in daily
     assert "stroke: regular_stroke + black" in daily
