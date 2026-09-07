@@ -394,7 +394,7 @@
 // Nomad Topband. MOS / Scribe do not call these. Glyphs are locked SVGs
 // (icons/*.svg + icons/*-on.svg). Notes is not a chip.
 //
-// Spacing contract (named mm only — no implicit Typst rhythm):
+// Spacing contract (named tokens — Typst 0.15 default rhythm, not 0pt):
 #let bezel = 3mm
 #let toolbar = 8mm
 #let top-air = 0.4mm
@@ -408,6 +408,7 @@
 #let icon-chip-inset-y = 1.1mm
 #let strip-tempo-gap = 0mm
 #let well-top = 2.5mm
+#let rhythm = 1.2em
 
 #let _strip-id(name) = if name == "contents" { "menu" } else { name }
 
@@ -487,8 +488,8 @@
 // strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
 #let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
   set text(font: "Libertinus Serif")
-  set par(spacing: 0pt)
-  set block(spacing: 0pt)
+  set par(spacing: rhythm)
+  set block(spacing: rhythm)
   let crumb = if title == none {
     []
   } else {

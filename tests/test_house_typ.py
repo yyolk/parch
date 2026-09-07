@@ -169,11 +169,13 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let icon-chip-inset-y = 1.1mm" in house
     assert "#let strip-tempo-gap = 0mm" in house
     assert "#let well-top = 2.5mm" in house
+    assert "#let rhythm = 1.2em" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
     assert 'set text(font: "Libertinus Serif")' in shell
-    assert "set par(spacing: 0pt)" in shell
-    assert "set block(spacing: 0pt)" in shell
-    assert "row-gutter: 0pt" in shell
+    assert "set par(spacing: rhythm)" in shell
+    assert "set block(spacing: rhythm)" in shell
+    assert "set par(spacing: 0pt)" not in shell
+    assert "set block(spacing: 0pt)" not in shell
     assert "if strip != none" in shell
     assert "if tempo != none" in shell
     assert "if title != none" in shell
