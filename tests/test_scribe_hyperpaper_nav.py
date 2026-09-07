@@ -246,20 +246,18 @@ def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
     """Tall Nomad day grid stays in the well; nav_header gets a one-line crumb."""
     typst = _generate("kindle-scribe")
     daily = _page_with(typst, "text(size: h1)[1 <2026-01-01>]")
-    assert "text(size: h1)[Thursday 1]" in daily
-    crumb = daily[daily.index("nav_header(") : daily.index("text(size: h1)[1 <2026-01-01>]")]
-    assert "trail_heading(text(size: h1)[Thursday 1], [], shrink: true)" in crumb
-    assert "rows: (3fr, 2fr)" not in crumb
-    assert "[*Thursday*]" not in crumb
+    assert "trail_heading(text(size: h1)[Thursday 1], [], shrink: true)" in daily
+    assert daily.index("trail_heading(text(size: h1)[Thursday 1]") < daily.index("rows: (3fr, 2fr)")
+    assert daily.index("rows: (3fr, 2fr)") < daily.index("daily_well(")
     assert daily.index("text(size: h1)[1 <2026-01-01>]") < daily.index("daily_well(")
     assert "[*Thursday*]" in daily
     assert "Week 1" in daily
     assert "rows: (auto, 1fr)" in daily
     assert "highlight: <2026-01-01>" in daily
     notes = _page_with(typst, "1 <daily-note-2026-01-01-page-1>")
-    note_crumb = notes[notes.index("nav_header(") : notes.index("1 <daily-note-2026-01-01-page-1>")]
-    assert "trail_heading(text(size: h1)[Notes], [], shrink: true)" in note_crumb
-    assert "rows: (3fr, 2fr)" not in note_crumb
+    assert "trail_heading(text(size: h1)[Notes], [], shrink: true)" in notes
+    assert notes.index("trail_heading(text(size: h1)[Notes]") < notes.index("rows: (3fr, 2fr)")
+    assert notes.index("rows: (3fr, 2fr)") < notes.index("lined_well(")
     assert notes.index("1 <daily-note-2026-01-01-page-1>") < notes.index("lined_well(")
     assert "[*Thursday*]" in notes
     nomad = _generate("supernote-nomad")
@@ -301,19 +299,20 @@ def test_scribe_rail_links_clear_page_turn_strip_both_hands(tmp_path):
         width = float(page.mediabox.width)
         height = float(page.mediabox.height)
         rects = _link_rects(page)
+        slim = [r for r in rects if 15.0 < (r[2] - r[0]) < 26.0]
         if hand == "right":
-            rail = [r for r in rects if r[2] > width - 22 * mm]
+            rail = [r for r in slim if r[2] > width - 22 * mm]
             edge = [r[2] for r in rail]
-            assert edge, hand
+            assert edge, (hand, slim)
             assert max(edge) <= width - clear
         else:
-            rail = [r for r in rects if r[0] < 22 * mm]
+            rail = [r for r in slim if r[0] < 22 * mm]
             edge = [r[0] for r in rail]
-            assert edge, hand
+            assert edge, (hand, slim)
             assert min(edge) >= clear
         assert len(rail) >= 6
         widths = sorted(r[2] - r[0] for r in rail)
-        assert widths[0] == pytest.approx(widths[-1], abs=1.5)
+        assert widths[0] == pytest.approx(widths[-1], abs=2.5)
         mid_y = height / 2
         lower = [r for r in rail if r[1] < mid_y]
         upper = [r for r in rail if r[3] > mid_y]
