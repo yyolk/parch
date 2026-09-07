@@ -360,7 +360,7 @@
         grid(
           columns: 1fr,
           rows: (auto, 1fr),
-          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents]))), trail_heading(text(size: h1)[2026<annual>], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])))),
+          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(text(size: h1)[2026<annual>], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])))),
           block(
         width: 100%,
         height: 1fr,
@@ -413,7 +413,7 @@
         grid(
           columns: 1fr,
           rows: (auto, 1fr),
-          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents]))), trail_heading(grid(
+          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(grid(
         columns: (auto, auto),
         rows: (3fr, 2fr),
         column-gutter: regular_column_gutter,
@@ -506,7 +506,7 @@
         grid(
           columns: 1fr,
           rows: (auto, 1fr),
-          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents]))), trail_heading(text(size: h1)[January<month-2026-01-01>], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
+          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(text(size: h1)[January<month-2026-01-01>], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
           grid(
         columns: 1fr,
         rows: (1fr, 1fr),
@@ -573,7 +573,7 @@
         grid(
           columns: 1fr,
           rows: (auto, 1fr),
-          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents]))), trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
+          nav_header(grid(columns: (auto, 1fr), column-gutter: 0.5em, align: horizon + start, padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(text(size: h1)[Week 1 <2026W01> #h(0.6em) Dec 29 – Jan 4], [], shrink: true)), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan])))),
           week_matrix(
         column-gutter: 5pt,
         pattern: dotted_centered,
