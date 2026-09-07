@@ -15,10 +15,6 @@ from parch.mos.contents_mark import body_size_token, heading_height_token, trail
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.nomad_nav import nomad_topband
 
-def _calendar_today() -> date:
-    return date.today()
-
-
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
 _INDEX_ROW_GUTTER = "3mm"
@@ -271,20 +267,11 @@ class Tasks:
   lined_well(task_fill, tile-height: regular_height)
 )"""
 
-    def _focus_date(self) -> date:
-        """Invert the strip cell for calendar today when it falls in the job."""
-        today = _calendar_today()
-        start = self.configurator.start_date().day
-        end = self.configurator.end_date().day
-        if start <= today <= end:
-            return today
-        return start
-
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
         if nomad_topband(self.configurator):
             letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
             label = f"{letter}{day.month_day}"
-            today = day.day == self._focus_date()
+            today = day.day == date.today()
         else:
             full = self.i18n.t(f"weekday.full.{day.weekday_name}")
             label = f"{full} {day.month_day}"

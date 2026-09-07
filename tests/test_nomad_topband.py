@@ -1,6 +1,7 @@
 """Nomad Topband is device-gated. Scribe stays Hyperpaper; MOS profiles keep MOS."""
 
 from datetime import date
+from pathlib import Path
 
 from parch.config import load
 from parch.devices import SUPERNOTE_A6, SUPERNOTE_NOMAD, is_nomad, is_scribe_family
@@ -190,8 +191,7 @@ def _section(cfg, name: str):
     return next(s for s in cfg.enabled_sections() if s["name"] == name)
 
 
-def test_nomad_emit_uses_page_shell_not_mos(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 9, 7))
+def test_nomad_emit_uses_page_shell_not_mos():
     typst = _generate("supernote-nomad", extras=True)
     assert "page-shell(" in typst
     assert "section-strip(" in typst
@@ -245,8 +245,11 @@ def test_nomad_emit_uses_page_shell_not_mos(monkeypatch):
     assert "M29" in tasks
     assert "T1" in tasks
     assert "Mon 29" not in tasks
-    assert "text(size: 6pt, fill: white)[T1]" in tasks
-    assert "fill: black" in tasks
+    if date.today() == date(2026, 1, 1):
+        assert "text(size: 6pt, fill: white)[T1]" in tasks
+        assert "fill: black" in tasks
+    else:
+        assert "text(size: 6pt, fill: white)[T1]" not in tasks
     habits = _page_with(typst, "Habits · January<habits-january>")
     assert 'active: "habits"' in habits
     assert "padded_link(<2026-01-01>" in habits
@@ -290,28 +293,27 @@ def _nomad_tasks_short() -> Tasks:
     )
 
 
-def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 1, 5))
-    section = _nomad_tasks_short()
-    manifest = Manifest()
-    monday = section._day_cell(manifest, make_day("2026-01-05"))
-    thursday = section._day_cell(manifest, make_day("2026-01-01"))
-    assert "text(size: 6pt, fill: white)[M5]" in monday
-    assert "fill: black" in monday
-    assert "fill: white" not in thursday
-    assert "fill: black" not in thursday
+def test_nomad_tasks_day_cell_compares_date_today_not_weekday():
+    src = Path(__file__).resolve().parents[1].joinpath("src/parch/sections/tasks.py").read_text()
+    cell = src[src.index("def _day_cell") : src.index("ink =")]
+    assert "today = day.day == date.today()" in cell
+    assert "thursday" not in cell
+    assert "_focus_date" not in src
+    assert "weekday_name == " not in cell
 
 
-def test_nomad_tasks_inverts_job_start_when_today_outside_range(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 9, 7))
+def test_nomad_tasks_inverts_calendar_today_when_on_strip():
     section = _nomad_tasks_short()
     manifest = Manifest()
-    monday = section._day_cell(manifest, make_day("2026-01-05"))
-    thursday = section._day_cell(manifest, make_day("2026-01-01"))
-    assert "text(size: 6pt, fill: white)[T1]" in thursday
-    assert "fill: black" in thursday
-    assert "fill: white" not in monday
-    assert "fill: black" not in monday
+    today = date.today()
+    on = section._day_cell(manifest, make_day(today.isoformat()))
+    assert "fill: white" in on
+    assert "fill: black" in on
+    other = date(2026, 1, 1)
+    if today != other:
+        off = section._day_cell(manifest, make_day(other.isoformat()))
+        assert "fill: white" not in off
+        assert "fill: black" not in off
 
 
 def test_mos_tasks_never_inverts_strip_cell():
