@@ -20,6 +20,7 @@ _BOX = "grid.cell(stroke: regular_stroke, [])"
 class Habits:
     ID = "habits"
     DEFAULT_COLUMNS = 4
+    NOMAD_COLUMNS = 5
 
     def __init__(
         self,
@@ -32,7 +33,10 @@ class Habits:
         self.section_name = section_name
         self.i18n = i18n
         self.configurator = configurator
-        self.habit_columns = int(habit_columns)
+        columns = int(habit_columns)
+        if nomad_topband(configurator):
+            columns = max(columns, self.NOMAD_COLUMNS)
+        self.habit_columns = columns
         self.names = list(names) if names else []
 
     def register(self, manifest: Manifest) -> None:

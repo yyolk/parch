@@ -630,9 +630,18 @@
   notes,
 )
 
-// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. One ink hair
-// per band. No rule above Week notes. MOS keeps week_matrix.
-#let nomad_week_band(header, stroke: none) = {
+// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. Tiled ink
+// hairs (~3.8mm). No rule above Week notes. MOS keeps week_matrix.
+#let nomad_week_hair(stroke: none, tile: 3.8mm) = tiling(
+  size: (tile, tile),
+  line(
+    start: (0pt, tile - 0.15mm),
+    end: (tile, tile - 0.15mm),
+    stroke: stroke,
+  ),
+)
+
+#let nomad_week_band(header, stroke: none, tile: 3.8mm) = {
   grid(
     columns: 1fr,
     rows: (auto, 1fr),
@@ -640,11 +649,17 @@
       inset: (top: 0.35mm, bottom: 0.2mm),
       text(weight: "bold", bottom-edge: "descender", header),
     ),
-    align(horizon, line(length: 100%, stroke: stroke)),
+    box(
+      width: 100%,
+      height: 100%,
+      clip: true,
+      inset: (top: 0.2mm, bottom: 0.2mm),
+      lined_well(nomad_week_hair(stroke: stroke, tile: tile)),
+    ),
   )
 }
 
-#let nomad_week_bands(stroke: none, notes-height: 18mm, ..contents) = {
+#let nomad_week_bands(stroke: none, notes-height: 18mm, tile: 3.8mm, ..contents) = {
   let headers = contents.pos()
   let days = calc.max(headers.len() - 1, 0)
   let day-headers = headers.slice(0, count: days)
@@ -653,11 +668,11 @@
     columns: 1fr,
     rows: (1fr,) * days + (notes-height,),
     ..range(days).map(i => {
-      let band = nomad_week_band(day-headers.at(i), stroke: stroke)
+      let band = nomad_week_band(day-headers.at(i), stroke: stroke, tile: tile)
       // Hair between days only — not above Week notes.
       if i + 1 < days { grid.cell(stroke: (bottom: stroke), band) } else { band }
     }),
-    nomad_week_band(notes, stroke: stroke),
+    nomad_week_band(notes, stroke: stroke, tile: tile),
   )
 }
 

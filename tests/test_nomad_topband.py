@@ -21,6 +21,7 @@ from parch.mos.nomad_nav import (
 )
 from parch.mos.preamble import Preamble
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
+from parch.sections.habits import Habits
 from parch.services.generate import Generate
 from tests.helpers import base_config, load_default, make_day
 from tests.toml_fixtures import short_january
@@ -248,6 +249,32 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "Thu 1" not in habits
     assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr)" in habits
     assert habits.count("task_tick()") == 31 * 5
+
+
+def test_nomad_habits_floors_stock_columns_to_five():
+    nomad = Habits(
+        section_name="habits",
+        i18n=load_default(),
+        configurator=_cfg("supernote-nomad", extras=True),
+        habit_columns=Habits.DEFAULT_COLUMNS,
+    )
+    assert Habits.DEFAULT_COLUMNS == 4
+    assert Habits.NOMAD_COLUMNS == 5
+    assert nomad.habit_columns == 5
+    wide = Habits(
+        section_name="habits",
+        i18n=load_default(),
+        configurator=_cfg("supernote-nomad", extras=True),
+        habit_columns=8,
+    )
+    assert wide.habit_columns == 8
+    paper = Habits(
+        section_name="habits",
+        i18n=load_default(),
+        configurator=_cfg("158x210", extras=True),
+        habit_columns=Habits.DEFAULT_COLUMNS,
+    )
+    assert paper.habit_columns == 4
 
 
 def test_other_devices_keep_their_chrome():
