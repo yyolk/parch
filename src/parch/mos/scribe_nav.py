@@ -5,9 +5,14 @@ from parch.calendar.week import Week
 from parch.devices import is_scribe_family
 
 # Gridwright lock tokens. Header owns air; toolbar stays none / 0mm.
+# Device record stays mos 11mm / writing 0mm / toolbar none.
 NAV_HEADER_HEIGHT = "10mm"
 NAV_HEADER_AIR = "5mm"
 RAIL_PAD = "4mm"
+# Kindle's right-edge page-turn strip steals mid/lower rail taps when the
+# rail is flush. Scribe-only MOS-side page-margin (not a device-record
+# clearance) plus RAIL_PAD link inset keep annots ~12mm off the bezel.
+RAIL_EDGE_CLEAR = "8mm"
 
 RAIL_SKIP = frozenset({"cover", "index", "colophon"})
 

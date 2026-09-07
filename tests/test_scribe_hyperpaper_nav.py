@@ -1,5 +1,8 @@
 """Scribe-family Hyperpaper nav exploration. Nomad stays on mos_strip."""
 
+import pytest
+from pypdf import PdfReader
+
 from parch.config import load
 from parch.devices import (
     KINDLE_SCRIBE,
@@ -13,7 +16,9 @@ from parch.models.device import DEVICE_SCALE, device_page_margin, device_scale
 from parch.mos.preamble import Preamble, render_device_typ
 from parch.mos.scribe_nav import (
     INDEX_SKIP,
+    RAIL_EDGE_CLEAR,
     RAIL_LABELS,
+    RAIL_PAD,
     RAIL_SKIP,
     rail_section_names,
     scribe_hyperpaper_nav,
@@ -230,7 +235,92 @@ def test_scribe_preamble_binds_explor_helpers():
     imported = typst[typst.index('#import "house.typ"') :].splitlines()[0]
     assert "nav_header" in imported
     assert "section_rail" in imported
+    assert f"rail-clearance: {RAIL_EDGE_CLEAR}" in typst
+    assert f"pad: {RAIL_PAD}" in typst
     assert "cetz" not in typst.lower()
+    nomad = Preamble(Configurator(load(base_config("supernote-nomad")))).generate()
+    assert "rail-clearance:" not in nomad
+
+
+def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
+    """Tall Nomad day grid stays in the well; nav_header gets a one-line crumb."""
+    typst = _generate("kindle-scribe")
+    daily = _page_with(typst, "text(size: h1)[1 <2026-01-01>]")
+    assert "trail_heading(text(size: h1)[Thursday 1], [], shrink: true)" in daily
+    assert daily.index("trail_heading(text(size: h1)[Thursday 1]") < daily.index("rows: (3fr, 2fr)")
+    assert daily.index("rows: (3fr, 2fr)") < daily.index("daily_well(")
+    assert daily.index("text(size: h1)[1 <2026-01-01>]") < daily.index("daily_well(")
+    assert "[*Thursday*]" in daily
+    assert "Week 1" in daily
+    assert "well_frame(" in daily
+    assert "highlight: <2026-01-01>" in daily
+    notes = _page_with(typst, "1 <daily-note-2026-01-01-page-1>")
+    assert "trail_heading(text(size: h1)[Notes], [], shrink: true)" in notes
+    assert notes.index("trail_heading(text(size: h1)[Notes]") < notes.index("rows: (3fr, 2fr)")
+    assert notes.index("rows: (3fr, 2fr)") < notes.index("lined_well(")
+    assert notes.index("1 <daily-note-2026-01-01-page-1>") < notes.index("lined_well(")
+    assert "[*Thursday*]" in notes
+    nomad = _generate("supernote-nomad")
+    nomad_daily = _page_with(nomad, "text(size: h1)[1 <2026-01-01>]")
+    assert "text(size: h1)[Thursday 1]" not in nomad_daily
+    assert "well_frame(" in nomad_daily
+    heading = nomad_daily[nomad_daily.index("well_frame(") : nomad_daily.index("daily_well(")]
+    assert "rows: (3fr, 2fr)" in heading
+    assert "text(size: h1)[1 <2026-01-01>]" in heading
+
+
+def _link_rects(page):
+    from pypdf.generic import DictionaryObject, IndirectObject
+
+    rows = []
+    for annot in page.get("/Annots") or []:
+        obj = annot.get_object() if isinstance(annot, IndirectObject) else annot
+        if not isinstance(obj, DictionaryObject) or obj.get("/Subtype") != "/Link":
+            continue
+        x1, y1, x2, y2 = (float(v) for v in obj["/Rect"])
+        rows.append((min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)))
+    return rows
+
+
+def test_scribe_rail_links_clear_page_turn_strip_both_hands(tmp_path):
+    """MOS-side annots stay off the Kindle edge; mid/lower cells match the top."""
+    mm = 72 / 25.4
+    clear = 10 * mm
+    for hand in ("left", "right"):
+        typst = _generate("kindle-scribe", extras=True, hand=hand)
+        pdf, stderr = compile_pdf(
+            typst, tmp_path / f"scribe-rail-{hand}", device="kindle-scribe"
+        )
+        assert pdf.is_file() and pdf.stat().st_size > 0, stderr
+        pages = sample_page_numbers(
+            typst, year=2026, week_id="2026W01", jan1="2026-01-01", stems=("annual",)
+        )
+        page = PdfReader(str(pdf)).pages[pages["annual"] - 1]
+        width = float(page.mediabox.width)
+        height = float(page.mediabox.height)
+        rects = _link_rects(page)
+        slim = [r for r in rects if 15.0 < (r[2] - r[0]) < 26.0]
+        if hand == "right":
+            rail = [r for r in slim if r[2] > width - 22 * mm]
+            edge = [r[2] for r in rail]
+            assert edge, (hand, slim)
+            assert max(edge) <= width - clear
+        else:
+            rail = [r for r in slim if r[0] < 22 * mm]
+            edge = [r[0] for r in rail]
+            assert edge, (hand, slim)
+            assert min(edge) >= clear
+        assert len(rail) >= 6
+        widths = sorted(r[2] - r[0] for r in rail)
+        assert widths[0] == pytest.approx(widths[-1], abs=2.5)
+        mid_y = height / 2
+        lower = [r for r in rail if r[1] < mid_y]
+        upper = [r for r in rail if r[3] > mid_y]
+        assert lower and upper, (hand, len(rail))
+        if hand == "right":
+            assert max(r[2] for r in lower) == pytest.approx(max(r[2] for r in upper), abs=1.0)
+        else:
+            assert min(r[0] for r in lower) == pytest.approx(min(r[0] for r in upper), abs=1.0)
 
 
 def test_scribe_short_january_compiles(tmp_path):

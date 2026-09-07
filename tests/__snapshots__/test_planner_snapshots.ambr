@@ -409,11 +409,13 @@
     'daily': '''
       #mos_frame(
         left,
-        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: none, side: left),
+        section_rail(((<annual>, [Calendar]), (<quarter-2026-1>, [Quarters]), (<month-2026-01-01>, [Months]), (<2026W01>, [Weeks]), (<2026-01-01>, [Days]), (<daily-note-2026-01-01-page-1>, [Notes]),), highlight: <2026-01-01>, side: left),
         grid(
           columns: 1fr,
           rows: (auto, 1fr),
-          nav_header(padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(grid(
+          nav_header(padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(text(size: h1)[Thursday 1], [], shrink: true), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan]))), side: left),
+          well_frame(
+        grid(
         columns: (auto, auto),
         rows: (3fr, 2fr),
         column-gutter: regular_column_gutter,
@@ -429,8 +431,8 @@
         ),
         [*Thursday*],
         padded_link(<2026W01>)[Week 1]
-      ), [], shrink: true), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan]))), side: left),
-          daily_well(left, grid(
+      ),
+        daily_well(left, grid(
         columns: 1fr,
         rows: (auto, 1fr),
         row-gutter: 5mm,
@@ -496,6 +498,7 @@
         grid.cell(colspan: 2, lined_well(dotted_centered))
       )
       )),
+      ),
         ),
       )
     ''',
@@ -528,7 +531,7 @@
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
       #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
-      #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
+      #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance, rail-clearance: 8mm)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
       #set text(

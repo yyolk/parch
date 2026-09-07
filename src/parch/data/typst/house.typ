@@ -1,8 +1,8 @@
-#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none) = (
+#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm) = (
   top: if toolbar-edge == top { toolbar-clearance } else { 0mm },
   bottom: 0mm,
-  left: if side == right { writing-clearance } else { 0mm },
-  right: if side == left { writing-clearance } else { 0mm },
+  left: if side == right { writing-clearance } else { rail-clearance },
+  right: if side == left { writing-clearance } else { rail-clearance },
 )
 
 // House paper is a tiling fill. dotted_centered, lined_fill, and
@@ -363,7 +363,8 @@
 }
 
 // Scribe section rail: rotated section links, full-cell hit, pad from page edge.
-// items: array of (dest, label). highlight is a dest. Not mos_strip months.
+// pad insets the link (not only the ink) so MOS-right annots stay off the
+// Kindle page-turn strip. items: array of (dest, label). highlight is a dest.
 #let section_rail(items, highlight: none, stroke: none, turn: none, pad: 4mm, side: left) = {
   let edge = if side == left { (left: pad) } else { (right: pad) }
   mos_tabs(
@@ -374,12 +375,13 @@
       let label = item.at(1)
       let on = dest != none and dest == highlight
       let ink = if on { text(white)[#label] } else { label }
-      let seated = box(width: 100%, fill: if on { black } else { luma(0%, 0%) }, inset: edge, {
+      let seated = box(width: 100%, height: 100%, fill: luma(0%, 0%), {
         v(1fr)
         align(center, rotate(turn, origin: center + horizon, ink))
         v(1fr)
       })
-      let body = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      let hit = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      let body = box(width: 100%, inset: edge, hit)
       if on {
         table.cell(fill: black, body)
       } else {
