@@ -191,7 +191,7 @@ def _section(cfg, name: str):
 
 
 def test_nomad_emit_uses_page_shell_not_mos(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 9, 7))
+    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 9, 7))
     typst = _generate("supernote-nomad", extras=True)
     assert "page-shell(" in typst
     assert "section-strip(" in typst
@@ -283,7 +283,7 @@ def test_nomad_habits_floors_stock_columns_to_five():
 
 
 def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 1, 5))
+    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 1, 5))
     section = Tasks(
         section_name="tasks",
         i18n=load_default(),
@@ -299,7 +299,7 @@ def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
 
 
 def test_nomad_tasks_inverts_job_start_when_today_outside_range(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 9, 7))
+    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 9, 7))
     section = Tasks(
         section_name="tasks",
         i18n=load_default(),

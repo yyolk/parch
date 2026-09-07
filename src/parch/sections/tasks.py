@@ -15,6 +15,10 @@ from parch.mos.contents_mark import body_size_token, heading_height_token, trail
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.nomad_nav import nomad_topband
 
+def _calendar_today() -> date:
+    return date.today()
+
+
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
 _INDEX_ROW_GUTTER = "3mm"
@@ -269,7 +273,7 @@ class Tasks:
 
     def _focus_date(self) -> date:
         """Invert the strip cell for calendar today when it falls in the job."""
-        today = date.today()
+        today = _calendar_today()
         start = self.configurator.start_date().day
         end = self.configurator.end_date().day
         if start <= today <= end:
