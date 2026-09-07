@@ -97,7 +97,7 @@ class Preamble:
             else ""
         )
         return f"""#import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well
+#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair
 #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance{rail_clear}{bezel})
 #set page(width: page-width, height: page-height, margin: page-margin({side}))
 

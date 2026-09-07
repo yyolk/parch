@@ -162,8 +162,8 @@ class Monthly:
         return (
             "box(width: 100%, height: 100%, stroke: hair + black, "
             "inset: (top: 0.6mm, left: 0.7mm, rest: 0.5mm), clip: true, {"
-            f'text(size: 7.5pt, weight: "bold", font: "Liberation Sans")[#{text}]'
-            " v(1fr)"
+            f'text(size: 7.5pt, weight: "bold", font: "Liberation Sans")[#{text}]; '
+            "v(1fr)"
             "})"
         )
 

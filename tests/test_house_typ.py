@@ -57,6 +57,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "mini-month" in names
     assert "nomad_year_grid" in names
     assert "nomad_quarter_well" in names
+    assert "hair" in names
     assert "chip" in names
     assert "tempo-row" in names
     assert "tempo-bar" not in names

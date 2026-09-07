@@ -84,11 +84,11 @@ def test_generate_english_strings_match_previous_meanings():
     ):
         assert label in typst
     assert "Q1" in typst
-    assert "align(center + horizon)[M]" in typst
-    assert "align(center + horizon)[T]" in typst
-    assert "align(center + horizon)[W]" in typst
-    assert "align(center + horizon)[F]" in typst
-    assert "align(center + horizon)[S]" in typst
+    assert 'fill: luma(40%))[M]' in typst
+    assert 'fill: luma(40%))[T]' in typst
+    assert 'fill: luma(40%))[W]' in typst
+    assert 'fill: luma(40%))[F]' in typst
+    assert 'fill: luma(40%))[S]' in typst
 
 
 def test_path_like_locale_code_is_config_error():
