@@ -56,12 +56,12 @@ class Monthly:
         )
         rows = []
         for week in self._nomad_weeks():
-            rows.append(", ".join(self._day_cell(day) for day in week))
+            rows.append(", ".join(self._nomad_day_cell(day) for day in week))
         calendar = f"""block(
   width: 100%,
   height: 1fr,
   grid(
-    stroke: regular_stroke,
+    stroke: none,
     columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
     rows: (regular_height,) + (1fr,) * 6,
     {heading},
@@ -131,6 +131,15 @@ class Monthly:
             return "[]"
         text = self.manifest.link_or_content(day.id, str(day.month_day))
         return f"grid.cell(align: top + left, inset: 3pt, [#{text}])"
+
+    def _nomad_day_cell(self, day: Day | None) -> str:
+        if day is None:
+            return "grid.cell(stroke: regular_stroke + luma(160), [])"
+        text = self.manifest.link_or_content(day.id, str(day.month_day))
+        return (
+            "grid.cell(align: top + left, inset: 3pt, "
+            f"stroke: regular_stroke + black, [#{text}])"
+        )
 
     def _week_label_cell(self, week: list[Day | None]) -> str:
         current_week = self._first_present_day(week).week()

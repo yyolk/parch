@@ -229,6 +229,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" in monthly
     assert "rows: (regular_height,) + (1fr,) * 6" in monthly
     assert "lined_well(lined_fill, tile-height: regular_height)" in monthly
+    assert "grid.cell(stroke: regular_stroke + luma(160), [])" in monthly
+    assert "stroke: regular_stroke + black, [#" in monthly
     # Strip dests also mention tasks-WEEK; title + active chip locate the page.
     tasks = _page_with(typst, "Tasks ·")
     assert 'active: "tasks"' in tasks
@@ -259,8 +261,10 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     assert f"bezel: {BEZEL}" in typst
     assert f"height: {CHROME_H}" in typst
     assert f"height: {TEMPO_H}" in typst
+    assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert "rail-clearance:" not in typst
     paper = Preamble(_cfg("158x210")).generate()
+    assert "#let lined_fill = lined_fill()" in paper
     assert "bezel:" not in paper
     assert "page-shell" in paper
     scribe = Preamble(_cfg("kindle-scribe")).generate()

@@ -155,7 +155,10 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let nomad_daily_well(" in house
     assert "columns: (2fr, 1fr)" in house[house.index("#let nomad_daily_well(") :]
     assert "#let nomad_week_bands(" in house
+    assert "notes-height: 18mm" in house[house.index("#let nomad_week_bands(") :]
+    assert "(1fr,) * days + (notes-height,)" in house
     assert "#let nomad_month_well(" in house
+    assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]
     assert "#let strip-icon(" in house
     assert "icon-habits" in house
     assert "Notes chip" not in house

@@ -630,7 +630,7 @@
   notes,
 )
 
-// Nomad weekly: 8 equal floor bands (7 days + week notes). MOS keeps week_matrix.
+// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. MOS keeps week_matrix.
 #let nomad_week_band(header, pattern: none, stroke: none) = {
   let gap = if stroke == none { 0pt } else { std.stroke(stroke).thickness }
   grid(
@@ -651,11 +651,12 @@
   )
 }
 
-#let nomad_week_bands(pattern: none, stroke: none, ..contents) = {
+#let nomad_week_bands(pattern: none, stroke: none, notes-height: 18mm, ..contents) = {
   let headers = contents.pos()
+  let days = calc.max(headers.len() - 1, 0)
   grid(
     columns: 1fr,
-    rows: (1fr,) * headers.len(),
+    rows: (1fr,) * days + (notes-height,),
     stroke: (bottom: stroke),
     ..headers.map(header => nomad_week_band(
       header,
@@ -666,7 +667,7 @@
 }
 
 // Nomad monthly: 7×6 day cells + short Month notes floor. MOS keeps month_weeks.
-#let nomad_month_well(calendar, notes, notes-height: 16mm) = grid(
+#let nomad_month_well(calendar, notes, notes-height: 20mm) = grid(
   columns: 1fr,
   rows: (1fr, notes-height),
   calendar,
