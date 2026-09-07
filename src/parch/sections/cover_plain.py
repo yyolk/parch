@@ -94,26 +94,32 @@ class CoverPlain:
 )"""
 
     def _nomad_cover(self, manifest) -> str:
-        lines = [_escape(line) for line in self._lines()]
         dest = self._dest(manifest)
-        year = (
-            self._year('48pt, weight: "bold", font: "Libertinus Serif"', lines[0], dest, manifest)
-            if lines
-            else "[]"
+        year_label = str(self.configurator.start_date().year)
+        year = self._year(
+            '48pt, weight: "bold", tracking: 1.5pt',
+            year_label,
+            dest,
+            manifest,
         )
-        return f"""grid(
-  columns: 1fr,
-  rows: (1fr, 2fr),
-  align(center + horizon, stack(
-    dir: ttb,
-    spacing: 4mm,
-    {year},
-    stack(
-      dir: ttb,
-      spacing: 0.7mm,
-      line(length: 42mm, stroke: thick_stroke + black),
-      line(length: 42mm, stroke: regular_stroke + luma(25%)),
-    ),
-  )),
-  align(center + bottom, pad(bottom: 4mm, text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad])),
+        # page-shell already reserved toolbar + bezel. Extra inset matches
+        # locked 00-cover (x: bezel+2mm, top: 8mm, bottom: bezel+4mm).
+        return f"""block(
+  width: 100%,
+  height: 100%,
+  inset: (x: 2mm, top: 8mm, bottom: 4mm),
+  {{
+    v(1fr)
+    align(center, {{
+      {year}
+      v(4mm)
+      box(width: 42mm, {{
+        box(width: 100%, height: 0.7pt, fill: black)
+        v(0.7mm)
+        box(width: 100%, height: 0.35pt, fill: luma(25%))
+      }})
+    }})
+    v(1.15fr)
+    align(center, text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad])
+  }},
 )"""

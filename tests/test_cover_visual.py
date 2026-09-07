@@ -1,4 +1,4 @@
-"""Raster check that the cover year sits in the upper third."""
+"""Raster check that the Nomad cover matches locked 00-cover well rhythm."""
 
 
 from PIL import Image
@@ -19,7 +19,7 @@ def _generate(dto) -> str:
     return Generate(i18n=load_default()).generate(dto)
 
 
-def test_cover_year_sits_in_upper_third(tmp_path):
+def test_cover_year_matches_locked_well(tmp_path):
     text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _OTHERS)
     dto = parse_toml(text, source="visual-cover.toml")
     typst = _generate(dto)
@@ -31,10 +31,10 @@ def test_cover_year_sits_in_upper_third(tmp_path):
     box = ink_bbox(png)
     assert box is not None
     _x0, y0, _x1, y1 = box
-    # 48pt year + thick/light double hair sit high. Footer is quiet luma(45%).
-    assert y0 < height * 0.25, (box, height)
-    assert y1 < height * 0.45, (box, height)
+    # Locked 00-cover: v(1fr) year v(1.15fr). Not the old 1fr/2fr upper third.
+    assert height * 0.32 < y0 < height * 0.50, (box, height)
+    assert height * 0.48 < y1 < height * 0.68, (box, height)
     # No phantom page-shell hair under the toolbar when strip is none.
     top = int(_DPI * 10 / 25.4)
     bands = full_width_bands(png, x0_frac=0.04, coverage=0.7)
-    assert all(y0 > top for y0, _y1, _t in bands), (bands, top)
+    assert all(band_y0 > top for band_y0, _y1, _t in bands), (bands, top)
