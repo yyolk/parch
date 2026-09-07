@@ -260,7 +260,7 @@ def test_colophon_has_mark_and_unchanged_facts():
     assert "[*Page*]" in page
     assert "[*Year*]" in page
     assert "[*Chrome*]" in page
-    assert "[Topband]" in page
+    assert "[Nomad Topband]" in page
     assert "[*Edition*]" in page
     assert "[*Version*]" not in page
     assert _MARK_FLUSH not in page

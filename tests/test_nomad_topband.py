@@ -261,8 +261,10 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "page-shell(" in cover
     assert "page-shell(\n  none," in cover
     assert "text(size: 48pt" in cover
+    assert "line(length: 42mm, stroke: thick_stroke + black)" in cover
     assert "line(length: 42mm, stroke: regular_stroke + black)" in cover
-    assert cover.count("line(length: 42mm, stroke: regular_stroke + black)") == 2
+    assert cover.count("line(length: 42mm, stroke: thick_stroke + black)") == 1
+    assert cover.count("line(length: 42mm, stroke: regular_stroke + black)") == 1
     assert "[Supernote Nomad]" in cover
     assert "title: none" in cover
     annual = _page_with(typst, "<annual>]")
@@ -282,6 +284,10 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "quarter_well(right" not in quarterly
     assert "[Focus]" in quarterly
     assert "[Notes]" in quarterly
+    assert quarterly.count("task_tick()") == 6
+    focus = quarterly.split("[Focus]")[1].split("[Notes]")[0]
+    assert "lined_well(lined_fill)" not in focus
+    assert "lined_well(lined_fill)" in quarterly.split("[Notes]")[1]
     assert "[Q1]" in quarterly
     assert "[Q2]" in quarterly
     assert "[Q3]" in quarterly
@@ -297,8 +303,12 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "columns: (2em, 1fr, 16mm)" in meetings_index
     meeting = _page_with(typst, "#[] <meeting-1>")
     assert "page-shell(\n  none," in meeting
-    assert "columns: (1fr, 2fr, 1fr)" in meeting
+    assert "columns: (1fr, 2fr, 1fr)" not in meeting
+    assert "rows: (auto, auto, 1fr, auto)" in meeting
+    assert "[Name]" in meeting
+    assert "[Date]" in meeting
     assert "lined_well(lined_fill)" in meeting
+    assert meeting.count("task_tick()") == 9
     assert "lined_well(dotted_centered)" not in meeting
     review = _page_with(typst, "Review · Week 1")
     assert "[Week notes]" in review
@@ -312,7 +322,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[*Page*]" in colo
     assert "[*Year*]" in colo
     assert "[*Chrome*]" in colo
-    assert "[Topband]" in colo
+    assert "[Nomad Topband]" in colo
+    assert "[Topband]" not in colo.replace("[Nomad Topband]", "")
     assert "[*Edition*]" in colo
     assert "[*Version*]" not in colo
     notes = _page_with(typst, "[Notes <daily-note-2026-01-01-page-1>]")

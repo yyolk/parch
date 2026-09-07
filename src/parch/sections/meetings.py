@@ -144,7 +144,7 @@ class Meetings:
                 "      inset: 0pt,\n"
                 f"      [{index}],\n"
                 "      [],\n"
-                "      grid.cell(stroke: (bottom: regular_stroke + black), [])\n"
+                "      []\n"
                 "    )"
             )
         else:
@@ -211,9 +211,18 @@ class Meetings:
 
     def _meeting_body(self, manifest: Manifest, index: int) -> str:
         mid = self.meeting_id(index)
+        name_line = f"""grid(
+  columns: (auto, 1fr, auto, {_DATE_COL}),
+  column-gutter: 6pt,
+  align: horizon,
+  [Name],
+  grid.cell(stroke: (bottom: regular_stroke), []),
+  [Date],
+  grid.cell(stroke: (bottom: regular_stroke), []),
+)"""
         topics = f"""grid(
   columns: 1fr,
-  rows: (auto, 1fr),
+  rows: (auto, auto),
   row-gutter: 1.5mm,
   {self._label("topics")},
   {self._ticked_lines(_TOPIC_LINES)}
@@ -226,7 +235,7 @@ class Meetings:
 )"""
         actions = f"""grid(
   columns: 1fr,
-  rows: (auto, 1fr),
+  rows: (auto, auto),
   row-gutter: 1.5mm,
   {self._label("action_items")},
   {self._ticked_lines(_ACTION_LINES)}
@@ -234,9 +243,10 @@ class Meetings:
         return f"""box(width: 100%, height: 100%, {{
   place([#[] <{mid}>])
   grid(
-    columns: (1fr, 2fr, 1fr),
-    rows: 1fr,
-    column-gutter: 2mm,
+    columns: 1fr,
+    rows: (auto, auto, 1fr, auto),
+    row-gutter: 2.5mm,
+    {name_line},
     {topics},
     {notes},
     {actions},

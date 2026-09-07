@@ -343,7 +343,10 @@ def test_nomad_default_is_one_index_page():
     assert "2026 /" not in meeting
     assert "1/16" not in meeting
     assert "lined_well(lined_fill)" in meeting
-    assert "columns: (1fr, 2fr, 1fr)" in meeting
+    assert "rows: (auto, auto, 1fr, auto)" in meeting
+    assert "columns: (1fr, 2fr, 1fr)" not in meeting
+    assert "[Name]" in meeting
+    assert "[Date]" in meeting
     assert (
         "padded_link(<meeting-1>, box(width: 100%, height: 100%"
         in index

@@ -87,8 +87,10 @@ class Review:
                     days = week.days()
                     rng = self.range_label(days[0], days[-1])
                     title = (
+                        "grid(columns: 1fr, "
                         f'text(size: h1)[{self.i18n.t("review")} · '
-                        f"{self.i18n.t('week_name')} {week.number} · {rng} <{page_id}>]"
+                        f"{self.i18n.t('week_name')} {week.number} <{page_id}>], "
+                        f"text(size: 0.85em)[{rng}])"
                     )
                     out.append(
                         PageData(

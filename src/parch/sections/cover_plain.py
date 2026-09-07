@@ -107,7 +107,7 @@ class CoverPlain:
     stack(
       dir: ttb,
       spacing: 1.8mm,
-      line(length: 42mm, stroke: regular_stroke + black),
+      line(length: 42mm, stroke: thick_stroke + black),
       line(length: 42mm, stroke: regular_stroke + black),
     ),
   )),
