@@ -128,9 +128,9 @@ def test_module_prints_matrix_json():
 def test_set_job_paper_overlays_scratch_pad(tmp_path):
     path = tmp_path / "job.toml"
     path.write_text(emit_job(spec_from_device("supernote-nomad")), encoding="utf-8")
-    assert load(path)["planner"]["params"]["scratch_pad"] == "dotted"
-    set_job_paper(path, "lined")
     assert load(path)["planner"]["params"]["scratch_pad"] == "lined"
     set_job_paper(path, "dotted")
     assert load(path)["planner"]["params"]["scratch_pad"] == "dotted"
+    set_job_paper(path, "lined")
+    assert load(path)["planner"]["params"]["scratch_pad"] == "lined"
     assert load(path)["planner"]["params"]["mos_layout"]["side_menu_position"] == "left"

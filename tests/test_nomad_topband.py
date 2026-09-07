@@ -169,6 +169,22 @@ def test_context_and_active_keys():
     assert context_from_page_id("habits-january", cfg).kind == "habits_month"
 
 
+def test_nomad_topband_defaults_writing_pattern_to_lined():
+    nomad = _cfg("supernote-nomad")
+    assert nomad.dig_bang("planner", "params", "scratch_pad") == "lined"
+    weekly = _section(nomad, "weekly")
+    assert weekly["params"]["pattern"] == "lined"
+    monthly = _section(nomad, "monthly")
+    assert monthly["params"]["pattern"] == "lined"
+    assert _cfg("158x210").dig_bang("planner", "params", "scratch_pad") == "dotted"
+    assert _cfg("kindle-scribe").dig_bang("planner", "params", "scratch_pad") == "dotted"
+    assert _cfg("supernote-a6").dig_bang("planner", "params", "scratch_pad") == "dotted"
+
+
+def _section(cfg, name: str):
+    return next(s for s in cfg.enabled_sections() if s["name"] == name)
+
+
 def test_nomad_emit_uses_page_shell_not_mos():
     typst = _generate("supernote-nomad", extras=True)
     assert "page-shell(" in typst
@@ -187,10 +203,13 @@ def test_nomad_emit_uses_page_shell_not_mos():
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert 'active: "wk"' in weekly
     assert "week_matrix(" in weekly
+    assert "pattern: lined_fill" in weekly
     monthly = _page_with(typst, "January<month-2026-01-01>")
     assert 'active: "mon"' in monthly
-    tasks = _page_with(typst, "Tasks · Week 1")
+    # Strip dests also mention tasks-WEEK; title + active chip locate the page.
+    tasks = _page_with(typst, "Tasks ·")
     assert 'active: "tasks"' in tasks
+    assert "Tasks · Week 1" in tasks
     assert "padded_link(<2026-01-01>" in tasks
     habits = _page_with(typst, "Habits · January<habits-january>")
     assert 'active: "habits"' in habits

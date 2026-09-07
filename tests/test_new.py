@@ -42,7 +42,7 @@ def test_new_yes_year(tmp_path, capsys):
     assert data["calendar"]["year"] == 2027
     assert data["section"]["cover"]["title"] == "2027"
     assert data["device"]["name"] == "supernote-nomad"
-    assert data["style"]["scratch_pad"] == "dotted"
+    assert data["style"]["scratch_pad"] == "lined"
     assert data["sections"] == list(DEFAULT_SECTIONS)
     assert "projects" not in data["sections"]
     load(out)
@@ -327,7 +327,7 @@ def test_new_yes_writes_device_defaults(tmp_path):
     text = out.read_text(encoding="utf-8")
     data = tomllib.loads(text)
     assert data["calendar"]["year"] == 2027
-    assert data["style"]["scratch_pad"] == "dotted"
+    assert data["style"]["scratch_pad"] == "lined"
     assert data["section"]["daily"]["left"]["schedule"]["hour_from"] == 8
     assert data["section"]["daily"]["left"]["schedule"]["hour_to"] == 20
     assert data["section"]["daily"]["right"]["priorities"]["count"] == 5

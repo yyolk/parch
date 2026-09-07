@@ -460,7 +460,7 @@ def test_heading_stack_matches_follow_trail_lead_after_chip_guard():
     from parch.mos.builder import Builder
 
     title = "text(size: h1)[Title]"
-    dto = load(NOMAD)
+    dto = load(PAPER)
     coord = Coordinator(dto, i18n=load_default())
     builder = Builder(
         i18n=coord.i18n, configurator=coord.configurator, manifest=coord.manifest,
@@ -492,7 +492,7 @@ def test_heading_stack_matches_follow_trail_lead_after_chip_guard():
     assert _TRAIL_HEADING in chipped
     assert _LEAD_PAIR in chipped
 
-    right = apply_hand(load(NOMAD), "right")
+    right = apply_hand(load(PAPER), "right")
     right_coord = Coordinator(right, i18n=load_default())
     right_builder = Builder(
         i18n=right_coord.i18n,

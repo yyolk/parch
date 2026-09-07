@@ -3,7 +3,7 @@
 from dataclasses import dataclass, replace
 from typing import Any
 
-from parch.devices import Device, get_device
+from parch.devices import Device, get_device, is_nomad
 
 DEFAULT_YEAR = 2026
 DEFAULT_DEVICE = "supernote-nomad"
@@ -159,9 +159,16 @@ class JobSpec:
         return list(self.defaults().sections)
 
 
+def default_paper(device_id: str) -> str:
+    """Nomad Topband defaults to lined. Other devices stay dotted."""
+    return "lined" if is_nomad(device_id) else "dotted"
+
+
 def spec_from_device(device_id: str, **overrides: Any) -> JobSpec:
     device = get_device(device_id)
     cleaned = {key: value for key, value in overrides.items() if value is not None}
+    if "paper" not in cleaned:
+        cleaned["paper"] = default_paper(device.id)
     return JobSpec(device_id=device.id, **cleaned)
 
 
@@ -222,7 +229,7 @@ def emit_job(spec: JobSpec) -> str:
     style = spec.defaults().style
     sections = spec.resolved_sections()
     names = set(sections)
-    paper = spec.paper if spec.paper in _PAPERS else "dotted"
+    paper = spec.paper if spec.paper in _PAPERS else default_paper(device.id)
     year = spec.year
     parts: list[str] = [
         f"# {device.name}",

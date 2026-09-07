@@ -27,7 +27,7 @@ def _links(page):
 
 
 def _annual_page(reader: PdfReader):
-    # Cover, Contents, then Annual on the shipped Nomad job.
+    # Cover, Contents, then Annual on the shipped 158×210 / Nomad jobs.
     return reader.pages[2]
 
 
@@ -42,7 +42,7 @@ def _calendar_year_dto():
 def test_contents_mark_link_is_square(tmp_path):
     dto = short_january(load(PAPER))
     typst = Generate(i18n=load_default()).generate(dto)
-    pdf, stderr = compile_pdf(typst, tmp_path / "mark")
+    pdf, stderr = compile_pdf(typst, tmp_path / "mark", device="158x210")
     assert pdf.is_file(), stderr
     links = _links(_annual_page(PdfReader(str(pdf))))
     squares = [row for row in links if abs(row[0] - row[1]) < 0.5 and row[0] > 20]
@@ -54,7 +54,7 @@ def test_contents_mark_link_is_square(tmp_path):
 
 def test_mos_tab_links_are_one_cell_each(tmp_path):
     typst = Generate(i18n=load_default()).generate(_calendar_year_dto())
-    pdf, stderr = compile_pdf(typst, tmp_path / "mos")
+    pdf, stderr = compile_pdf(typst, tmp_path / "mos", device="158x210")
     assert pdf.is_file(), stderr
     links = _links(_annual_page(PdfReader(str(pdf))))
     mos = [row for row in links if row[2] < 8]
