@@ -4,6 +4,7 @@ from parch import ConfigError
 from parch.config import StrictDict
 from parch.devices import (
     DEVICES,
+    SCRIBE_FAMILY_IDS,
     IPAD_AIR_11,
     IPAD_MINI,
     IPAD_PRO_11,
@@ -78,6 +79,8 @@ def test_device_presets_match_glass():
     assert SUPERNOTE_NOMAD.toolbar_edge == "top"
     assert KINDLE_SCRIBE.toolbar_edge == "none"
     assert KINDLE_SCRIBE.toolbar_clearance == "0mm"
+    assert KINDLE_SCRIBE.writing_clearance == "0mm"
+    assert KINDLE_SCRIBE.mos_width == "11mm"
     assert PAPER_158X210.id == "158x210"
     assert PAPER_158X210.page_width == "158mm"
     assert PAPER_158X210.page_height == "210mm"
@@ -255,6 +258,10 @@ def test_lineage_records_match_glass(
         assert device.toolbar_clearance == "8mm"
         assert device.writing_clearance == "4mm"
         assert device.mos_width == "8mm"
+    elif device.id in SCRIBE_FAMILY_IDS:
+        assert device.toolbar_clearance == "0mm"
+        assert device.writing_clearance == "0mm"
+        assert device.mos_width == "11mm"
     else:
         assert device.toolbar_clearance == "0mm"
         assert device.writing_clearance == "5mm"

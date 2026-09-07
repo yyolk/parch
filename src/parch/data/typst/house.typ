@@ -97,11 +97,12 @@
       if wanted.width == 0pt or wanted.width <= size.width {
         title
       } else {
+        // Natural-size box first so a leftover h1 digit cannot wrap (weekly "4").
         scale(
           size.width / wanted.width * 100%,
           origin: start + horizon,
           reflow: true,
-          title,
+          box(width: wanted.width, height: wanted.height, title),
         )
       }
     })
@@ -337,4 +338,53 @@
   grid(columns: (2fr, 3fr), rows: 1fr, column-gutter: column-gutter, months, pad)
 } else {
   grid(columns: (3fr, 2fr), rows: 1fr, column-gutter: column-gutter, pad, months)
+}
+
+// Scribe Hyperpaper explor: 5mm air + soft ~10mm crumb track (grows, no clip).
+// Nomad does not call this. Header owns top air (page-margin top stays 0mm).
+// Contents is the rail-adjacent auto track (flips with section_rail). Crumb
+// stays in the well 1fr. Q/month chips sit on the far side, away from the rail.
+// Shrink is trail_heading(..., shrink: true) at the call site.
+#let nav_header(home, crumb, far, height: 10mm, air: 5mm, stroke: none, side: left) = {
+  let cells = if side == left { (home, crumb, far) } else { (far, crumb, home) }
+  grid(
+    columns: 1fr,
+    rows: (air, auto),
+    [],
+    grid(
+      columns: (auto, 1fr, auto),
+      align: horizon + start,
+      column-gutter: 2mm,
+      inset: (x: 2mm, y: 1mm),
+      ..cells,
+    ),
+    grid.hline(y: 2, stroke: stroke),
+  )
+}
+
+// Scribe section rail: rotated section links, full-cell hit, pad from page edge.
+// items: array of (dest, label). highlight is a dest. Not mos_strip months.
+#let section_rail(items, highlight: none, stroke: none, turn: none, pad: 4mm, side: left) = {
+  let edge = if side == left { (left: pad) } else { (right: pad) }
+  mos_tabs(
+    stroke: stroke,
+    turn: turn,
+    ..items.map(item => {
+      let dest = item.at(0)
+      let label = item.at(1)
+      let on = dest != none and dest == highlight
+      let ink = if on { text(white)[#label] } else { label }
+      let seated = box(width: 100%, fill: if on { black } else { luma(0%, 0%) }, inset: edge, {
+        v(1fr)
+        align(center, rotate(turn, origin: center + horizon, ink))
+        v(1fr)
+      })
+      let body = if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      if on {
+        table.cell(fill: black, body)
+      } else {
+        table.cell(body)
+      }
+    }),
+  )
 }

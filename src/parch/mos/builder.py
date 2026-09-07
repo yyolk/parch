@@ -7,6 +7,7 @@ from parch.mos.navigation import NavLink, Navigation
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.contents_mark import body_size_token, lead_title, trail_heading
 from parch.mos.preamble import Preamble
+from parch.mos.scribe_nav import scribe_hyperpaper_nav
 
 
 class Builder:
@@ -43,6 +44,8 @@ class Builder:
         return typst
 
     def _layout_page(self, page_spec: PageData) -> str:
+        if scribe_hyperpaper_nav(self.configurator):
+            return self._layout_scribe_page(page_spec)
         side = _v(self.mos_layout, "side_menu_position")
         mos = self.navigation.side_menu_cell(
             highlight_months=page_spec.highlight_months,
@@ -61,6 +64,29 @@ class Builder:
   {mos},
   well_frame(
     {heading or "[]"},
+    {page_spec.content},
+  ),
+)"""
+
+    def _layout_scribe_page(self, page_spec: PageData) -> str:
+        """mos_frame(side, section rail, nav_header + well). Months stay in the body."""
+        side = _v(self.mos_layout, "side_menu_position")
+        rail = self.navigation.section_rail_cell(page_spec.page_id)
+        header = self.navigation.nav_header_cell(
+            page_id=page_spec.page_id,
+            title=page_spec.title,
+            nav_links=page_spec.nav_links,
+            highlight_months=page_spec.highlight_months,
+            highlight_quarters=page_spec.highlight_quarters,
+            month_link_id=page_spec.month_link_id,
+        )
+        return f"""#mos_frame(
+  {side},
+  {rail},
+  grid(
+    columns: 1fr,
+    rows: (auto, 1fr),
+    {header},
     {page_spec.content},
   ),
 )"""

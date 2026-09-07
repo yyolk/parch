@@ -67,7 +67,7 @@ class Preamble:
         side = _v(mos_layout, "side_menu_position")
         scratch = _v(p, "scratch_pad")
         return f"""#import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, page-margin
+#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
 #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
 #set page(width: page-width, height: page-height, margin: page-margin({side}))
 
@@ -102,7 +102,9 @@ class Preamble:
 #let month_weeks = month_weeks.with(week-col: regular_height, stroke: regular_stroke)
 #let week_matrix = week_matrix.with(header-stroke: regular_stroke + black)
 #let daily_well = daily_well.with(column-gutter: regular_column_gutter)
-#let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)"""
+#let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)
+#let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
+#let section_rail = section_rail.with(stroke: regular_stroke, turn: {_v(mos_layout, 'menu_rotate')}, pad: 4mm)"""
 
 
 def _v(mapping, key: str):

@@ -13,7 +13,7 @@
 # One parameterized device.typ: page-width / page-height, toolbar-edge,
 # toolbar-clearance, writing-clearance, mos-width. ppi stays off Typst.
 # page-margin(side) lives in house. Toolbar is not side; L/R parked.
-# MOS is not toolbar — Nomad 8mm vs Scribe 10mm. Do not alias mos-width
+# MOS is not toolbar — Nomad 8mm vs Scribe 11mm (explor). Do not alias mos-width
 # to toolbar-clearance. Lined is paper (style.scratch_pad), not a device.
 #
 # House: tracks from side only (mos_frame, daily_well 3/5, quarter_well 2/3,
