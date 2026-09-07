@@ -301,6 +301,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
     assert "page-shell(\n  none," in meetings_index
     assert "columns: (2em, 1fr, 16mm)" in meetings_index
+    assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in meetings_index
     meeting = _page_with(typst, "#[] <meeting-1>")
     assert "page-shell(\n  none," in meeting
     assert "columns: (1fr, 2fr, 1fr)" not in meeting
@@ -311,6 +312,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert meeting.count("task_tick()") == 9
     assert "lined_well(dotted_centered)" not in meeting
     review = _page_with(typst, "Review · Week 1")
+    assert "title: grid(columns: 1fr," in review
+    assert "text(size: 0.85em)" in review
+    assert "Review · Week 1 ·" not in review
     assert "[Week notes]" in review
     assert "M29" in review
     assert "T1" in review
