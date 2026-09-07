@@ -63,7 +63,7 @@ def test_mos_tab_links_are_one_cell_each(tmp_path):
     widths = sorted(row[0] for row in mos)
     assert heights[0] == pytest.approx(heights[-1], abs=0.05)
     assert widths[0] == pytest.approx(widths[-1], abs=0.05)
-    assert 18 < widths[0] < 26
+    assert 24 < widths[0] < 32
     assert 20 < heights[0] < 40
     ys = sorted(row[3] for row in mos)
     for prev, nxt in zip(ys, ys[1:]):

@@ -742,7 +742,7 @@
       align(center + horizon, rotate(90deg)[#padded_link(<2026W04>)[4]]), grid.cell(align: top + left, inset: 3pt, [#[19]]), grid.cell(align: top + left, inset: 3pt, [#[20]]), grid.cell(align: top + left, inset: 3pt, [#[21]]), grid.cell(align: top + left, inset: 3pt, [#[22]]), grid.cell(align: top + left, inset: 3pt, [#[23]]), grid.cell(align: top + left, inset: 3pt, [#[24]]), grid.cell(align: top + left, inset: 3pt, [#[25]]),
       align(center + horizon, rotate(90deg)[#padded_link(<2026W05>)[5]]), grid.cell(align: top + left, inset: 3pt, [#[26]]), grid.cell(align: top + left, inset: 3pt, [#[27]]), grid.cell(align: top + left, inset: 3pt, [#[28]]), grid.cell(align: top + left, inset: 3pt, [#[29]]), grid.cell(align: top + left, inset: 3pt, [#[30]]), grid.cell(align: top + left, inset: 3pt, [#[31]]), []
         ),
-        lined_well(dotted_centered)
+        lined_well(lined_fill)
       ),
         tempo: tempo-bar(((none, [‹], false), (<month-2026-01-01>, [Jan], true), (none, [›], false),)),
         title: text(size: h1)[January<month-2026-01-01>],
@@ -773,7 +773,7 @@
       #let lined_fill = lined_fill()
       #let task_tick = task_tick.with(regular_stroke: regular_stroke)
       #let task_fill = task_fill(page-width: page-width, regular_height: regular_height, regular_stroke: regular_stroke)
-      #let scratch_pad = lined_well(dotted_centered)
+      #let scratch_pad = lined_well(lined_fill)
       #let padded_link = padded_link.with(padding: link_padding)
       #let contents_bars = contents_bars.with(thick_stroke: thick_stroke)
       #let trail_heading = trail_heading.with(shrink: page-width < 100mm)
@@ -798,7 +798,7 @@
         section-strip(((<index>, "contents"), (<annual>, "cal"), (<quarter-2026-1>, "q"), (<month-2026-01-01>, "mon"), (<2026W01>, "wk"), (none, "day"),), active: "wk"),
         week_matrix(
         column-gutter: 4pt,
-        pattern: dotted_centered,
+        pattern: lined_fill,
         [Monday 29],
         [Tuesday 30],
         [Wednesday 31],
