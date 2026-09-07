@@ -19,12 +19,14 @@ class DailyNotes:
         i18n: I18n,
         configurator: Configurator,
         pages: int,
-        pattern: str = "dotted",
+        pattern: str | None = None,
     ) -> None:
         self.section_name = section_name
         self.i18n = i18n
         self.configurator = configurator
         self.pages_num = int(pages)
+        if pattern is None:
+            pattern = "lined" if nomad_topband(configurator) else "dotted"
         self.pattern = pattern
 
     def register(self, manifest: Manifest) -> None:

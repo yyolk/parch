@@ -309,14 +309,12 @@ index_pages = 2
     assert leftover not in second
     assert "→" not in second
     board_late = _meeting_page(typst, 17)
-    assert "padded_link(<meetings-2>)" in board_late
-    assert "padded_link(<meetings>)" not in board_late
-    assert "text(size: 0.85em)[17]" in board_late
+    assert "#[] <meeting-17>" in board_late
+    assert "lined_well(lined_fill)" in board_late
     assert "17/32" not in board_late
     first_meeting = _meeting_page(typst, 1)
-    assert "padded_link(<meetings>)" in first_meeting
-    assert "padded_link(<meetings-2>)" not in first_meeting
-    assert "text(size: 0.85em)[1]" in first_meeting
+    assert "#[] <meeting-1>" in first_meeting
+    assert "lined_well(lined_fill)" in first_meeting
     assert "1/32" not in first_meeting
     assert typst.count("2 * regular_height") == 0
 
@@ -336,7 +334,7 @@ def test_nomad_default_is_one_index_page():
     index = _index_page(typst)
     meeting = _meeting_page(typst)
     assert "→" not in index
-    assert f"columns: ({_NUM_COL}, 1fr)" in index
+    assert f"columns: ({_NUM_COL}, 1fr, 16mm)" in index
     assert "rows: (" + ", ".join(["1fr"] * 16) + ")" in index
     assert "2 * regular_height" not in index
     assert "padded_link(<annual>)" not in index
@@ -344,7 +342,8 @@ def test_nomad_default_is_one_index_page():
     assert "2026 /" not in index
     assert "2026 /" not in meeting
     assert "1/16" not in meeting
-    assert "text(size: 0.85em)[1]" in meeting
+    assert "lined_well(lined_fill)" in meeting
+    assert "columns: (1fr, 2fr, 1fr)" in meeting
     assert (
         "padded_link(<meeting-1>, box(width: 100%, height: 100%"
         in index

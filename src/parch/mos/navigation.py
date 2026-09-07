@@ -149,7 +149,10 @@ class Navigation:
                 next_id=habits_month_id(next_m),
             )
         if kind == "quarterly":
-            return self._quarter_tempo(ctx.quarter)
+            focus = ctx.quarter.number if ctx.quarter is not None else None
+            return self._year_quarter_tempo(focus=focus)
+        if kind == "annual":
+            return self._year_quarter_tempo()
         return []
 
     def _daily_tempo(self, ctx) -> list[str]:
@@ -216,6 +219,26 @@ class Navigation:
             _tempo_chip(self.manifest.dest(dest_id), label, True),
             _tempo_chip(self.manifest.dest(next_id), "›", False),
         ]
+
+    def _year_quarter_tempo(self, focus: int | None = None) -> list[str]:
+        from datetime import date
+
+        from parch.calendar.day import Day
+        from parch.calendar.quarter import Quarter
+
+        year = self.configurator.start_date().year
+        start = self.configurator.weekday_start()
+        if focus is None:
+            focus = self.configurator.start_date().quarter().number
+        chips = []
+        for month in (1, 4, 7, 10):
+            quarter = Quarter(
+                weekday_start=start,
+                day=Day(weekday_start=start, day=date(year, month, 1)),
+            )
+            label = f"{self.i18n.t('quarter.short')}{quarter.number}"
+            chips.append(_tempo_chip(self.manifest.dest(quarter.id), label, quarter.number == focus))
+        return chips
 
     def _quarter_tempo(self, quarter) -> list[str]:
         if quarter is None:

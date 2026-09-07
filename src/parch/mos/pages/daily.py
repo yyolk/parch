@@ -117,7 +117,7 @@ class Daily:
         )
         rail = f"""grid(
   columns: 1fr,
-  rows: (1fr, auto),
+  rows: (24mm, 1fr),
   row-gutter: {self.items_spacing},
   {calendar.generate()},
   {priorities.generate()}

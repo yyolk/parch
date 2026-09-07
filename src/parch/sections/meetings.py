@@ -7,6 +7,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.sections._shared import _length_mm
 
 # Match the Projects index so row capacity tracks the same geometry.
@@ -85,12 +86,35 @@ class Meetings:
     def pages(self, manifest: Manifest) -> list[PageData]:
         rpp = self.rows_per_index_page()
         out: list[PageData] = []
+        topband = nomad_topband(self.configurator)
         for page in range(1, self.index_page_count() + 1):
             start = (page - 1) * rpp + 1
             end = page * rpp
-            out.append(PageData(raw_typst=True, content=self._index(manifest, page, start, end)))
+            page_id = self.index_page_id(page)
+            if topband:
+                out.append(
+                    PageData(
+                        title=f'text(size: h1)[{self._index_meetings_cell(manifest, page)}]',
+                        content=self._index_rows(manifest, start, end),
+                        page_id=page_id,
+                        strip="none",
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._index(manifest, page, start, end)))
         for index in range(1, self.pages_num + 1):
-            out.append(PageData(raw_typst=True, content=self._meeting(manifest, index)))
+            if topband:
+                mid = self.meeting_id(index)
+                out.append(
+                    PageData(
+                        title=f'text(size: h1)[{index} <{mid}>]',
+                        content=self._meeting_body(manifest, index),
+                        page_id=mid,
+                        strip="none",
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._meeting(manifest, index)))
         return out
 
     def _heading(self, manifest: Manifest, meetings_cell: str) -> str:
@@ -111,16 +135,29 @@ class Meetings:
 
     def _index_row(self, manifest: Manifest, index: int) -> str:
         mid = self.meeting_id(index)
-        inner = (
-            "grid(\n"
-            f"      columns: ({_NUM_COL}, 1fr),\n"
-            "      rows: 1fr,\n"
-            "      align: horizon + left,\n"
-            "      inset: 0pt,\n"
-            f"      [{index}],\n"
-            "      []\n"
-            "    )"
-        )
+        if nomad_topband(self.configurator):
+            inner = (
+                "grid(\n"
+                f"      columns: ({_NUM_COL}, 1fr, {_DATE_COL}),\n"
+                "      rows: 1fr,\n"
+                "      align: horizon + left,\n"
+                "      inset: 0pt,\n"
+                f"      [{index}],\n"
+                "      [],\n"
+                "      grid.cell(stroke: (bottom: regular_stroke + black), [])\n"
+                "    )"
+            )
+        else:
+            inner = (
+                "grid(\n"
+                f"      columns: ({_NUM_COL}, 1fr),\n"
+                "      rows: 1fr,\n"
+                "      align: horizon + left,\n"
+                "      inset: 0pt,\n"
+                f"      [{index}],\n"
+                "      []\n"
+                "    )"
+            )
         band = f"box(width: 100%, height: 100%, {inner})"
         if manifest.source(mid):
             band = f"padded_link(<{mid}>, {band})"
@@ -131,12 +168,12 @@ class Meetings:
             "  )"
         )
 
-    def _index(self, manifest: Manifest, page: int, start: int, end: int) -> str:
+    def _index_rows(self, manifest: Manifest, start: int, end: int) -> str:
         n = max(0, end - start + 1)
-        if n:
-            rows = [self._index_row(manifest, index) for index in range(start, end + 1)]
-            # Every index is full (rpp * index_pages), so 1fr bands eat leftover height.
-            body = f"""grid(
+        if not n:
+            return "[]"
+        rows = [self._index_row(manifest, index) for index in range(start, end + 1)]
+        return f"""grid(
   columns: 1fr,
   rows: ({", ".join(["1fr"] * n)}),
   align: horizon + left,
@@ -144,8 +181,9 @@ class Meetings:
   inset: (x: 4pt, y: 2pt),
 {",\n".join(rows)}
 )"""
-        else:
-            body = "[]"
+
+    def _index(self, manifest: Manifest, page: int, start: int, end: int) -> str:
+        body = self._index_rows(manifest, start, end)
         return f"""#grid(
   columns: 1fr,
   rows: (auto, 1fr),
@@ -170,6 +208,40 @@ class Meetings:
 
     def _label(self, key: str) -> str:
         return f"[{self.i18n.t(key)}]"
+
+    def _meeting_body(self, manifest: Manifest, index: int) -> str:
+        mid = self.meeting_id(index)
+        topics = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  row-gutter: 1.5mm,
+  {self._label("topics")},
+  {self._ticked_lines(_TOPIC_LINES)}
+)"""
+        notes = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  {self._label("notes")},
+  lined_well(lined_fill)
+)"""
+        actions = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  row-gutter: 1.5mm,
+  {self._label("action_items")},
+  {self._ticked_lines(_ACTION_LINES)}
+)"""
+        return f"""{{
+  [#[] <{mid}>]
+  grid(
+    columns: (1fr, 2fr, 1fr),
+    rows: 1fr,
+    column-gutter: 2mm,
+    {topics},
+    {notes},
+    {actions},
+  )
+}}"""
 
     def _meeting(self, manifest: Manifest, index: int) -> str:
         meetings = self.i18n.t("meetings")
@@ -197,6 +269,7 @@ class Meetings:
   {self._ticked_lines(_ACTION_LINES)}
 )"""
         quiet = f"text(size: 0.85em)[{index}]"
+        notes = "lined_fill" if nomad_topband(self.configurator) else "dotted_centered"
         return f"""#[] <{mid}>
 #grid(
   columns: 1fr,
@@ -208,6 +281,6 @@ class Meetings:
   {name_line},
   {topics},
   {self._label("notes")},
-  lined_well(dotted_centered),
+  lined_well({notes}),
   {actions}
 )"""

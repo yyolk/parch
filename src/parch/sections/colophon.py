@@ -9,6 +9,7 @@ from parch.devices import get_device
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
+from parch.mos.nomad_nav import nomad_topband
 from parch.compose.page_data import HeadingMark, PageData
 from parch.sections.annual import Annual
 
@@ -110,7 +111,34 @@ class Colophon:
             manifest.register_source(self.ID)
 
     def pages(self, manifest) -> list[PageData]:
+        if nomad_topband(self.configurator) and not self.dump:
+            return [
+                PageData(
+                    title="text(size: h1)[About <colophon>]",
+                    content=self._nomad_content(manifest),
+                    page_id=self.ID,
+                    heading_mark=HeadingMark.TRAIL,
+                    strip="none",
+                )
+            ]
         return [PageData(raw_typst=True, content=self._content(manifest))]
+
+    def _nomad_content(self, manifest) -> str:
+        device = _escape(self._device_label() or "Supernote Nomad")
+        page = _escape(self._page_label())
+        year_cell = self._year_cell(manifest)
+        version = _escape(__version__)
+        return f"""grid(
+  columns: (auto, 1fr),
+  column-gutter: regular_column_gutter,
+  rows: regular_height,
+  align: horizon,
+  [*Device*], [{device}],
+  [*Page*], [{page}],
+  [*Year*], {year_cell},
+  [*Chrome*], [Topband],
+  [*Edition*], [parch {version}],
+)"""
 
     def _heading(self, manifest, *, labeled: bool = True) -> str:
         """FOLLOW seat: five-bar then the name at 0.5em, own hit."""
@@ -207,7 +235,28 @@ class Colophon:
 
     def _device_slug(self) -> str:
         raw = self._lookup("device")
-        return str(raw) if raw else ""
+        if raw is None:
+            return ""
+        if hasattr(raw, "get"):
+            name = raw.get("name")
+            if name:
+                return str(name)
+        return str(raw)
+
+    def _page_label(self) -> str:
+        dims = self._lookup("document", "layout", "dimensions")
+        if dims is not None and hasattr(dims, "get"):
+            width, height = dims.get("width"), dims.get("height")
+            if width and height:
+                return f"{width} × {height}"
+        slug = self._device_slug()
+        if slug:
+            try:
+                device = get_device(slug)
+                return f"{device.page_width} × {device.page_height}"
+            except KeyError:
+                pass
+        return ""
 
     def _device_label(self) -> str:
         return _human_device(self._device_slug())

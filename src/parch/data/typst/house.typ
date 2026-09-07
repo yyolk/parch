@@ -679,6 +679,35 @@
   )
 }
 
+// Nomad annual: compact month cell. Not LittleCalendar / month_grid.
+#let year-month(header, body) = grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  block(
+    inset: (bottom: 0.15mm),
+    text(size: 0.7em, weight: "bold", bottom-edge: "descender", header),
+  ),
+  body,
+)
+
+#let nomad_year_grid(..cells) = grid(
+  columns: (1fr, 1fr, 1fr),
+  rows: (1fr, 1fr, 1fr, 1fr),
+  column-gutter: 1.4mm,
+  row-gutter: 1.6mm,
+  ..cells.pos(),
+)
+
+// Nomad quarterly: 26mm month strip + Focus / Notes wells. MOS keeps quarter_well.
+#let nomad_quarter_well(months, focus, notes, strip-height: 26mm) = grid(
+  columns: 1fr,
+  rows: (strip-height, 1fr, 1fr),
+  row-gutter: 1.4mm,
+  months,
+  focus,
+  notes,
+)
+
 // Nomad monthly: 7×6 day cells + short Month notes floor. MOS keeps month_weeks.
 #let nomad_month_well(calendar, notes, notes-height: 20mm) = grid(
   columns: 1fr,

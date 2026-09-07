@@ -1,14 +1,19 @@
 """Year-at-a-glance page of 12 little calendars."""
 
 import math
+from datetime import date
 from typing import Any
 
 from parch.calendar import walk
+from parch.calendar.day import Day
+from parch.calendar.month import Month
 from parch.config import StrictDict, _to_plain
 from parch.i18n import I18n
 from parch.mos.components.little_calendar import LittleCalendar
+from parch.mos.components.year_month import year_month_cell
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
+from parch.mos.nomad_nav import nomad_topband
 from parch.compose.page_data import HeadingMark, PageData
 from parch.sections._shared import _side_menu_position
 
@@ -38,6 +43,15 @@ class Annual:
 
     def pages(self, manifest: Manifest) -> list[PageData]:
         year = self.configurator.start_date().year
+        if nomad_topband(self.configurator):
+            return [
+                PageData(
+                    title=None,
+                    content=self._nomad_content(manifest),
+                    page_id=self.ID,
+                    heading=False,
+                )
+            ]
         return [
             PageData(
                 title=f"text(size: h1)[{year}<{self.ID}>]",
@@ -76,6 +90,25 @@ class Annual:
     {",\n".join(parts)}
   )
 )"""
+
+    def _nomad_content(self, manifest: Manifest) -> str:
+        cells = ",\n  ".join(
+            year_month_cell(self.i18n, manifest, month) for month in self._year_months()
+        )
+        return f"""{{
+  [<{self.ID}>]
+  nomad_year_grid(
+  {cells},
+)
+}}"""
+
+    def _year_months(self) -> list[Month]:
+        year = self.configurator.start_date().year
+        start = self.configurator.weekday_start()
+        return [
+            Month(weekday_start=start, day=Day(weekday_start=start, day=date(year, month, 1)))
+            for month in range(1, 13)
+        ]
 
     def _range(self):
         return walk(self.configurator.start_date().month(), self.configurator.end_date().month())

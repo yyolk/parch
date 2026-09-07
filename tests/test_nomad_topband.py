@@ -213,7 +213,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "rows: (regular_height,) + (1fr,) * 10" in daily
     assert "place(bottom + left, line(length: 3mm" not in daily
     assert daily.count("task_tick()") == 6
-    assert "rows: (1fr, auto)" in daily
+    assert "rows: (24mm, 1fr)" in daily
     assert "stroke: regular_stroke + black" in daily
     assert "lined_well(lined_fill)" in daily
     assert "box(inset: (x: 1.4mm, y: 0.35mm)" in daily
@@ -257,6 +257,67 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "Thu 1" not in habits
     assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr)" in habits
     assert habits.count("task_tick()") == 31 * 5
+    cover = _pages(typst)[0]
+    assert "page-shell(" in cover
+    assert "page-shell(\n  none," in cover
+    assert "text(size: 48pt" in cover
+    assert "line(length: 42mm, stroke: regular_stroke + black)" in cover
+    assert cover.count("line(length: 42mm, stroke: regular_stroke + black)") == 2
+    assert "[Supernote Nomad]" in cover
+    assert "title: none" in cover
+    annual = _page_with(typst, "<annual>]")
+    assert "nomad_year_grid(" in annual
+    assert "year-month(" in annual
+    assert "month_grid(" not in annual
+    assert "grid.hline(stroke: regular_stroke + black)" not in annual
+    assert "title: none" in annual
+    assert 'tempo-bar((' in annual
+    assert "[Q1]" in annual
+    assert "[Q2]" in annual
+    assert "[Q3]" in annual
+    assert "[Q4]" in annual
+    quarterly = _page_with(typst, "Quarter 1 <quarter-2026-1>")
+    assert "nomad_quarter_well(" in quarterly
+    assert "quarter_well(left" not in quarterly
+    assert "quarter_well(right" not in quarterly
+    assert "[Focus]" in quarterly
+    assert "[Notes]" in quarterly
+    assert "[Q1]" in quarterly
+    assert "[Q2]" in quarterly
+    assert "[Q3]" in quarterly
+    assert "[Q4]" in quarterly
+    assert "‹" not in quarterly.split("tempo-bar(")[1].split(")", 1)[0]
+    projects = _page_with(typst, "#[] <project-1>")
+    assert "page-shell(\n  none," in projects
+    assert "[Name]" in projects
+    assert projects.count("lined_well(lined_fill)") == 3
+    assert "lined_well(dotted_centered)" not in projects
+    meetings_index = _page_with(typst, "[Meetings <meetings>]")
+    assert "page-shell(\n  none," in meetings_index
+    assert "columns: (2em, 1fr, 16mm)" in meetings_index
+    meeting = _page_with(typst, "#[] <meeting-1>")
+    assert "page-shell(\n  none," in meeting
+    assert "columns: (1fr, 2fr, 1fr)" in meeting
+    assert "lined_well(lined_fill)" in meeting
+    assert "lined_well(dotted_centered)" not in meeting
+    review = _page_with(typst, "Review · Week 1")
+    assert "[Week notes]" in review
+    assert "M29" in review
+    assert "T1" in review
+    assert "Mon 29" not in review
+    assert "Mon 1" not in review
+    colo = _page_with(typst, "[About <colophon>]")
+    assert "page-shell(\n  none," in colo
+    assert "[*Device*]" in colo
+    assert "[*Page*]" in colo
+    assert "[*Year*]" in colo
+    assert "[*Chrome*]" in colo
+    assert "[Topband]" in colo
+    assert "[*Edition*]" in colo
+    assert "[*Version*]" not in colo
+    notes = _page_with(typst, "[Notes <daily-note-2026-01-01-page-1>]")
+    assert "lined_well(lined_fill)" in notes
+    assert "lined_well(dotted_centered)" not in notes
 
 
 def test_nomad_habits_floors_stock_columns_to_five():

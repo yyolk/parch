@@ -70,6 +70,7 @@ class Locale(StrictModel):
     daily_notes: str
     more_daily_notes: str
     notes: str
+    focus: str
     week_notes: str
     month_notes_floor: str
     projects: str

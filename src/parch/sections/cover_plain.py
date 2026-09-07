@@ -2,6 +2,7 @@
 
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.compose.page_data import PageData
 from parch.sections.annual import Annual
@@ -28,6 +29,15 @@ class CoverPlain:
         return None
 
     def pages(self, manifest) -> list[PageData]:
+        if nomad_topband(self.configurator):
+            return [
+                PageData(
+                    content=self._nomad_cover(manifest),
+                    page_id="cover",
+                    heading=False,
+                    strip="none",
+                )
+            ]
         return [PageData(raw_typst=True, content=self._cover(manifest))]
 
     def _lines(self) -> list[str]:
@@ -81,4 +91,25 @@ class CoverPlain:
   rows: (1fr, 2fr),
   align: center + horizon,
   {body}
+)"""
+
+    def _nomad_cover(self, manifest) -> str:
+        lines = [_escape(line) for line in self._lines()]
+        dest = self._dest(manifest)
+        year = self._year("48pt", lines[0], dest, manifest) if lines else "[]"
+        return f"""grid(
+  columns: 1fr,
+  rows: (1fr, 2fr),
+  align(center + horizon, stack(
+    dir: ttb,
+    spacing: 5mm,
+    {year},
+    stack(
+      dir: ttb,
+      spacing: 1.8mm,
+      line(length: 42mm, stroke: regular_stroke + black),
+      line(length: 42mm, stroke: regular_stroke + black),
+    ),
+  )),
+  align(center + bottom, pad(bottom: 8mm, text(size: h1)[Supernote Nomad])),
 )"""

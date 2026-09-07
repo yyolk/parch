@@ -28,6 +28,8 @@ class PageData:
     heading_dir: str | None = None
     heading_mark: HeadingMark = HeadingMark.LEAD
     tempo: str | None = None
+    heading: bool = True
+    strip: str | None = None
 
     def raw_typst_q(self) -> bool:
         return self.raw_typst

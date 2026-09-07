@@ -53,6 +53,9 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "nomad_daily_well" in names
     assert "nomad_week_bands" in names
     assert "nomad_month_well" in names
+    assert "year-month" in names
+    assert "nomad_year_grid" in names
+    assert "nomad_quarter_well" in names
     assert "dotted_centered" in names
     assert "lined_fill" in names
     assert "task_tick" in names
@@ -162,6 +165,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "lined_well(nomad_week_hair" not in house
     assert "#let nomad_week_hair(" not in house
     assert "(1fr,) * days + (notes-height,)" in house
+    assert "#let year-month(" in house
+    assert "#let nomad_year_grid(" in house
+    assert "(1fr, 1fr, 1fr, 1fr)" in house[house.index("#let nomad_year_grid(") :]
+    assert "#let nomad_quarter_well(" in house
+    assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
     assert "#let nomad_month_well(" in house
     assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]
     assert "#let strip-icon(" in house

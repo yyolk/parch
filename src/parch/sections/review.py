@@ -285,17 +285,27 @@ class Review:
   inset: (x: 2pt, y: 0pt),
   {cells}
 )"""
+        notes = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  block(inset: (top: 0.4mm, bottom: 0.3mm), [{self.i18n.t("week_notes")}]),
+  {self._week_field()}
+)"""
         return f"""grid(
   columns: 1fr,
   rows: (auto, 1fr),
   row-gutter: {_INDEX_ROW_GUTTER},
   {day_strip},
-  {self._week_field()}
+  {notes}
 )"""
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
-        short = self.i18n.t(f"weekday.short.{day.weekday_name}")
-        label = f"{short} {day.month_day}"
+        if nomad_topband(self.configurator):
+            letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
+            label = f"{letter}{day.month_day}"
+        else:
+            short = self.i18n.t(f"weekday.short.{day.weekday_name}")
+            label = f"{short} {day.month_day}"
         band = f"box(width: 100%, height: 100%, align(horizon + center, [{label}]))"
         if manifest.source(day.id):
             band = f"padded_link(<{day.id}>, {band})"

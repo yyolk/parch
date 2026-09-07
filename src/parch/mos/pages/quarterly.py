@@ -6,6 +6,7 @@ from parch.calendar.quarter import Quarter
 from parch.i18n import I18n
 from parch.mos.components.little_calendar import LittleCalendar
 from parch.mos.manifest import Manifest
+from parch.mos.components.year_month import year_month_cell
 from parch.mos.preamble import _WELL_PATTERN
 
 
@@ -33,6 +34,32 @@ class Quarterly:
         months = self._months_grid()
         pad = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
         return f"quarter_well({self.side}, {months}, {pad})"
+
+    def nomad_content(self) -> str:
+        """Locked Nomad quarterly: 26mm month strip + Focus / Notes wells."""
+        months = ", ".join(
+            year_month_cell(self.i18n, self.manifest, month)
+            for month in self.quarter.months()
+        )
+        strip = f"""grid(
+  columns: (1fr, 1fr, 1fr),
+  rows: 1fr,
+  column-gutter: 1.2mm,
+  {months}
+)"""
+        focus = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  block(inset: (top: 0.4mm, bottom: 0.3mm), text(weight: "bold")[{self.i18n.t("focus")}]),
+  lined_well(lined_fill)
+)"""
+        notes = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  block(inset: (top: 0.4mm, bottom: 0.3mm), text(weight: "bold")[{self.i18n.t("notes")}]),
+  lined_well(lined_fill)
+)"""
+        return f"nomad_quarter_well({strip}, {focus}, {notes})"
 
     def _months_grid(self) -> str:
         months = self._months()

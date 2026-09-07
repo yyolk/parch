@@ -364,14 +364,12 @@ pages = {n}
     board_late = _board_page(typst, n)
     assert f"<project-1>" in board_first
     assert f"<project-{n}>" in board_late
-    assert "padded_link(<projects>)" in board_first
-    assert "padded_link(<projects-2>)" not in board_first
-    assert "padded_link(<projects-2>)" in board_late
-    assert "padded_link(<projects>)" not in board_late
+    assert "#[] <project-1>" in board_first
+    assert f"#[] <project-{n}>" in board_late
+    assert "[Name]" in board_first
+    assert board_first.count("lined_well(lined_fill)") == 3
     assert "padded_link(<annual>)" not in board_late
     assert "padded_link(<projects>)" in pages[2]
-    assert "text(size: 0.85em)[1]" in board_first
-    assert f"text(size: 0.85em)[{n}]" in board_late
     assert "1/16" not in board_first
     assert f"{n}/{n}" not in board_late
 
@@ -400,7 +398,9 @@ def test_nomad_default_is_one_index_page():
     assert "2026 /" not in index
     assert "2026 /" not in board
     assert "1/16" not in board
-    assert "text(size: 0.85em)[1]" in board
+    assert "[Name]" in board
+    assert board.count("lined_well(lined_fill)") == 3
+    assert "lined_well(dotted_centered)" not in board
     assert (
         "padded_link(<project-1>, box(width: 100%, height: 100%"
         in index
@@ -437,8 +437,9 @@ pages = 20
     assert "→" not in second
     board_late = _board_page(typst, 17)
     assert "1fr, 1fr, 1fr" in board_late
-    assert "padded_link(<projects-2>)" in board_late
-    assert "padded_link(<projects>)" not in board_late
+    assert "#[] <project-17>" in board_late
+    assert "[Name]" in board_late
+    assert board_late.count("lined_well(lined_fill)") == 3
 
 
 def test_contents_mark_on_projects_when_index_on():

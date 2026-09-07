@@ -147,10 +147,10 @@ def test_colophon_is_raw_without_mos_chrome():
 
 
 def test_default_page_is_device_year_version_only():
-    colo = Colophon(**_colo_kwargs(device="supernote-nomad"))
+    colo = Colophon(**_colo_kwargs(device="158x210"))
     content = colo.pages(None)[0].content
     assert "[*Device*]" in content
-    assert "SuperNote Nomad" in content
+    assert "158 × 210" in content
     assert "[*Year*]" in content
     assert "[*Version*]" in content
     assert __version__ in content
@@ -221,7 +221,7 @@ font_size = "12pt"
 
 
 def test_colophon_follow_header_five_bar_and_body():
-    colo = _colophon_with_flags(device="supernote-nomad")
+    colo = _colophon_with_flags(device="158x210")
     manifest = Manifest()
     manifest.register_source("index")
     manifest.register_source("annual")
@@ -240,7 +240,7 @@ def test_colophon_follow_header_five_bar_and_body():
     assert "columns: (auto, auto)" not in content
     assert "side_menu" not in content
     assert "[*Device*]" in content
-    assert "SuperNote Nomad" in content
+    assert "158 × 210" in content
     assert "[*Year*]" in content
     assert "[*Version*]" in content
     assert __version__ in content
@@ -379,7 +379,7 @@ def _colophon_with_flags(
     command: bool | None = None,
     sha: bool | None = None,
     config_text: str = "year = 2026\n",
-    device: str = "supernote-nomad",
+    device: str = "158x210",
     provenance: dict | None = None,
 ) -> Colophon:
     prov = {
@@ -413,7 +413,7 @@ def _colophon_with_flags(
 def _colophon_with_dump(
     dump: bool | None = True,
     config_text: str = "year = 2026\n",
-    device: str = "supernote-nomad",
+    device: str = "158x210",
 ) -> Colophon:
     return _colophon_with_flags(dump=dump, config_text=config_text, device=device)
 
@@ -665,6 +665,9 @@ def test_colophon_last_default_does_not_dump(tmp_path):
     dto = _attach(short_january(load(path)), path)
     typst_src = _generate(dto)
     assert "SuperNote Nomad" in typst_src
+    assert "[*Chrome*]" in typst_src
+    assert "[Topband]" in typst_src
+    assert "[*Edition*]" in typst_src
     assert "[section.colophon]" not in typst_src
     assert hashlib.sha256(path.read_bytes()).hexdigest() not in typst_src
     for token in _THEME:
@@ -866,7 +869,7 @@ def test_default_still_omits_command_sha_dump():
 
 
 def test_default_composition_is_one_block_on_house_pitch():
-    content = Colophon(**_colo_kwargs(device="supernote-nomad")).pages(None)[0].content
+    content = Colophon(**_colo_kwargs(device="158x210")).pages(None)[0].content
     assert "#block[" in content
     assert "#v(1em)" in content
     assert "rows: regular_height" in content
@@ -881,9 +884,9 @@ def test_default_composition_is_one_block_on_house_pitch():
 
 
 def test_scribe_uses_same_title_facts_gap_and_row_pitch():
-    nomad = Colophon(**_colo_kwargs(device="supernote-nomad")).pages(None)[0].content
+    paper = Colophon(**_colo_kwargs(device="158x210")).pages(None)[0].content
     scribe = Colophon(**_colo_kwargs(device="kindle-scribe")).pages(None)[0].content
-    assert "#v(1em)" in nomad
+    assert "#v(1em)" in paper
     assert "#v(1em)" in scribe
     assert "#v(1.4em)" not in scribe
     assert "0.85em" not in scribe
