@@ -45,7 +45,7 @@ class Daily:
                 title = (
                     f"text(size: h1)[{weekday} · {month} {day.month_day} <{day.id}>]"
                 )
-                content = page.content()
+                content = page.nomad_content()
             elif scribe_hyperpaper_nav(self.configurator):
                 title = page.nav_title()
                 content = heading_and_well(heading, page.content())

@@ -49,7 +49,11 @@ class Weekly:
             out.append(
                 PageData(
                     title=self._title(weekly),
-                    content=weekly.content(),
+                    content=(
+                        weekly.nomad_content()
+                        if nomad_topband(self.configurator)
+                        else weekly.content()
+                    ),
                     page_id=week.id,
                     highlight_months=[thursday.month()],
                     highlight_quarters=[],

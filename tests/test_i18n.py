@@ -30,6 +30,8 @@ def test_load_en_toml_representative_keys():
     assert i18n.t("done") == "Done"
     assert i18n.t("title") == "TITLE"
     assert i18n.t("date") == "DATE"
+    assert i18n.t("week_notes") == "Week notes"
+    assert i18n.t("month_notes_floor") == "Month notes"
 
 
 def test_load_default_prefers_toml():

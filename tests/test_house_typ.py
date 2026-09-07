@@ -50,6 +50,9 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "month_grid" in names
     assert "month_weeks" in names
     assert "week_matrix" in names
+    assert "nomad_daily_well" in names
+    assert "nomad_week_bands" in names
+    assert "nomad_month_well" in names
     assert "dotted_centered" in names
     assert "lined_fill" in names
     assert "task_tick" in names
@@ -149,6 +152,10 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let section-strip(" in house
     assert "#let tempo-bar(" in house
     assert "#let page-shell(" in house
+    assert "#let nomad_daily_well(" in house
+    assert "columns: (2fr, 1fr)" in house[house.index("#let nomad_daily_well(") :]
+    assert "#let nomad_week_bands(" in house
+    assert "#let nomad_month_well(" in house
     assert "#let strip-icon(" in house
     assert "icon-habits" in house
     assert "Notes chip" not in house

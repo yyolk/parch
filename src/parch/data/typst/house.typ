@@ -586,31 +586,89 @@
 }
 
 // Topband under the toolbar dead zone. No side MOS.
+// rows: strip → hair → optional tempo → hair → crumb → hair → 1fr body
 #let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
-  let head = if title == none {
+  let crumb = if title == none {
     []
   } else {
     block(
       width: 100%,
-      inset: (top: 1.4mm, bottom: 1.1mm),
-      {
-        grid(
-          columns: (1fr, auto),
-          align: horizon,
-          title,
-          if year == none { [] } else { year },
-        )
-      },
+      inset: (top: 1.2mm, bottom: 1.0mm),
+      grid(
+        columns: (1fr, auto),
+        align: horizon,
+        title,
+        if year == none { [] } else { year },
+      ),
     )
   }
   grid(
     columns: 1fr,
-    rows: (auto, auto, auto, auto, auto, 1fr),
+    rows: (auto, auto, auto, auto, auto, auto, 1fr),
     strip,
     line(length: 100%, stroke: stroke),
-    if tempo == none { [] } else { block(inset: (top: 1.0mm, bottom: 1.0mm), tempo) },
-    head,
+    if tempo == none { [] } else { tempo },
+    if tempo == none { [] } else { line(length: 100%, stroke: stroke) },
+    crumb,
     if title == none { [] } else { line(length: 100%, stroke: stroke) },
     body,
   )
 }
+
+// Nomad daily: schedule 2fr | rail 1fr, notes floor. MOS keeps daily_well.
+#let nomad_daily_well(schedule, rail, notes, column-gutter: none, notes-height: 20mm) = grid(
+  columns: 1fr,
+  rows: (1fr, notes-height),
+  row-gutter: 1.2mm,
+  grid(
+    columns: (2fr, 1fr),
+    rows: 1fr,
+    column-gutter: column-gutter,
+    schedule,
+    rail,
+  ),
+  notes,
+)
+
+// Nomad weekly: 8 equal floor bands (7 days + week notes). MOS keeps week_matrix.
+#let nomad_week_band(header, pattern: none, stroke: none) = {
+  let gap = if stroke == none { 0pt } else { std.stroke(stroke).thickness }
+  grid(
+    columns: 1fr,
+    rows: (auto, 1fr),
+    grid.cell(
+      inset: (bottom: gap),
+      stroke: (bottom: stroke),
+      text(weight: "bold", bottom-edge: "descender", header),
+    ),
+    box(
+      width: 100%,
+      height: 100%,
+      clip: true,
+      inset: (top: 0.25em, bottom: 0.25em),
+      lined_well(pattern),
+    ),
+  )
+}
+
+#let nomad_week_bands(pattern: none, stroke: none, ..contents) = {
+  let headers = contents.pos()
+  grid(
+    columns: 1fr,
+    rows: (1fr,) * headers.len(),
+    stroke: (bottom: stroke),
+    ..headers.map(header => nomad_week_band(
+      header,
+      pattern: pattern,
+      stroke: stroke,
+    )),
+  )
+}
+
+// Nomad monthly: 7×6 day cells + short Month notes floor. MOS keeps month_weeks.
+#let nomad_month_well(calendar, notes, notes-height: 16mm) = grid(
+  columns: 1fr,
+  rows: (1fr, notes-height),
+  calendar,
+  notes,
+)

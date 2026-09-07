@@ -266,8 +266,12 @@ class Tasks:
 )"""
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
-        full = self.i18n.t(f"weekday.full.{day.weekday_name}")
-        label = f"{full} {day.month_day}"
+        if nomad_topband(self.configurator):
+            short = self.i18n.t(f"weekday.short.{day.weekday_name}")
+            label = f"{short} {day.month_day}"
+        else:
+            full = self.i18n.t(f"weekday.full.{day.weekday_name}")
+            label = f"{full} {day.month_day}"
         inner = (
             "stack(dir: ttb, spacing: 1pt, "
             f"box(text(size: 6pt)[{label}]), "

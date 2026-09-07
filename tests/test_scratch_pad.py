@@ -20,7 +20,6 @@ SCRIBE_LINED = base_config("kindle-scribe", paper="lined")
 
 _LINED = [
     PAPER_158_LINED,
-    NOMAD_LINED,
     SCRIBE_LINED,
 ]
 

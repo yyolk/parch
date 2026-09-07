@@ -79,7 +79,7 @@ class Preamble:
             else ""
         )
         return f"""#import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, tempo-bar, page-shell, strip-icon
+#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, tempo-bar, page-shell, strip-icon, nomad_daily_well, nomad_week_bands, nomad_month_well
 #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance{rail_clear}{bezel})
 #set page(width: page-width, height: page-height, margin: page-margin({side}))
 
@@ -119,7 +119,9 @@ class Preamble:
 #let section_rail = section_rail.with(stroke: regular_stroke, turn: {_v(mos_layout, 'menu_rotate')}, pad: {RAIL_PAD})
 #let section-strip = section-strip.with(height: {CHROME_H}, stroke: regular_stroke)
 #let tempo-bar = tempo-bar.with(height: {TEMPO_H}, stroke: regular_stroke)
-#let page-shell = page-shell.with(stroke: regular_stroke)"""
+#let page-shell = page-shell.with(stroke: regular_stroke)
+#let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
+#let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)"""
 
 
 def _v(mapping, key: str):

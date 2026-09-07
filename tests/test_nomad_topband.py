@@ -198,14 +198,38 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "mos_frame(" not in daily
     assert "section_rail(" not in daily
     assert "nav_header(" not in daily
-    assert "daily_well(" in daily
+    assert "nomad_daily_well(" in daily
+    assert "daily_well(" not in daily
+    assert "columns: (2fr, 1fr)" in daily
+    assert "[ 7]" in daily
+    assert "[16]" in daily
+    assert "[20]" not in daily
+    assert "[ 8]" in daily
+    assert "place(bottom + left, line(length: 3mm" not in daily
+    assert "rows: (regular_height,) + (1fr,) * 10" in daily
+    assert daily.count("task_tick()") == 6
+    assert "rows: (1fr, auto)" in daily
+    assert "stroke: regular_stroke + black" in daily
+    assert "lined_well(lined_fill)" in daily
+    assert "box(inset: (x: 1.4mm, y: 0.35mm)" in daily
+    assert "[More]" in daily
     assert "Notes" not in daily.split("section-strip(")[1].split(")", 1)[0]
+    assert 'text(size: h1)[2026]' in daily
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert 'active: "wk"' in weekly
-    assert "week_matrix(" in weekly
+    assert "nomad_week_bands(" in weekly
+    assert "week_matrix(" not in weekly
     assert "pattern: lined_fill" in weekly
+    assert "[Week notes]" in weekly
+    assert "Mon · 29" in weekly
     monthly = _page_with(typst, "January<month-2026-01-01>")
     assert 'active: "mon"' in monthly
+    assert "nomad_month_well(" in monthly
+    assert "[Month notes]" in monthly
+    assert "month_weeks(" not in monthly
+    assert "columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" in monthly
+    assert "rows: (regular_height,) + (1fr,) * 6" in monthly
+    assert "lined_well(lined_fill, tile-height: regular_height)" in monthly
     # Strip dests also mention tasks-WEEK; title + active chip locate the page.
     tasks = _page_with(typst, "Tasks ·")
     assert 'active: "tasks"' in tasks
@@ -257,6 +281,8 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert page.index("Meetings") < page.index("About")
     assert "About this notebook" not in page
     assert "year glance" in page
+    assert "text(fill: luma(140))[›]" in page
+    assert "rows: (9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm)" in page
     assert "Notes" not in page or "daily_notes" not in page
     assert "page-shell(" not in page
     assert "mos_frame(" not in page

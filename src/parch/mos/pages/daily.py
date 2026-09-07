@@ -74,6 +74,56 @@ class Daily:
         writing = self._column(self.params.get("right_column") or [])
         return f"daily_well({self.side}, {hours}, {writing})"
 
+    def nomad_content(self) -> str:
+        """Locked Nomad daily: 2/3 schedule 7–16, rail cal+priorities, lined notes floor."""
+        inset = "3pt"
+        for col in (self.params.get("left_column"), self.params.get("right_column")):
+            for comp in col or []:
+                data = _to_plain(comp) if isinstance(comp, (StrictDict, dict)) else dict(comp)
+                if data.get("class") == "little_calendar":
+                    params = data.get("params") or {}
+                    if isinstance(params, StrictDict):
+                        params = params.to_plain()
+                    inset = params.get("inset", inset)
+        schedule = DailySchedule(
+            i18n=self.i18n,
+            **{
+                "from": 7,
+                "to": 16,
+                "trailing_30_minutes": False,
+                "time_format": "%k",
+                "stretch": True,
+            },
+        )
+        calendar = LittleCalendar(
+            i18n=self.i18n,
+            manifest=self.manifest,
+            month=self.day.month(),
+            day=self.day,
+            inset=inset,
+            show_month_name=True,
+            show_week_letter=False,
+            week_placement="none",
+        )
+        priorities = DailyPriorities(i18n=self.i18n, number=6)
+        notes = DailyNotes(
+            i18n=self.i18n,
+            manifest=self.manifest,
+            day=self.day,
+            title_height="4mm",
+            notes_height="1fr",
+            pattern="lined",
+            more_chip=True,
+        )
+        rail = f"""grid(
+  columns: 1fr,
+  rows: (1fr, auto),
+  row-gutter: {self.items_spacing},
+  {calendar.generate()},
+  {priorities.generate()}
+)"""
+        return f"nomad_daily_well({schedule.generate()}, {rail}, {notes.generate()})"
+
     def _column(self, comps: list[Any]) -> str:
         pieces: list[str] = []
         for comp in comps:

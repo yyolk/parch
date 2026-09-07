@@ -273,7 +273,8 @@ def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
     nomad_daily = _page_with(nomad, "Thursday · January 1 <2026-01-01>")
     assert "text(size: h1)[Thursday 1]" not in nomad_daily
     assert "page-shell(" in nomad_daily
-    assert "daily_well(" in nomad_daily
+    assert "nomad_daily_well(" in nomad_daily
+    assert "daily_well(" not in nomad_daily
     assert "mos_frame(" not in nomad_daily
 
 

@@ -78,7 +78,7 @@ class Builder:
         if tempo is None:
             tempo = self.navigation.tempo_cell(page_spec.page_id)
         title = page_spec.title if page_spec.title else "none"
-        year = f"[{self.configurator.start_date().year}]"
+        year = f'text(size: h1)[{self.configurator.start_date().year}]'
         return f"""#page-shell(
   {strip},
   {page_spec.content},

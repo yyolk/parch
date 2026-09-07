@@ -169,6 +169,11 @@ def spec_from_device(device_id: str, **overrides: Any) -> JobSpec:
     cleaned = {key: value for key, value in overrides.items() if value is not None}
     if "paper" not in cleaned:
         cleaned["paper"] = default_paper(device.id)
+    if is_nomad(device.id):
+        cleaned.setdefault("hour_from", 7)
+        cleaned.setdefault("hour_to", 16)
+        cleaned.setdefault("trailing_half_hour", False)
+        cleaned.setdefault("priorities_count", 6)
     return JobSpec(device_id=device.id, **cleaned)
 
 

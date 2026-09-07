@@ -220,10 +220,10 @@ def test_nomad_hand_right_generate_compiles_with_mos_on_the_right(tmp_path):
     assert notes["notes_height"] == "1fr"
     assert notes["title_height"] == "4mm"
     schedule = daily["left_column"][0]["params"]
-    assert schedule["from"] == 8
-    assert schedule["to"] == 20
+    assert schedule["from"] == 7
+    assert schedule["to"] == 16
     assert schedule["time_format"] == "%k"
-    assert schedule["trailing_30_minutes"] is True
+    assert schedule["trailing_30_minutes"] is False
     quarterly = next(s for s in dto["planner"]["sections"] if s["name"] == "quarterly")["params"]
     assert "months_column" not in quarterly
     monthly = next(s for s in dto["planner"]["sections"] if s["name"] == "monthly")["params"]["month_params"]
@@ -239,9 +239,9 @@ def test_nomad_hand_right_generate_compiles_with_mos_on_the_right(tmp_path):
     assert "#mos_frame(" not in typst_src
     assert "mos_strip(" not in typst_src
     assert "mos_tabs(" not in typst_src
-    assert "daily_well(right," in typst_src
-    well = typst_src[typst_src.index("daily_well(") :]
-    assert well.index("right,") < well.index("[Schedule]")
+    assert "nomad_daily_well(" in typst_src
+    assert "daily_well(" not in typst_src
+    well = typst_src[typst_src.index("nomad_daily_well(") :]
     assert well.index("[Schedule]") < well.index("[Priorities]")
     pdf, stderr = compile_pdf(typst_src, tmp_path / "nomad-hand-right")
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr

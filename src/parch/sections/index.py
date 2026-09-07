@@ -16,6 +16,8 @@ from parch.sections._shared import _length_mm
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
 _INDEX_ROW_GUTTER = "3mm"
+_NOMAD_ROW = "9mm"
+_NOMAD_BRAND = "14mm"
 
 _SKIP = INDEX_SKIP
 _HUMAN = INDEX_LABELS
@@ -85,7 +87,7 @@ class Index:
             "      rows: 1fr,\n"
             "      align: horizon,\n"
             f"      text(weight: \"bold\")[{label}{extra}],\n"
-            "      text(fill: luma(140))[>]\n"
+            "      text(fill: luma(140))[›]\n"
             "    )"
         )
         band = f"box(width: 100%, height: 100%, {inner})"
@@ -157,12 +159,11 @@ class Index:
             for name in primary
         ]
         more_rows = [self._nomad_row(manifest, name) for name in more]
-        height = self._row_height()
         primary_body = "[]"
         if primary_rows:
             primary_body = f"""grid(
   columns: 1fr,
-  rows: ({", ".join([height] * len(primary_rows))}),
+  rows: ({", ".join([_NOMAD_ROW] * len(primary_rows))}),
   align: horizon + left,
   inset: (x: 4pt, y: 0pt),
 {",\n".join(primary_rows)}
@@ -171,7 +172,7 @@ class Index:
         if more_rows:
             more_body = f"""grid(
   columns: 1fr,
-  rows: ({", ".join([height] * len(more_rows))}),
+  rows: ({", ".join([_NOMAD_ROW] * len(more_rows))}),
   align: horizon + left,
   inset: (x: 4pt, y: 0pt),
 {",\n".join(more_rows)}
@@ -179,11 +180,9 @@ class Index:
         brand = 'text(size: h1, fill: white, weight: "bold")[Contents <index>]'
         year_cell = f'text(size: h1, fill: white, weight: "bold")[{year}]'
         more_head = 'text(size: 0.75em, fill: luma(120), tracking: 0.12em)[MORE]'
-        n_primary = max(len(primary_rows), 1)
-        n_more = max(len(more_rows), 1)
         return f"""#grid(
   columns: 1fr,
-  rows: (15mm, {n_primary}fr, auto, {n_more}fr, 1fr),
+  rows: ({_NOMAD_BRAND}, auto, auto, auto, 1fr),
   block(
     width: 100%,
     height: 100%,

@@ -48,6 +48,40 @@ class Monthly:
   lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})
 )"""
 
+    def nomad_content(self) -> str:
+        """Locked Nomad monthly: 7×6 day cells + short Month notes floor."""
+        heading = ", ".join(
+            f'align(center + horizon)[{self.i18n.t(f"weekday.letter.{day.weekday_name}")}]'
+            for day in (self._nomad_weeks()[1] if len(self._nomad_weeks()) > 1 else self._nomad_weeks()[0])
+        )
+        rows = []
+        for week in self._nomad_weeks():
+            rows.append(", ".join(self._day_cell(day) for day in week))
+        calendar = f"""block(
+  width: 100%,
+  height: 1fr,
+  grid(
+    stroke: regular_stroke,
+    columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    rows: (regular_height,) + (1fr,) * 6,
+    {heading},
+    {", ".join(rows)}
+  )
+)"""
+        notes = f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  block(inset: (top: 0.8mm, bottom: 0.4mm), [{self.i18n.t("month_notes_floor")}]),
+  lined_well(lined_fill, tile-height: regular_height)
+)"""
+        return f"nomad_month_well({calendar}, {notes})"
+
+    def _nomad_weeks(self) -> list[list[Day | None]]:
+        weeks = list(self._month_in_weeks())
+        while len(weeks) < 6:
+            weeks.append([None] * 7)
+        return weeks[:6]
+
     def _calendar(self) -> str:
         if self.week_placement == "none":
             return f"""block(

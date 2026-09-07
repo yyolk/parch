@@ -328,9 +328,9 @@ def test_new_yes_writes_device_defaults(tmp_path):
     data = tomllib.loads(text)
     assert data["calendar"]["year"] == 2027
     assert data["style"]["scratch_pad"] == "lined"
-    assert data["section"]["daily"]["left"]["schedule"]["hour_from"] == 8
-    assert data["section"]["daily"]["left"]["schedule"]["hour_to"] == 20
-    assert data["section"]["daily"]["right"]["priorities"]["count"] == 5
+    assert data["section"]["daily"]["left"]["schedule"]["hour_from"] == 7
+    assert data["section"]["daily"]["left"]["schedule"]["hour_to"] == 16
+    assert data["section"]["daily"]["right"]["priorities"]["count"] == 6
     assert "week_placement" not in data["section"]["monthly"]
     assert data["mos"]["side_menu"] == "left"
     assert data["mos"]["reverse_months_quarters"] is False
