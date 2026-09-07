@@ -282,13 +282,17 @@ def test_nomad_habits_floors_stock_columns_to_five():
     assert paper.habit_columns == 4
 
 
-def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
-    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 1, 5))
-    section = Tasks(
+def _nomad_tasks_short() -> Tasks:
+    return Tasks(
         section_name="tasks",
         i18n=load_default(),
-        configurator=_cfg("supernote-nomad", extras=True),
+        configurator=Configurator(short_january(load(base_config("supernote-nomad", extras=True)))),
     )
+
+
+def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
+    monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 1, 5))
+    section = _nomad_tasks_short()
     manifest = Manifest()
     monday = section._day_cell(manifest, make_day("2026-01-05"))
     thursday = section._day_cell(manifest, make_day("2026-01-01"))
@@ -300,11 +304,7 @@ def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
 
 def test_nomad_tasks_inverts_job_start_when_today_outside_range(monkeypatch):
     monkeypatch.setattr("parch.sections.tasks._calendar_today", lambda: date(2026, 9, 7))
-    section = Tasks(
-        section_name="tasks",
-        i18n=load_default(),
-        configurator=_cfg("supernote-nomad", extras=True),
-    )
+    section = _nomad_tasks_short()
     manifest = Manifest()
     monday = section._day_cell(manifest, make_day("2026-01-05"))
     thursday = section._day_cell(manifest, make_day("2026-01-01"))
