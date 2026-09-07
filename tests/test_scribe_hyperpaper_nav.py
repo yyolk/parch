@@ -140,6 +140,11 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "mos_strip(" not in weekly
     assert "[Weeks]" in weekly
     assert "Dec 29 – Jan 4" in weekly
+    assert "trail_heading(" in weekly
+    assert "shrink: true" in weekly
+    heading = weekly[weekly.index("nav_header(") : weekly.index("week_matrix(")]
+    assert "trail_heading(" in heading
+    assert "shrink: true" in heading
 
 
 def test_scribe_index_is_full_bleed_brand_without_mos_rail():

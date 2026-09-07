@@ -97,11 +97,12 @@
       if wanted.width == 0pt or wanted.width <= size.width {
         title
       } else {
+        // Natural-size box first so a leftover h1 digit cannot wrap (weekly "4").
         scale(
           size.width / wanted.width * 100%,
           origin: start + horizon,
           reflow: true,
-          title,
+          box(width: wanted.width, height: wanted.height, title),
         )
       }
     })
@@ -339,36 +340,20 @@
   grid(columns: (3fr, 2fr), rows: 1fr, column-gutter: column-gutter, pad, months)
 }
 
-// Scribe Hyperpaper explor: 5mm air + 10mm chip/breadcrumb track, hairline under.
+// Scribe Hyperpaper explor: 5mm air + soft ~10mm crumb track (grows, no clip).
 // Nomad does not call this. Header owns top air (page-margin top stays 0mm).
-// Left 1fr seats the crumb. Scale uniformly (reflow: false) — trail_heading's
-// reflow:true wraps an h1 leftover digit (weekly "4") and it explodes.
+// Left 1fr is the breadcrumb; Contents + right chips eat the rest. Shrink is
+// trail_heading(..., shrink: true) at the call site — not the <100mm bind.
 #let nav_header(left, right, height: 10mm, air: 5mm, stroke: none) = grid(
   columns: 1fr,
-  rows: (air, height),
+  rows: (air, auto),
   [],
   grid(
     columns: (1fr, auto),
-    rows: 100%,
     align: horizon,
     column-gutter: 2mm,
-    inset: (x: 2mm),
-    box(width: 100%, height: 100%, clip: true, align(horizon + start, layout(size => context {
-      let wanted = measure(left)
-      if wanted.width == 0pt or wanted.width <= size.width {
-        left
-      } else {
-        // Box at natural size first so h1 cannot wrap a leftover digit, then
-        // scale the one-line ink. reflow:true is the weekly "4" explosion.
-        let fit = calc.max(size.width - 2mm, 1mm)
-        scale(
-          fit / wanted.width * 100%,
-          origin: start + horizon,
-          reflow: false,
-          box(width: wanted.width, height: wanted.height, left),
-        )
-      }
-    }))),
+    inset: (x: 2mm, y: 1mm),
+    left,
     right,
   ),
   grid.hline(y: 2, stroke: stroke),

@@ -112,10 +112,20 @@ class Navigation:
         return f"nav_header({left}, {right})"
 
     def _nav_header_left(self, title: str | None) -> str:
+        """Contents (auto) + trail_heading(title, mark, shrink: true) in the 1fr.
+
+        Scribe page-width is not < 100mm, so the Move preamble bind does not
+        fire — shrink must be passed explicitly. Mark is empty; chips sit in
+        nav_header's right auto column.
+        """
         home = self._home_chip()
-        if title:
-            return f"lead_pair({home}, {title}, spacing: 0.5em)"
-        return home
+        if not title:
+            return home
+        crumb = f"trail_heading({title}, [], shrink: true)"
+        return (
+            f"grid(columns: (auto, 1fr), column-gutter: 0.5em, "
+            f"align: horizon + start, {home}, {crumb})"
+        )
 
     def _home_chip(self) -> str:
         """Contents chip beside the five-bar mark when index is on."""
