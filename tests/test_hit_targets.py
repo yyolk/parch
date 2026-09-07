@@ -78,10 +78,11 @@ def test_nomad_topband_chips_are_equal_cells(tmp_path):
     page = _annual_page(PdfReader(str(pdf)))
     height = float(page.mediabox.height)
     links = _links(page)
-    top = [row for row in links if row[3] > height - 80]
-    assert len(top) >= 6
-    widths = sorted(row[0] for row in top)
-    heights = sorted(row[1] for row in top)
+    top_y = max(row[3] for row in links)
+    strip = [row for row in links if abs(row[3] - top_y) < 3]
+    assert len(strip) >= 6
+    widths = sorted(row[0] for row in strip)
+    heights = sorted(row[1] for row in strip)
     assert widths[0] == pytest.approx(widths[-1], abs=2.0)
     assert heights[0] == pytest.approx(heights[-1], abs=2.0)
     assert 18 < widths[0] < 70

@@ -95,12 +95,11 @@ class Annual:
         cells = ",\n  ".join(
             year_month_cell(self.i18n, manifest, month) for month in self._year_months()
         )
-        return f"""{{
-  [<{self.ID}>]
-  nomad_year_grid(
-  {cells},
-)
-}}"""
+        return (
+            f"[#box(width: 100%, height: 100%, nomad_year_grid(\n"
+            f"  {cells},\n"
+            f")) <{self.ID}>]"
+        )
 
     def _year_months(self) -> list[Month]:
         year = self.configurator.start_date().year

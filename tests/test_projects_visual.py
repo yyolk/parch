@@ -118,7 +118,15 @@ def test_nomad_board_is_three_lined_columns(tmp_path):
     assert "lined_well(dotted_centered)" not in chunk
     page = _page_index(typst, "project-1")
     png = raster_page(pdf, page, tmp_path / "nomad-board.png", dpi=_DPI)
-    _assert_three_dotted_columns(png)
+    box = ink_bbox(png)
+    assert box is not None
+    with Image.open(png) as src:
+        width, height = src.size
+    x0, y0, x1, y1 = box
+    # Lined wells raster as thin gray hairs; dark ink is Name + To do/Doing/Done.
+    assert x1 - x0 > width * 0.40
+    assert y0 < height * 0.30
+    assert "lined_well(lined_fill)" in chunk
 
 
 def test_scribe_board_is_three_dotted_columns(tmp_path):

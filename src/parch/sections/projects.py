@@ -108,7 +108,7 @@ class Projects:
                 bid = self.board_id(index)
                 out.append(
                     PageData(
-                        title=f'text(size: h1)[{index} <{bid}>]',
+                        title=f"text(size: h1)[{index}]",
                         content=self._board_body(manifest, index),
                         page_id=bid,
                         strip="none",
@@ -207,8 +207,8 @@ class Projects:
   grid.cell(stroke: (bottom: regular_stroke), []),
 )"""
         bid = self.board_id(index)
-        return f"""{{
-  [#[] <{bid}>]
+        return f"""box(width: 100%, height: 100%, {{
+  place([#[] <{bid}>])
   grid(
     columns: 1fr,
     rows: (auto, 1fr),
@@ -216,7 +216,7 @@ class Projects:
     {name_line},
     {self._kanban("lined_fill")}
   )
-}}"""
+}})"""
 
     def _board(self, manifest: Manifest, index: int) -> str:
         projects = self.i18n.t("projects")

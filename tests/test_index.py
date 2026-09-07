@@ -254,20 +254,18 @@ def test_annual_has_no_calendar_chip_and_links_to_index():
 def test_colophon_has_mark_and_unchanged_facts():
     typst = _generate(load(NOMAD))
     page = _colophon_page(typst)
-    assert _MARK_FLUSH in page
-    assert _MARK_RULE in page
-    assert page.count(_MARK_RULE) == 1
-    assert _FOLLOW_SPACING in page
-    assert _FOLLOW_PAIR in page
-    assert _TRAIL_HEADING not in page
-    heading = page[page.index(_LEAD_PAIR) :]
-    assert "[About this notebook <colophon>]" in heading
-    assert page.index(_MARK_FLUSH) < page.index("[About this notebook <colophon>]")
-    assert "column-gutter: 6pt" not in page
-    assert "columns: (auto, auto)" not in page
+    assert "page-shell(\n  none," in page
+    assert "[About <colophon>]" in page
     assert "[*Device*]" in page
+    assert "[*Page*]" in page
     assert "[*Year*]" in page
-    assert "[*Version*]" in page
+    assert "[*Chrome*]" in page
+    assert "[Topband]" in page
+    assert "[*Edition*]" in page
+    assert "[*Version*]" not in page
+    assert _MARK_FLUSH not in page
+    assert _LEAD_PAIR not in page
+    assert "column-gutter: 6pt" not in page
     assert "<colophon>" in page
     assert "Calendar" not in page or "padded_link(<annual>, [Calendar])" not in page
 

@@ -207,7 +207,7 @@ def test_scribe_index_is_full_bleed_brand_without_mos_rail():
 
 def test_nomad_uses_topband_158_keeps_month_mos_strip():
     nomad = _generate("supernote-nomad")
-    annual = _page_with(nomad, "2026<annual>")
+    annual = _page_with(nomad, "nomad_year_grid(")
     assert "page-shell(" in annual
     assert "section-strip(" in annual
     assert "mos_strip(" not in annual

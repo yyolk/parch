@@ -111,7 +111,7 @@ def test_hand_right_still_emits_months_then_pad():
         assert f"[{name}]" in content
 
 
-@pytest.mark.parametrize("path", [PAPER_158, NOMAD, SCRIBE])
+@pytest.mark.parametrize("path", [PAPER_158, SCRIBE])
 def test_full_year_quarter_pages_include_all_three_months(path: Path):
     typst_src = _generate(_full_year_quarters(path))
     pages = _quarter_pages(typst_src)
@@ -137,20 +137,48 @@ def test_full_year_quarter_pages_include_all_three_months(path: Path):
         assert "[W], [M], [T], [W], [T], [F], [S], [S]" not in page
 
 
+def test_nomad_full_year_quarter_uses_year_month_strip():
+    typst_src = _generate(_full_year_quarters(NOMAD))
+    pages = _quarter_pages(typst_src)
+    assert set(pages) == {1, 2, 3, 4}
+    expected = {
+        1: ("Jan", "Feb", "Mar"),
+        2: ("Apr", "May", "Jun"),
+        3: ("Jul", "Aug", "Sep"),
+        4: ("Oct", "Nov", "Dec"),
+    }
+    for number, months in expected.items():
+        page = pages[number]
+        assert "nomad_quarter_well(" in page
+        assert "quarter_well(left" not in page
+        assert "year-month(" in page
+        for name in months:
+            assert f"[{name}]" in page, f"Q{number} missing {name}"
+        assert f"Quarter {number} <quarter-2026-{number}>" in page
+        assert "[Q1]" in page
+        assert "[Q4]" in page
+        assert "[M], [T], [W], [T], [F], [S], [S]" in page
+
+
 def test_shipped_profiles_q3_compile_with_three_months(tmp_path):
     """Compile a real 2026 Q1-Q4 set for all shipped MOS profiles so a July-only Q3 cannot slip through."""
     pdfs = []
+    labels = {
+        "158x210": Q3_MONTHS,
+        "nomad": ("Jul", "Aug", "Sep"),
+        "scribe": Q3_MONTHS,
+    }
     for name, config in (("158x210", PAPER_158), ("nomad", NOMAD), ("scribe", SCRIBE)):
         typst_src = _generate(_full_year_quarters(config))
         q3 = _quarter_pages(typst_src)[3]
-        for month in Q3_MONTHS:
+        for month in labels[name]:
             assert f"[{month}]" in q3
         pdf, stderr = compile_pdf(typst_src, tmp_path / name)
         assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-        pdfs.append((name, pdf))
+        pdfs.append((name, pdf, labels[name]))
     if shutil.which("pdftotext") is None:
         pytest.skip("pdftotext not on PATH")
-    for name, pdf in pdfs:
+    for name, pdf, months in pdfs:
         extracted = subprocess.run(
             ["pdftotext", "-layout", str(pdf), "-"],
             check=True,
@@ -158,7 +186,7 @@ def test_shipped_profiles_q3_compile_with_three_months(tmp_path):
             text=True,
         ).stdout
         q3_pdf = next(page for page in extracted.split("\x0c") if "Quarter 3" in page)
-        for month in Q3_MONTHS:
+        for month in months:
             assert month in q3_pdf, f"{name} Q3 PDF missing {month}"
 
 

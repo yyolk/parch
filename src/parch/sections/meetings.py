@@ -107,7 +107,7 @@ class Meetings:
                 mid = self.meeting_id(index)
                 out.append(
                     PageData(
-                        title=f'text(size: h1)[{index} <{mid}>]',
+                        title=f"text(size: h1)[{index}]",
                         content=self._meeting_body(manifest, index),
                         page_id=mid,
                         strip="none",
@@ -231,8 +231,8 @@ class Meetings:
   {self._label("action_items")},
   {self._ticked_lines(_ACTION_LINES)}
 )"""
-        return f"""{{
-  [#[] <{mid}>]
+        return f"""box(width: 100%, height: 100%, {{
+  place([#[] <{mid}>])
   grid(
     columns: (1fr, 2fr, 1fr),
     rows: 1fr,
@@ -241,7 +241,7 @@ class Meetings:
     {notes},
     {actions},
   )
-}}"""
+}})"""
 
     def _meeting(self, manifest: Manifest, index: int) -> str:
         meetings = self.i18n.t("meetings")

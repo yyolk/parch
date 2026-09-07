@@ -84,7 +84,7 @@ def test_generate_english_strings_match_previous_meanings():
     ):
         assert label in typst
     assert "Q1" in typst
-    assert "[], [M], [T], [W], [T], [F], [S], [S]" in typst
+    assert "[M], [T], [W], [T], [F], [S], [S]" in typst
 
 
 def test_path_like_locale_code_is_config_error():
