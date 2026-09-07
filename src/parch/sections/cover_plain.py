@@ -104,21 +104,27 @@ class CoverPlain:
         )
         # page-shell already reserved toolbar + bezel. Extra inset matches
         # locked 00-cover (x: bezel+2mm, top: 8mm, bottom: bezel+4mm).
+        # Markup cluster — code-block sequences pick up par.spacing (1.2em of
+        # 48pt ≈ 20mm) between year and rules.
         return f"""block(
   width: 100%,
   height: 100%,
   inset: (x: 2mm, top: 8mm, bottom: 4mm),
   {{
     v(1fr)
-    align(center, {{
-      {year}
-      v(4mm)
-      box(width: 42mm, {{
-        box(width: 100%, height: 0.7pt, fill: black)
-        v(0.7mm)
-        box(width: 100%, height: 0.35pt, fill: luma(25%))
-      }})
-    }})
+    {{
+      set par(spacing: 0pt)
+      align(center)[
+        #{year}
+        #v(4mm)
+        #box(width: 42mm, {{
+          set par(spacing: 0pt)
+          box(width: 100%, height: 0.7pt, fill: black)
+          v(0.7mm)
+          box(width: 100%, height: 0.35pt, fill: luma(25%))
+        }})
+      ]
+    }}
     v(1.15fr)
     align(center, text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad])
   }},

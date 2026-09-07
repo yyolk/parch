@@ -282,9 +282,13 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert 'text(size: 48pt, weight: "bold", tracking: 1.5pt' in cover
     assert "v(1fr)" in cover
     assert "v(1.15fr)" in cover
+    assert "align(center)[" in cover
+    assert "#v(4mm)" in cover
+    assert "align(center, {" not in cover
     assert "rows: (1fr, 2fr)" not in cover
     assert "line(length: 42mm" not in cover
     assert "box(width: 42mm" in cover
+    assert "set par(spacing: 0pt)" in cover
     assert "height: 0.7pt, fill: black" in cover
     assert "height: 0.35pt, fill: luma(25%)" in cover
     assert 'text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad]' in cover
