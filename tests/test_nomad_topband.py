@@ -325,7 +325,11 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "task_tick()" in focus
     assert "line(length: 100%, stroke: regular_stroke + black)" in focus
     assert "6.2mm" in focus
-    assert "lined_well(lined_fill)" in quarterly.split("[Notes]")[1]
+    notes = quarterly.split("[Notes]")[1]
+    assert "lined_well(lined_fill)" not in notes
+    assert "lined_well(dotted_centered)" not in notes
+    assert "let tile = 5.5mm" in notes
+    assert "align(bottom, line(length: 100%, stroke: regular_stroke + black))" in notes
     assert "[Q1]" in quarterly
     assert "[Q2]" in quarterly
     assert "[Q3]" in quarterly

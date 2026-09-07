@@ -69,12 +69,19 @@ class Quarterly:
     )
   }})
 }})"""
-        notes = f"""grid(
-  columns: 1fr,
-  rows: (auto, 1fr),
-  block(inset: (top: 0.4mm, bottom: 0.3mm), text(weight: "bold")[{self.i18n.t("notes")}]),
-  lined_well(lined_fill)
-)"""
+        notes = f"""box(width: 100%, height: 100%, clip: true, stroke: (top: regular_stroke + black), inset: (top: 0.6mm), {{
+  text(weight: "bold")[{self.i18n.t("notes")}]
+  v(0.3mm)
+  layout(size => {{
+    let tile = 5.5mm
+    let n = calc.max(5, calc.floor(size.height / tile))
+    grid(
+      rows: (tile,) * n,
+      row-gutter: 0pt,
+      ..range(n).map(_ => align(bottom, line(length: 100%, stroke: regular_stroke + black))),
+    )
+  }})
+}})"""
         return f"nomad_quarter_well({strip}, {focus}, {notes})"
 
     def _months_grid(self) -> str:
