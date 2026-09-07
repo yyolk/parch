@@ -630,7 +630,7 @@
     ''',
     'colophon': '''
       #page-shell(
-        none,
+        section-strip(((<index>, "contents"), (<annual>, "cal"), (<quarter-2026-1>, "q"), (<month-2026-01-01>, "mon"), (<2026W01>, "wk"), (<2026-01-01>, "day"),), active: none),
         grid(
         columns: (auto, 1fr),
         column-gutter: regular_column_gutter,
