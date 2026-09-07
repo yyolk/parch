@@ -12,6 +12,7 @@ from tests.test_toml_omit_sections import compile_pdf
 from tests.toml_fixtures import omit_toml_sections, short_january
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 
 def _links(page):
@@ -32,14 +33,14 @@ def _annual_page(reader: PdfReader):
 
 def _calendar_year_dto():
     text = omit_toml_sections(
-        NOMAD.read_text(encoding="utf-8"),
+        PAPER.read_text(encoding="utf-8"),
         ["quarterly", "weekly", "daily", "daily_notes"],
     )
     return parse_toml(text, source="hit-year.toml")
 
 
 def test_contents_mark_link_is_square(tmp_path):
-    dto = short_january(load(NOMAD))
+    dto = short_january(load(PAPER))
     typst = Generate(i18n=load_default()).generate(dto)
     pdf, stderr = compile_pdf(typst, tmp_path / "mark")
     assert pdf.is_file(), stderr
@@ -48,7 +49,7 @@ def test_contents_mark_link_is_square(tmp_path):
     assert len(squares) == 1
     width, height, _x, _y = squares[0]
     assert width == pytest.approx(height, abs=0.01)
-    assert 28 < width < 36
+    assert 25 < width < 50
 
 
 def test_mos_tab_links_are_one_cell_each(tmp_path):
@@ -67,3 +68,20 @@ def test_mos_tab_links_are_one_cell_each(tmp_path):
     ys = sorted(row[3] for row in mos)
     for prev, nxt in zip(ys, ys[1:]):
         assert nxt == pytest.approx(prev + heights[0], abs=1.0)
+
+
+def test_nomad_topband_chips_are_equal_cells(tmp_path):
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "topband")
+    assert pdf.is_file(), stderr
+    page = _annual_page(PdfReader(str(pdf)))
+    height = float(page.mediabox.height)
+    links = _links(page)
+    top = [row for row in links if row[3] > height - 80]
+    assert len(top) >= 6
+    widths = sorted(row[0] for row in top)
+    heights = sorted(row[1] for row in top)
+    assert widths[0] == pytest.approx(widths[-1], abs=2.0)
+    assert heights[0] == pytest.approx(heights[-1], abs=2.0)
+    assert 18 < widths[0] < 70

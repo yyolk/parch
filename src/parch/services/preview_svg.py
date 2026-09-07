@@ -297,9 +297,7 @@ def sample_page_numbers(
         ),
         "monthly-jan": lambda: _first_page(chunks, f"<month-{jan1}>]", "monthly"),
         "weekly-w01": lambda: _first_dest(chunks, week_id, "weekly"),
-        "daily-jan1": lambda: _first_page(
-            chunks, f"text(size: h1)[1 <{jan1}>]", "daily"
-        ),
+        "daily-jan1": lambda: _first_dest(chunks, jan1, "daily"),
         "notes-jan1": lambda: _first_page(
             chunks, f"<daily-note-{jan1}-page-1>]", "daily notes"
         ),
@@ -312,9 +310,7 @@ def sample_page_numbers(
         "review": lambda: _first_page(chunks, "<review>]", "review"),
         "review-w01": lambda: _first_dest(chunks, f"review-{week_id}", "review week"),
         "tasks": lambda: _first_page(chunks, "<tasks>]", "tasks"),
-        "tasks-w01": lambda: _first_page(
-            chunks, f"#[] <tasks-{week_id}>", "tasks week"
-        ),
+        "tasks-w01": lambda: _first_dest(chunks, f"tasks-{week_id}", "tasks week"),
         "meetings": lambda: _first_page(chunks, "<meetings>]", "meetings"),
         "meeting-1": lambda: _first_page(chunks, "#[] <meeting-1>", "meeting"),
         "colophon": lambda: _first_page(chunks, "<colophon>]", "colophon"),

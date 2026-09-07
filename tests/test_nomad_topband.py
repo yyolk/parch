@@ -189,7 +189,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "week_matrix(" in weekly
     monthly = _page_with(typst, "January<month-2026-01-01>")
     assert 'active: "mon"' in monthly
-    tasks = _page_with(typst, "tasks-2026W01")
+    tasks = _page_with(typst, "Tasks · Week 1")
     assert 'active: "tasks"' in tasks
     assert "padded_link(<2026-01-01>" in tasks
     habits = _page_with(typst, "Habits · January<habits-january>")
@@ -241,6 +241,21 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert "Notes" not in page or "daily_notes" not in page
     assert "page-shell(" not in page
     assert "mos_frame(" not in page
+
+
+def test_nomad_sample_page_numbers_find_topband_dests():
+    from parch.services.preview_svg import sample_page_numbers
+
+    typst = _generate("supernote-nomad", extras=True)
+    pages = sample_page_numbers(
+        typst,
+        year=2026,
+        week_id="2026W01",
+        jan1="2026-01-01",
+        stems=("contents", "daily-jan1", "weekly-w01", "monthly-jan", "tasks-w01", "habits-jan"),
+    )
+    assert pages["contents"] < pages["monthly-jan"] < pages["weekly-w01"] < pages["daily-jan1"]
+    assert pages["habits-jan"] < pages["tasks-w01"]
 
 
 def test_nomad_short_january_compiles(tmp_path):

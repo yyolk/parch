@@ -179,9 +179,11 @@ class Index:
         brand = 'text(size: h1, fill: white, weight: "bold")[Contents <index>]'
         year_cell = f'text(size: h1, fill: white, weight: "bold")[{year}]'
         more_head = 'text(size: 0.75em, fill: luma(120), tracking: 0.12em)[MORE]'
+        n_primary = max(len(primary_rows), 1)
+        n_more = max(len(more_rows), 1)
         return f"""#grid(
   columns: 1fr,
-  rows: (15mm, 1fr, auto, 1fr),
+  rows: (15mm, {n_primary}fr, auto, {n_more}fr, 1fr),
   block(
     width: 100%,
     height: 100%,
@@ -197,12 +199,12 @@ class Index:
   block(
     width: 100%,
     height: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}, bottom: {_INDEX_ROW_GUTTER}),
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}),
     {primary_body}
   ),
   block(
     width: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: 2mm, bottom: 1mm),
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: 3mm, bottom: 1mm),
     {more_head}
   ),
   block(
@@ -210,5 +212,6 @@ class Index:
     height: 100%,
     inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, bottom: {_INDEX_BOTTOM_INSET}),
     {more_body}
-  )
+  ),
+  []
 )"""

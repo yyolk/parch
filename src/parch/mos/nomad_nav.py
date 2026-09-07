@@ -399,11 +399,13 @@ def _focus_week(ctx: NavContext, configurator) -> Week:
 
 
 def _cross_boundary_day(ctx: NavContext, configurator) -> Day:
-    """Tasks uses week start; Review uses week end."""
+    """Tasks uses week start; Review uses week end; Weekly uses Thursday."""
     if ctx.kind == "review_week" and ctx.week is not None:
         return ctx.week.days()[-1]
     if ctx.kind == "tasks_week" and ctx.week is not None:
         return ctx.week.days()[0]
+    if ctx.kind == "weekly" and ctx.week is not None:
+        return next(day for day in ctx.week.days() if day.weekday_name == "thursday")
     if ctx.week is not None:
         return ctx.week.days()[0]
     return ctx.day or configurator.start_date()

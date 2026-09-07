@@ -240,7 +240,7 @@ def test_contents_page_has_no_back_link_mark():
 
 
 def test_annual_has_no_calendar_chip_and_links_to_index():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = _annual_page(typst)
     assert "padded_link(<annual>, [Calendar])" not in page
     assert "[Calendar]" not in page
