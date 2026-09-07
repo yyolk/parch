@@ -57,6 +57,7 @@ class Habits:
                     content=self._index_body(manifest, months),
                     page_id=self.ID,
                     heading_mark=HeadingMark.TRAIL,
+                    strip="none",
                 )
             ]
         else:
@@ -74,6 +75,7 @@ class Habits:
                     show_quarters=False,
                     nav_links=[],
                     heading_mark=HeadingMark.TRAIL,
+                    strip="none" if nomad_topband(self.configurator) else None,
                 )
             )
         return out

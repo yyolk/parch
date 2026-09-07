@@ -75,6 +75,7 @@ class Review:
                         content=self._index_body(manifest, chunk),
                         page_id=page_id,
                         heading_mark=HeadingMark.TRAIL,
+                        strip="none",
                     )
                 )
             else:
@@ -98,6 +99,7 @@ class Review:
                             content=self._week_body(manifest, week),
                             page_id=page_id,
                             heading_mark=HeadingMark.TRAIL,
+                            strip="none",
                         )
                     )
                 else:

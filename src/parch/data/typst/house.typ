@@ -391,151 +391,30 @@
   )
 }
 
-// Nomad Topband. MOS / Scribe do not call these. Icons are Lucide-style
-// strokes; -on is inversion via the chip fill, not a second path set.
-#let _strip-ink(on) = if on { white } else { black }
-#let _strip-sw = 0.22mm
+// Nomad Topband. MOS / Scribe do not call these. Glyphs are locked SVGs
+// (icons/*.svg + icons/*-on.svg). Notes is not a chip.
+#let _strip-id(name) = if name == "contents" { "menu" } else { name }
 
-#let icon-menu(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.70
-  box(width: size, height: size, align(center + horizon, stack(
-    dir: ttb,
-    spacing: size * 0.18,
-    line(length: w, stroke: _strip-sw + paint),
-    line(length: w, stroke: _strip-sw + paint),
-    line(length: w, stroke: _strip-sw + paint),
-  )))
-}
-
-#let icon-cal(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.70
-  let h = size * 0.62
-  box(width: size, height: size, align(center + horizon, {
-    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
-    place(top + center, dy: h * 0.18, circle(radius: 0.18mm, fill: paint))
-  }))
-}
-
-#let icon-q(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.68
-  box(width: size, height: size, align(center + horizon, stack(
-    dir: ttb,
-    spacing: size * 0.10,
-    line(length: w, stroke: _strip-sw + paint),
-    line(length: w, stroke: _strip-sw + paint),
-    line(length: w, stroke: _strip-sw + paint),
-  )))
-}
-
-#let icon-mon(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.70
-  let h = size * 0.62
-  let cell = w / 4
-  box(width: size, height: size, align(center + horizon, {
-    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
-    place(dx: (size - w) / 2 + cell * 1.2, dy: (size - h) / 2 + h * 0.42, {
-      for i in range(2) {
-        for j in range(2) {
-          place(dx: i * cell * 0.9, dy: j * cell * 0.7, circle(radius: 0.16mm, fill: paint))
-        }
-      }
-    })
-  }))
-}
-
-#let icon-wk(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.70
-  let h = size * 0.62
-  box(width: size, height: size, align(center + horizon, {
-    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
-    place(top + center, dy: h * 0.32, stack(
-      dir: ttb,
-      spacing: h * 0.18,
-      circle(radius: 0.16mm, fill: paint),
-      circle(radius: 0.16mm, fill: paint),
-      circle(radius: 0.16mm, fill: paint),
-    ))
-  }))
-}
-
-#let icon-day(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  box(width: size, height: size, align(center + horizon, {
-    circle(radius: size * 0.16, stroke: _strip-sw + paint)
-    for i in range(8) {
-      let turn = i * 45deg
-      place(center + horizon, rotate(turn, line(
-        start: (0mm, size * 0.24),
-        end: (0mm, size * 0.36),
-        stroke: _strip-sw + paint,
-      )))
-    }
-  }))
-}
-
-#let icon-tasks(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.62
-  box(width: size, height: size, align(center + horizon, stack(
-    dir: ttb,
-    spacing: size * 0.14,
-    ..range(3).map(_ => stack(
-      dir: ltr,
-      spacing: size * 0.12,
-      circle(radius: 0.18mm, fill: paint),
-      line(length: w * 0.72, stroke: _strip-sw + paint),
-    )),
-  )))
-}
-
-#let icon-habits(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let d = size * 0.10
-  box(width: size, height: size, align(center + horizon, grid(
-    columns: (auto, auto, auto),
-    rows: (auto, auto, auto),
-    gutter: size * 0.12,
-    ..((circle(radius: d / 2, fill: paint),) * 9),
-  )))
-}
-
-#let icon-review(on: false, size: 3.4mm) = {
-  let paint = _strip-ink(on)
-  let w = size * 0.58
-  let h = size * 0.70
-  box(width: size, height: size, align(center + horizon, {
-    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
-    place(center + horizon, stack(
-      dir: ttb,
-      spacing: h * 0.16,
-      line(length: w * 0.55, stroke: _strip-sw + paint),
-      line(length: w * 0.55, stroke: _strip-sw + paint),
-      line(length: w * 0.40, stroke: _strip-sw + paint),
-    ))
-  }))
+#let icon-chip(id, active: false, expand: true, stroke: 0.4pt) = {
+  let src = if active { "icons/" + id + "-on.svg" } else { "icons/" + id + ".svg" }
+  box(
+    width: if expand { 100% } else { auto },
+    height: 100%,
+    inset: (x: 0.6mm, y: 1.1mm),
+    fill: if active { black } else { white },
+    stroke: stroke + black,
+    align(center + horizon, image(src, height: 3.1mm)),
+  )
 }
 
 #let strip-icon(name, on: false, size: 3.4mm) = {
-  if name == "contents" { icon-menu(on: on, size: size) }
-  else if name == "cal" { icon-cal(on: on, size: size) }
-  else if name == "q" { icon-q(on: on, size: size) }
-  else if name == "mon" { icon-mon(on: on, size: size) }
-  else if name == "wk" { icon-wk(on: on, size: size) }
-  else if name == "day" { icon-day(on: on, size: size) }
-  else if name == "tasks" { icon-tasks(on: on, size: size) }
-  else if name == "habits" { icon-habits(on: on, size: size) }
-  else if name == "review" { icon-review(on: on, size: size) }
-  else { [] }
+  icon-chip(_strip-id(name), active: on, expand: false)
 }
 
 // items: array of (dest, key). dest is none when the page does not exist.
 #let section-strip(items, active: none, height: 6.5mm, stroke: none) = {
   let gap = 0.55mm
+  let hair = if stroke != none { stroke } else { 0.4pt }
   let n = items.len()
   if n == 0 { [] } else {
     grid(
@@ -546,13 +425,7 @@
         let dest = item.at(0)
         let name = item.at(1)
         let on = dest != none and name == active
-        let seated = box(
-          width: 100%,
-          height: 100%,
-          fill: if on { black } else { luma(0%, 0%) },
-          stroke: stroke,
-          align(center + horizon, strip-icon(name, on: on)),
-        )
+        let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: hair)
         if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
       }),
     )
@@ -561,6 +434,7 @@
 
 // items: array of (dest, label, on)
 #let tempo-bar(items, height: 6mm, stroke: none) = {
+  set text(font: "Liberation Sans")
   let n = items.len()
   if n == 0 { [] } else {
     grid(
@@ -686,16 +560,47 @@
   )
 }
 
-// Nomad annual: compact month cell. Not LittleCalendar / month_grid.
-#let year-month(header, body) = grid(
-  columns: 1fr,
-  rows: (auto, 1fr),
-  block(
-    inset: (bottom: 0.15mm),
-    text(size: 0.7em, weight: "bold", bottom-edge: "descender", header),
-  ),
-  body,
-)
+// Nomad annual/quarter glance. Locked densify — not LittleCalendar / month_grid.
+#let year-month(name, start-wd: 3, days: 31) = {
+  set text(font: "Liberation Sans")
+  box(width: 100%, height: 100%, clip: true, layout(size => {
+    let wks = 6
+    let title-sz = 6.5pt
+    let wd-sz = 4.5pt
+    let day-sz = 5.5pt
+    let title-gap = 0.3mm
+    let rg-k = 0.28
+    let fixed = title-sz + title-gap
+    let coef = 0.6 + wks + rg-k * wks
+    let day-h = calc.max(1.8mm, (size.height - fixed) / coef)
+    let wd-h = day-h * 0.6
+    let rg = day-h * rg-k
+    let wd = ("M", "T", "W", "T", "F", "S", "S")
+    let cells = ()
+    for i in range(start-wd) { cells.push(none) }
+    for d in range(1, days + 1) { cells.push(d) }
+    while cells.len() < wks * 7 { cells.push(none) }
+    block(width: 100%, {
+      text(weight: "bold", size: title-sz)[#name]
+      v(title-gap)
+      grid(
+        columns: (1fr,) * 7,
+        column-gutter: 0pt,
+        row-gutter: rg,
+        ..wd.map(w => box(
+          width: 100%,
+          height: wd-h,
+          align(center + horizon, text(size: wd-sz, fill: luma(45%), weight: "bold")[#w]),
+        )),
+        ..cells.map(c => box(
+          width: 100%,
+          height: day-h,
+          align(center + horizon, if c == none { [] } else { text(size: day-sz)[#c] }),
+        )),
+      )
+    })
+  }))
+}
 
 #let nomad_year_grid(..cells) = grid(
   columns: (1fr, 1fr, 1fr),

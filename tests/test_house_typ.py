@@ -182,8 +182,15 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let nomad_month_well(" in house
     assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]
     assert "#let strip-icon(" in house
-    assert "icon-habits" in house
+    assert "#let icon-chip(" in house
+    assert 'image(src, height: 3.1mm)' in house
+    assert "icons/" in house
+    assert "#let icon-menu(" not in house
+    assert "#let icon-habits(" not in house
     assert "Notes chip" not in house
+    assert "start-wd: 3" in house[house.index("#let year-month(") :]
+    assert 'set text(font: "Liberation Sans")' in house[house.index("#let year-month(") :]
+    assert 'set text(font: "Liberation Sans")' in house[house.index("#let tempo-bar(") :]
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
     assert contents_bars.startswith(
@@ -611,6 +618,8 @@ def test_copy_house_typ_writes_workdir(tmp_path):
     dest = copy_house_typ(tmp_path)
     assert dest == tmp_path / "house.typ"
     assert dest.is_file()
+    assert (tmp_path / "icons" / "menu.svg").is_file()
+    assert (tmp_path / "icons" / "menu-on.svg").is_file()
     assert not (tmp_path / DEVICE_TYP).exists()
     assert not (tmp_path / "158x210.typ").exists()
     text = dest.read_text(encoding="utf-8")

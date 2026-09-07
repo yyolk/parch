@@ -16,8 +16,6 @@ from parch.sections._shared import _length_mm
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
 _INDEX_ROW_GUTTER = "3mm"
-_NOMAD_ROW = "9mm"
-_NOMAD_BRAND = "14mm"
 
 _SKIP = INDEX_SKIP
 _HUMAN = INDEX_LABELS
@@ -78,28 +76,28 @@ class Index:
     def _nomad_row(self, manifest: Manifest, name: str, note: str | None = None) -> str:
         dest = self._dest_id(name)
         label = CONTENTS_LABELS[name]
-        extra = (
-            f' #h(0.6em) #text(size: 0.7em, fill: luma(120))[{note}]' if note else ""
-        )
+        extra = ""
+        if note:
+            extra = (
+                f' #h(2mm) #text(size: 7.5pt, fill: luma(40%), '
+                f'font: "Liberation Sans")[{note}]'
+            )
         inner = (
             "grid(\n"
             "      columns: (1fr, auto),\n"
             "      rows: 1fr,\n"
             "      align: horizon,\n"
-            f"      text(weight: \"bold\")[{label}{extra}],\n"
-            "      text(fill: luma(140))[›]\n"
+            f'      {{ text(size: 11pt, weight: "bold")[{label}]{extra} }},\n'
+            '      text(size: 11pt, fill: luma(50%))[›]\n'
             "    )"
         )
-        band = f"box(width: 100%, height: 100%, {inner})"
+        band = (
+            "box(width: 100%, height: 100%, stroke: (bottom: regular_stroke), "
+            f"inset: (x: 0.4mm, y: 0pt), {inner})"
+        )
         if manifest.source(dest):
             band = f"padded_link(<{dest}>, {band})"
-        return (
-            "  grid.cell(\n"
-            "    align: horizon + left,\n"
-            "    stroke: (bottom: regular_stroke),\n"
-            f"    {band}\n"
-            "  )"
-        )
+        return band
 
     def _contents(self, manifest: Manifest) -> str:
         if nomad_topband(self.configurator):
@@ -158,53 +156,52 @@ class Index:
             self._nomad_row(manifest, name, "year glance" if name == "annual" else None)
             for name in primary
         ]
-        more_rows = [self._nomad_row(manifest, name) for name in more]
-        primary_body = "[]"
-        if primary_rows:
-            primary_body = f"""grid(
-  columns: 1fr,
-  rows: ({", ".join([_NOMAD_ROW] * len(primary_rows))}),
-  align: horizon + left,
-  inset: (x: 4pt, y: 0pt),
-{",\n".join(primary_rows)}
-)"""
-        more_body = "[]"
-        if more_rows:
-            more_body = f"""grid(
-  columns: 1fr,
-  rows: ({", ".join([_NOMAD_ROW] * len(more_rows))}),
-  align: horizon + left,
-  inset: (x: 4pt, y: 0pt),
-{",\n".join(more_rows)}
-)"""
-        brand = 'text(size: h1, fill: white, weight: "bold")[Contents <index>]'
-        year_cell = f'text(size: h1, fill: white, weight: "bold")[{year}]'
-        more_head = 'text(size: 0.75em, fill: luma(120), tracking: 0.12em)[MORE]'
-        return f"""#grid(
-  columns: 1fr,
-  rows: ({_NOMAD_BRAND}, 1fr),
-  block(
-    width: 100%,
-    height: 100%,
-    fill: black,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}),
+        more_rows = [
+            self._nomad_row(manifest, name, "colophon" if name == "colophon" else None)
+            for name in more
+        ]
+        n_primary = len(primary_rows)
+        n_more = len(more_rows)
+        n = n_primary + n_more
+        primary_cells = ",\n      ".join(primary_rows) if primary_rows else "[]"
+        more_cells = ",\n      ".join(more_rows) if more_rows else "[]"
+        brand = 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]'
+        year_cell = (
+            f'text(fill: white, size: 9pt, weight: "bold", '
+            f'font: "Liberation Sans")[{year}]'
+        )
+        more_head = (
+            'text(size: 6.5pt, tracking: 0.9pt, fill: luma(45%), '
+            'font: "Liberation Sans", weight: "bold")[MORE]'
+        )
+        if not n:
+            rows = "auto"
+            body_cells = "[]"
+        else:
+            rows = f"(row-h,) * {n_primary} + (gap-h,) + (row-h,) * {n_more}"
+            body_cells = (
+                f"{primary_cells},\n"
+                f"      align(bottom, pad(bottom: 1mm, {more_head})),\n"
+                f"      {more_cells}"
+            )
+        return f"""#block(width: 100%, height: 100%, {{
+  block(width: 100%, fill: black, inset: (x: 2mm, y: 3.2mm), {{
     grid(
       columns: (1fr, auto),
       align: horizon,
       {brand},
-      {year_cell}
+      {year_cell},
     )
-  ),
-  block(
-    width: 100%,
-    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}, bottom: {_INDEX_BOTTOM_INSET}),
+  }})
+  v(2mm)
+  layout(size => {{
+    let gap-h = 5mm
+    let n = {max(n, 1)}
+    let row-h = (size.height - gap-h) / n
     grid(
-      columns: 1fr,
-      rows: (auto, auto, auto, 1fr),
-      {primary_body},
-      block(inset: (top: 3mm, bottom: 1mm), {more_head}),
-      {more_body},
-      []
+      rows: {rows},
+      row-gutter: 0pt,
+      {body_cells},
     )
-  )
-)"""
+  }})
+}})"""

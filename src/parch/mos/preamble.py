@@ -45,11 +45,23 @@ def write_device_typ(workdir: Path, device: str | Device) -> Path:
     return dest
 
 
+def _copy_house_icons(workdir: Path) -> None:
+    """Copy locked Topband SVGs so ``image("icons/menu.svg")`` resolves."""
+    dest_dir = Path(workdir) / "icons"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    icons = files("parch.data") / "typst" / "icons"
+    for item in icons.iterdir():
+        name = item.name
+        if name.endswith(".svg"):
+            (dest_dir / name).write_bytes(item.read_bytes())
+
+
 def copy_house_typ(workdir: Path, device: str | Device | None = None) -> Path:
     """Copy house.typ next to index.typst. When *device* is given, write device.typ."""
     dest = Path(workdir) / HOUSE_TYP
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(house_typ_resource().read_bytes())
+    _copy_house_icons(workdir)
     if device is not None:
         write_device_typ(workdir, device)
     return dest

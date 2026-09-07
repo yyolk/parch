@@ -142,22 +142,25 @@ def test_nomad_full_year_quarter_uses_year_month_strip():
     pages = _quarter_pages(typst_src)
     assert set(pages) == {1, 2, 3, 4}
     expected = {
-        1: ("Jan", "Feb", "Mar"),
-        2: ("Apr", "May", "Jun"),
-        3: ("Jul", "Aug", "Sep"),
-        4: ("Oct", "Nov", "Dec"),
+        1: ("January", "February", "March"),
+        2: ("April", "May", "June"),
+        3: ("July", "August", "September"),
+        4: ("October", "November", "December"),
     }
     for number, months in expected.items():
         page = pages[number]
         assert "nomad_quarter_well(" in page
         assert "quarter_well(left" not in page
         assert "year-month(" in page
+        assert "start-wd:" in page
+        assert "days:" in page
         for name in months:
             assert f"[{name}]" in page, f"Q{number} missing {name}"
         assert f"Quarter {number} <quarter-2026-{number}>" in page
         assert "[Q1]" in page
         assert "[Q4]" in page
-        assert "[M], [T], [W], [T], [F], [S], [S]" in page
+        assert "[Jan]" not in page
+        assert "[M], [T], [W], [T], [F], [S], [S]" not in page
 
 
 def test_shipped_profiles_q3_compile_with_three_months(tmp_path):
@@ -165,7 +168,7 @@ def test_shipped_profiles_q3_compile_with_three_months(tmp_path):
     pdfs = []
     labels = {
         "158x210": Q3_MONTHS,
-        "nomad": ("Jul", "Aug", "Sep"),
+        "nomad": ("July", "August", "September"),
         "scribe": Q3_MONTHS,
     }
     for name, config in (("158x210", PAPER_158), ("nomad", NOMAD), ("scribe", SCRIBE)):

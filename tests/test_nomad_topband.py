@@ -250,8 +250,12 @@ def test_nomad_emit_uses_page_shell_not_mos():
         assert "fill: black" in tasks
     else:
         assert "text(size: 6pt, fill: white)[T1]" not in tasks
+    habits_index = _page_with(typst, "[Habits <habits>]")
+    assert "page-shell(\n  none," in habits_index
+    assert 'active: "habits"' not in habits_index
     habits = _page_with(typst, "Habits · January<habits-january>")
-    assert 'active: "habits"' in habits
+    assert "page-shell(\n  none," in habits
+    assert 'active: "habits"' not in habits
     assert "padded_link(<2026-01-01>" in habits
     assert "[Day]" in habits
     assert "Thu 1" not in habits
@@ -270,6 +274,10 @@ def test_nomad_emit_uses_page_shell_not_mos():
     annual = _page_with(typst, "<annual>]")
     assert "nomad_year_grid(" in annual
     assert "year-month(" in annual
+    assert "[January]" in annual
+    assert "start-wd:" in annual
+    assert "days: 31" in annual
+    assert "[Jan]" not in annual
     assert "month_grid(" not in annual
     assert "grid.hline(stroke: regular_stroke + black)" not in annual
     assert "title: none" in annual
@@ -287,6 +295,10 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "nomad_quarter_well(" in quarterly
     assert "quarter_well(left" not in quarterly
     assert "quarter_well(right" not in quarterly
+    assert "[January]" in quarterly
+    assert "start-wd:" in quarterly
+    assert "days: 31" in quarterly
+    assert "[Jan]" not in quarterly
     assert "[Focus]" in quarterly
     assert "[Notes]" in quarterly
     focus = quarterly.split("[Focus]")[1].split("[Notes]")[0]
@@ -322,7 +334,12 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "lined_well(lined_fill)" in meeting
     assert meeting.count("task_tick()") == 9
     assert "lined_well(dotted_centered)" not in meeting
+    review_index = _page_with(typst, "[Review <review>]")
+    assert "page-shell(\n  none," in review_index
+    assert 'active: "review"' not in review_index
     review = _page_with(typst, "Review · Week 1")
+    assert "page-shell(\n  none," in review
+    assert 'active: "review"' not in review
     assert "title: grid(columns: 1fr," in review
     assert "text(size: 0.85em)" in review
     assert "Review · Week 1 ·" not in review
@@ -458,8 +475,12 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert page.index("Meetings") < page.index("About")
     assert "About this notebook" not in page
     assert "year glance" in page
-    assert "text(fill: luma(140))[›]" in page
-    assert "rows: (9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm)" in page
+    assert "[colophon]" in page
+    assert 'text(size: 11pt, fill: luma(50%))[›]' in page
+    assert "inset: (x: 2mm, y: 3.2mm)" in page
+    assert 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]' in page
+    assert 'font: "Liberation Sans")[2026]' in page
+    assert "rows: (9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm)" not in page
     assert "Notes" not in page or "daily_notes" not in page
     assert "page-shell(" not in page
     assert "mos_frame(" not in page
