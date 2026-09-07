@@ -263,7 +263,9 @@ def test_nomad_title_is_quiet_month_year_together():
     assert "rows: (1fr,) * 6" in content
     assert "rows: (regular_height,)" not in content
     assert "hair + luma(75%)" in content
+    assert "hair + ink" in content
     assert "luma(160)" not in content
+    assert "grid.cell(stroke: regular_stroke" not in content
     assert "lined_well" not in content
     assert "let tile = 5.2mm" in content
     assert 'text(weight: "bold", size: 8pt)[Month notes]' in content

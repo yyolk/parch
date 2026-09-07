@@ -251,7 +251,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "lined_well(lined_fill, tile-height: regular_height)" not in monthly
     assert "let tile = 5.2mm" in monthly
     assert "hair + luma(75%)" in monthly
+    assert "hair + ink" in monthly
     assert "luma(160)" not in monthly
+    assert "grid.cell(stroke: regular_stroke" not in monthly
     assert 'font: "Liberation Sans", size: 7pt' in monthly
     assert 'size: 7.5pt, weight: "bold", font: "Liberation Sans"' in monthly
     assert 'text(weight: "bold", size: 8pt)[Month notes]' in monthly
@@ -525,14 +527,16 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     typst = Preamble(_cfg("supernote-nomad")).generate()
     assert f"bezel: {BEZEL}" in typst
     assert f"height: {CHROME_H}" in typst
-    assert "#let chip = chip.with(stroke: regular_stroke)" in typst
-    assert "page-shell.with(stroke: regular_stroke)" in typst
+    assert "#let chip = chip.with(stroke: hair)" in typst
+    assert "page-shell.with(stroke: hair)" in typst
     assert f"height: {TEMPO_H}" not in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert 'font: "Libertinus Serif"' in typst
     assert "mini-month" in typst
     assert "rail-clearance:" not in typst
     paper = Preamble(_cfg("158x210")).generate()
+    assert "#let chip = chip.with(stroke: regular_stroke)" in paper
+    assert "page-shell.with(stroke: regular_stroke)" in paper
     assert "#let lined_fill = lined_fill()" in paper
     assert "bezel:" not in paper
     assert "page-shell" in paper

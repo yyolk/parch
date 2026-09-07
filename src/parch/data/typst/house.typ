@@ -401,6 +401,7 @@
 #let chrome-h = 6.5mm
 #let tempo-h = 6mm
 #let hair = 0.4pt
+#let ink = luma(0)
 #let chip-gutter = 1.2mm
 #let chip-inset-x = 0.9mm
 #let chip-inset-y = 1.2mm
@@ -495,7 +496,7 @@
   } else {
     block(
       width: 100%,
-      inset: (top: 1.2mm, bottom: 1.0mm),
+      inset: (top: 0.2mm, bottom: 0.15mm),
       {
         set text(font: "Libertinus Serif")
         grid(
@@ -512,6 +513,11 @@
     rows: (auto, 1fr),
     row-gutter: 0pt,
     {
+      // Locked chrome is 9pt, so 1.2em air matches 04-monthly.typ.
+      // Body keeps document size + rhythm (Annual well-top unsigned here).
+      set text(size: 9pt)
+      set par(spacing: 1.2em)
+      set block(spacing: 1.2em)
       if strip != none {
         v(top-air)
         block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), strip)
@@ -729,11 +735,13 @@
 )
 
 // Nomad monthly: weekday header + 7×6 days + 20mm Month notes. MOS keeps month_weeks.
-#let nomad_month_well(header, days, notes, notes-height: 20mm) = grid(
-  columns: 1fr,
-  rows: (auto, 1fr, notes-height),
-  row-gutter: 1.4mm,
-  header,
-  days,
-  notes,
-)
+#let nomad_month_well(header, days, notes, notes-height: 20mm) = box(width: 100%, height: 100%, {
+  grid(
+    columns: 1fr,
+    rows: (auto, 1fr, notes-height),
+    row-gutter: 1.4mm,
+    header,
+    days,
+    notes,
+  )
+})

@@ -70,18 +70,18 @@ class Monthly:
     {heading},
 )"""
         rows = [", ".join(self._nomad_day_cell(day) for day in week) for week in weeks]
-        days = f"""grid(
+        days = f"""box(width: 100%, height: 100%, grid(
     columns: (1fr,) * 7,
     rows: (1fr,) * 6,
     column-gutter: 0.7mm,
     row-gutter: 0.7mm,
     {", ".join(rows)},
-)"""
+))"""
         notes = f"""box(
   width: 100%,
   height: 100%,
   clip: true,
-  stroke: (top: hair + black),
+  stroke: (top: hair + ink),
   inset: (top: 0.7mm),
   {{
     text(weight: "bold", size: 8pt)[{self.i18n.t("month_notes_floor")}]
@@ -92,7 +92,7 @@ class Monthly:
       grid(
         rows: (tile,) * n,
         row-gutter: 0pt,
-        ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + black))),
+        ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
       )
     }})
   }}
@@ -160,7 +160,7 @@ class Monthly:
             return "box(width: 100%, height: 100%, stroke: hair + luma(75%))"
         text = self.manifest.link_or_content(day.id, str(day.month_day))
         return (
-            "box(width: 100%, height: 100%, stroke: hair + black, "
+            "box(width: 100%, height: 100%, stroke: hair + ink, "
             "inset: (top: 0.6mm, left: 0.7mm, rest: 0.5mm), clip: true, {"
             f'text(size: 7.5pt, weight: "bold", font: "Liberation Sans")[#{text}]; '
             "v(1fr)"

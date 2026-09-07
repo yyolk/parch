@@ -58,6 +58,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "nomad_year_grid" in names
     assert "nomad_quarter_well" in names
     assert "hair" in names
+    assert "ink" in names
     assert "chip" in names
     assert "tempo-row" in names
     assert "tempo-bar" not in names
@@ -171,10 +172,15 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let strip-tempo-gap = 0mm" in house
     assert "#let well-top = 2.5mm" in house
     assert "#let rhythm = 1.2em" in house
+    assert "#let hair = 0.4pt" in house
+    assert "#let ink = luma(0)" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
     assert 'set text(font: "Libertinus Serif")' in shell
     assert "set par(spacing: rhythm)" in shell
     assert "set block(spacing: rhythm)" in shell
+    assert "set text(size: 9pt)" in shell
+    assert "inset: (top: 0.2mm, bottom: 0.15mm)" in shell
+    assert "inset: (top: 1.2mm, bottom: 1.0mm)" not in shell
     assert "set par(spacing: 0pt)" not in shell
     assert "set block(spacing: 0pt)" not in shell
     assert "if strip != none" in shell
@@ -214,6 +220,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "notes-height: 20mm" in month_well
     assert "rows: (auto, 1fr, notes-height)" in month_well
     assert "row-gutter: 1.4mm" in month_well
+    assert "box(width: 100%, height: 100%" in month_well
     assert "rows: (1fr, notes-height)" not in month_well
     assert "#let strip-icon(" in house
     assert "#let icon-chip(" in house
