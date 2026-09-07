@@ -17,6 +17,7 @@ _W01_RANGE = f"Dec 29 {_EN_DASH} Jan 4"
 _W28_RANGE = f"Jul 6 {_EN_DASH} 12"
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _BULKY = (
     "daily",
@@ -218,8 +219,8 @@ def test_title_is_week_and_range_without_year_and_kills_calendar_chip():
 
 
 def test_generated_week_title_is_range_and_inverts_thursday_month():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-weekly.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="mos-weekly.toml"))
     pages = _week_pages(typst)
     w01 = pages["w01"]
     w28 = pages["w28"]

@@ -7,6 +7,7 @@ from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.pages.weekly import Weekly as WeeklyPage
 
 _EN_DASH = "–"
@@ -68,9 +69,10 @@ class Weekly:
     def _title(self, page: WeeklyPage) -> str:
         days = page.week.days()
         rng = self.range_label(days[0], days[-1])
+        sep = " · " if nomad_topband(self.configurator) else " #h(0.6em) "
         return (
             f"text(size: h1)[{self.i18n.t('week_name')} {page.week.number}"
-            f" <{page.week.id}> #h(0.6em) {rng}]"
+            f" <{page.week.id}>{sep}{rng}]"
         )
 
     def _weeks(self) -> list[Week]:

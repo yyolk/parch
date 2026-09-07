@@ -7,6 +7,7 @@ from parch.mos.navigation import NavLink, Navigation
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.contents_mark import body_size_token, lead_title, trail_heading
 from parch.mos.preamble import Preamble
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 
 
@@ -44,6 +45,8 @@ class Builder:
         return typst
 
     def _layout_page(self, page_spec: PageData) -> str:
+        if nomad_topband(self.configurator):
+            return self._layout_nomad_page(page_spec)
         if scribe_hyperpaper_nav(self.configurator):
             return self._layout_scribe_page(page_spec)
         side = _v(self.mos_layout, "side_menu_position")
@@ -66,6 +69,22 @@ class Builder:
     {heading or "[]"},
     {page_spec.content},
   ),
+)"""
+
+    def _layout_nomad_page(self, page_spec: PageData) -> str:
+        """page-shell(Topband, tempo, title, body). No side MOS."""
+        strip = self.navigation.section_strip_cell(page_spec.page_id)
+        tempo = page_spec.tempo
+        if tempo is None:
+            tempo = self.navigation.tempo_cell(page_spec.page_id)
+        title = page_spec.title if page_spec.title else "none"
+        year = f"[{self.configurator.start_date().year}]"
+        return f"""#page-shell(
+  {strip},
+  {page_spec.content},
+  tempo: {tempo},
+  title: {title},
+  year: {year},
 )"""
 
     def _layout_scribe_page(self, page_spec: PageData) -> str:

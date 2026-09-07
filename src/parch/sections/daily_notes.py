@@ -7,6 +7,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.preamble import _WELL_PATTERN
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.sections._shared import heading_and_well
 
@@ -35,7 +36,12 @@ class DailyNotes:
         for note in self._range():
             heading = self._title(manifest, note)
             well = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
-            if scribe_hyperpaper_nav(self.configurator):
+            if nomad_topband(self.configurator):
+                title = (
+                    f'text(size: h1)[{self.i18n.t("notes")} <{note.id}>]'
+                )
+                content = well
+            elif scribe_hyperpaper_nav(self.configurator):
                 title = self._nav_title()
                 content = heading_and_well(heading, well)
             else:

@@ -8,6 +8,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.pages.daily import Daily as DailyPage
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.sections._shared import _side_menu_position, heading_and_well
 
@@ -38,7 +39,14 @@ class Daily:
                 **self.params,
             )
             heading = page.title()
-            if scribe_hyperpaper_nav(self.configurator):
+            if nomad_topband(self.configurator):
+                weekday = self.i18n.t(f"weekday.full.{day.weekday_name}")
+                month = self.i18n.t(f"months.full.{day.month().name}")
+                title = (
+                    f"text(size: h1)[{weekday} · {month} {day.month_day} <{day.id}>]"
+                )
+                content = page.content()
+            elif scribe_hyperpaper_nav(self.configurator):
                 title = page.nav_title()
                 content = heading_and_well(heading, page.content())
             else:

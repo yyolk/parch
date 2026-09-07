@@ -1,8 +1,8 @@
-#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm) = (
+#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm, bezel: none) = (
   top: if toolbar-edge == top { toolbar-clearance } else { 0mm },
-  bottom: 0mm,
-  left: if side == right { writing-clearance } else { rail-clearance },
-  right: if side == left { writing-clearance } else { rail-clearance },
+  bottom: if bezel != none { bezel } else { 0mm },
+  left: if bezel != none { bezel } else if side == right { writing-clearance } else { rail-clearance },
+  right: if bezel != none { bezel } else if side == left { writing-clearance } else { rail-clearance },
 )
 
 // House paper is a tiling fill. dotted_centered, lined_fill, and
@@ -388,5 +388,229 @@
         table.cell(body)
       }
     }),
+  )
+}
+
+// Nomad Topband. MOS / Scribe do not call these. Icons are Lucide-style
+// strokes; -on is inversion via the chip fill, not a second path set.
+#let _strip-ink(on) = if on { white } else { black }
+#let _strip-sw = 0.22mm
+
+#let icon-menu(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.70
+  box(width: size, height: size, align(center + horizon, stack(
+    dir: ttb,
+    spacing: size * 0.18,
+    line(length: w, stroke: _strip-sw + paint),
+    line(length: w, stroke: _strip-sw + paint),
+    line(length: w, stroke: _strip-sw + paint),
+  )))
+}
+
+#let icon-cal(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.70
+  let h = size * 0.62
+  box(width: size, height: size, align(center + horizon, {
+    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
+    place(top + center, dy: h * 0.18, circle(radius: 0.18mm, fill: paint))
+  }))
+}
+
+#let icon-q(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.68
+  box(width: size, height: size, align(center + horizon, stack(
+    dir: ttb,
+    spacing: size * 0.10,
+    line(length: w, stroke: _strip-sw + paint),
+    line(length: w, stroke: _strip-sw + paint),
+    line(length: w, stroke: _strip-sw + paint),
+  )))
+}
+
+#let icon-mon(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.70
+  let h = size * 0.62
+  let cell = w / 4
+  box(width: size, height: size, align(center + horizon, {
+    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
+    place(dx: (size - w) / 2 + cell * 1.2, dy: (size - h) / 2 + h * 0.42, {
+      for i in range(2) {
+        for j in range(2) {
+          place(dx: i * cell * 0.9, dy: j * cell * 0.7, circle(radius: 0.16mm, fill: paint))
+        }
+      }
+    })
+  }))
+}
+
+#let icon-wk(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.70
+  let h = size * 0.62
+  box(width: size, height: size, align(center + horizon, {
+    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
+    place(top + center, dy: h * 0.32, stack(
+      dir: ttb,
+      spacing: h * 0.18,
+      circle(radius: 0.16mm, fill: paint),
+      circle(radius: 0.16mm, fill: paint),
+      circle(radius: 0.16mm, fill: paint),
+    ))
+  }))
+}
+
+#let icon-day(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  box(width: size, height: size, align(center + horizon, {
+    circle(radius: size * 0.16, stroke: _strip-sw + paint)
+    for i in range(8) {
+      let turn = i * 45deg
+      place(center + horizon, rotate(turn, line(
+        start: (0mm, size * 0.24),
+        end: (0mm, size * 0.36),
+        stroke: _strip-sw + paint,
+      )))
+    }
+  }))
+}
+
+#let icon-tasks(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.62
+  box(width: size, height: size, align(center + horizon, stack(
+    dir: ttb,
+    spacing: size * 0.14,
+    ..range(3).map(_ => stack(
+      dir: ltr,
+      spacing: size * 0.12,
+      circle(radius: 0.18mm, fill: paint),
+      line(length: w * 0.72, stroke: _strip-sw + paint),
+    )),
+  )))
+}
+
+#let icon-habits(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let d = size * 0.10
+  box(width: size, height: size, align(center + horizon, grid(
+    columns: (auto, auto, auto),
+    rows: (auto, auto, auto),
+    gutter: size * 0.12,
+    ..((circle(radius: d / 2, fill: paint),) * 9),
+  )))
+}
+
+#let icon-review(on: false, size: 3.4mm) = {
+  let paint = _strip-ink(on)
+  let w = size * 0.58
+  let h = size * 0.70
+  box(width: size, height: size, align(center + horizon, {
+    rect(width: w, height: h, stroke: _strip-sw + paint, radius: 0.15mm)
+    place(center + horizon, stack(
+      dir: ttb,
+      spacing: h * 0.16,
+      line(length: w * 0.55, stroke: _strip-sw + paint),
+      line(length: w * 0.55, stroke: _strip-sw + paint),
+      line(length: w * 0.40, stroke: _strip-sw + paint),
+    ))
+  }))
+}
+
+#let strip-icon(name, on: false, size: 3.4mm) = {
+  if name == "contents" { icon-menu(on: on, size: size) }
+  else if name == "cal" { icon-cal(on: on, size: size) }
+  else if name == "q" { icon-q(on: on, size: size) }
+  else if name == "mon" { icon-mon(on: on, size: size) }
+  else if name == "wk" { icon-wk(on: on, size: size) }
+  else if name == "day" { icon-day(on: on, size: size) }
+  else if name == "tasks" { icon-tasks(on: on, size: size) }
+  else if name == "habits" { icon-habits(on: on, size: size) }
+  else if name == "review" { icon-review(on: on, size: size) }
+  else { [] }
+}
+
+// items: array of (dest, key). dest is none when the page does not exist.
+#let section-strip(items, active: none, height: 6.5mm, stroke: none) = {
+  let gap = 0.55mm
+  let n = items.len()
+  if n == 0 { [] } else {
+    grid(
+      columns: (1fr,) * n,
+      rows: height,
+      column-gutter: gap,
+      ..items.map(item => {
+        let dest = item.at(0)
+        let name = item.at(1)
+        let on = dest != none and name == active
+        let seated = box(
+          width: 100%,
+          height: 100%,
+          fill: if on { black } else { luma(0%, 0%) },
+          stroke: stroke,
+          align(center + horizon, strip-icon(name, on: on)),
+        )
+        if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      }),
+    )
+  }
+}
+
+// items: array of (dest, label, on)
+#let tempo-bar(items, height: 6mm, stroke: none) = {
+  let n = items.len()
+  if n == 0 { [] } else {
+    grid(
+      columns: (1fr,) * n,
+      rows: height,
+      column-gutter: 0.8mm,
+      ..items.map(item => {
+        let dest = item.at(0)
+        let label = item.at(1)
+        let on = item.at(2)
+        let ink = if on { text(fill: white, label) } else { label }
+        let seated = box(
+          width: 100%,
+          height: 100%,
+          fill: if on { black } else { luma(0%, 0%) },
+          stroke: stroke,
+          align(center + horizon, ink),
+        )
+        if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+      }),
+    )
+  }
+}
+
+// Topband under the toolbar dead zone. No side MOS.
+#let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
+  let head = if title == none {
+    []
+  } else {
+    block(
+      width: 100%,
+      inset: (top: 1.4mm, bottom: 1.1mm),
+      {
+        grid(
+          columns: (1fr, auto),
+          align: horizon,
+          title,
+          if year == none { [] } else { year },
+        )
+      },
+    )
+  }
+  grid(
+    columns: 1fr,
+    rows: (auto, auto, auto, auto, auto, 1fr),
+    strip,
+    line(length: 100%, stroke: stroke),
+    if tempo == none { [] } else { block(inset: (top: 1.0mm, bottom: 1.0mm), tempo) },
+    head,
+    if title == none { [] } else { line(length: 100%, stroke: stroke) },
+    body,
   )
 }

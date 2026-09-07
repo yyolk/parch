@@ -11,6 +11,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
@@ -60,17 +61,46 @@ class Tasks:
         weeks = self._weeks()
         chunks = self._chunks(weeks)
         out: list[PageData] = []
+        topband = nomad_topband(self.configurator)
         for index, chunk in enumerate(chunks):
-            out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
+            page_id = self.index_id(index)
+            if topband:
+                out.append(
+                    PageData(
+                        title=f'text(size: h1)[{self.i18n.t("tasks")} <{page_id}>]',
+                        content=self._index_body(manifest, chunk),
+                        page_id=page_id,
+                        heading_mark=HeadingMark.TRAIL,
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
         for index, chunk in enumerate(chunks):
             parent = self.index_id(index)
             for week in chunk:
-                out.append(
-                    PageData(
-                        raw_typst=True,
-                        content=self._week_page(manifest, week, parent),
+                page_id = self.week_page_id(week)
+                if topband:
+                    days = week.days()
+                    rng = self.range_label(days[0], days[-1])
+                    title = (
+                        f'text(size: h1)[{self.i18n.t("tasks")} · '
+                        f"{self.i18n.t('week_name')} {week.number} · {rng} <{page_id}>]"
                     )
-                )
+                    out.append(
+                        PageData(
+                            title=title,
+                            content=self._week_body(manifest, week),
+                            page_id=page_id,
+                            heading_mark=HeadingMark.TRAIL,
+                        )
+                    )
+                else:
+                    out.append(
+                        PageData(
+                            raw_typst=True,
+                            content=self._week_page(manifest, week, parent),
+                        )
+                    )
         return out
 
     def _weeks(self) -> list[Week]:
@@ -203,14 +233,7 @@ class Tasks:
         week_title = f"{week_label} #h(0.6em) {rng}"
         week_cell = manifest.link_or_content(week.id, week_title)
         quiet = f"text(size: 0.85em)[#{week_cell}]"
-        cells = ", ".join(self._day_cell(manifest, day) for day in days)
-        day_strip = f"""grid(
-  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-  rows: {_DAY_STRIP_HEIGHT},
-  align: horizon + center,
-  inset: 0pt,
-  {cells}
-)"""
+        day_strip = self._day_strip(manifest, week)
         return f"""#[] <{page_id}>
 #grid(
   columns: 1fr,
@@ -220,6 +243,25 @@ class Tasks:
   {self._heading(manifest, tasks_cell)},
   {quiet},
   {day_strip},
+  lined_well(task_fill, tile-height: regular_height)
+)"""
+
+    def _day_strip(self, manifest: Manifest, week: Week) -> str:
+        cells = ", ".join(self._day_cell(manifest, day) for day in week.days())
+        return f"""grid(
+  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+  rows: {_DAY_STRIP_HEIGHT},
+  align: horizon + center,
+  inset: 0pt,
+  {cells}
+)"""
+
+    def _week_body(self, manifest: Manifest, week: Week) -> str:
+        return f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  row-gutter: {_INDEX_ROW_GUTTER},
+  {self._day_strip(manifest, week)},
   lined_well(task_fill, tile-height: regular_height)
 )"""
 

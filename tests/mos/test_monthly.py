@@ -16,6 +16,7 @@ from tests.test_toml_omit_sections import compile_pdf
 from tests.toml_fixtures import omit_toml_sections
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _MONTH_PARAMS = {
     "week_placement": "left",
@@ -215,8 +216,8 @@ def test_title_is_month_without_year_and_kills_calendar_chip():
 
 
 def test_generated_title_is_january_without_year_and_inverts_only_the_month():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-monthly.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="mos-monthly.toml"))
     pages = _month_pages(typst)
     jan = pages["january"]
     aug = pages["august"]

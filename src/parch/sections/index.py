@@ -3,6 +3,12 @@
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
+from parch.mos.nomad_nav import (
+    CONTENTS_LABELS,
+    contents_dest_id,
+    contents_rows,
+    nomad_topband,
+)
 from parch.mos.scribe_nav import INDEX_LABELS, INDEX_SKIP, scribe_hyperpaper_nav, section_dest_id
 from parch.compose.page_data import PageData
 from parch.sections._shared import _length_mm
@@ -35,6 +41,8 @@ class Index:
         return names
 
     def _dest_id(self, name: str) -> str:
+        if nomad_topband(self.configurator):
+            return contents_dest_id(name, self.configurator)
         return section_dest_id(name, self.configurator)
 
     def _row(self, manifest: Manifest, name: str) -> str:
@@ -65,7 +73,35 @@ class Index:
         row = max(available / 12.0, 8.0)
         return f"{row:.2f}mm"
 
+    def _nomad_row(self, manifest: Manifest, name: str, note: str | None = None) -> str:
+        dest = self._dest_id(name)
+        label = CONTENTS_LABELS[name]
+        extra = (
+            f' #h(0.6em) #text(size: 0.7em, fill: luma(120))[{note}]' if note else ""
+        )
+        inner = (
+            "grid(\n"
+            "      columns: (1fr, auto),\n"
+            "      rows: 1fr,\n"
+            "      align: horizon,\n"
+            f"      text(weight: \"bold\")[{label}{extra}],\n"
+            "      text(fill: luma(140))[>]\n"
+            "    )"
+        )
+        band = f"box(width: 100%, height: 100%, {inner})"
+        if manifest.source(dest):
+            band = f"padded_link(<{dest}>, {band})"
+        return (
+            "  grid.cell(\n"
+            "    align: horizon + left,\n"
+            "    stroke: (bottom: regular_stroke),\n"
+            f"    {band}\n"
+            "  )"
+        )
+
     def _contents(self, manifest: Manifest) -> str:
+        if nomad_topband(self.configurator):
+            return self._nomad_contents(manifest)
         rows = [
             self._row(manifest, name)
             for name in self._enabled_names()
@@ -111,4 +147,68 @@ class Index:
   inset: (left: {_INDEX_LEFT_INSET}, bottom: {_INDEX_BOTTOM_INSET}),
   {title},
   {body}
+)"""
+
+    def _nomad_contents(self, manifest: Manifest) -> str:
+        primary, more = contents_rows(self.configurator)
+        year = self.configurator.start_date().year
+        primary_rows = [
+            self._nomad_row(manifest, name, "year glance" if name == "annual" else None)
+            for name in primary
+        ]
+        more_rows = [self._nomad_row(manifest, name) for name in more]
+        height = self._row_height()
+        primary_body = "[]"
+        if primary_rows:
+            primary_body = f"""grid(
+  columns: 1fr,
+  rows: ({", ".join([height] * len(primary_rows))}),
+  align: horizon + left,
+  inset: (x: 4pt, y: 0pt),
+{",\n".join(primary_rows)}
+)"""
+        more_body = "[]"
+        if more_rows:
+            more_body = f"""grid(
+  columns: 1fr,
+  rows: ({", ".join([height] * len(more_rows))}),
+  align: horizon + left,
+  inset: (x: 4pt, y: 0pt),
+{",\n".join(more_rows)}
+)"""
+        brand = 'text(size: h1, fill: white, weight: "bold")[Contents <index>]'
+        year_cell = f'text(size: h1, fill: white, weight: "bold")[{year}]'
+        more_head = 'text(size: 0.75em, fill: luma(120), tracking: 0.12em)[MORE]'
+        return f"""#grid(
+  columns: 1fr,
+  rows: (15mm, 1fr, auto, 1fr),
+  block(
+    width: 100%,
+    height: 100%,
+    fill: black,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}),
+    grid(
+      columns: (1fr, auto),
+      align: horizon,
+      {brand},
+      {year_cell}
+    )
+  ),
+  block(
+    width: 100%,
+    height: 100%,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: {_INDEX_ROW_GUTTER}, bottom: {_INDEX_ROW_GUTTER}),
+    {primary_body}
+  ),
+  block(
+    width: 100%,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, top: 2mm, bottom: 1mm),
+    {more_head}
+  ),
+  block(
+    width: 100%,
+    height: 100%,
+    inset: (left: {_INDEX_LEFT_INSET}, right: {_INDEX_LEFT_INSET}, bottom: {_INDEX_BOTTOM_INSET}),
+    {more_body}
+  )
 )"""

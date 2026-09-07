@@ -205,17 +205,26 @@ def test_scribe_index_is_full_bleed_brand_without_mos_rail():
     assert "section_rail(" not in cover
 
 
-def test_nomad_and_158_keep_month_mos_strip():
-    for stem in ("supernote-nomad", "158x210"):
-        typst = _generate(stem)
-        annual = _page_with(typst, "2026<annual>")
-        assert "mos_strip(" in annual
-        assert "section_rail(" not in annual
-        assert "nav_header(" not in annual
-        assert "well_frame(" in annual
-        index = _page_with(typst, "[Contents <index>]")
-        assert "fill: black" not in index
-        assert "15mm" not in index.split("rows:", 1)[1].split("\n", 1)[0]
+def test_nomad_uses_topband_158_keeps_month_mos_strip():
+    nomad = _generate("supernote-nomad")
+    annual = _page_with(nomad, "2026<annual>")
+    assert "page-shell(" in annual
+    assert "section-strip(" in annual
+    assert "mos_strip(" not in annual
+    assert "section_rail(" not in annual
+    assert "nav_header(" not in annual
+    index = _page_with(nomad, "[Contents <index>]")
+    assert "fill: black" in index
+    paper = _generate("158x210")
+    paper_annual = _page_with(paper, "2026<annual>")
+    assert "mos_strip(" in paper_annual
+    assert "section_rail(" not in paper_annual
+    assert "nav_header(" not in paper_annual
+    assert "page-shell(" not in paper_annual
+    assert "well_frame(" in paper_annual
+    paper_index = _page_with(paper, "[Contents <index>]")
+    assert "fill: black" not in paper_index
+    assert "15mm" not in paper_index.split("rows:", 1)[1].split("\n", 1)[0]
 
 
 def test_scribe_right_hand_keeps_mos_frame_side():
@@ -261,12 +270,11 @@ def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
     assert notes.index("1 <daily-note-2026-01-01-page-1>") < notes.index("lined_well(")
     assert "[*Thursday*]" in notes
     nomad = _generate("supernote-nomad")
-    nomad_daily = _page_with(nomad, "text(size: h1)[1 <2026-01-01>]")
+    nomad_daily = _page_with(nomad, "Thursday · January 1 <2026-01-01>")
     assert "text(size: h1)[Thursday 1]" not in nomad_daily
-    assert "well_frame(" in nomad_daily
-    heading = nomad_daily[nomad_daily.index("well_frame(") : nomad_daily.index("daily_well(")]
-    assert "rows: (3fr, 2fr)" in heading
-    assert "text(size: h1)[1 <2026-01-01>]" in heading
+    assert "page-shell(" in nomad_daily
+    assert "daily_well(" in nomad_daily
+    assert "mos_frame(" not in nomad_daily
 
 
 def _link_rects(page):

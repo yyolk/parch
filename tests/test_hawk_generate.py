@@ -16,8 +16,19 @@ def _generate(stem: str) -> str:
     return Generate(i18n=load_default()).generate(dto)
 
 
-def test_nomad_year_pages_call_mos_strip_highlights():
+def test_nomad_year_pages_call_page_shell_not_mos_strip():
     dto = load(base_config("supernote-nomad"))
+    typst = Generate(i18n=load_default()).generate(dto)
+    assert typst.count("page-shell(") > 100
+    assert typst.count("section-strip(") > 100
+    assert typst.count("mos_strip(highlight-months:") == 0
+    assert "mos_rail(mos_tabs" not in typst
+    assert 'active: "cal"' in typst
+    assert 'active: "day"' in typst
+
+
+def test_a6_year_pages_still_call_mos_strip_highlights():
+    dto = load(base_config("supernote-a6"))
     typst = Generate(i18n=load_default()).generate(dto)
     assert typst.count("mos_tabs(") == 0
     assert typst.count("#let mos_strip = mos_strip.with(months:") == 1

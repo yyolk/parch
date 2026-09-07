@@ -234,12 +234,11 @@ def test_nomad_hand_right_generate_compiles_with_mos_on_the_right(tmp_path):
     assert names[-1] == "colophon"
     typst_src = _generate(dto)
     assert "page-margin(right)" in typst_src
-    assert "#mos_frame(\n  right," in typst_src
-    assert "#mos_frame(\n  left," not in typst_src
-    assert "mos-width: mos-width" in typst_src
-    assert "mos_strip(" in typst_src
+    assert "page-shell(" in typst_src
+    assert "section-strip(" in typst_src
+    assert "#mos_frame(" not in typst_src
+    assert "mos_strip(" not in typst_src
     assert "mos_tabs(" not in typst_src
-    assert "rows: (auto, 1fr)" in typst_src
     assert "daily_well(right," in typst_src
     well = typst_src[typst_src.index("daily_well(") :]
     assert well.index("right,") < well.index("[Schedule]")

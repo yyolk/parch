@@ -11,6 +11,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.preamble import _WELL_PATTERN
 
 _INDEX_LEFT_INSET = "4mm"
@@ -64,17 +65,46 @@ class Review:
         weeks = self._weeks()
         chunks = self._chunks(weeks)
         out: list[PageData] = []
+        topband = nomad_topband(self.configurator)
         for index, chunk in enumerate(chunks):
-            out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
+            page_id = self.index_id(index)
+            if topband:
+                out.append(
+                    PageData(
+                        title=f'text(size: h1)[{self.i18n.t("review")} <{page_id}>]',
+                        content=self._index_body(manifest, chunk),
+                        page_id=page_id,
+                        heading_mark=HeadingMark.TRAIL,
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
         for index, chunk in enumerate(chunks):
             parent = self.index_id(index)
             for week in chunk:
-                out.append(
-                    PageData(
-                        raw_typst=True,
-                        content=self._week_page(manifest, week, parent),
+                page_id = self.week_page_id(week)
+                if topband:
+                    days = week.days()
+                    rng = self.range_label(days[0], days[-1])
+                    title = (
+                        f'text(size: h1)[{self.i18n.t("review")} · '
+                        f"{self.i18n.t('week_name')} {week.number} · {rng} <{page_id}>]"
                     )
-                )
+                    out.append(
+                        PageData(
+                            title=title,
+                            content=self._week_body(manifest, week),
+                            page_id=page_id,
+                            heading_mark=HeadingMark.TRAIL,
+                        )
+                    )
+                else:
+                    out.append(
+                        PageData(
+                            raw_typst=True,
+                            content=self._week_page(manifest, week, parent),
+                        )
+                    )
         return out
 
     def _weeks(self) -> list[Week]:
@@ -239,6 +269,28 @@ class Review:
   {week_line},
   {day_strip},
   {field}
+)"""
+
+    def _week_field(self) -> str:
+        if self.pattern == "dotted":
+            return f"lined_well({_WELL_PATTERN['dotted']})"
+        return "lined_well(review_lined)"
+
+    def _week_body(self, manifest: Manifest, week: Week) -> str:
+        cells = ", ".join(self._day_cell(manifest, day) for day in week.days())
+        day_strip = f"""grid(
+  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+  rows: {_DAY_STRIP_HEIGHT},
+  align: horizon + center,
+  inset: (x: 2pt, y: 0pt),
+  {cells}
+)"""
+        return f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  row-gutter: {_INDEX_ROW_GUTTER},
+  {day_strip},
+  {self._week_field()}
 )"""
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:

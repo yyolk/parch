@@ -15,6 +15,8 @@ from tests.helpers import base_config, load_default
 
 NOMAD = base_config("supernote-nomad")
 NOMAD_EXTRAS = base_config("supernote-nomad", extras=True)
+PAPER = base_config("158x210")
+PAPER_EXTRAS = base_config("158x210", extras=True)
 
 _TOC_TITLE = 'weight: "bold")[Contents <index>]'
 _MARK_RULE = "contents_bars(size:"
@@ -101,7 +103,7 @@ def test_contents_lists_enabled_human_names_in_sections_order():
         "Months",
         "Weeks",
         "Days",
-        "About this notebook",
+        "About",
     ]
     positions = [page.index(name) for name in names]
     assert positions == sorted(positions)
@@ -109,8 +111,8 @@ def test_contents_lists_enabled_human_names_in_sections_order():
     assert page.count("Contents") == 1
     assert "daily_notes" not in page
     assert "Notes" not in page
-    assert "stroke:" not in page
     assert "2 * regular_height" not in page
+    assert "MORE" in page
     for dest in (
         "annual",
         "quarter-2026-1",
@@ -129,8 +131,8 @@ def test_slim_lists_calendar_and_about_only():
     typst = _generate(dto)
     page = _contents_page(typst)
     assert "Calendar" in page
-    assert "About this notebook" in page
-    assert page.index("Calendar") < page.index("About this notebook")
+    assert "About" in page
+    assert page.index("Calendar") < page.index("About")
     assert "padded_link(<annual>" in page
     assert "padded_link(<colophon>" in page
     for name in ("Quarters", "Months", "Weeks", "Days", "Projects", "Habits", "Review", "Tasks", "Meetings"):
@@ -277,11 +279,11 @@ def test_slim_compiles(tmp_path):
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
     page = _contents_page(typst)
     assert "Calendar" in page
-    assert "About this notebook" in page
+    assert "About" in page
 
 
 def test_mos_right_mark_sits_next_to_strip():
-    typst = _generate(apply_hand(load(NOMAD), "right"))
+    typst = _generate(apply_hand(load(PAPER), "right"))
     page = _annual_page(typst)
     title_at = page.index("2026<annual>")
     mark_at = page.index(_MARK_FLUSH)
@@ -299,7 +301,7 @@ def test_mos_right_mark_sits_next_to_strip():
 
 
 def test_mos_left_annual_mark_is_trail_strip_sibling():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = _annual_page(typst)
     title_at = page.index("2026<annual>")
     mark_at = page.index(_MARK_FLUSH)
@@ -323,7 +325,7 @@ def test_mos_left_annual_mark_is_trail_strip_sibling():
 
 
 def test_daily_mark_is_trail_strip_alone():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = next(p for p in _pages(typst) if "1 <2026-01-01>" in p)
     title_at = page.index("1 <2026-01-01>")
     mark_at = page.index(_MARK_FLUSH)
@@ -341,7 +343,7 @@ def test_daily_mark_is_trail_strip_alone():
 
 
 def test_mos_right_daily_mark_is_trail_strip_alone():
-    typst = _generate(apply_hand(load(NOMAD), "right"))
+    typst = _generate(apply_hand(load(PAPER), "right"))
     page = next(p for p in _pages(typst) if "1 <2026-01-01>" in p)
     title_at = page.index("1 <2026-01-01>")
     mark_at = page.index(_MARK_FLUSH)
@@ -359,7 +361,7 @@ def test_mos_right_daily_mark_is_trail_strip_alone():
 
 
 def test_mos_right_habits_mark_sits_next_to_strip():
-    typst = _generate(apply_hand(load(NOMAD_EXTRAS), "right"))
+    typst = _generate(apply_hand(load(PAPER_EXTRAS), "right"))
     page = next(p for p in _pages(typst) if "January<habits-january>" in p)
     title_at = page.index("January<habits-january>")
     mark_at = page.index(_MARK_FLUSH)

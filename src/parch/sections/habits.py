@@ -8,6 +8,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
@@ -45,7 +46,17 @@ class Habits:
 
     def pages(self, manifest: Manifest) -> list[PageData]:
         months = list(self._range())
-        out = [PageData(raw_typst=True, content=self._index(manifest, months))]
+        if nomad_topband(self.configurator):
+            out = [
+                PageData(
+                    title=f'text(size: h1)[{self.i18n.t("habits")} <{self.ID}>]',
+                    content=self._index_body(manifest, months),
+                    page_id=self.ID,
+                    heading_mark=HeadingMark.TRAIL,
+                )
+            ]
+        else:
+            out = [PageData(raw_typst=True, content=self._index(manifest, months))]
         for month in months:
             page_id = self.month_id(month)
             out.append(
@@ -75,28 +86,29 @@ class Habits:
             edge=HeadingMark.FOLLOW,
         )
 
-    def _index(self, manifest: Manifest, months: list[Month]) -> str:
+    def _index_body(self, manifest: Manifest, months: list[Month]) -> str:
         n = len(months)
-        if n:
-            rows = []
-            for month in months:
-                hid = self.month_id(month)
-                name = self.i18n.t(f"months.full.{month.name}")
-                band = (
-                    "box(width: 100%, height: 100%, "
-                    f"align(horizon + left, [{name}]))"
-                )
-                if manifest.source(hid):
-                    # Link wraps the full-size box so the PDF annotation
-                    # is the 1fr cell, not the padded month word.
-                    band = f"padded_link(<{hid}>, {band})"
-                rows.append(
-                    "  grid.cell(\n"
-                    "    align: horizon + left,\n"
-                    f"    {band}\n"
-                    "  )"
-                )
-            body = f"""box(
+        if not n:
+            return "[]"
+        rows = []
+        for month in months:
+            hid = self.month_id(month)
+            name = self.i18n.t(f"months.full.{month.name}")
+            band = (
+                "box(width: 100%, height: 100%, "
+                f"align(horizon + left, [{name}]))"
+            )
+            if manifest.source(hid):
+                # Link wraps the full-size box so the PDF annotation
+                # is the 1fr cell, not the padded month word.
+                band = f"padded_link(<{hid}>, {band})"
+            rows.append(
+                "  grid.cell(\n"
+                "    align: horizon + left,\n"
+                f"    {band}\n"
+                "  )"
+            )
+        return f"""box(
   width: 100%,
   height: 100%,
   grid(
@@ -107,8 +119,9 @@ class Habits:
 {",\n".join(rows)}
   )
 )"""
-        else:
-            body = "[]"
+
+    def _index(self, manifest: Manifest, months: list[Month]) -> str:
+        body = self._index_body(manifest, months)
         habits_cell = f"[{self.i18n.t('habits')} <{self.ID}>]"
         return f"""#grid(
   columns: 1fr,
@@ -120,9 +133,13 @@ class Habits:
 )"""
 
     def _month_title(self, manifest: Manifest, month: Month) -> str:
-        habits_cell = manifest.link_or_content(self.ID, self.i18n.t("habits"))
         full = self.i18n.t(f"months.full.{month.name}")
         page_id = self.month_id(month)
+        if nomad_topband(self.configurator):
+            return (
+                f'text(size: h1)[{self.i18n.t("habits")} · {full}<{page_id}>]'
+            )
+        habits_cell = manifest.link_or_content(self.ID, self.i18n.t("habits"))
         return f"""box(
   width: 90%,
   inset: (bottom: 0.25em),

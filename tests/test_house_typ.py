@@ -143,8 +143,15 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     house = house_typ_resource().read_text(encoding="utf-8")
     assert "#set page" not in house
     assert "#let page-width" not in house
-    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm)" in house
+    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm, bezel: none)" in house
     assert "if toolbar-edge == top { toolbar-clearance } else { 0mm }" in house
+    assert "if bezel != none { bezel }" in house
+    assert "#let section-strip(" in house
+    assert "#let tempo-bar(" in house
+    assert "#let page-shell(" in house
+    assert "#let strip-icon(" in house
+    assert "icon-habits" in house
+    assert "Notes chip" not in house
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
     assert contents_bars.startswith(
