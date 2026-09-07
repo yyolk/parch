@@ -341,6 +341,8 @@
 
 // Scribe Hyperpaper explor: 5mm air + 10mm chip/breadcrumb track, hairline under.
 // Nomad does not call this. Header owns top air (page-margin top stays 0mm).
+// Left 1fr seats the crumb. Scale uniformly (reflow: false) — trail_heading's
+// reflow:true wraps an h1 leftover digit (weekly "4") and it explodes.
 #let nav_header(left, right, height: 10mm, air: 5mm, stroke: none) = grid(
   columns: 1fr,
   rows: (air, height),
@@ -349,8 +351,24 @@
     columns: (1fr, auto),
     rows: 100%,
     align: horizon,
+    column-gutter: 2mm,
     inset: (x: 2mm),
-    left,
+    box(width: 100%, height: 100%, clip: true, align(horizon + start, layout(size => context {
+      let wanted = measure(left)
+      if wanted.width == 0pt or wanted.width <= size.width {
+        left
+      } else {
+        // Box at natural size first so h1 cannot wrap a leftover digit, then
+        // scale the one-line ink. reflow:true is the weekly "4" explosion.
+        let fit = calc.max(size.width - 2mm, 1mm)
+        scale(
+          fit / wanted.width * 100%,
+          origin: start + horizon,
+          reflow: false,
+          box(width: wanted.width, height: wanted.height, left),
+        )
+      }
+    }))),
     right,
   ),
   grid.hline(y: 2, stroke: stroke),

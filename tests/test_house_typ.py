@@ -463,6 +463,14 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "height: 10mm" in nav_header
     assert "air: 5mm" in nav_header
     assert "grid.hline(y: 2, stroke: stroke)" in nav_header
+    assert "column-gutter: 2mm" in nav_header
+    assert "layout(size => context {" in nav_header
+    assert "let wanted = measure(left)" in nav_header
+    assert "box(width: wanted.width, height: wanted.height, left)" in nav_header
+    assert "calc.max(size.width - 2mm, 1mm)" in nav_header
+    assert "reflow: false" in nav_header
+    assert "reflow: true" not in nav_header
+    assert "clip: true" in nav_header
     assert "cetz" not in nav_header.lower()
     assert "#let section_rail(" in house
     section_rail = house[house.index("#let section_rail(") :]

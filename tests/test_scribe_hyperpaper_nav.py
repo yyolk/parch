@@ -139,6 +139,7 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "nav_header(" in weekly
     assert "mos_strip(" not in weekly
     assert "[Weeks]" in weekly
+    assert "Dec 29 – Jan 4" in weekly
 
 
 def test_scribe_index_is_full_bleed_brand_without_mos_rail():
