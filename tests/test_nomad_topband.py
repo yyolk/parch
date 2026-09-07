@@ -1,5 +1,7 @@
 """Nomad Topband is device-gated. Scribe stays Hyperpaper; MOS profiles keep MOS."""
 
+from datetime import date
+
 from parch.config import load
 from parch.devices import SUPERNOTE_A6, SUPERNOTE_NOMAD, is_nomad, is_scribe_family
 from parch.mos.configurator import Configurator
@@ -21,7 +23,9 @@ from parch.mos.nomad_nav import (
 )
 from parch.mos.preamble import Preamble
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
+from parch.mos.manifest import Manifest
 from parch.sections.habits import Habits
+from parch.sections.tasks import Tasks
 from parch.services.generate import Generate
 from tests.helpers import base_config, load_default, make_day
 from tests.toml_fixtures import short_january
@@ -186,7 +190,8 @@ def _section(cfg, name: str):
     return next(s for s in cfg.enabled_sections() if s["name"] == name)
 
 
-def test_nomad_emit_uses_page_shell_not_mos():
+def test_nomad_emit_uses_page_shell_not_mos(monkeypatch):
+    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 9, 7))
     typst = _generate("supernote-nomad", extras=True)
     assert "page-shell(" in typst
     assert "section-strip(" in typst
@@ -275,6 +280,50 @@ def test_nomad_habits_floors_stock_columns_to_five():
         habit_columns=Habits.DEFAULT_COLUMNS,
     )
     assert paper.habit_columns == 4
+
+
+def test_nomad_tasks_inverts_calendar_today_when_on_strip(monkeypatch):
+    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 1, 5))
+    section = Tasks(
+        section_name="tasks",
+        i18n=load_default(),
+        configurator=_cfg("supernote-nomad", extras=True),
+    )
+    manifest = Manifest()
+    monday = section._day_cell(manifest, make_day("2026-01-05"))
+    thursday = section._day_cell(manifest, make_day("2026-01-01"))
+    assert "text(size: 6pt, fill: white)[M5]" in monday
+    assert "fill: black" in monday
+    assert "fill: white" not in thursday
+    assert "fill: black" not in thursday
+
+
+def test_nomad_tasks_inverts_job_start_when_today_outside_range(monkeypatch):
+    monkeypatch.setattr("parch.sections.tasks.date.today", lambda: date(2026, 9, 7))
+    section = Tasks(
+        section_name="tasks",
+        i18n=load_default(),
+        configurator=_cfg("supernote-nomad", extras=True),
+    )
+    manifest = Manifest()
+    monday = section._day_cell(manifest, make_day("2026-01-05"))
+    thursday = section._day_cell(manifest, make_day("2026-01-01"))
+    assert "text(size: 6pt, fill: white)[T1]" in thursday
+    assert "fill: black" in thursday
+    assert "fill: white" not in monday
+    assert "fill: black" not in monday
+
+
+def test_mos_tasks_never_inverts_strip_cell():
+    section = Tasks(
+        section_name="tasks",
+        i18n=load_default(),
+        configurator=_cfg("158x210", extras=True),
+    )
+    cell = section._day_cell(Manifest(), make_day("2026-01-01"))
+    assert "Thursday 1" in cell
+    assert "fill: white" not in cell
+    assert "fill: black" not in cell
 
 
 def test_other_devices_keep_their_chrome():

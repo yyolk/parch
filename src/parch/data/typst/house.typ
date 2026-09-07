@@ -630,16 +630,20 @@
   notes,
 )
 
-// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. Tiled ink
-// hairs (~3.8mm). No rule above Week notes. MOS keeps week_matrix.
-#let nomad_week_hair(stroke: none, tile: 3.8mm) = tiling(
-  size: (tile, tile),
-  line(
-    start: (0pt, tile - 0.15mm),
-    end: (tile, tile - 0.15mm),
-    stroke: stroke,
-  ),
-)
+// Nomad weekly: 7×1fr day bands + 18mm week-notes floor. Each band
+// and the Week-notes floor fill with multiple 3.8mm ink hairs (not
+// one centered rule). No rule above Week notes. MOS keeps week_matrix.
+#let nomad_week_hairs(stroke: none, tile: 3.8mm) = layout(size => {
+  let n = calc.max(calc.floor(size.height / tile), 0)
+  box(width: size.width, height: size.height, clip: true, {
+    for i in range(n) {
+      place(top + start, dy: (i + 1) * tile, line(
+        length: size.width,
+        stroke: stroke,
+      ))
+    }
+  })
+})
 
 #let nomad_week_band(header, stroke: none, tile: 3.8mm) = {
   grid(
@@ -653,8 +657,7 @@
       width: 100%,
       height: 100%,
       clip: true,
-      inset: (top: 0.2mm, bottom: 0.2mm),
-      lined_well(nomad_week_hair(stroke: stroke, tile: tile)),
+      nomad_week_hairs(stroke: stroke, tile: tile),
     ),
   )
 }

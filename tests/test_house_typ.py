@@ -156,8 +156,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "columns: (2fr, 1fr)" in house[house.index("#let nomad_daily_well(") :]
     assert "#let nomad_week_bands(" in house
     assert "notes-height: 18mm" in house[house.index("#let nomad_week_bands(") :]
-    assert "tile: 3.8mm" in house[house.index("#let nomad_week_hair(") :]
-    assert "lined_well(nomad_week_hair" in house
+    assert "tile: 3.8mm" in house[house.index("#let nomad_week_hairs(") :]
+    assert "for i in range(n)" in house[house.index("#let nomad_week_hairs(") :]
+    assert "nomad_week_hairs(stroke:" in house
+    assert "lined_well(nomad_week_hair" not in house
+    assert "#let nomad_week_hair(" not in house
     assert "(1fr,) * days + (notes-height,)" in house
     assert "#let nomad_month_well(" in house
     assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]

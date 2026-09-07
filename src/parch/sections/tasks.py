@@ -3,6 +3,8 @@
 Raw Typst only — no MOS chrome. Sibling of Review.
 """
 
+from datetime import date
+
 from parch.calendar import walk
 from parch.calendar.day import Day
 from parch.calendar.week import Week
@@ -265,11 +267,20 @@ class Tasks:
   lined_well(task_fill, tile-height: regular_height)
 )"""
 
+    def _focus_date(self) -> date:
+        """Invert the strip cell for calendar today when it falls in the job."""
+        today = date.today()
+        start = self.configurator.start_date().day
+        end = self.configurator.end_date().day
+        if start <= today <= end:
+            return today
+        return start
+
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
         if nomad_topband(self.configurator):
             letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
             label = f"{letter}{day.month_day}"
-            today = day.weekday_name == "thursday"
+            today = day.day == self._focus_date()
         else:
             full = self.i18n.t(f"weekday.full.{day.weekday_name}")
             label = f"{full} {day.month_day}"
