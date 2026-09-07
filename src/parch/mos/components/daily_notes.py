@@ -19,6 +19,7 @@ class DailyNotes:
         notes_height: str,
         pattern: str = "dotted",
         more_chip: bool = False,
+        chip_font: str | None = None,
         **_rest: Any,
     ) -> None:
         self.i18n = i18n
@@ -28,6 +29,7 @@ class DailyNotes:
         self.notes_height = notes_height
         self.pattern = pattern
         self.more_chip = more_chip
+        self.chip_font = chip_font
 
     def generate(self) -> str:
         daily_note_id = DatedNote(weekday_start=self.day.weekday_start, day=self.day).id
@@ -35,6 +37,8 @@ class DailyNotes:
         rule = "stroke: (bottom: regular_stroke + black)"
         if self.manifest.source(daily_note_id):
             more = self.manifest.link_or_content(daily_note_id, self.i18n.t("more_daily_notes"))
+            if self.chip_font:
+                more = f'text(size: 7pt, font: "{self.chip_font}", {more})'
             if self.more_chip:
                 more = (
                     "box(inset: (x: 1.4mm, y: 0.35mm), "

@@ -133,11 +133,11 @@ class Colophon:
   column-gutter: regular_column_gutter,
   rows: regular_height,
   align: horizon,
-  [*Device*], [{device}],
-  [*Page*], [{page}],
-  [*Year*], {year_cell},
-  [*Chrome*], [Topband · no side MOS],
-  [*Edition*], [parch {version}],
+  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Device], [{device}],
+  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Page], [{page}],
+  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Year], {year_cell},
+  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Chrome], [Topband · no side MOS],
+  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Edition], [parch {version}],
 )"""
 
     def _heading(self, manifest, *, labeled: bool = True) -> str:

@@ -15,6 +15,7 @@ class DailySchedule:
         trailing_30_minutes: bool = True,
         time_format: str = "%k",
         stretch: bool = False,
+        hour_font: str | None = None,
         **rest: Any,
     ) -> None:
         self.i18n = i18n
@@ -24,6 +25,7 @@ class DailySchedule:
         self.trailing_30_minutes = trailing_30_minutes
         self.time_format = time_format
         self.stretch = stretch
+        self.hour_font = hour_font
 
     def generate(self) -> str:
         if self.stretch:
@@ -36,9 +38,9 @@ class DailySchedule:
             )
             cells = [header]
             for hour in hours:
-                pretty = self._pretty_hour(hour)
                 cells.append(
-                    f"grid.cell(stroke: (bottom: regular_stroke + black), align(horizon, [{pretty}]))"
+                    "grid.cell(stroke: (bottom: regular_stroke + black), "
+                    f"align(horizon, {self._hour_body(hour)}))"
                 )
             return f"""grid(
   columns: 1fr,
@@ -63,10 +65,9 @@ class DailySchedule:
     def _schedule_lines(self) -> str:
         lines = []
         for hour in range(self.from_hour, self.to_hour + 1):
-            pretty = self._pretty_hour(hour)
             cell = (
                 "grid.cell(stroke: (bottom: regular_stroke + black), "
-                f"box(height: regular_height, align(horizon, [{pretty}])))"
+                f"box(height: regular_height, align(horizon, {self._hour_body(hour)})))"
             )
             if self.trailing_30_minutes:
                 lines.append(f"{cell}, {self._half_tick()}")
@@ -81,3 +82,11 @@ class DailySchedule:
             return f"{hour:2d}"
         dt = datetime(1, 1, 1, hour, 0, 0)
         return dt.strftime(fmt)
+
+    def _hour_body(self, hour: int) -> str:
+        pretty = self._pretty_hour(hour)
+        if self.hour_font:
+            return (
+                f'text(size: 6.5pt, fill: luma(40%), font: "{self.hour_font}")[{pretty}]'
+            )
+        return f"[{pretty}]"

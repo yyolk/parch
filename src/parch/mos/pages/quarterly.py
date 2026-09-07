@@ -38,13 +38,16 @@ class Quarterly:
     def nomad_content(self) -> str:
         """Locked Nomad quarterly: 26mm month strip + Focus / Notes wells."""
         months = ", ".join(
-            year_month_cell(self.i18n, self.manifest, month)
+            "box(width: 100%, height: 100%, clip: true, "
+            "inset: (x: 0.2mm, y: 0.15mm), "
+            "stroke: (bottom: regular_stroke + black), "
+            f"{year_month_cell(self.i18n, self.manifest, month)})"
             for month in self.quarter.months()
         )
         strip = f"""grid(
   columns: (1fr, 1fr, 1fr),
   rows: 1fr,
-  column-gutter: 1.2mm,
+  column-gutter: 2.4mm,
   {months}
 )"""
         focus = f"""box(width: 100%, height: 100%, clip: true, inset: (top: 0.3mm), {{

@@ -96,7 +96,11 @@ class CoverPlain:
     def _nomad_cover(self, manifest) -> str:
         lines = [_escape(line) for line in self._lines()]
         dest = self._dest(manifest)
-        year = self._year("48pt", lines[0], dest, manifest) if lines else "[]"
+        year = (
+            self._year('48pt, weight: "bold", font: "Libertinus Serif"', lines[0], dest, manifest)
+            if lines
+            else "[]"
+        )
         return f"""grid(
   columns: 1fr,
   rows: (1fr, 2fr),

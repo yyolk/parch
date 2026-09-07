@@ -210,6 +210,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[ 7]" in daily
     assert "[16]" in daily
     assert "[ 8]" in daily
+    assert 'font: "Liberation Sans")[ 7]' in daily
     assert "rows: (regular_height,) + (1fr,) * 10" in daily
     assert "place(bottom + left, line(length: 3mm" not in daily
     assert daily.count("task_tick()") == 6
@@ -218,6 +219,12 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "lined_well(lined_fill)" in daily
     assert "box(inset: (x: 1.4mm, y: 0.35mm)" in daily
     assert "[More]" in daily
+    assert 'font: "Liberation Sans"' in daily.split("[More]")[0][-80:]
+    assert "mini-month(" in daily
+    assert "highlight: 1" in daily
+    assert "compact: true" in daily
+    assert "month_grid(" not in daily
+    assert "LittleCalendar" not in daily
     assert "Notes" not in daily.split("section-strip(")[1].split(")", 1)[0]
     assert 'text(size: h1)[2026]' in daily
     weekly = _page_with(typst, "Week 1 <2026W01>")
@@ -277,6 +284,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "line(length: 42mm, stroke: regular_stroke + luma(25%))" in cover
     assert cover.count("line(length: 42mm, stroke: thick_stroke + black)") == 1
     assert 'text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad]' in cover
+    assert 'font: "Libertinus Serif"' in cover
     assert "text(size: h1)[Supernote Nomad]" not in cover
     assert "title: none" in cover
     annual = _page_with(typst, "<annual>]")
@@ -306,6 +314,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[January]" in quarterly
     assert "start-wd:" in quarterly
     assert "days: 31" in quarterly
+    assert "column-gutter: 2.4mm" in quarterly
+    assert "inset: (x: 0.2mm, y: 0.15mm)" in quarterly
     assert "[Jan]" not in quarterly
     assert "[Focus]" in quarterly
     assert "[Notes]" in quarterly
@@ -378,13 +388,14 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section-strip(" in colo
     assert "active: none" in colo
     assert "page-shell(\n  none," not in colo
-    assert "[*Device*]" in colo
-    assert "[*Page*]" in colo
-    assert "[*Year*]" in colo
-    assert "[*Chrome*]" in colo
+    assert "[Device]" in colo
+    assert "[Page]" in colo
+    assert "[Year]" in colo
+    assert "[Chrome]" in colo
+    assert 'font: "Liberation Sans")[Device]' in colo
     assert "[Topband · no side MOS]" in colo
     assert "[Nomad Topband]" not in colo
-    assert "[*Edition*]" in colo
+    assert "[Edition]" in colo
     assert "[*Version*]" not in colo
     notes = _page_with(typst, "[Notes <daily-note-2026-01-01-page-1>]")
     assert "lined_well(lined_fill)" in notes
@@ -481,11 +492,14 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     assert f"height: {CHROME_H}" in typst
     assert f"height: {TEMPO_H}" in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
+    assert 'font: "Libertinus Serif"' in typst
+    assert "mini-month" in typst
     assert "rail-clearance:" not in typst
     paper = Preamble(_cfg("158x210")).generate()
     assert "#let lined_fill = lined_fill()" in paper
     assert "bezel:" not in paper
     assert "page-shell" in paper
+    assert 'font: "Libertinus Serif"' not in paper
     scribe = Preamble(_cfg("kindle-scribe")).generate()
     assert "bezel:" not in scribe
     assert "rail-clearance:" in scribe
@@ -508,6 +522,7 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert "inset: (x: 2mm, y: 3.2mm)" in page
     assert "rows: (auto, 2mm, 1fr)" in page
     assert 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]' in page
+    assert '#set text(font: "Libertinus Serif")' in page
     assert 'font: "Liberation Sans")[2026]' in page
     assert "rows: (9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm)" not in page
     assert "Notes" not in page or "daily_notes" not in page

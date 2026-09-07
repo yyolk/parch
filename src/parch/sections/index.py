@@ -184,7 +184,8 @@ class Index:
                 f"      align(bottom, pad(bottom: 1mm, {more_head})),\n"
                 f"      {more_cells}"
             )
-        return f"""#block(width: 100%, height: 100%, {{
+        return f"""#set text(font: "Libertinus Serif")
+#block(width: 100%, height: 100%, {{
   grid(
     columns: 1fr,
     rows: (auto, 2mm, 1fr),

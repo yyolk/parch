@@ -221,9 +221,9 @@ class Meetings:
   columns: (auto, 1fr, auto, {_DATE_COL}),
   column-gutter: 6pt,
   align: horizon,
-  [Name],
+  text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Name],
   grid.cell(stroke: (bottom: regular_stroke), []),
-  [Date],
+  text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Date],
   grid.cell(stroke: (bottom: regular_stroke), []),
 )"""
         topics = f"""grid(

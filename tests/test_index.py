@@ -56,7 +56,7 @@ def _annual_page(typst: str) -> str:
 
 def _colophon_page(typst: str) -> str:
     for page in reversed(_pages(typst)):
-        if "[*Device*]" in page and "[*Year*]" in page:
+        if "[About <colophon>]" in page or ("[*Device*]" in page and "[*Year*]" in page):
             return page
     raise AssertionError("no Colophon page")
 
@@ -258,12 +258,13 @@ def test_colophon_has_mark_and_unchanged_facts():
     assert "active: none" in page
     assert "page-shell(\n  none," not in page
     assert "[About <colophon>]" in page
-    assert "[*Device*]" in page
-    assert "[*Page*]" in page
-    assert "[*Year*]" in page
-    assert "[*Chrome*]" in page
+    assert "[Device]" in page
+    assert "[Page]" in page
+    assert "[Year]" in page
+    assert "[Chrome]" in page
+    assert 'font: "Liberation Sans")[Device]' in page
     assert "[Topband · no side MOS]" in page
-    assert "[*Edition*]" in page
+    assert "[Edition]" in page
     assert "[*Version*]" not in page
     assert _MARK_FLUSH not in page
     assert _LEAD_PAIR not in page

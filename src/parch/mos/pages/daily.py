@@ -10,6 +10,7 @@ from parch.mos.components.daily_notes import DailyNotes
 from parch.mos.components.daily_schedule import DailySchedule
 from parch.mos.components.daily_priorities import DailyPriorities
 from parch.mos.components.little_calendar import LittleCalendar
+from parch.mos.components.year_month import mini_month_cell
 from parch.mos.manifest import Manifest
 
 
@@ -76,15 +77,6 @@ class Daily:
 
     def nomad_content(self) -> str:
         """Locked Nomad daily: 2/3 schedule 7–16, rail cal+priorities, lined notes floor."""
-        inset = "3pt"
-        for col in (self.params.get("left_column"), self.params.get("right_column")):
-            for comp in col or []:
-                data = _to_plain(comp) if isinstance(comp, (StrictDict, dict)) else dict(comp)
-                if data.get("class") == "little_calendar":
-                    params = data.get("params") or {}
-                    if isinstance(params, StrictDict):
-                        params = params.to_plain()
-                    inset = params.get("inset", inset)
         schedule = DailySchedule(
             i18n=self.i18n,
             **{
@@ -93,17 +85,13 @@ class Daily:
                 "trailing_30_minutes": False,
                 "time_format": "%k",
                 "stretch": True,
+                "hour_font": "Liberation Sans",
             },
         )
-        calendar = LittleCalendar(
-            i18n=self.i18n,
-            manifest=self.manifest,
-            month=self.day.month(),
-            day=self.day,
-            inset=inset,
-            show_month_name=True,
-            show_week_letter=False,
-            week_placement="none",
+        calendar = (
+            "box(width: 100%, height: 100%, clip: true, "
+            "stroke: regular_stroke + black, inset: 0.5mm, "
+            f"{mini_month_cell(self.i18n, self.manifest, self.day.month(), highlight=self.day.month_day)})"
         )
         priorities = DailyPriorities(i18n=self.i18n, number=6)
         notes = DailyNotes(
@@ -114,12 +102,13 @@ class Daily:
             notes_height="1fr",
             pattern="lined",
             more_chip=True,
+            chip_font="Liberation Sans",
         )
         rail = f"""grid(
   columns: 1fr,
   rows: (24mm, 1fr),
   row-gutter: {self.items_spacing},
-  {calendar.generate()},
+  {calendar},
   {priorities.generate()}
 )"""
         return f"nomad_daily_well({schedule.generate()}, {rail}, {notes.generate()})"

@@ -463,18 +463,22 @@
 // Chrome only when present: strip → hair → tempo → hair → crumb → hair → body.
 // strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
 #let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
+  set text(font: "Libertinus Serif")
   let crumb = if title == none {
     []
   } else {
     block(
       width: 100%,
       inset: (top: 1.2mm, bottom: 1.0mm),
-      grid(
-        columns: (1fr, auto),
-        align: horizon,
-        title,
-        if year == none { [] } else { year },
-      ),
+      {
+        set text(font: "Libertinus Serif")
+        grid(
+          columns: (1fr, auto),
+          align: horizon,
+          title,
+          if year == none { [] } else { year },
+        )
+      },
     )
   }
   grid(
@@ -560,6 +564,76 @@
   )
 }
 
+// Daily rail glance. Fonts stay fixed so day-h → height is linear.
+#let mini-month(name, start-wd: 3, days: 31, highlight: none, day-h: 2.6mm, weeks: auto, compact: false) = {
+  let day-sz = if compact { 5.5pt } else { 6.5pt }
+  let wd-sz = if compact { 4.8pt } else { 5.5pt }
+  let title-sz = if compact { 6.5pt } else { 7pt }
+  let title-gap = if compact { 0.3mm } else { 0.45mm }
+  let rg = if compact { calc.max(0.25mm, day-h * 0.18) } else { calc.max(0.35mm, day-h * 0.16) }
+  let wd-h = day-h * 0.72
+  set text(font: "Liberation Sans", size: day-sz)
+  let wd = ("M", "T", "W", "T", "F", "S", "S")
+  let cells = ()
+  for i in range(start-wd) { cells.push(none) }
+  for d in range(1, days + 1) { cells.push(d) }
+  let wks = if weeks == auto {
+    calc.max(5, calc.ceil(cells.len() / 7))
+  } else { weeks }
+  while cells.len() < wks * 7 { cells.push(none) }
+  block(width: 100%, {
+    text(weight: "bold", size: title-sz)[#name]
+    v(title-gap)
+    grid(
+      columns: (1fr,) * 7,
+      column-gutter: 0pt,
+      row-gutter: rg,
+      ..wd.map(w => box(
+        width: 100%,
+        height: wd-h,
+        align(center + horizon, text(size: wd-sz, fill: luma(40%), weight: "bold")[#w]),
+      )),
+      ..cells.map(c => {
+        let inner = if c == none {
+          []
+        } else if highlight != none and c == highlight {
+          box(
+            width: 88%,
+            height: 88%,
+            fill: black,
+            radius: 0.2mm,
+            align(center + horizon, text(fill: white, size: day-sz, weight: "bold")[#c]),
+          )
+        } else {
+          text(size: day-sz)[#c]
+        }
+        box(width: 100%, height: day-h, align(center + horizon, inner))
+      }),
+    )
+  })
+}
+
+#let mini-month-fit(name, start-wd: 3, days: 31, highlight: none, compact: false) = {
+  box(width: 100%, height: 100%, clip: true, layout(size => {
+    let wks = 6
+    let title-sz = if compact { 6.5pt } else { 7pt }
+    let title-gap = if compact { 0.3mm } else { 0.45mm }
+    let rg-k = if compact { 0.18 } else { 0.16 }
+    let fixed = title-sz + title-gap
+    let coef = 0.72 + wks + rg-k * (1 + wks)
+    let day-h = calc.max(2.0mm, (size.height - fixed) / coef)
+    mini-month(
+      name,
+      start-wd: start-wd,
+      days: days,
+      highlight: highlight,
+      day-h: day-h,
+      weeks: wks,
+      compact: compact,
+    )
+  }))
+}
+
 // Nomad annual/quarter glance. Locked densify — not LittleCalendar / month_grid.
 #let year-month(name, start-wd: 3, days: 31) = {
   set text(font: "Liberation Sans")
@@ -605,16 +679,22 @@
 #let nomad_year_grid(..cells) = grid(
   columns: (1fr, 1fr, 1fr),
   rows: (1fr, 1fr, 1fr, 1fr),
-  column-gutter: 1.4mm,
-  row-gutter: 1.6mm,
-  ..cells.pos(),
+  column-gutter: 2.4mm,
+  row-gutter: 1.5mm,
+  ..cells.pos().map(c => box(
+    width: 100%,
+    height: 100%,
+    clip: true,
+    inset: (x: 0.25mm, y: 0.15mm),
+    c,
+  )),
 )
 
 // Nomad quarterly: 26mm month strip + Focus / Notes wells. MOS keeps quarter_well.
 #let nomad_quarter_well(months, focus, notes, strip-height: 26mm) = grid(
   columns: 1fr,
   rows: (strip-height, 0.9fr, 1.2fr),
-  row-gutter: 1.4mm,
+  row-gutter: 1.5mm,
   months,
   focus,
   notes,

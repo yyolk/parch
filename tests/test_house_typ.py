@@ -54,6 +54,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "nomad_week_bands" in names
     assert "nomad_month_well" in names
     assert "year-month" in names
+    assert "mini-month" in names
     assert "nomad_year_grid" in names
     assert "nomad_quarter_well" in names
     assert "dotted_centered" in names
@@ -156,6 +157,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let tempo-bar(" in house
     assert "#let page-shell(" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
+    assert 'set text(font: "Libertinus Serif")' in shell
     assert "if strip != none" in shell
     assert "if tempo != none" in shell
     assert "if title != none" in shell
@@ -174,8 +176,13 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let nomad_week_hair(" not in house
     assert "(1fr,) * days + (notes-height,)" in house
     assert "#let year-month(" in house
+    assert "#let mini-month(" in house
+    assert 'set text(font: "Liberation Sans", size: day-sz)' in house[house.index("#let mini-month(") :]
     assert "#let nomad_year_grid(" in house
-    assert "(1fr, 1fr, 1fr, 1fr)" in house[house.index("#let nomad_year_grid(") :]
+    year_grid = house[house.index("#let nomad_year_grid(") : house.index("#let nomad_quarter_well(")]
+    assert "(1fr, 1fr, 1fr, 1fr)" in year_grid
+    assert "column-gutter: 2.4mm" in year_grid
+    assert "row-gutter: 1.5mm" in year_grid
     assert "#let nomad_quarter_well(" in house
     assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
     assert "0.9fr, 1.2fr" in house[house.index("#let nomad_quarter_well(") :]
