@@ -139,6 +139,40 @@ def card_interior_lines(
     return cards
 
 
+def header_first_ink_x(
+    image: Path,
+    *,
+    skip_mm: float = 0,
+    dpi: int = 150,
+    dark: int = 100,
+) -> int:
+    """Leftmost ink x in the nav_header band, skipping *skip_mm* from the page edge.
+
+    Used to lock the Scribe Contents chip slot. MOS-left callers skip the rail.
+    """
+    bands = full_width_bands(
+        image,
+        x0_frac=max(0.0, skip_mm / 157.5),
+        coverage=0.45,
+    )
+    thin = [b for b in bands if b[2] <= 3]
+    if not thin:
+        raise AssertionError(f"no header rule in {image}")
+    y1 = thin[0][0]
+    y0 = max(0, int(dpi * 4 / 25.4))
+    if y1 <= y0:
+        raise AssertionError(f"header rule too high in {image}: {thin[0]}")
+    with Image.open(image) as src:
+        im = src.convert("L")
+        width, _height = im.size
+        pixels = im.load()
+    x0 = int(dpi * skip_mm / 25.4)
+    for x in range(x0, width // 2):
+        if any(pixels[x, y] <= dark for y in range(y0, y1)):
+            return x
+    raise AssertionError(f"no header ink in {image}")
+
+
 def ink_bbox(image: Path, *, dark: int = 64) -> tuple[int, int, int, int] | None:
     """Inclusive (x0, y0, x1, y1) of pixels darker than *dark*, or None."""
     with Image.open(image) as src:

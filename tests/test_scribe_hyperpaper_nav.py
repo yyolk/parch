@@ -22,10 +22,12 @@ from parch.mos.scribe_nav import (
 )
 from parch.mos.configurator import Configurator
 from parch.services.generate import Generate
+from parch.services.preview_svg import sample_page_numbers
 from parch.toml_config import apply_hand
 from tests.helpers import base_config, load_default
 from tests.toml_fixtures import short_january
 from tests.test_toml_omit_sections import compile_pdf
+from tests.visual import header_first_ink_x, raster_page
 
 
 def _generate(stem: str, *, extras: bool = False, hand: str | None = None) -> str:
@@ -119,6 +121,18 @@ def test_rail_maps_enabled_sections_and_skips_chrome():
     assert RAIL_SKIP == {"cover", "index", "colophon"}
 
 
+_HOME_CHIP = (
+    "padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), "
+    "stroke: regular_stroke, [Contents]))"
+)
+_CONTENT_NEEDLES = (
+    "2026<annual>",
+    "Week 1 <2026W01>",
+    "January<month-2026-01-01>",
+    "text(size: h1)[1 <2026-01-01>]",
+)
+
+
 def test_scribe_content_pages_use_section_rail_and_nav_header():
     typst = _generate("kindle-scribe")
     assert "#let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)" in typst
@@ -135,6 +149,7 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "[Contents]" in annual
     annual_head = annual[annual.index("nav_header(") :]
     assert "contents_bars" not in annual_head
+    assert annual_head.startswith(f"nav_header({_HOME_CHIP},")
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert "section_rail(" in weekly
     assert "nav_header(" in weekly
@@ -148,6 +163,23 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "shrink: true" in heading
     assert "contents_bars" not in heading
     assert "[Contents]" in heading
+    assert heading.startswith(f"nav_header({_HOME_CHIP},")
+
+
+def test_scribe_contents_chip_slot_stable_for_both_hands():
+    """Contents is the first nav_header arg on every content page; no five-bar."""
+    for hand in ("left", "right"):
+        typst = _generate("kindle-scribe", hand=hand)
+        for needle in _CONTENT_NEEDLES:
+            page = _page_with(typst, needle)
+            head = page[page.index("nav_header(") :]
+            assert head.startswith(f"nav_header({_HOME_CHIP},")
+            assert "contents_bars" not in head[:400]
+            if hand == "left":
+                assert "#mos_frame(\n  left," in page
+            else:
+                assert "#mos_frame(\n  right," in page
+                assert "side: right" in page
 
 
 def test_scribe_index_is_full_bleed_brand_without_mos_rail():
@@ -185,6 +217,9 @@ def test_scribe_right_hand_keeps_mos_frame_side():
     assert "#mos_frame(\n  right," in annual
     assert "side: right" in annual
     assert "#mos_frame(\n  left," not in annual
+    head = annual[annual.index("nav_header(") :]
+    assert head.startswith(f"nav_header({_HOME_CHIP},")
+    assert "contents_bars" not in head[:400]
 
 
 def test_scribe_preamble_binds_explor_helpers():
@@ -199,3 +234,24 @@ def test_scribe_short_january_compiles(tmp_path):
     typst = _generate("kindle-scribe", extras=True)
     pdf, stderr = compile_pdf(typst, tmp_path / "scribe-nav", device="kindle-scribe")
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
+
+
+def test_scribe_contents_chip_pixels_stable_both_hands(tmp_path):
+    """Contents x is constant per hand; it may move only when the rail flips."""
+    stems = ("annual", "weekly-w01", "monthly-jan")
+    xs: dict[str, list[int]] = {}
+    for hand in ("left", "right"):
+        typst = _generate("kindle-scribe", hand=hand)
+        pdf, stderr = compile_pdf(typst, tmp_path / f"scribe-{hand}", device="kindle-scribe")
+        assert pdf.is_file() and pdf.stat().st_size > 0, stderr
+        pages = sample_page_numbers(
+            typst, year=2026, week_id="2026W01", jan1="2026-01-01", stems=stems
+        )
+        skip = 13.0 if hand == "left" else 0.0
+        found = []
+        for stem in stems:
+            png = raster_page(pdf, pages[stem], tmp_path / f"{hand}-{stem}.png")
+            found.append(header_first_ink_x(png, skip_mm=skip))
+        assert max(found) - min(found) <= 2, (hand, found)
+        xs[hand] = found
+    assert abs(xs["left"][0] - xs["right"][0]) >= 8

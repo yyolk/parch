@@ -464,6 +464,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "height: 10mm" in nav_header
     assert "air: 5mm" in nav_header
     assert "rows: (air, auto)" in nav_header
+    assert "columns: (auto, 1fr, auto)" in nav_header
+    assert "align: horizon + start" in nav_header
     assert "grid.hline(y: 2, stroke: stroke)" in nav_header
     assert "column-gutter: 2mm" in nav_header
     assert "clip:" not in nav_header

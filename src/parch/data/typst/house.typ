@@ -342,18 +342,20 @@
 
 // Scribe Hyperpaper explor: 5mm air + soft ~10mm crumb track (grows, no clip).
 // Nomad does not call this. Header owns top air (page-margin top stays 0mm).
-// Left 1fr is the breadcrumb; Contents + right chips eat the rest. Shrink is
-// trail_heading(..., shrink: true) at the call site — not the <100mm bind.
-#let nav_header(left, right, height: 10mm, air: 5mm, stroke: none) = grid(
+// Contents sits in a dedicated auto slot so it does not drift when the crumb
+// or right chips change width. Crumb is the leftover 1fr; chips are trailing
+// auto. Shrink is trail_heading(..., shrink: true) at the call site.
+#let nav_header(home, crumb, right, height: 10mm, air: 5mm, stroke: none) = grid(
   columns: 1fr,
   rows: (air, auto),
   [],
   grid(
-    columns: (1fr, auto),
-    align: horizon,
+    columns: (auto, 1fr, auto),
+    align: horizon + start,
     column-gutter: 2mm,
     inset: (x: 2mm, y: 1mm),
-    left,
+    home,
+    crumb,
     right,
   ),
   grid.hline(y: 2, stroke: stroke),

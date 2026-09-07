@@ -100,8 +100,11 @@ class Navigation:
         highlight_quarters: list[Any] | None = None,
         month_link_id: Callable[[Month], str] | None = None,
     ) -> str:
-        """Home chip + breadcrumb on the left; month/quarter/context chips on the right."""
-        left = self._nav_header_left(title)
+        """Contents (auto slot) + crumb 1fr + month/quarter chips (trailing auto)."""
+        home = self._home_chip()
+        crumb = (
+            f"trail_heading({title}, [], shrink: true)" if title else "[]"
+        )
         right = self._nav_header_right(
             page_id=page_id,
             nav_links=nav_links,
@@ -109,23 +112,7 @@ class Navigation:
             highlight_quarters=highlight_quarters or [],
             month_link_id=month_link_id,
         )
-        return f"nav_header({left}, {right})"
-
-    def _nav_header_left(self, title: str | None) -> str:
-        """Contents (auto) + trail_heading(title, mark, shrink: true) in the 1fr.
-
-        Scribe page-width is not < 100mm, so the Move preamble bind does not
-        fire — shrink must be passed explicitly. Mark is empty; chips sit in
-        nav_header's right auto column.
-        """
-        home = self._home_chip()
-        if not title:
-            return home
-        crumb = f"trail_heading({title}, [], shrink: true)"
-        return (
-            f"grid(columns: (auto, 1fr), column-gutter: 0.5em, "
-            f"align: horizon + start, {home}, {crumb})"
-        )
+        return f"nav_header({home}, {crumb}, {right})"
 
     def _home_chip(self) -> str:
         """Boxed Contents chip is the index link. No five-bar on Scribe nav_header."""
