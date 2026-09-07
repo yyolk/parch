@@ -533,8 +533,13 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert "year glance" in page
     assert "[colophon]" in page
     assert 'text(size: 11pt, fill: luma(50%))[›]' in page
-    assert "inset: (x: 2mm, y: 3.2mm)" in page
-    assert "rows: (auto, 2mm, 1fr)" in page
+    assert "inset: (x: 2mm)" in page
+    assert "rows: (14mm, 2mm, 1fr)" in page
+    assert "rows: (auto, 2mm, 1fr)" not in page
+    assert "#set par(spacing: 0pt)" in page
+    assert "let avail = size.height - gap-h" in page
+    assert "let natural = avail / n" in page
+    assert "calc.max(9mm, natural)" in page
     assert 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]' in page
     assert '#set text(font: "Libertinus Serif")' in page
     assert 'font: "Liberation Sans")[2026]' in page

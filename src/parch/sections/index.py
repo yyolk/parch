@@ -185,13 +185,15 @@ class Index:
                 f"      {more_cells}"
             )
         return f"""#set text(font: "Libertinus Serif")
+#set par(spacing: 0pt)
 #block(width: 100%, height: 100%, {{
   grid(
     columns: 1fr,
-    rows: (auto, 2mm, 1fr),
-    block(width: 100%, fill: black, inset: (x: 2mm, y: 3.2mm), {{
+    rows: (14mm, 2mm, 1fr),
+    block(width: 100%, height: 100%, fill: black, inset: (x: 2mm), {{
       grid(
         columns: (1fr, auto),
+        rows: 1fr,
         align: horizon,
         {brand},
         {year_cell},
@@ -201,7 +203,9 @@ class Index:
     layout(size => {{
       let gap-h = 5mm
       let n = {max(n, 1)}
-      let row-h = (size.height - gap-h) / n
+      let avail = size.height - gap-h
+      let natural = avail / n
+      let row-h = if (9mm * n) <= avail {{ calc.max(9mm, natural) }} else {{ natural }}
       grid(
         rows: {rows},
         row-gutter: 0pt,
