@@ -111,5 +111,5 @@ class CoverPlain:
       line(length: 42mm, stroke: regular_stroke + luma(25%)),
     ),
   )),
-  align(center + bottom, pad(bottom: 4mm, text(size: 7.5pt, fill: luma(45%))[Supernote Nomad])),
+  align(center + bottom, pad(bottom: 4mm, text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad])),
 )"""

@@ -586,7 +586,8 @@
 }
 
 // Topband under the toolbar dead zone. No side MOS.
-// rows: strip → hair → optional tempo → hair → crumb → hair → 1fr body
+// Chrome only when present: strip → hair → tempo → hair → crumb → hair → body.
+// strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
 #let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
   let crumb = if title == none {
     []
@@ -604,13 +605,21 @@
   }
   grid(
     columns: 1fr,
-    rows: (auto, auto, auto, auto, auto, auto, 1fr),
-    strip,
-    line(length: 100%, stroke: stroke),
-    if tempo == none { [] } else { tempo },
-    if tempo == none { [] } else { line(length: 100%, stroke: stroke) },
-    crumb,
-    if title == none { [] } else { line(length: 100%, stroke: stroke) },
+    rows: (auto, 1fr),
+    {
+      if strip != none {
+        strip
+        line(length: 100%, stroke: stroke)
+      }
+      if tempo != none {
+        tempo
+        line(length: 100%, stroke: stroke)
+      }
+      if title != none {
+        crumb
+        line(length: 100%, stroke: stroke)
+      }
+    },
     body,
   )
 }
@@ -667,14 +676,12 @@
   let days = calc.max(headers.len() - 1, 0)
   let day-headers = headers.slice(0, count: days)
   let notes = if headers.len() > days { headers.at(days) } else { [] }
+  // Air between days only — no cell bottom stroke (that doubled in-band hairs).
   grid(
     columns: 1fr,
     rows: (1fr,) * days + (notes-height,),
-    ..range(days).map(i => {
-      let band = nomad_week_band(day-headers.at(i), stroke: stroke, tile: tile)
-      // Hair between days only — not above Week notes.
-      if i + 1 < days { grid.cell(stroke: (bottom: stroke), band) } else { band }
-    }),
+    row-gutter: 0.8mm,
+    ..day-headers.map(h => nomad_week_band(h, stroke: stroke, tile: tile)),
     nomad_week_band(notes, stroke: stroke, tile: tile),
   )
 }

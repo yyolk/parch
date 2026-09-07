@@ -264,7 +264,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "line(length: 42mm, stroke: thick_stroke + black)" in cover
     assert "line(length: 42mm, stroke: regular_stroke + luma(25%))" in cover
     assert cover.count("line(length: 42mm, stroke: thick_stroke + black)") == 1
-    assert "text(size: 7.5pt, fill: luma(45%))[Supernote Nomad]" in cover
+    assert 'text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad]' in cover
+    assert "text(size: h1)[Supernote Nomad]" not in cover
     assert "title: none" in cover
     annual = _page_with(typst, "<annual>]")
     assert "nomad_year_grid(" in annual

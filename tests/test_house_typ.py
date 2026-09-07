@@ -155,10 +155,18 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let section-strip(" in house
     assert "#let tempo-bar(" in house
     assert "#let page-shell(" in house
+    shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
+    assert "if strip != none" in shell
+    assert "if tempo != none" in shell
+    assert "if title != none" in shell
+    assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     assert "#let nomad_daily_well(" in house
     assert "columns: (2fr, 1fr)" in house[house.index("#let nomad_daily_well(") :]
     assert "#let nomad_week_bands(" in house
-    assert "notes-height: 18mm" in house[house.index("#let nomad_week_bands(") :]
+    week_bands = house[house.index("#let nomad_week_bands(") : house.index("#let year-month(")]
+    assert "notes-height: 18mm" in week_bands
+    assert "row-gutter: 0.8mm" in week_bands
+    assert "grid.cell(stroke: (bottom: stroke)" not in week_bands
     assert "tile: 3.8mm" in house[house.index("#let nomad_week_hairs(") :]
     assert "for i in range(n)" in house[house.index("#let nomad_week_hairs(") :]
     assert "nomad_week_hairs(stroke:" in house
