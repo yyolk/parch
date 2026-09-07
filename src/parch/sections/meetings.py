@@ -94,7 +94,7 @@ class Meetings:
             if topband:
                 out.append(
                     PageData(
-                        title=f'text(size: h1)[{self._index_meetings_cell(manifest, page)}]',
+                        title=f"text(size: h1){self._index_meetings_cell(manifest, page)}",
                         content=self._index_rows(manifest, start, end),
                         page_id=page_id,
                         strip="none",
