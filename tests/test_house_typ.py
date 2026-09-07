@@ -143,7 +143,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     house = house_typ_resource().read_text(encoding="utf-8")
     assert "#set page" not in house
     assert "#let page-width" not in house
-    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none)" in house
+    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm)" in house
     assert "if toolbar-edge == top { toolbar-clearance } else { 0mm }" in house
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
@@ -478,6 +478,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "pad: 4mm" in section_rail
     assert "side: left" in section_rail
     assert "padded_link(padding: 0pt, dest, seated)" in section_rail
+    assert "box(width: 100%, inset: edge, hit)" in section_rail
     assert "v(1fr)" in section_rail
     assert "mos_strip" not in section_rail
     assert "cetz" not in section_rail.lower()

@@ -7,6 +7,8 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.preamble import _WELL_PATTERN
+from parch.mos.scribe_nav import scribe_hyperpaper_nav
+from parch.sections._shared import heading_and_well
 
 
 class DailyNotes:
@@ -31,10 +33,18 @@ class DailyNotes:
     def pages(self, manifest: Manifest) -> list[PageData]:
         out = []
         for note in self._range():
+            heading = self._title(manifest, note)
+            well = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
+            if scribe_hyperpaper_nav(self.configurator):
+                title = self._nav_title()
+                content = heading_and_well(heading, well)
+            else:
+                title = heading
+                content = well
             out.append(
                 PageData(
-                    title=self._title(manifest, note),
-                    content=f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})",
+                    title=title,
+                    content=content,
                     page_id=note.id,
                     highlight_months=[note.day.month()],
                     highlight_quarters=[],
@@ -43,6 +53,10 @@ class DailyNotes:
                 )
             )
         return out
+
+    def _nav_title(self) -> str:
+        """One-line Scribe crumb. The tall heading grid stays in the well."""
+        return f'text(size: h1)[{self.i18n.t("notes")}]'
 
     def _title(self, manifest: Manifest, daily_note: DatedNote) -> str:
         week = manifest.link_or_content(

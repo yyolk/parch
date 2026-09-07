@@ -40,6 +40,11 @@ class Daily:
         self.params = params
         self.debug = debug
 
+    def nav_title(self) -> str:
+        """One-line Scribe crumb. The tall heading grid stays in the well."""
+        weekday = self.i18n.t(f"weekday.full.{self.day.weekday_name}")
+        return f"text(size: h1)[{weekday} {self.day.month_day}]"
+
     def title(self) -> str:
         week = self.manifest.link_or_content(
             self.day.week().id, f'{self.i18n.t("week_name")} {self.day.week().number}'

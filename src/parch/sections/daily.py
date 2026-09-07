@@ -8,7 +8,8 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.pages.daily import Daily as DailyPage
-from parch.sections._shared import _side_menu_position
+from parch.mos.scribe_nav import scribe_hyperpaper_nav
+from parch.sections._shared import _side_menu_position, heading_and_well
 
 
 class Daily:
@@ -36,11 +37,18 @@ class Daily:
                 side=side,
                 **self.params,
             )
+            heading = page.title()
+            if scribe_hyperpaper_nav(self.configurator):
+                title = page.nav_title()
+                content = heading_and_well(heading, page.content())
+            else:
+                title = heading
+                content = page.content()
             out.append(
                 PageData(
-                    title=page.title(),
-                    content=page.content(),
-                    page_id=self.ID,
+                    title=title,
+                    content=content,
+                    page_id=day.id,
                     highlight_months=[day.month()],
                     highlight_quarters=[],
                     heading_mark=HeadingMark.TRAIL,

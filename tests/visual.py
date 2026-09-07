@@ -156,7 +156,7 @@ def header_rail_adjacent_ink_x(
     image: Path,
     *,
     rail: str,
-    skip_mm: float = 13.0,
+    skip_mm: float = 21.0,
     dpi: int = 150,
     dark: int = 100,
 ) -> int:

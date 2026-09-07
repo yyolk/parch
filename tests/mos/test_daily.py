@@ -97,13 +97,15 @@ def _daily_pages(typst_src: str) -> dict[str, str]:
 def test_title_keeps_day_weekday_and_week_n():
     manifest = Manifest()
     manifest.register_source("2026W01")
-    title = _page("2026-01-01", manifest=manifest).title()
+    page = _page("2026-01-01", manifest=manifest)
+    title = page.title()
     assert "text(size: h1)[1 <2026-01-01>]" in title
     assert "[*Thursday*]" in title
     assert "padded_link(<2026W01>)[Week 1]" in title
     assert "2026 /" not in title
     assert "text(size: h1)[/]" not in title
     assert "Calendar" not in title
+    assert page.nav_title() == "text(size: h1)[Thursday 1]"
 
 
 def test_nav_links_empty_not_year_chip_or_calendar():
@@ -113,7 +115,7 @@ def test_nav_links_empty_not_year_chip_or_calendar():
     for day, page in zip(section._range(), pages, strict=True):
         assert page.nav_links == []
         assert page.heading_mark is HeadingMark.TRAIL
-        assert page.page_id == DailySection.ID
+        assert page.page_id == day.id
         assert page.highlight_months == [day.month()]
         assert len(page.highlight_months) == 1
         assert page.highlight_quarters == []

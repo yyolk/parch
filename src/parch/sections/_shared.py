@@ -13,6 +13,16 @@ def _side_menu_position(configurator) -> str:
     return mos["side_menu_position"] if "side_menu_position" in mos else "left"
 
 
+def heading_and_well(heading: str, well: str) -> str:
+    """Seat a day heading above a writing well. Scribe body only; Nomad uses well_frame."""
+    return f"""grid(
+  columns: 1fr,
+  rows: (auto, 1fr),
+  {heading},
+  {well},
+)"""
+
+
 def _length_mm(token: str) -> float:
     """Parse a Typst length token (`mm` / `cm` / `pt`) into millimetres."""
     text = str(token).strip()
