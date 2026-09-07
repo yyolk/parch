@@ -414,9 +414,7 @@
           columns: 1fr,
           rows: (auto, 1fr),
           nav_header(padded_link(<index>, box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])), trail_heading(text(size: h1)[Thursday 1], [], shrink: true), stack(dir: ltr, spacing: 2mm, padded_link(<quarter-2026-1>, box(inset: (x: 1.5mm, y: 0.8mm), fill: none, stroke: regular_stroke, [Q1])), padded_link(<month-2026-01-01>, box(inset: (x: 1.5mm, y: 0.8mm), fill: black, stroke: regular_stroke, text(white)[Jan]))), side: left),
-          grid(
-        columns: 1fr,
-        rows: (auto, 1fr),
+          well_frame(
         grid(
         columns: (auto, auto),
         rows: (3fr, 2fr),

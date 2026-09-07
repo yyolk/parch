@@ -252,7 +252,7 @@ def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
     assert daily.index("text(size: h1)[1 <2026-01-01>]") < daily.index("daily_well(")
     assert "[*Thursday*]" in daily
     assert "Week 1" in daily
-    assert "rows: (auto, 1fr)" in daily
+    assert "well_frame(" in daily
     assert "highlight: <2026-01-01>" in daily
     notes = _page_with(typst, "1 <daily-note-2026-01-01-page-1>")
     assert "trail_heading(text(size: h1)[Notes], [], shrink: true)" in notes
