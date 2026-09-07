@@ -100,19 +100,20 @@ class Navigation:
         highlight_quarters: list[Any] | None = None,
         month_link_id: Callable[[Month], str] | None = None,
     ) -> str:
-        """Contents (auto slot) + crumb 1fr + month/quarter chips (trailing auto)."""
+        """Contents rail-adjacent + crumb in the well + chips on the far side."""
         home = self._home_chip()
         crumb = (
             f"trail_heading({title}, [], shrink: true)" if title else "[]"
         )
-        right = self._nav_header_right(
+        far = self._nav_header_far(
             page_id=page_id,
             nav_links=nav_links,
             highlight_months=highlight_months or [],
             highlight_quarters=highlight_quarters or [],
             month_link_id=month_link_id,
         )
-        return f"nav_header({home}, {crumb}, {right})"
+        side = _v(self.mos_layout, "side_menu_position")
+        return f"nav_header({home}, {crumb}, {far}, side: {side})"
 
     def _home_chip(self) -> str:
         """Boxed Contents chip is the index link. No five-bar on Scribe nav_header."""
@@ -121,7 +122,7 @@ class Navigation:
             return f"padded_link(<{INDEX_ID}>, {chip})"
         return chip
 
-    def _nav_header_right(
+    def _nav_header_far(
         self,
         page_id: str | None,
         nav_links: list[tuple[str, str] | NavLink] | None,

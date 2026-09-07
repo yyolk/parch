@@ -27,7 +27,7 @@ from parch.toml_config import apply_hand
 from tests.helpers import base_config, load_default
 from tests.toml_fixtures import short_january
 from tests.test_toml_omit_sections import compile_pdf
-from tests.visual import header_first_ink_x, raster_page
+from tests.visual import header_rail_adjacent_ink_x, raster_page
 
 
 def _generate(stem: str, *, extras: bool = False, hand: str | None = None) -> str:
@@ -150,6 +150,7 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     annual_head = annual[annual.index("nav_header(") :]
     assert "contents_bars" not in annual_head
     assert annual_head.startswith(f"nav_header({_HOME_CHIP},")
+    assert "side: left" in annual_head[: annual_head.index("\n")]
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert "section_rail(" in weekly
     assert "nav_header(" in weekly
@@ -164,22 +165,23 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "contents_bars" not in heading
     assert "[Contents]" in heading
     assert heading.startswith(f"nav_header({_HOME_CHIP},")
+    assert "side: left" in heading
 
 
 def test_scribe_contents_chip_slot_stable_for_both_hands():
-    """Contents is the first nav_header arg on every content page; no five-bar."""
+    """Contents is rail-adjacent; same emit slot on every content page; no five-bar."""
     for hand in ("left", "right"):
         typst = _generate("kindle-scribe", hand=hand)
         for needle in _CONTENT_NEEDLES:
             page = _page_with(typst, needle)
             head = page[page.index("nav_header(") :]
             assert head.startswith(f"nav_header({_HOME_CHIP},")
-            assert "contents_bars" not in head[:400]
+            assert f"side: {hand}" in head
+            assert "contents_bars" not in head[:500]
             if hand == "left":
                 assert "#mos_frame(\n  left," in page
             else:
                 assert "#mos_frame(\n  right," in page
-                assert "side: right" in page
 
 
 def test_scribe_index_is_full_bleed_brand_without_mos_rail():
@@ -219,7 +221,8 @@ def test_scribe_right_hand_keeps_mos_frame_side():
     assert "#mos_frame(\n  left," not in annual
     head = annual[annual.index("nav_header(") :]
     assert head.startswith(f"nav_header({_HOME_CHIP},")
-    assert "contents_bars" not in head[:400]
+    assert "side: right" in head
+    assert "contents_bars" not in head[:500]
 
 
 def test_scribe_preamble_binds_explor_helpers():
@@ -237,7 +240,7 @@ def test_scribe_short_january_compiles(tmp_path):
 
 
 def test_scribe_contents_chip_pixels_stable_both_hands(tmp_path):
-    """Contents x is constant per hand; it may move only when the rail flips."""
+    """Contents hugs the rail; x is constant per hand and flips with MOS side."""
     stems = ("annual", "weekly-w01", "monthly-jan")
     xs: dict[str, list[int]] = {}
     for hand in ("left", "right"):
@@ -247,11 +250,11 @@ def test_scribe_contents_chip_pixels_stable_both_hands(tmp_path):
         pages = sample_page_numbers(
             typst, year=2026, week_id="2026W01", jan1="2026-01-01", stems=stems
         )
-        skip = 13.0 if hand == "left" else 0.0
         found = []
         for stem in stems:
             png = raster_page(pdf, pages[stem], tmp_path / f"{hand}-{stem}.png")
-            found.append(header_first_ink_x(png, skip_mm=skip))
+            found.append(header_rail_adjacent_ink_x(png, rail=hand))
         assert max(found) - min(found) <= 2, (hand, found)
         xs[hand] = found
-    assert abs(xs["left"][0] - xs["right"][0]) >= 8
+    assert xs["left"][0] < 200
+    assert xs["right"][0] > 700

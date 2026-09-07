@@ -342,24 +342,25 @@
 
 // Scribe Hyperpaper explor: 5mm air + soft ~10mm crumb track (grows, no clip).
 // Nomad does not call this. Header owns top air (page-margin top stays 0mm).
-// Contents sits in a dedicated auto slot so it does not drift when the crumb
-// or right chips change width. Crumb is the leftover 1fr; chips are trailing
-// auto. Shrink is trail_heading(..., shrink: true) at the call site.
-#let nav_header(home, crumb, right, height: 10mm, air: 5mm, stroke: none) = grid(
-  columns: 1fr,
-  rows: (air, auto),
-  [],
+// Contents is the rail-adjacent auto track (flips with section_rail). Crumb
+// stays in the well 1fr. Q/month chips sit on the far side, away from the rail.
+// Shrink is trail_heading(..., shrink: true) at the call site.
+#let nav_header(home, crumb, far, height: 10mm, air: 5mm, stroke: none, side: left) = {
+  let cells = if side == left { (home, crumb, far) } else { (far, crumb, home) }
   grid(
-    columns: (auto, 1fr, auto),
-    align: horizon + start,
-    column-gutter: 2mm,
-    inset: (x: 2mm, y: 1mm),
-    home,
-    crumb,
-    right,
-  ),
-  grid.hline(y: 2, stroke: stroke),
-)
+    columns: 1fr,
+    rows: (air, auto),
+    [],
+    grid(
+      columns: (auto, 1fr, auto),
+      align: horizon + start,
+      column-gutter: 2mm,
+      inset: (x: 2mm, y: 1mm),
+      ..cells,
+    ),
+    grid.hline(y: 2, stroke: stroke),
+  )
+}
 
 // Scribe section rail: rotated section links, full-cell hit, pad from page edge.
 // items: array of (dest, label). highlight is a dest. Not mos_strip months.
