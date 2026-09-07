@@ -209,7 +209,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
     assert "0.9fr, 1.2fr" in house[house.index("#let nomad_quarter_well(") :]
     assert "#let nomad_month_well(" in house
-    assert "notes-height: 20mm" in house[house.index("#let nomad_month_well(") :]
+    month_well = house[house.index("#let nomad_month_well(") :]
+    assert "notes-height: 20mm" in month_well
+    assert "rows: (auto, 1fr, notes-height)" in month_well
+    assert "row-gutter: 1.4mm" in month_well
+    assert "rows: (1fr, notes-height)" not in month_well
     assert "#let strip-icon(" in house
     assert "#let icon-chip(" in house
     assert 'image(src, height: 3.1mm)' in house

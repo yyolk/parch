@@ -235,16 +235,27 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "pattern: lined_fill" not in weekly
     assert "[Week notes]" in weekly
     assert "Mon · 29" in weekly
-    monthly = _page_with(typst, "January<month-2026-01-01>")
+    monthly = _page_with(typst, "January 2026 <month-2026-01-01>")
     assert 'active: "mon"' in monthly
     assert "nomad_month_well(" in monthly
     assert "[Month notes]" in monthly
     assert "month_weeks(" not in monthly
-    assert "columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" in monthly
-    assert "rows: (regular_height,) + (1fr,) * 6" in monthly
-    assert "lined_well(lined_fill, tile-height: regular_height)" in monthly
-    assert "grid.cell(stroke: regular_stroke + luma(160), [])" in monthly
-    assert "stroke: regular_stroke + black, [#" in monthly
+    assert 'text(size: 10pt, weight: "bold")[January 2026 <month-2026-01-01>]' in monthly
+    assert 'text(size: h1)[January' not in monthly
+    assert "year: none" in monthly
+    assert 'text(size: h1)[2026]' not in monthly
+    assert "column-gutter: 0.7mm" in monthly
+    assert "row-gutter: 0.7mm" in monthly
+    assert "rows: (1fr,) * 6" in monthly
+    assert "rows: (regular_height,) + (1fr,) * 6" not in monthly
+    assert "lined_well(lined_fill, tile-height: regular_height)" not in monthly
+    assert "let tile = 5.2mm" in monthly
+    assert "hair + luma(75%)" in monthly
+    assert "luma(160)" not in monthly
+    assert 'font: "Liberation Sans", size: 7pt' in monthly
+    assert 'size: 7.5pt, weight: "bold", font: "Liberation Sans"' in monthly
+    assert 'text(weight: "bold", size: 8pt)[Month notes]' in monthly
+    assert "chip([Jan], active: true" in monthly
     # Strip dests also mention tasks-WEEK; title + active chip locate the page.
     tasks = _page_with(typst, "Tasks ·")
     assert 'active: "tasks"' in tasks

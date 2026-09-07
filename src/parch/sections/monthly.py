@@ -46,18 +46,16 @@ class Monthly:
                 pattern=self.pattern,
                 side=self.side,
             )
+            nomad = nomad_topband(self.configurator)
             out.append(
                 PageData(
-                    title=page.title(),
-                    content=(
-                        page.nomad_content()
-                        if nomad_topband(self.configurator)
-                        else page.content()
-                    ),
+                    title=page.nomad_title() if nomad else page.title(),
+                    content=page.nomad_content() if nomad else page.content(),
                     page_id=month.id,
                     highlight_months=[month],
                     highlight_quarters=[],
                     nav_links=[],
+                    year="none" if nomad else None,
                 )
             )
         return out

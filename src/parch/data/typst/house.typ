@@ -728,10 +728,12 @@
   notes,
 )
 
-// Nomad monthly: 7×6 day cells + short Month notes floor. MOS keeps month_weeks.
-#let nomad_month_well(calendar, notes, notes-height: 20mm) = grid(
+// Nomad monthly: weekday header + 7×6 days + 20mm Month notes. MOS keeps month_weeks.
+#let nomad_month_well(header, days, notes, notes-height: 20mm) = grid(
   columns: 1fr,
-  rows: (1fr, notes-height),
-  calendar,
+  rows: (auto, 1fr, notes-height),
+  row-gutter: 1.4mm,
+  header,
+  days,
   notes,
 )
