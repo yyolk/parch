@@ -133,7 +133,8 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     assert "[Notes]" in annual
     assert "padded_link(<index>" in annual
     assert "[Contents]" in annual
-    assert "contents_bars(size:" in annual
+    annual_head = annual[annual.index("nav_header(") :]
+    assert "contents_bars" not in annual_head
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert "section_rail(" in weekly
     assert "nav_header(" in weekly
@@ -145,6 +146,8 @@ def test_scribe_content_pages_use_section_rail_and_nav_header():
     heading = weekly[weekly.index("nav_header(") : weekly.index("week_matrix(")]
     assert "trail_heading(" in heading
     assert "shrink: true" in heading
+    assert "contents_bars" not in heading
+    assert "[Contents]" in heading
 
 
 def test_scribe_index_is_full_bleed_brand_without_mos_rail():

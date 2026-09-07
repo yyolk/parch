@@ -10,7 +10,7 @@ from parch.i18n import I18n
 from parch.mos.components.months_menu import MonthsMenu
 from parch.mos.components.quarters_menu import QuartersMenu
 from parch.mos.configurator import Configurator
-from parch.mos.contents_mark import INDEX_ID, contents_mark
+from parch.mos.contents_mark import INDEX_ID
 from parch.mos.manifest import Manifest
 from parch.mos.scribe_nav import (
     RAIL_LABELS,
@@ -128,16 +128,10 @@ class Navigation:
         )
 
     def _home_chip(self) -> str:
-        """Contents chip beside the five-bar mark when index is on."""
-        mark = contents_mark(self.manifest, None, face="h1")
-        chip = "[Contents]"
+        """Boxed Contents chip is the index link. No five-bar on Scribe nav_header."""
+        chip = "box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents])"
         if self.manifest.source(INDEX_ID):
-            chip = (
-                f"padded_link(<{INDEX_ID}>, "
-                f"box(inset: (x: 1.5mm, y: 0.8mm), stroke: regular_stroke, [Contents]))"
-            )
-        if mark:
-            return f"lead_pair({mark}, {chip}, spacing: 0.5em)"
+            return f"padded_link(<{INDEX_ID}>, {chip})"
         return chip
 
     def _nav_header_right(
