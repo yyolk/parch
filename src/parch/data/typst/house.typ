@@ -393,16 +393,32 @@
 
 // Nomad Topband. MOS / Scribe do not call these. Glyphs are locked SVGs
 // (icons/*.svg + icons/*-on.svg). Notes is not a chip.
+//
+// Spacing contract (named mm only — no implicit Typst rhythm):
+#let bezel = 3mm
+#let toolbar = 8mm
+#let top-air = 0.4mm
+#let chrome-h = 6.5mm
+#let tempo-h = 6mm
+#let hair = 0.4pt
+#let chip-gutter = 1.2mm
+#let chip-inset-x = 0.9mm
+#let chip-inset-y = 1.2mm
+#let icon-chip-inset-x = 0.6mm
+#let icon-chip-inset-y = 1.1mm
+#let strip-tempo-gap = 0mm
+#let well-top = 2.5mm
+
 #let _strip-id(name) = if name == "contents" { "menu" } else { name }
 
-#let icon-chip(id, active: false, expand: true, stroke: 0.4pt) = {
+#let icon-chip(id, active: false, expand: true, stroke: hair) = {
   let src = if active { "icons/" + id + "-on.svg" } else { "icons/" + id + ".svg" }
-  let hair = if stroke != none { stroke } else { 0.4pt }
+  let edge = if stroke != none { stroke } else { hair }
   box(
     width: if expand { 100% } else { auto },
-    inset: (x: 0.6mm, y: 1.1mm),
+    inset: (x: icon-chip-inset-x, y: icon-chip-inset-y),
     fill: if active { black } else { white },
-    stroke: hair + black,
+    stroke: edge + black,
     align(center + horizon, image(src, height: 3.1mm)),
   )
 }
@@ -412,34 +428,34 @@
 }
 
 // items: array of (dest, key). dest is none when the page does not exist.
-#let section-strip(items, active: none, height: 6.5mm, stroke: none) = {
-  let hair = if stroke != none { stroke } else { 0.4pt }
+#let section-strip(items, active: none, height: chrome-h, stroke: none) = {
+  let edge = if stroke != none { stroke } else { hair }
   let n = items.len()
   if n == 0 { [] } else {
     grid(
       columns: (1fr,) * n,
       rows: (auto,),
-      column-gutter: 1.2mm,
+      column-gutter: chip-gutter,
       align: (center, horizon),
       ..items.map(item => {
         let dest = item.at(0)
         let name = item.at(1)
         let on = dest != none and name == active
-        let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: hair)
+        let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: edge)
         if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
       }),
     )
   }
 }
 
-// Locked-style discrete tempo chip. Natural height from inset — not TEMPO_H.
-#let chip(label, active: false, dest: none, expand: false, stroke: 0.4pt) = {
-  let hair = if stroke != none { stroke } else { 0.4pt }
+// Discrete tempo chip. Natural height from chip-inset-y — not tempo-h.
+#let chip(label, active: false, dest: none, expand: false, stroke: hair) = {
+  let edge = if stroke != none { stroke } else { hair }
   let body = box(
     width: if expand { 100% } else { auto },
-    inset: (x: 0.9mm, y: 1.2mm),
+    inset: (x: chip-inset-x, y: chip-inset-y),
     fill: if active { black } else { white },
-    stroke: hair + black,
+    stroke: edge + black,
     align(center + horizon,
       text(
         font: "Liberation Sans",
@@ -452,14 +468,14 @@
   if dest != none { padded_link(padding: 0pt, dest, body) } else { body }
 }
 
-// items: already-built chip(...) nodes from emit. 1.2mm paper gutters.
+// items: already-built chip(...) nodes from emit.
 #let tempo-row(items) = {
   let n = items.len()
   if n == 0 { [] } else {
     grid(
       columns: (1fr,) * n,
       rows: (auto,),
-      column-gutter: 1.2mm,
+      column-gutter: chip-gutter,
       align: (center, horizon),
       ..items,
     )
@@ -469,7 +485,7 @@
 // Topband under the toolbar dead zone. No side MOS.
 // Chrome only when present: strip → hair → tempo → hair → crumb → hair → body.
 // strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
-#let page-shell(strip, body, tempo: none, title: none, year: none, bezel: 0pt, stroke: none) = {
+#let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
   set text(font: "Libertinus Serif")
   set par(spacing: 0pt)
   set block(spacing: 0pt)
@@ -493,13 +509,15 @@
   grid(
     columns: 1fr,
     rows: (auto, 1fr),
+    row-gutter: 0pt,
     {
       if strip != none {
-        block(width: 100%, inset: (x: bezel, y: 0pt), strip)
+        v(top-air)
+        block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), strip)
         line(length: 100%, stroke: stroke)
       }
       if tempo != none {
-        block(width: 100%, inset: (x: bezel, y: 0pt), tempo)
+        block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), tempo)
         line(length: 100%, stroke: stroke)
       }
       if title != none {
@@ -507,9 +525,7 @@
         line(length: 100%, stroke: stroke)
       }
     },
-    // Well air under the last chrome hair (tempo / Q rule). Locked pack
-    // also insets x/bottom bezel here; emit page-margin already owns those.
-    box(width: 100%, height: 100%, inset: (top: 2.5mm), body),
+    box(width: 100%, height: 100%, inset: (top: well-top), body),
   )
 }
 

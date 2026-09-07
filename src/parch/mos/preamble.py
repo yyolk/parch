@@ -137,7 +137,7 @@ class Preamble:
 #let section_rail = section_rail.with(stroke: regular_stroke, turn: {_v(mos_layout, 'menu_rotate')}, pad: {RAIL_PAD})
 #let section-strip = section-strip.with(height: {CHROME_H}, stroke: regular_stroke)
 #let chip = chip.with(stroke: regular_stroke)
-#let page-shell = page-shell.with(stroke: regular_stroke{bezel})
+#let page-shell = page-shell.with(stroke: regular_stroke)
 #let nomad_daily_well = nomad_daily_well.with(column-gutter: regular_column_gutter)
 #let nomad_week_bands = nomad_week_bands.with(stroke: regular_stroke + black)"""
 

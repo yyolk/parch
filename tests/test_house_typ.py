@@ -161,16 +161,25 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let tempo-row(" in house
     assert "#let tempo-bar(" not in house
     assert "#let page-shell(" in house
+    assert "#let bezel = 3mm" in house
+    assert "#let toolbar = 8mm" in house
+    assert "#let top-air = 0.4mm" in house
+    assert "#let chip-gutter = 1.2mm" in house
+    assert "#let chip-inset-y = 1.2mm" in house
+    assert "#let icon-chip-inset-y = 1.1mm" in house
+    assert "#let strip-tempo-gap = 0mm" in house
+    assert "#let well-top = 2.5mm" in house
     shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
     assert 'set text(font: "Libertinus Serif")' in shell
     assert "set par(spacing: 0pt)" in shell
     assert "set block(spacing: 0pt)" in shell
+    assert "row-gutter: 0pt" in shell
     assert "if strip != none" in shell
     assert "if tempo != none" in shell
     assert "if title != none" in shell
-    assert "box(width: 100%, height: 100%, inset: (top: 2.5mm), body)" in shell
-    assert "block(width: 100%, inset: (x: bezel, y: 0pt), strip)" in shell
-    assert "block(width: 100%, inset: (x: bezel, y: 0pt), tempo)" in shell
+    assert "box(width: 100%, height: 100%, inset: (top: well-top), body)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), strip)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), tempo)" in shell
     assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     assert "#let nomad_daily_well(" in house
@@ -202,20 +211,20 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let strip-icon(" in house
     assert "#let icon-chip(" in house
     assert 'image(src, height: 3.1mm)' in house
-    assert "inset: (x: 0.6mm, y: 1.1mm)" in house[house.index("#let icon-chip(") :]
+    assert "inset: (x: icon-chip-inset-x, y: icon-chip-inset-y)" in house[house.index("#let icon-chip(") :]
     assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
     strip = house[house.index("#let section-strip(") : house.index("#let chip(")]
-    assert "column-gutter: 1.2mm" in strip
+    assert "column-gutter: chip-gutter" in strip
     assert "rows: (auto,)" in strip
     assert "0.55mm" not in strip
     assert "padded_link(padding: 0pt, dest, seated)" in strip
     chip = house[house.index("#let chip(") : house.index("#let tempo-row(")]
-    assert "inset: (x: 0.9mm, y: 1.2mm)" in chip
+    assert "inset: (x: chip-inset-x, y: chip-inset-y)" in chip
     assert 'font: "Liberation Sans"' in chip
     assert "size: 7.5pt" in chip
     assert "height: 100%" not in chip
     tempo = house[house.index("#let tempo-row(") : house.index("#let page-shell(")]
-    assert "column-gutter: 1.2mm" in tempo
+    assert "column-gutter: chip-gutter" in tempo
     assert "rows: (auto,)" in tempo
     assert "rows: height" not in tempo
     assert "icons/" in house

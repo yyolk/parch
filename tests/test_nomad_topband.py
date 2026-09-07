@@ -509,7 +509,7 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     assert f"bezel: {BEZEL}" in typst
     assert f"height: {CHROME_H}" in typst
     assert "#let chip = chip.with(stroke: regular_stroke)" in typst
-    assert "page-shell.with(stroke: regular_stroke, bezel: 3mm)" in typst
+    assert "page-shell.with(stroke: regular_stroke)" in typst
     assert f"height: {TEMPO_H}" not in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert 'font: "Libertinus Serif"' in typst
