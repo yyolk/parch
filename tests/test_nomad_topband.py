@@ -325,12 +325,18 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "nomad_quarter_well(" in quarterly
     assert "quarter_well(left" not in quarterly
     assert "quarter_well(right" not in quarterly
+    assert 'text(size: 10pt, weight: "bold")[Quarter 1 <quarter-2026-1>]' in quarterly
+    assert 'text(size: h1)[Quarter 1' not in quarterly
+    assert 'text(size: h1)[2026]' not in quarterly
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in quarterly
     assert "[January]" in quarterly
     assert "start-wd:" in quarterly
     assert "days: 31" in quarterly
     assert "column-gutter: 2.4mm" in quarterly
     assert "inset: (x: 0.2mm, y: 0.15mm)" in quarterly
     assert "[Jan]" not in quarterly
+    assert 'text(weight: "bold", size: 8.5pt)[Focus]' in quarterly
+    assert 'text(weight: "bold", size: 8.5pt)[Notes]' in quarterly
     assert "[Focus]" in quarterly
     assert "[Notes]" in quarterly
     focus = quarterly.split("[Focus]")[1].split("[Notes]")[0]

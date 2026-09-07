@@ -30,6 +30,13 @@ class Quarterly:
     def title(self) -> str:
         return f'text(size: h1)[{self.i18n.t("quarter.long")} {self.quarter.number} <{self.quarter.id}>]'
 
+    def nomad_title(self) -> str:
+        """Locked crumb: quiet [Quarter N], not h1 / year-in-title."""
+        return (
+            f'text(size: 10pt, weight: "bold")'
+            f'[{self.i18n.t("quarter.long")} {self.quarter.number} <{self.quarter.id}>]'
+        )
+
     def content(self) -> str:
         months = self._months_grid()
         pad = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
@@ -51,7 +58,7 @@ class Quarterly:
   {months}
 )"""
         focus = f"""box(width: 100%, height: 100%, clip: true, inset: (top: 0.3mm), {{
-  text(weight: "bold")[{self.i18n.t("focus")}]
+  text(weight: "bold", size: 8.5pt)[{self.i18n.t("focus")}]
   v(0.35mm)
   layout(size => {{
     let row-h = 6.2mm
@@ -70,7 +77,7 @@ class Quarterly:
   }})
 }})"""
         notes = f"""box(width: 100%, height: 100%, clip: true, stroke: (top: regular_stroke + black), inset: (top: 0.6mm), {{
-  text(weight: "bold")[{self.i18n.t("notes")}]
+  text(weight: "bold", size: 8.5pt)[{self.i18n.t("notes")}]
   v(0.3mm)
   layout(size => {{
     let tile = 5.5mm

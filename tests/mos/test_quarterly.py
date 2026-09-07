@@ -240,7 +240,9 @@ def test_generated_title_is_quarter_without_year():
     assert "padded_link(<annual>)[2026]" not in q1
     assert "2026 /" not in q1
     assert "text(size: h1)[/]" not in q1
-    assert "text(size: h1)[Quarter 1 <quarter-2026-1>]" in q1
+    assert "text(size: h1)[Quarter 1 <quarter-2026-1>]" not in q1
+    assert 'text(size: 10pt, weight: "bold")[Quarter 1 <quarter-2026-1>]' in q1
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in q1
     assert "Calendar" not in q1
     assert q1.count("Calendar") == 0
 

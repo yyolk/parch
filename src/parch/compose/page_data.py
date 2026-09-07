@@ -30,6 +30,7 @@ class PageData:
     tempo: str | None = None
     heading: bool = True
     strip: str | None = None
+    year: str | None = None
 
     def raw_typst_q(self) -> bool:
         return self.raw_typst

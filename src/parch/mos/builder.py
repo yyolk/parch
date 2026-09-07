@@ -86,7 +86,11 @@ class Builder:
         year = (
             "none"
             if title == "none"
-            else f'text(size: h1)[{self.configurator.start_date().year}]'
+            else (
+                page_spec.year
+                if page_spec.year is not None
+                else f'text(size: h1)[{self.configurator.start_date().year}]'
+            )
         )
         return f"""#page-shell(
   {strip},
