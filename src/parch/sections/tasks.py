@@ -267,18 +267,26 @@ class Tasks:
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
         if nomad_topband(self.configurator):
-            short = self.i18n.t(f"weekday.short.{day.weekday_name}")
-            label = f"{short} {day.month_day}"
+            letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
+            label = f"{letter}{day.month_day}"
+            today = day.weekday_name == "thursday"
         else:
             full = self.i18n.t(f"weekday.full.{day.weekday_name}")
             label = f"{full} {day.month_day}"
+            today = False
+        ink = (
+            f"text(size: 6pt, fill: white)[{label}]"
+            if today
+            else f"text(size: 6pt)[{label}]"
+        )
         inner = (
             "stack(dir: ttb, spacing: 1pt, "
-            f"box(text(size: 6pt)[{label}]), "
+            f"box({ink}), "
             "line(length: 100%, stroke: regular_stroke + black))"
         )
+        fill = "fill: black, " if today else ""
         band = (
-            "box(width: 100%, height: 100%, align(horizon + center, "
+            f"box(width: 100%, height: 100%, {fill}align(horizon + center, "
             f"{inner}))"
         )
         if manifest.source(day.id):

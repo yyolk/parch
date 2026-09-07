@@ -807,7 +807,6 @@
       #page-shell(
         section-strip(((<index>, "contents"), (<annual>, "cal"), (<quarter-2026-1>, "q"), (<month-2026-01-01>, "mon"), (<2026W01>, "wk"), (none, "day"),), active: "wk"),
         nomad_week_bands(
-        pattern: lined_fill,
         [Mon · 29],
         [Tue · 30],
         [Wed · 31],

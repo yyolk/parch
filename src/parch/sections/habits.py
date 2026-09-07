@@ -152,6 +152,8 @@ class Habits:
 )"""
 
     def _month_grid(self, manifest: Manifest, month: Month) -> str:
+        if nomad_topband(self.configurator):
+            return self._nomad_month_grid(manifest, month)
         days = list(walk(month.day, month.day.end_of_month()))
         n_habits = self.habit_columns
         cols = ", ".join(["auto"] + ["1fr"] * n_habits)
@@ -175,9 +177,43 @@ class Habits:
   {",\n  ".join(cells)}
 )"""
 
+    def _nomad_month_grid(self, manifest: Manifest, month: Month) -> str:
+        """Locked empty habits: Day + 5 underline headers, 1…31, tick squares."""
+        days = list(walk(month.day, month.day.end_of_month()))
+        n_habits = self.habit_columns
+        cols = ", ".join(["auto"] + ["1fr"] * n_habits)
+        padded = (list(self.names) + [""] * n_habits)[:n_habits]
+        underline = "stroke: (bottom: regular_stroke + black)"
+        headers = [
+            f"grid.cell(inset: (x: 2mm), {underline}, align(horizon + right)[Day])"
+        ]
+        headers.extend(_nomad_habit_header(name) for name in padded)
+        cells = [", ".join(headers)]
+        row_sizes = [_HEADER_ROW]
+        tick = "grid.cell(align: center + horizon, task_tick())"
+        for day in days:
+            row = [self._nomad_date_label(manifest, day)]
+            row.extend([tick] * n_habits)
+            cells.append(", ".join(row))
+            row_sizes.append("1fr")
+        rows = ", ".join(row_sizes)
+        return f"""grid(
+  columns: ({cols}),
+  rows: ({rows}),
+  align: horizon,
+  inset: 0pt,
+  column-gutter: 0pt,
+  row-gutter: 0pt,
+  {",\n  ".join(cells)}
+)"""
+
     def _date_label(self, manifest: Manifest, day: Day) -> str:
         short = self.i18n.t(f"weekday.short.{day.weekday_name}")
         linked = manifest.link_or_content(day.id, f"{short} {day.month_day}")
+        return f"grid.cell(inset: (x: 2mm), align: horizon + right, [#{linked}])"
+
+    def _nomad_date_label(self, manifest: Manifest, day: Day) -> str:
+        linked = manifest.link_or_content(day.id, str(day.month_day))
         return f"grid.cell(inset: (x: 2mm), align: horizon + right, [#{linked}])"
 
 
@@ -204,3 +240,11 @@ def _habit_header(name: str) -> str:
         + "])\n"
         ")"
     )
+
+
+def _nomad_habit_header(name: str) -> str:
+    underline = "stroke: (bottom: regular_stroke + black)"
+    if not name:
+        return f"grid.cell({underline}, [])"
+    label = _escape_typst(name)
+    return f"grid.cell({underline}, align(center + horizon)[{label}])"

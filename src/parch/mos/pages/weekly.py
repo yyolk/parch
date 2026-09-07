@@ -41,7 +41,6 @@ class Weekly:
         days = ",\n  ".join(self._nomad_day(day) for day in self.week.days())
         notes = f"[{self.i18n.t('week_notes')}]"
         return f"""nomad_week_bands(
-  pattern: lined_fill,
   {days},
   {notes},
 )"""

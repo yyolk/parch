@@ -218,7 +218,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert 'active: "wk"' in weekly
     assert "nomad_week_bands(" in weekly
     assert "week_matrix(" not in weekly
-    assert "pattern: lined_fill" in weekly
+    assert "pattern: lined_fill" not in weekly
     assert "[Week notes]" in weekly
     assert "Mon · 29" in weekly
     monthly = _page_with(typst, "January<month-2026-01-01>")
@@ -236,9 +236,18 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert 'active: "tasks"' in tasks
     assert "Tasks · Week 1" in tasks
     assert "padded_link(<2026-01-01>" in tasks
+    assert "M29" in tasks
+    assert "T1" in tasks
+    assert "Mon 29" not in tasks
+    assert "text(size: 6pt, fill: white)[T1]" in tasks
+    assert "fill: black" in tasks
     habits = _page_with(typst, "Habits · January<habits-january>")
     assert 'active: "habits"' in habits
     assert "padded_link(<2026-01-01>" in habits
+    assert "[Day]" in habits
+    assert "Thu 1" not in habits
+    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr)" in habits
+    assert habits.count("task_tick()") == 31 * 5
 
 
 def test_other_devices_keep_their_chrome():

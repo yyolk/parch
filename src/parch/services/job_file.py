@@ -174,6 +174,7 @@ def spec_from_device(device_id: str, **overrides: Any) -> JobSpec:
         cleaned.setdefault("hour_to", 16)
         cleaned.setdefault("trailing_half_hour", False)
         cleaned.setdefault("priorities_count", 6)
+        cleaned.setdefault("habit_columns", 5)
     return JobSpec(device_id=device.id, **cleaned)
 
 
