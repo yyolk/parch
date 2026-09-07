@@ -395,8 +395,10 @@ class Navigation:
 
 
 def _tempo_chip(dest: str, label: str, on: bool) -> str:
+    """Emit a locked-style chip() call. dest is Typst ``none`` or a label."""
     flag = "true" if on else "false"
-    return f"({dest}, [{label}], {flag})"
+    dest_part = f", dest: {dest}" if dest != "none" else ""
+    return f"chip([{label}], active: {flag}{dest_part}, expand: true)"
 
 
 def _header_chip(dest: str, label: str, on: bool) -> str:

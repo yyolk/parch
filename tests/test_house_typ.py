@@ -169,6 +169,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "if tempo != none" in shell
     assert "if title != none" in shell
     assert "box(width: 100%, height: 100%, inset: (top: 2.5mm), body)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: 0pt), strip)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: 0pt), tempo)" in shell
     assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     assert "#let nomad_daily_well(" in house

@@ -452,8 +452,8 @@
   if dest != none { padded_link(padding: 0pt, dest, body) } else { body }
 }
 
-// items: array of (dest, label, on). dest is none when the page does not exist.
-#let tempo-row(items, active: none, stroke: none) = {
+// items: already-built chip(...) nodes from emit. 1.2mm paper gutters.
+#let tempo-row(items) = {
   let n = items.len()
   if n == 0 { [] } else {
     grid(
@@ -461,12 +461,7 @@
       rows: (auto,),
       column-gutter: 1.2mm,
       align: (center, horizon),
-      ..items.map(item => {
-        let dest = item.at(0)
-        let label = item.at(1)
-        let on = item.at(2)
-        chip(label, active: on, dest: dest, expand: true, stroke: stroke)
-      }),
+      ..items,
     )
   }
 }
@@ -474,7 +469,7 @@
 // Topband under the toolbar dead zone. No side MOS.
 // Chrome only when present: strip → hair → tempo → hair → crumb → hair → body.
 // strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
-#let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
+#let page-shell(strip, body, tempo: none, title: none, year: none, bezel: 0pt, stroke: none) = {
   set text(font: "Libertinus Serif")
   set par(spacing: 0pt)
   set block(spacing: 0pt)
@@ -500,11 +495,11 @@
     rows: (auto, 1fr),
     {
       if strip != none {
-        strip
+        block(width: 100%, inset: (x: bezel, y: 0pt), strip)
         line(length: 100%, stroke: stroke)
       }
       if tempo != none {
-        tempo
+        block(width: 100%, inset: (x: bezel, y: 0pt), tempo)
         line(length: 100%, stroke: stroke)
       }
       if title != none {

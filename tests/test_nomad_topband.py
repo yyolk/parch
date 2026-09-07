@@ -309,15 +309,18 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "grid.hline(stroke: regular_stroke + black)" not in annual
     assert "title: none" in annual
     assert 'tempo-row((' in annual
+    assert "chip(" in annual
+    assert "tempo-bar(" not in annual
     assert "[Q1]" in annual
     assert "[Q2]" in annual
     assert "[Q3]" in annual
     assert "[Q4]" in annual
-    assert "(<quarter-2026-1>, [Q1], false)" in annual
-    assert "(none, [Q2], false)" in annual
-    assert "(none, [Q3], false)" in annual
-    assert "(none, [Q4], false)" in annual
-    assert "(<quarter-2026-1>, [Q1], true)" not in annual
+    assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in annual
+    assert "chip([Q2], active: false, expand: true)" in annual
+    assert "chip([Q3], active: false, expand: true)" in annual
+    assert "chip([Q4], active: false, expand: true)" in annual
+    assert "chip([Q1], active: true" not in annual
+    assert "(<quarter-2026-1>, [Q1], false)" not in annual
     quarterly = _page_with(typst, "Quarter 1 <quarter-2026-1>")
     assert "nomad_quarter_well(" in quarterly
     assert "quarter_well(left" not in quarterly
@@ -505,7 +508,8 @@ def test_nomad_preamble_binds_bezel_and_chrome_tokens():
     typst = Preamble(_cfg("supernote-nomad")).generate()
     assert f"bezel: {BEZEL}" in typst
     assert f"height: {CHROME_H}" in typst
-    assert "#let tempo-row = tempo-row.with(stroke: regular_stroke)" in typst
+    assert "#let chip = chip.with(stroke: regular_stroke)" in typst
+    assert "page-shell.with(stroke: regular_stroke, bezel: 3mm)" in typst
     assert f"height: {TEMPO_H}" not in typst
     assert "#let lined_fill = lined_fill(paint: black)" in typst
     assert 'font: "Libertinus Serif"' in typst
