@@ -478,6 +478,7 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert "[colophon]" in page
     assert 'text(size: 11pt, fill: luma(50%))[›]' in page
     assert "inset: (x: 2mm, y: 3.2mm)" in page
+    assert "rows: (auto, 2mm, 1fr)" in page
     assert 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]' in page
     assert 'font: "Liberation Sans")[2026]' in page
     assert "rows: (9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm, 9mm)" not in page

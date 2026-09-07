@@ -185,23 +185,27 @@ class Index:
                 f"      {more_cells}"
             )
         return f"""#block(width: 100%, height: 100%, {{
-  block(width: 100%, fill: black, inset: (x: 2mm, y: 3.2mm), {{
-    grid(
-      columns: (1fr, auto),
-      align: horizon,
-      {brand},
-      {year_cell},
-    )
-  }})
-  v(2mm)
-  layout(size => {{
-    let gap-h = 5mm
-    let n = {max(n, 1)}
-    let row-h = (size.height - gap-h) / n
-    grid(
-      rows: {rows},
-      row-gutter: 0pt,
-      {body_cells},
-    )
-  }})
+  grid(
+    columns: 1fr,
+    rows: (auto, 2mm, 1fr),
+    block(width: 100%, fill: black, inset: (x: 2mm, y: 3.2mm), {{
+      grid(
+        columns: (1fr, auto),
+        align: horizon,
+        {brand},
+        {year_cell},
+      )
+    }}),
+    [],
+    layout(size => {{
+      let gap-h = 5mm
+      let n = {max(n, 1)}
+      let row-h = (size.height - gap-h) / n
+      grid(
+        rows: {rows},
+        row-gutter: 0pt,
+        {body_cells},
+      )
+    }}),
+  )
 }})"""
