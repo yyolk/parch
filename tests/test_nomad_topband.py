@@ -259,7 +259,11 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "padded_link(<2026-01-01>" in habits
     assert "[Day]" in habits
     assert "Thu 1" not in habits
-    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr)" in habits
+    assert "columns: (8mm,) + (1fr,) * 5" in habits
+    assert "rows: (5.5mm, 1fr)" in habits
+    assert "let row-h = size.height / n" in habits
+    assert 'font: "Liberation Sans")[Day]' in habits
+    assert "line(length: 100%, stroke: regular_stroke + black)" in habits
     assert habits.count("task_tick()") == 31 * 5
     cover = _pages(typst)[0]
     assert "page-shell(" in cover
@@ -337,6 +341,11 @@ def test_nomad_emit_uses_page_shell_not_mos():
     review_index = _page_with(typst, "[Review <review>]")
     assert "page-shell(\n  none," in review_index
     assert 'active: "review"' not in review_index
+    assert "let row-h = size.height / n" in review_index
+    assert "rows: (row-h,) * n" in review_index
+    assert "rows: (5fr, 8fr)" not in review_index
+    assert 'font: "Liberation Sans")[1]' in review_index
+    assert "columns: (10mm, 1fr)" in review_index
     review = _page_with(typst, "Review · Week 1")
     assert "page-shell(\n  none," in review
     assert 'active: "review"' not in review

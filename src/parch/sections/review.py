@@ -72,7 +72,7 @@ class Review:
                 out.append(
                     PageData(
                         title=f'text(size: h1)[{self.i18n.t("review")} <{page_id}>]',
-                        content=self._index_body(manifest, chunk),
+                        content=self._nomad_index_body(manifest, chunk),
                         page_id=page_id,
                         heading_mark=HeadingMark.TRAIL,
                         strip="none",
@@ -182,6 +182,40 @@ class Review:
             f"    {band}\n"
             "  )"
         )
+
+    def _nomad_index_row(self, manifest: Manifest, week: Week) -> str:
+        hid = self.week_page_id(week)
+        days = week.days()
+        rng = self.range_label(days[0], days[-1])
+        inner = (
+            "grid(\n"
+            "        columns: (10mm, 1fr),\n"
+            "        column-gutter: 2.5mm,\n"
+            "        rows: (1fr,),\n"
+            "        align: (horizon, horizon),\n"
+            f'        text(size: 9pt, weight: "bold", font: "Liberation Sans")[{week.number}],\n'
+            f"        text(size: 9pt)[{rng}],\n"
+            "      )"
+        )
+        if manifest.source(hid):
+            return f"padded_link(<{hid}>, {inner})"
+        return inner
+
+    def _nomad_index_body(self, manifest: Manifest, weeks: list[Week]) -> str:
+        """Equal leftover row-h for every week — locked 12-review fill."""
+        n = len(weeks)
+        if not n:
+            return "[]"
+        rows = ",\n      ".join(self._nomad_index_row(manifest, week) for week in weeks)
+        return f"""box(width: 100%, height: 100%, clip: true, layout(size => {{
+  let n = {n}
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    {rows},
+  )
+}}))"""
 
     def _index_body(self, manifest: Manifest, weeks: list[Week]) -> str:
         n = len(weeks)
