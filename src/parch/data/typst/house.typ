@@ -498,7 +498,9 @@
         line(length: 100%, stroke: stroke)
       }
     },
-    body,
+    // Well air under the last chrome hair (tempo / Q rule). Locked pack
+    // also insets x/bottom bezel here; emit page-margin already owns those.
+    box(width: 100%, height: 100%, inset: (top: 2.5mm), body),
   )
 }
 
