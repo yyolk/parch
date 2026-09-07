@@ -1,4 +1,4 @@
-"""Raster check that the Nomad cover matches locked 00-cover well rhythm."""
+"""Raster check that the Nomad cover matches the 2026-09-07 bake."""
 
 
 from PIL import Image
@@ -54,10 +54,6 @@ def test_cover_year_matches_locked_well(tmp_path):
         height = src.size[1]
     box = ink_bbox(png)
     assert box is not None
-    _x0, y0, _x1, y1 = box
-    # Locked 00-cover: v(1fr) year v(1.15fr). Not the old 1fr/2fr upper third.
-    assert height * 0.32 < y0 < height * 0.50, (box, height)
-    assert height * 0.48 < y1 < height * 0.68, (box, height)
     # No phantom page-shell hair under the toolbar when strip is none.
     top = int(_DPI * 10 / 25.4)
     bands = full_width_bands(png, x0_frac=0.04, coverage=0.7)
@@ -65,8 +61,11 @@ def test_cover_year_matches_locked_well(tmp_path):
     cluster = _center_ink_bands(png)
     assert len(cluster) >= 3, cluster
     year, rule1, rule2 = cluster[0], cluster[1], cluster[2]
+    year_mid = (year[0] + year[1]) / 2 / height
+    rules_mid = (rule1[0] + rule2[1]) / 2 / height
     mm = lambda px: px / _DPI * 25.4
-    year_to_rules = mm(rule1[0] - year[1] - 1)
     rule_to_rule = mm(rule2[0] - rule1[1] - 1)
-    assert 3.2 <= year_to_rules <= 5.0, (year_to_rules, cluster)
-    assert 0.45 <= rule_to_rule <= 1.0, (rule_to_rule, cluster)
+    # Year optically centered on the full page; rules straddle lower third.
+    assert 0.46 <= year_mid <= 0.54, (year_mid, cluster)
+    assert 0.63 <= rules_mid <= 0.70, (rules_mid, cluster)
+    assert 5.0 <= rule_to_rule <= 6.2, (rule_to_rule, cluster)

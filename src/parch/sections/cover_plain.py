@@ -2,7 +2,7 @@
 
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
-from parch.mos.nomad_nav import nomad_topband
+from parch.mos.nomad_nav import BEZEL, nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.compose.page_data import PageData
 from parch.sections.annual import Annual
@@ -102,30 +102,33 @@ class CoverPlain:
             dest,
             manifest,
         )
-        # page-shell already reserved toolbar + bezel. Extra inset matches
-        # locked 00-cover (x: bezel+2mm, top: 8mm, bottom: bezel+4mm).
-        # Markup cluster — code-block sequences pick up par.spacing (1.2em of
-        # 48pt ≈ 20mm) between year and rules.
-        return f"""block(
-  width: 100%,
-  height: 100%,
-  inset: (x: 2mm, top: 8mm, bottom: 4mm),
-  {{
-    v(1fr)
-    {{
-      set par(spacing: 0pt)
-      align(center)[
-        #{year}
-        #v(4mm)
-        #box(width: 42mm, {{
-          set par(spacing: 0pt)
-          box(width: 100%, height: 0.7pt, fill: black)
-          v(0.7mm)
-          box(width: 100%, height: 0.35pt, fill: luma(25%))
-        }})
-      ]
-    }}
-    v(1.15fr)
-    align(center, text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad])
-  }},
-)"""
+        # Full-page place: page-shell already inset toolbar + bezel, so
+        # shift the page-sized box back to (0, 0) before measuring ph/2.
+        return f"""{{
+  set par(spacing: 0pt)
+  let year = {year}
+  let rules = box(width: 42mm, {{
+    box(width: 100%, height: 0.7pt, fill: black)
+    v(5.5mm)
+    box(width: 100%, height: 0.35pt, fill: luma(25%))
+  }})
+  layout(size => {{
+    let y = measure(year)
+    let r = measure(rules)
+    let pw = page-width
+    let ph = page-height
+    let footer = text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad]
+    let f = measure(footer)
+    let footer-bottom = {BEZEL} + 4mm
+    let footer-top = ph - footer-bottom - f.height
+    place(
+      dx: -{BEZEL},
+      dy: -toolbar-clearance,
+      box(width: pw, height: ph, {{
+        place(dx: (pw - y.width) / 2, dy: ph / 2 - y.height / 2, year)
+        place(dx: (pw - r.width) / 2, dy: ph * 2 / 3 - r.height / 2, rules)
+        place(dx: (pw - f.width) / 2, dy: footer-top, footer)
+      }}),
+    )
+  }})
+}}"""
