@@ -79,7 +79,7 @@ class Index:
         extra = ""
         if note:
             extra = (
-                f' #h(2mm) #text(size: 7.5pt, fill: luma(40%), '
+                f'; h(2mm); text(size: 7.5pt, fill: luma(40%), '
                 f'font: "Liberation Sans")[{note}]'
             )
         inner = (
