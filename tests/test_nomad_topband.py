@@ -308,6 +308,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
     assert "page-shell(\n  none," in meetings_index
     assert "columns: (2em, 1fr, 16mm)" in meetings_index
+    assert "column-gutter: 2mm" in meetings_index
     assert "align: (horizon, bottom, bottom)" in meetings_index
     assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in meetings_index
     assert "stroke: (bottom: regular_stroke + black)" not in meetings_index

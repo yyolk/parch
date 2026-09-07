@@ -140,6 +140,7 @@ class Meetings:
             inner = (
                 "grid(\n"
                 f"      columns: ({_NUM_COL}, 1fr, {_DATE_COL}),\n"
+                "      column-gutter: 2mm,\n"
                 "      rows: 1fr,\n"
                 "      align: (horizon, bottom, bottom),\n"
                 "      inset: 0pt,\n"
