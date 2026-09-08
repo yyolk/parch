@@ -741,3 +741,21 @@ def test_nomad_short_january_compiles(tmp_path):
     typst = _generate("supernote-nomad", extras=True)
     pdf, stderr = compile_pdf(typst, tmp_path / "nomad-topband", device="supernote-nomad")
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
+
+
+def test_nomad_emit_writing_wells_are_tiling_not_rect_pattern():
+    """Gridwright/Pythonista emit checklist: tiling wells, no rect_pattern, task_fill."""
+    typst = _generate("supernote-nomad", extras=True)
+    notes = _page_with(typst, "Notes  ·  Thursday  ·  January 1 <daily-note-2026-01-01-page-1>")
+    assert "nomad_notes_well()" in notes
+    assert "layout(" not in notes
+    assert "range(n).map(_ => align(bottom, hairline))" not in notes
+    daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
+    assert "nomad_daily_well(" in daily
+    assert "rect_pattern" not in typst
+    tasks = _page_with(typst, "Tasks  ·  Week 1")
+    assert "let min-row = 6.0mm" in tasks
+    assert "task_fill" not in tasks
+    mos = _generate("158x210", extras=True)
+    assert "lined_well(task_fill, tile-height: regular_height)" in mos
+    assert "rect_pattern" not in mos

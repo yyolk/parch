@@ -201,6 +201,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
     assert "layout(size => {" in prios
     assert "_hair-tile(row-h)" in prios
+    preview = house[house.index("#let nomad_daily_notes_preview(") : house.index("#let nomad_daily_well(")]
+    assert "layout(" not in preview
+    assert "lines: 4" in preview
+    assert "rows: (tile,) * lines" in preview
+    assert "range(lines).map(_ => align(bottom, hairline))" in preview
     assert "#let nomad_notes_fill = lined_fill(" in house
     assert "#let nomad_daily_well(" in house
     daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_fill")]
