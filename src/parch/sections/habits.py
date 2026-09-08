@@ -50,14 +50,20 @@ class Habits:
 
     def pages(self, manifest: Manifest) -> list[PageData]:
         months = list(self._range())
-        if nomad_topband(self.configurator):
+        nomad = nomad_topband(self.configurator)
+        year = (
+            f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+            if nomad
+            else None
+        )
+        if nomad:
             out = [
                 PageData(
                     title=f'text(size: h1)[{self.i18n.t("habits")} <{self.ID}>]',
                     content=self._index_body(manifest, months),
                     page_id=self.ID,
                     heading_mark=HeadingMark.TRAIL,
-                    strip="quiet",
+                    year=year,
                 )
             ]
         else:
@@ -75,7 +81,7 @@ class Habits:
                     show_quarters=False,
                     nav_links=[],
                     heading_mark=HeadingMark.TRAIL,
-                    strip="quiet" if nomad_topband(self.configurator) else None,
+                    year=year,
                 )
             )
         return out
@@ -143,7 +149,8 @@ class Habits:
         page_id = self.month_id(month)
         if nomad_topband(self.configurator):
             return (
-                f'text(size: h1)[{self.i18n.t("habits")} · {full}<{page_id}>]'
+                f'text(size: 10pt, weight: "bold")'
+                f'[{self.i18n.t("habits")}  ·  {full}<{page_id}>]'
             )
         habits_cell = manifest.link_or_content(self.ID, self.i18n.t("habits"))
         return f"""box(
@@ -215,7 +222,10 @@ class Habits:
 
     def _nomad_day_row(self, manifest: Manifest, day: Day, n_habits: int) -> str:
         linked = manifest.link_or_content(day.id, str(day.month_day))
-        ticks = ", ".join(["align(center + horizon, task_tick())"] * n_habits)
+        ticks = ", ".join(
+            ["align(center + horizon, square(size: 0.8em, stroke: hair + ink))"]
+            * n_habits
+        )
         return (
             "grid(\n"
             f"        columns: (8mm,) + (1fr,) * {n_habits},\n"
@@ -260,7 +270,7 @@ def _habit_header(name: str) -> str:
 
 def _nomad_habit_header(name: str | None) -> str:
     if not name:
-        return "align(horizon, line(length: 100%, stroke: regular_stroke + black))"
+        return "align(horizon, line(length: 100%, stroke: hair + ink))"
     label = _escape_typst(name)
     return (
         f'align(center + horizon, text(size: 6.5pt, weight: "bold", '

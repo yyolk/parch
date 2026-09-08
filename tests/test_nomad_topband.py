@@ -274,14 +274,21 @@ def test_nomad_emit_uses_page_shell_not_mos():
         assert "text(size: 6pt, fill: white)[T1]" not in tasks
     habits_index = _page_with(typst, "[Habits <habits>]")
     assert "section-strip(" in habits_index
-    assert "active: none" in habits_index
+    assert 'active: "habits"' in habits_index
     assert "page-shell(\n  none," not in habits_index
-    assert 'active: "habits"' not in habits_index
-    habits = _page_with(typst, "Habits · January<habits-january>")
+    assert "active: none" not in habits_index
+    habits = _page_with(typst, "Habits  ·  January<habits-january>")
     assert "section-strip(" in habits
-    assert "active: none" in habits
+    assert 'active: "habits"' in habits
     assert "page-shell(\n  none," not in habits
-    assert 'active: "habits"' not in habits
+    assert "active: none" not in habits
+    assert 'text(size: 10pt, weight: "bold")[Habits  ·  January<habits-january>]' in habits
+    assert 'text(size: h1)[Habits ·' not in habits
+    assert 'text(size: h1)[2026]' not in habits
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in habits
+    assert "chip([‹]" in habits
+    assert "chip([Jan], active: true" in habits
+    assert "chip([›]" in habits
     assert "padded_link(<2026-01-01>" in habits
     assert "[Day]" in habits
     assert "Thu 1" not in habits
@@ -289,8 +296,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "rows: (5.5mm, 1fr)" in habits
     assert "let row-h = size.height / n" in habits
     assert 'font: "Liberation Sans")[Day]' in habits
-    assert "line(length: 100%, stroke: regular_stroke + black)" in habits
-    assert habits.count("task_tick()") == 31 * 5
+    assert "line(length: 100%, stroke: hair + ink)" in habits
+    assert habits.count("square(size: 0.8em, stroke: hair + ink)") == 31 * 5
+    assert "task_tick()" not in habits
     cover = _pages(typst)[0]
     assert "page-shell(" in cover
     assert "page-shell(\n  none," in cover
