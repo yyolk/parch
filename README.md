@@ -68,8 +68,10 @@ Scaling numbers (full-year 2026, N = 0 / 2 / 10 / 20 / 30 / 50 / 100) live in
 ## Artifacts
 
 - `artifacts/specimen-2026.pdf` — 6 pages (cover, year, Q1, January, first week, 1 Jan).
-- `artifacts/planner-2026.pdf` — full 2026 book (436 pages, ~2.6 MB in this environment).
-- `artifacts/preview/` — PNG rasters of those section landings for glanceable review.
+- `artifacts/specimen-2026-notes2.pdf` — same + 2 notes pages for 1 Jan (8 pages).
+- `artifacts/planner-2026.pdf` — full 2026 book, N=0 (436 pages, ~2.6 MB).
+- Full-year N≥2 PDFs are **not** committed (N=100 was ~78 MB). Numbers: [BENCH.md](BENCH.md).
+- `artifacts/preview/` — PNG rasters of section landings and a notes page.
 
 ## CI
 

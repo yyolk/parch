@@ -27,6 +27,12 @@ PRESS = str(ROOT / ".venv" / "bin" / "press")
 if not Path(PRESS).is_file():
     PRESS = "press"
 
+
+def _time_cmd(time_path: Path, press_cmd: list[str]) -> list[str]:
+    if Path(TIME_BIN).is_file():
+        return [TIME_BIN, "-v", "-o", str(time_path), *press_cmd]
+    return press_cmd
+
 # Exit codes we treat as fatal resource death (do not continue to higher N).
 FATAL_SIGNALS = {signal.SIGKILL, signal.SIGSEGV, signal.SIGABRT, signal.SIGBUS}
 
@@ -180,11 +186,7 @@ def run_one(n: int) -> dict:
     time_path = OUT_DIR / f"time-notes{n}.txt"
     if pdf_path.exists():
         pdf_path.unlink()
-    cmd = [
-        TIME_BIN,
-        "-v",
-        "-o",
-        str(time_path),
+    press_cmd = [
         PRESS,
         "--year",
         str(YEAR),
@@ -193,11 +195,24 @@ def run_one(n: int) -> dict:
         "-o",
         str(pdf_path),
     ]
+    cmd = _time_cmd(time_path, press_cmd)
     print(f"\n=== N={n} ===", flush=True)
     print(" ".join(cmd), flush=True)
+    import resource
+    import time as time_mod
+
+    t0 = time_mod.perf_counter()
     proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
+    wall_s = time_mod.perf_counter() - t0
+    child_rss_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     time_text = time_path.read_text() if time_path.is_file() else ""
     time_info = parse_time_verbose(time_text) if time_text else {}
+    if time_info.get("elapsed_s") is None:
+        time_info["elapsed_s"] = round(wall_s, 3)
+        time_info["elapsed_raw"] = f"{wall_s:.3f}s (perf_counter)"
+    if time_info.get("peak_rss_kb") is None and child_rss_kb:
+        time_info["peak_rss_kb"] = int(child_rss_kb)
+        time_info["peak_rss_mib"] = round(child_rss_kb / 1024, 1)
     row: dict = {
         "n": n,
         "returncode": proc.returncode,

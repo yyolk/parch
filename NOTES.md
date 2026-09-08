@@ -75,6 +75,13 @@ No GUI click-through. After `press`, `pypdf` was used to:
 Pages were also rasterized with `pdftoppm` to check chrome (nav present except
 cover; active tab wash).
 
+## Notes-pages scale-up
+
+See [BENCH.md](BENCH.md). `--notes-pages N` emits 1 day page + N lined notes
+pages per day. Full-year 2026 was run at N = 0, 2, 10, 20, 30, 50, 100.
+Nothing OOM’d. N=100 was 36 936 pages / 31 s / **629 MiB** peak RSS. Linear,
+not a notes-slab cliff.
+
 ## Verdict for the question
 
 If the goal is **a working linked yearly PDF on one canvas**, fpdf2 is enough
