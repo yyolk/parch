@@ -2,7 +2,7 @@
 
 import pytest
 from pypdf import PdfReader
-from pypdf.generic import DictionaryObject, IndirectObject
+from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject
 
 from parch.config import load
 from parch.services.generate import Generate
@@ -24,6 +24,41 @@ def _links(page):
             continue
         x1, y1, x2, y2 = (float(v) for v in obj["/Rect"])
         rows.append((abs(x2 - x1), abs(y2 - y1), min(x1, x2), min(y1, y2)))
+    return rows
+
+
+def _page_ids(reader: PdfReader) -> dict[int, int]:
+    return {page.indirect_reference.idnum: i for i, page in enumerate(reader.pages, 1)}
+
+
+def _dest_page(dest, page_ids: dict[int, int]) -> int | None:
+    if isinstance(dest, IndirectObject):
+        dest = dest.get_object()
+    if isinstance(dest, ArrayObject) and dest:
+        first = dest[0]
+        if isinstance(first, IndirectObject):
+            return page_ids.get(first.idnum)
+    return None
+
+
+def _link_dests(page, page_ids: dict[int, int]):
+    """(x, from_top, w, h, dest_page) for each Link annot."""
+    height = float(page.mediabox.height)
+    rows = []
+    for annot in page.get("/Annots") or []:
+        obj = annot.get_object() if isinstance(annot, IndirectObject) else annot
+        if not isinstance(obj, DictionaryObject) or obj.get("/Subtype") != "/Link":
+            continue
+        x1, y1, x2, y2 = (float(v) for v in obj["/Rect"])
+        rows.append(
+            (
+                min(x1, x2),
+                height - max(y1, y2),
+                abs(x2 - x1),
+                abs(y2 - y1),
+                _dest_page(obj.get("/Dest"), page_ids),
+            )
+        )
     return rows
 
 
@@ -112,7 +147,7 @@ def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
     daily = _links(reader.pages[pages["daily-jan1"] - 1])
     mini = [row for row in daily if 12 < row[0] < 22 and 5 < row[1] < 9]
     assert len(mini) >= 14
-    tempo = [row for row in daily if row[0] > 80 and 10 < row[1] < 16]
+    tempo = [row for row in daily if row[0] > 80]
     assert len(tempo) >= 3
 
 
@@ -128,15 +163,26 @@ def test_nomad_daily_tempo_and_weekly_day_are_link_annots(tmp_path):
         year=2026,
         week_id="2026W01",
         jan1="2026-01-01",
-        stems=("daily-jan1", "weekly-w01"),
+        stems=("daily-jan1", "weekly-w01", "monthly-jan", "quarterly-q1"),
     )
+    ids = _page_ids(reader)
     daily = _links(reader.pages[pages["daily-jan1"] - 1])
-    tempo = [row for row in daily if row[0] > 80 and 10 < row[1] < 16]
+    tempo = [row for row in daily if row[0] > 80]
     assert len(tempo) >= 3
-    top_y = max(row[3] for row in daily)
-    strip = [row for row in daily if abs(row[3] - top_y) < 3]
-    assert len(strip) >= 6
-    weekly = _links(reader.pages[pages["weekly-w01"] - 1])
-    wtop = max(row[3] for row in weekly)
-    wstrip = [row for row in weekly if abs(row[3] - wtop) < 3]
-    assert len(wstrip) >= 6
+
+    daily_dests = _link_dests(reader.pages[pages["daily-jan1"] - 1], ids)
+    weekly_dests = _link_dests(reader.pages[pages["weekly-w01"] - 1], ids)
+    d_strip = sorted([r for r in daily_dests if r[1] < 45], key=lambda r: r[0])
+    w_strip = sorted([r for r in weekly_dests if r[1] < 45], key=lambda r: r[0])
+    # short-january strip: contents cal q mon wk day
+    assert len(d_strip) >= 6
+    assert d_strip[2][4] == pages["quarterly-q1"]
+    assert d_strip[3][4] == pages["monthly-jan"]
+    assert d_strip[2][3] > 18
+    assert len(w_strip) >= 6
+    assert w_strip[5][4] == pages["daily-jan1"]
+    assert w_strip[5][3] > 18
+    d_tempo = sorted([r for r in daily_dests if 50 < r[1] < 90], key=lambda r: r[0])
+    assert len(d_tempo) >= 3
+    assert d_tempo[1][4] == pages["monthly-jan"]
+    assert d_tempo[2][4] == pages["quarterly-q1"]

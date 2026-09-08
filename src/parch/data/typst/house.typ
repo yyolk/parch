@@ -446,8 +446,17 @@
         let name = item.at(1)
         let on = dest != none and name == active
         let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: edge)
+        // Overlay a taller annot (does not grow the strip). Toolbar slop eats the
+        // top 8mm; a chrome-h-only rect sits at 8.4mm and misses Nomad taps.
         if dest != none {
-          padded_link(padding: 0pt, dest, box(width: 100%, fill: luma(0%, 0%), seated))
+          box(width: 100%, {
+            seated
+            place(top, padded_link(padding: 0pt, dest, box(
+              width: 100%,
+              height: height + 3mm,
+              fill: luma(0%, 1%),
+            )))
+          })
         } else { seated }
       }),
     )
@@ -471,13 +480,16 @@
       )[#label],
     ),
   )
-  // Transparent fill so the PDF annot covers the chip, not only the glyphs.
+  // Overlay a taller annot so SuperNote can hit below toolbar slop.
   if dest != none {
-    padded_link(padding: 0pt, dest, box(
-      width: if expand { 100% } else { auto },
-      fill: luma(0%, 0%),
-      body,
-    ))
+    box(width: if expand { 100% } else { auto }, {
+      body
+      place(top, padded_link(padding: 0pt, dest, box(
+        width: 100%,
+        height: tempo-h + 2mm,
+        fill: luma(0%, 1%),
+      )))
+    })
   } else { body }
 }
 
