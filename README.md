@@ -40,6 +40,12 @@ parch press supernote-nomad
 
 `--year` also rewrites the cover title year when the old year is in the title.
 
+Full-year Nomad is one Typst document — peak RAM is page-tree count, not `index.typst` size. There is no chunked compile / PDF merge path.
+
+`supernote-nomad` defaults to `[section.daily_notes] pages = 1` (one notes well per day; `pages = 2` is opt-in). Other devices still default to `pages = 2`. Jobs written before this default still say `pages = 2`.
+
+Daily mini-cal day cells are a glance (feel4r) — not 31 dests × 365 pages. Annual / quarterly year-month days still link. Full-year extras Typst CLI (`/usr/bin/time -f %M typst compile`, last line): notes-off **1.84 GiB**, notes=1 **2.65 GiB**, notes=2 **3.12 GiB**. Python emit is ~50 MiB. `PARCH_TYPST=py` is in-process; `PARCH_TYPST=cli` (default) spawns `typst` (cgroup = Typst + leftover Python/uv/OS, ~2–3 GiB). Do not pipe every log line through `awk`. **pages=1 is the 8GB-supported extras press.** `pages = 2` stays opt-in and still OOMs on default 8GB Codespaces — use **16GB** despite Typst-only ~3.12 GiB.
+
 ```shell
 parch new --device supernote-nomad --year 2027 --yes -o mine.toml
 ```
@@ -50,9 +56,11 @@ parch new --device supernote-nomad --year 2027 --yes -o mine.toml
 
 Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip side is `mos.side_menu` (default left). Override with `--hand left|right` on `press`, `proof`, `new`, and `edit`. `--hand` does not reverse the well.
 
+Navigation chrome is **device-gated**. `supernote-nomad` (alias `nomad`) presses **Topband**. Same canvas `118.87×158.5mm` as `supernote-a6` / `supernote-a6x`, but those ids keep **MOS**. There is no `--topband` / `--mos` switch — pick the device id (or `device` in the job TOML).
+
 | Device | Notes |
 | --- | --- |
-| `supernote-nomad` | SuperNote Nomad (A6 X2). Toolbar top 8mm |
+| `supernote-nomad` | SuperNote Nomad (A6 X2). Topband; toolbar top 8mm. Alias `nomad` |
 | `kindle-scribe` | Kindle Scribe. No toolbar |
 | `158x210` | 158×210 mm. No toolbar |
 | `supernote-manta` | SuperNote Manta (A5 X2). Toolbar top 8mm |
@@ -63,8 +71,8 @@ Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip 
 | `remarkable-paper-pro-move` | reMarkable Paper Pro Move. No toolbar (Scribe pack). Alias `paper-pro-move` |
 | `supernote-a5` | SuperNote A5. Toolbar top 8mm (Nomad pack). Alias `a5` |
 | `supernote-a5x` | SuperNote A5 X. Same canvas as A5; own name. Alias `a5x` |
-| `supernote-a6` | SuperNote A6. Toolbar top 8mm (Nomad pack). Alias `a6` |
-| `supernote-a6x` | SuperNote A6 X. Same canvas as A6; own name. Alias `a6x` |
+| `supernote-a6` | SuperNote A6. Same canvas as Nomad; MOS chrome (not Topband). Alias `a6` |
+| `supernote-a6x` | SuperNote A6 X. Same canvas as Nomad; MOS chrome (not Topband). Alias `a6x` |
 | `kindle-scribe-11` | Kindle Scribe 11. No toolbar (Scribe pack). Alias `scribe-11` |
 | `kindle-scribe-colorsoft` | Kindle Scribe Colorsoft. Same B&W canvas as Scribe 11. Alias `colorsoft` |
 | `ipad-mini` | iPad mini. No toolbar (Scribe pack). Alias `mini` |

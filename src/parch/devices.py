@@ -443,6 +443,14 @@ def is_scribe_family(spec: str) -> bool:
         return False
 
 
+def is_nomad(spec: str) -> bool:
+    """True only for supernote-nomad (id or ``nomad`` alias). Other A6 ids stay MOS."""
+    try:
+        return get_device(spec).id == SUPERNOTE_NOMAD.id
+    except KeyError:
+        return False
+
+
 def known_device_ids() -> tuple[str, ...]:
     return tuple(d.id for d in DEVICES)
 

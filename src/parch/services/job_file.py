@@ -3,7 +3,7 @@
 from dataclasses import dataclass, replace
 from typing import Any
 
-from parch.devices import Device, get_device
+from parch.devices import Device, get_device, is_nomad
 
 DEFAULT_YEAR = 2026
 DEFAULT_DEVICE = "supernote-nomad"
@@ -159,9 +159,24 @@ class JobSpec:
         return list(self.defaults().sections)
 
 
+def default_paper(device_id: str) -> str:
+    """Nomad Topband defaults to lined. Other devices stay dotted."""
+    return "lined" if is_nomad(device_id) else "dotted"
+
+
 def spec_from_device(device_id: str, **overrides: Any) -> JobSpec:
     device = get_device(device_id)
     cleaned = {key: value for key, value in overrides.items() if value is not None}
+    if "paper" not in cleaned:
+        cleaned["paper"] = default_paper(device.id)
+    if is_nomad(device.id):
+        cleaned.setdefault("hour_from", 7)
+        cleaned.setdefault("hour_to", 16)
+        cleaned.setdefault("trailing_half_hour", False)
+        cleaned.setdefault("priorities_count", 6)
+        cleaned.setdefault("habit_columns", 5)
+        # One notes well per day. pages = 2 is opt-in (~+365 pages / year).
+        cleaned.setdefault("daily_notes_pages", 1)
     return JobSpec(device_id=device.id, **cleaned)
 
 
@@ -197,9 +212,9 @@ def spec_from_data(data: dict[str, Any]) -> JobSpec:
     monthly = _section_table(data, "monthly")
     if monthly is not None and monthly.get("week_placement") == _WEEK_RAIL_NONE:
         spec.week_placement = _WEEK_RAIL_NONE
-    hour_from, hour_to = _hours_from_data(data)
-    spec.hour_from = hour_from
-    spec.hour_to = hour_to
+    spec.hour_from, spec.hour_to = _hours_from_data(
+        data, spec.hour_from, spec.hour_to
+    )
     spec.priorities_count = _int_from_track(data, "priorities", "count", spec.priorities_count)
     spec.daily_notes_pages = _int_from_section(data, "daily_notes", "pages", spec.daily_notes_pages)
     spec.projects_pages = _int_from_section(data, "projects", "pages", spec.projects_pages)
@@ -222,7 +237,7 @@ def emit_job(spec: JobSpec) -> str:
     style = spec.defaults().style
     sections = spec.resolved_sections()
     names = set(sections)
-    paper = spec.paper if spec.paper in _PAPERS else "dotted"
+    paper = spec.paper if spec.paper in _PAPERS else default_paper(device.id)
     year = spec.year
     parts: list[str] = [
         f"# {device.name}",
@@ -380,7 +395,11 @@ def _section_table(data: dict[str, Any], name: str) -> dict[str, Any] | None:
     return None
 
 
-def _hours_from_data(data: dict[str, Any]) -> tuple[int, int]:
+def _hours_from_data(
+    data: dict[str, Any],
+    default_from: int = 8,
+    default_to: int = 20,
+) -> tuple[int, int]:
     daily = _section_table(data, "daily")
     if daily is not None:
         for side in ("left", "right"):
@@ -394,7 +413,7 @@ def _hours_from_data(data: dict[str, Any]) -> tuple[int, int]:
             hour_to = schedule.get("hour_to")
             if isinstance(hour_from, int) and isinstance(hour_to, int):
                 return hour_from, hour_to
-    return 8, 20
+    return default_from, default_to
 
 
 def _int_from_section(data: dict[str, Any], section: str, key: str, default: int) -> int:

@@ -13,6 +13,7 @@ from tests.helpers import base_config, load_default, make_configurator, make_day
 from tests.toml_fixtures import omit_toml_sections
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _MARK_RULE = "contents_bars(size:"
 _MARK_FLUSH = "padded_link(<index>, contents_bars"
@@ -259,8 +260,8 @@ def test_calendar_appears_nowhere_on_title_or_content():
 
 
 def test_generated_contents_mark_alone_and_inverts_january_only():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-daily.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="mos-daily.toml"))
     pages = _daily_pages(typst)
     jan1 = pages["jan1"]
     assert "padded_link(<annual>, [2026])" not in jan1
@@ -307,8 +308,8 @@ def test_generated_contents_mark_alone_and_inverts_january_only():
 
 
 def test_generated_hand_right_contents_mark_alone_left_of_q1():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(apply_hand(parse_toml(text, source="nomad-hand-right-daily.toml"), "right"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(apply_hand(parse_toml(text, source="mos-hand-right-daily.toml"), "right"))
     pages = _daily_pages(typst)
     jan1 = pages["jan1"]
     assert "padded_link(<annual>, [2026])" not in jan1

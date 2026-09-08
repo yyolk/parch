@@ -50,6 +50,20 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "month_grid" in names
     assert "month_weeks" in names
     assert "week_matrix" in names
+    assert "nomad_daily_well" in names
+    assert "nomad_notes_well" in names
+    assert "nomad_week_bands" in names
+    assert "nomad_month_well" in names
+    assert "nomad_month_notes" in names
+    assert "year-month" in names
+    assert "mini-month" in names
+    assert "nomad_year_grid" in names
+    assert "nomad_quarter_well" in names
+    assert "hair" in names
+    assert "ink" in names
+    assert "chip" in names
+    assert "tempo-row" in names
+    assert "tempo-bar" not in names
     assert "dotted_centered" in names
     assert "lined_fill" in names
     assert "task_tick" in names
@@ -143,8 +157,181 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     house = house_typ_resource().read_text(encoding="utf-8")
     assert "#set page" not in house
     assert "#let page-width" not in house
-    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm)" in house
+    assert "#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm, bezel: none)" in house
     assert "if toolbar-edge == top { toolbar-clearance } else { 0mm }" in house
+    assert "if bezel != none { bezel }" in house
+    assert "#let section-strip(" in house
+    assert "#let chip(" in house
+    assert "#let tempo-row(" in house
+    assert "#let tempo-bar(" not in house
+    assert "#let page-shell(" in house
+    assert "#let bezel = 3mm" in house
+    assert "#let toolbar = 8mm" in house
+    assert "#let top-air = 0.4mm" in house
+    assert "#let chip-gutter = 1.2mm" in house
+    assert "#let chip-inset-y = 1.2mm" in house
+    assert "#let icon-chip-inset-y = 1.1mm" in house
+    assert "#let strip-tempo-gap = 0mm" in house
+    assert "#let well-top = 2.5mm" in house
+    assert "#let rhythm = 1.2em" in house
+    assert "#let hair = 0.4pt" in house
+    assert "#let ink = luma(0)" in house
+    assert "#let hairline = line(length: 100%, stroke: hair + ink)" in house
+    assert "#let regular-h = 7mm" in house
+    shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_hours(")]
+    assert 'set text(font: "Libertinus Serif")' in shell
+    assert "set par(spacing: rhythm)" in shell
+    assert "set block(spacing: rhythm)" in shell
+    assert "set text(size: 9pt)" in shell
+    assert "inset: (top: 0.2mm, bottom: 0.15mm)" in shell
+    assert "inset: (top: 1.2mm, bottom: 1.0mm)" not in shell
+    assert "set par(spacing: 0pt)" not in shell
+    assert "set block(spacing: 0pt)" not in shell
+    assert "if strip != none" in shell
+    assert "if tempo != none" in shell
+    assert "if title != none" in shell
+    assert "box(width: 100%, height: 100%, inset: (top: well-top), body)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), strip)" in shell
+    assert "block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), tempo)" in shell
+    assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
+    assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
+    hours = house[house.index("#let nomad_daily_hours(") : house.index("#let nomad_daily_priorities(")]
+    assert "layout(size => {" in hours
+    assert "align: (bottom + right, bottom)" in hours
+    assert "column-gutter: 0.65mm" in hours
+    assert "row-gutter: 0pt" in hours
+    assert "range(start, start + n)" in hours
+    assert "hairline" in hours
+    assert "_hair-tile(hour" not in hours
+    assert "rows: (1fr,) * n" not in hours
+    assert "rowspan" not in hours
+    prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
+    assert "layout(size => {" in prios
+    assert "align: (horizon, bottom)" in prios
+    assert "column-gutter: 1.4mm" in prios
+    assert "row-gutter: 0pt" in prios
+    assert "_hair-tile" not in prios
+    assert "rowspan" not in prios
+    preview = house[house.index("#let nomad_daily_notes_preview(") : house.index("#let nomad_daily_well(")]
+    assert "layout(" not in preview
+    assert "lines: 4" in preview
+    assert "rows: (tile,) * lines" in preview
+    assert "range(lines).map(_ => align(bottom, hairline))" in preview
+    assert "#let nomad_notes_fill = lined_fill(" in house
+    assert "#let nomad_daily_well(" in house
+    daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_fill")]
+    assert "columns: (1.2fr, 0.8fr)" in daily_well
+    assert "column-gutter: 0pt" in daily_well
+    assert "rows: (1fr, auto)" in daily_well
+    assert "row-gutter: 1.0mm" in daily_well
+    assert "notes-tile: 5.8mm" in daily_well
+    assert "notes-lines: 4" in daily_well
+    assert "cal-h: 24mm" in daily_well
+    assert "hour-start: 7" in daily_well
+    assert "hours: 10" in daily_well
+    assert "prios: 6" in daily_well
+    assert "notes-height: 20mm" not in daily_well
+    assert "columns: (2fr, 1fr)" not in daily_well
+    notes_well = house[house.index("#let nomad_notes_well(") : house.index("#let nomad_week_hairs(")]
+    assert "tile: regular-h" in notes_well
+    assert "lined_well(nomad_notes_fill)" in notes_well
+    assert "layout(" not in notes_well
+    assert "calc.floor(size.height / tile)" not in notes_well
+    assert "range(" not in notes_well
+    assert "#let nomad_week_bands(" in house
+    week_bands = house[house.index("#let nomad_week_bands(") : house.index("#let year-month(")]
+    assert "notes-height: 18mm" in week_bands
+    assert "notes-tile: 4.8mm" in week_bands
+    assert "row-gutter: 0.8mm" in week_bands
+    assert "grid.cell(stroke: (bottom: stroke)" not in week_bands
+    hairs = house[house.index("#let nomad_week_hairs(") : house.index("#let nomad_week_day(")]
+    assert "tile: 3.8mm" in hairs
+    assert "let row-h = size.height / n" in hairs
+    assert "_hair-tile(row-h, stroke: paint)" in hairs
+    assert "range(n).map(_ => align(bottom, rule))" not in hairs
+    assert "for i in range(n)" not in hairs
+    assert "place(top + start" not in hairs
+    day = house[house.index("#let nomad_week_day(") : house.index("#let nomad_week_notes(")]
+    assert "inset: (top: 0.45mm, x: 0.2mm, bottom: 0.2mm)" in day
+    assert 'text(size: 7.5pt, weight: "bold")' in day
+    notes = house[house.index("#let nomad_week_notes(") : house.index("#let nomad_week_bands(")]
+    assert "inset: (top: 0.65mm)" in notes
+    assert 'text(weight: "bold", size: 8pt)' in notes
+    assert "tile: 4.8mm" in notes
+    assert "nomad_week_hairs(stroke:" in house
+    assert "lined_well(nomad_week_hair" not in house
+    assert "#let nomad_week_hair(" not in house
+    assert "#let nomad_week_band(" not in house
+    assert "(1fr,) * days + (notes-height,)" in house
+    assert "#let year-month(" in house
+    assert "#let mini-month(" in house
+    assert 'set text(font: "Liberation Sans", size: day-sz)' in house[house.index("#let mini-month(") :]
+    assert "#let nomad_year_grid(" in house
+    year_grid = house[house.index("#let nomad_year_grid(") : house.index("#let nomad_quarter_well(")]
+    assert "(1fr, 1fr, 1fr, 1fr)" in year_grid
+    assert "column-gutter: 2.4mm" in year_grid
+    assert "row-gutter: 1.5mm" in year_grid
+    assert "#let nomad_quarter_well(" in house
+    assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
+    assert "0.9fr, 1.2fr" in house[house.index("#let nomad_quarter_well(") :]
+    assert "#let nomad_month_notes()" in house
+    month_notes = house[house.index("#let nomad_month_notes()") : house.index("#let nomad_month_well(")]
+    assert "regular_height: 5.2mm" in month_notes
+    assert "lined_well(lined_fill(" in month_notes
+    assert "layout(" not in month_notes
+    assert "#let nomad_month_well(" in house
+    month_well = house[house.index("#let nomad_month_well(") :]
+    assert "notes-height: 20mm" in month_well
+    assert "rows: (auto, 1fr, notes-height)" in month_well
+    assert "row-gutter: 1.4mm" in month_well
+    assert "box(width: 100%, height: 100%" in month_well
+    assert "rows: (1fr, notes-height)" not in month_well
+    assert "#let strip-icon(" in house
+    assert "#let icon-chip(" in house
+    assert "#let _icon-off = (" in house
+    assert "#let _icon-on = (" in house
+    assert 'image("icons/menu.svg", height: _icon-h)' in house
+    assert "image(src, height: 3.1mm)" not in house
+    assert "_icon-on.at(id)" in house
+    assert "#let _chip-off = (" in house
+    assert "#let _chip-on = (" in house
+    assert "_chip-on.at(id)" in house[house.index("#let section-strip(") : house.index("#let chip(")]
+    assert "icon-chip(_strip-id(name), active: on, expand: true" not in house[house.index("#let section-strip(") : house.index("#let chip(")]
+    assert "inset: (x: icon-chip-inset-x, y: icon-chip-inset-y)" in house[house.index("#let icon-chip(") :]
+    assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
+    strip = house[house.index("#let section-strip(") : house.index("#let chip(")]
+    assert "column-gutter: chip-gutter" in strip
+    assert "rows: (auto,)" in strip
+    assert "0.55mm" not in strip
+    assert "place(top, padded_link(padding: 0pt, dest," in strip
+    assert "height: height + 3mm" in strip
+    chip = house[house.index("#let chip(") : house.index("#let tempo-row(")]
+    assert "inset: (x: chip-inset-x, y: chip-inset-y)" in chip
+    assert 'font: "Liberation Sans"' in chip
+    assert "size: 7.5pt" in chip
+    assert "height: 100%" not in chip
+    assert "luma(0%, 1%)" in chip
+    assert "place(top, padded_link(padding: 0pt, dest," in chip
+    assert "padded_link(padding: 0pt, dest," in chip
+    tempo = house[house.index("#let tempo-row(") : house.index("#let page-shell(")]
+    assert "column-gutter: chip-gutter" in tempo
+    assert "rows: (auto,)" in tempo
+    assert "rows: height" not in tempo
+    assert "icons/" in house
+    assert "#let icon-menu(" not in house
+    assert "#let icon-habits(" not in house
+    assert "Notes chip" not in house
+    assert "start-wd: 3" in house[house.index("#let year-month(") :]
+    assert "dests: ()" in house[house.index("#let year-month(") :]
+    assert 'set text(font: "Liberation Sans")' in house[house.index("#let year-month(") :]
+    assert "dests: ()" in house[house.index("#let mini-month(") : house.index("#let year-month(")]
+    mini = house[house.index("#let mini-month(") : house.index("#let year-month(")]
+    assert "dest: _cal-day-dest" not in mini
+    assert "highlight: highlight))," in mini
+    year_month = house[house.index("#let year-month(") :]
+    assert "dest: _cal-day-dest(c, dests)" in year_month
+    assert "#let _cal-day(" in house
+    assert "padded_link(padding: 0pt, dest, hit)" in house
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
     assert contents_bars.startswith(
@@ -445,7 +632,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "side" not in lined_well
     assert "header" not in lined_well
     assert "#let daily_well(" in house
-    daily_well = house[house.index("#let daily_well(") :]
+    daily_well = house[house.index("#let daily_well(") : house.index("#let quarter_well(")]
     assert daily_well.startswith(
         "#let daily_well(side, hours, writing, column-gutter: none) = if side == left {\n"
         "  grid(columns: (3fr, 5fr), rows: 1fr, column-gutter: column-gutter, hours, writing)\n"
@@ -491,7 +678,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
         "}"
     )
     assert "reverse" not in quarter_well
-    assert "rowspan" not in house
+    assert "rowspan" not in quarter_well
+    assert "rowspan" not in house[: house.index("#let nomad_daily_hours(")]
     assert "dir: ltr" in house
     assert "calc.max(measure(title).height, measure(mark).height)" not in house
     assert "measure(seated_title)" not in house
@@ -572,6 +760,8 @@ def test_copy_house_typ_writes_workdir(tmp_path):
     dest = copy_house_typ(tmp_path)
     assert dest == tmp_path / "house.typ"
     assert dest.is_file()
+    assert (tmp_path / "icons" / "menu.svg").is_file()
+    assert (tmp_path / "icons" / "menu-on.svg").is_file()
     assert not (tmp_path / DEVICE_TYP).exists()
     assert not (tmp_path / "158x210.typ").exists()
     text = dest.read_text(encoding="utf-8")

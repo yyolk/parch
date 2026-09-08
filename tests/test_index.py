@@ -15,6 +15,8 @@ from tests.helpers import base_config, load_default
 
 NOMAD = base_config("supernote-nomad")
 NOMAD_EXTRAS = base_config("supernote-nomad", extras=True)
+PAPER = base_config("158x210")
+PAPER_EXTRAS = base_config("158x210", extras=True)
 
 _TOC_TITLE = 'weight: "bold")[Contents <index>]'
 _MARK_RULE = "contents_bars(size:"
@@ -54,7 +56,11 @@ def _annual_page(typst: str) -> str:
 
 def _colophon_page(typst: str) -> str:
     for page in reversed(_pages(typst)):
-        if "[*Device*]" in page and "[*Year*]" in page:
+        if (
+            "[About this notebook <colophon>]" in page
+            or "[About <colophon>]" in page
+            or ("[*Device*]" in page and "[*Year*]" in page)
+        ):
             return page
     raise AssertionError("no Colophon page")
 
@@ -101,7 +107,7 @@ def test_contents_lists_enabled_human_names_in_sections_order():
         "Months",
         "Weeks",
         "Days",
-        "About this notebook",
+        "About",
     ]
     positions = [page.index(name) for name in names]
     assert positions == sorted(positions)
@@ -109,8 +115,8 @@ def test_contents_lists_enabled_human_names_in_sections_order():
     assert page.count("Contents") == 1
     assert "daily_notes" not in page
     assert "Notes" not in page
-    assert "stroke:" not in page
     assert "2 * regular_height" not in page
+    assert "MORE" in page
     for dest in (
         "annual",
         "quarter-2026-1",
@@ -129,8 +135,8 @@ def test_slim_lists_calendar_and_about_only():
     typst = _generate(dto)
     page = _contents_page(typst)
     assert "Calendar" in page
-    assert "About this notebook" in page
-    assert page.index("Calendar") < page.index("About this notebook")
+    assert "About" in page
+    assert page.index("Calendar") < page.index("About")
     assert "padded_link(<annual>" in page
     assert "padded_link(<colophon>" in page
     for name in ("Quarters", "Months", "Weeks", "Days", "Projects", "Habits", "Review", "Tasks", "Meetings"):
@@ -238,7 +244,7 @@ def test_contents_page_has_no_back_link_mark():
 
 
 def test_annual_has_no_calendar_chip_and_links_to_index():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = _annual_page(typst)
     assert "padded_link(<annual>, [Calendar])" not in page
     assert "[Calendar]" not in page
@@ -252,20 +258,26 @@ def test_annual_has_no_calendar_chip_and_links_to_index():
 def test_colophon_has_mark_and_unchanged_facts():
     typst = _generate(load(NOMAD))
     page = _colophon_page(typst)
-    assert _MARK_FLUSH in page
-    assert _MARK_RULE in page
-    assert page.count(_MARK_RULE) == 1
-    assert _FOLLOW_SPACING in page
-    assert _FOLLOW_PAIR in page
-    assert _TRAIL_HEADING not in page
-    heading = page[page.index(_LEAD_PAIR) :]
-    assert "[About this notebook <colophon>]" in heading
-    assert page.index(_MARK_FLUSH) < page.index("[About this notebook <colophon>]")
+    assert "section-strip(" in page
+    assert "active: none" in page
+    assert "page-shell(\n  none," not in page
+    assert "[About this notebook <colophon>]" in page
+    assert 'text(size: 10pt, weight: "bold")[About this notebook <colophon>]' in page
+    assert 'text(size: h1)[About' not in page
+    assert "[Device]" in page
+    assert "[Page]" in page
+    assert "[Year]" in page
+    assert "[Chrome]" in page
+    assert 'font: "Liberation Sans")[#label]' in page
+    assert "[Topband · no side MOS]" in page
+    assert "[Edition]" in page
+    assert "[*Version*]" not in page
+    assert "columns: (32mm, 1fr)" in page
+    assert "row-gutter: 5.5mm" in page
+    assert "parch · yyolk" in page
+    assert _MARK_FLUSH not in page
+    assert _LEAD_PAIR not in page
     assert "column-gutter: 6pt" not in page
-    assert "columns: (auto, auto)" not in page
-    assert "[*Device*]" in page
-    assert "[*Year*]" in page
-    assert "[*Version*]" in page
     assert "<colophon>" in page
     assert "Calendar" not in page or "padded_link(<annual>, [Calendar])" not in page
 
@@ -277,11 +289,11 @@ def test_slim_compiles(tmp_path):
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
     page = _contents_page(typst)
     assert "Calendar" in page
-    assert "About this notebook" in page
+    assert "About" in page
 
 
 def test_mos_right_mark_sits_next_to_strip():
-    typst = _generate(apply_hand(load(NOMAD), "right"))
+    typst = _generate(apply_hand(load(PAPER), "right"))
     page = _annual_page(typst)
     title_at = page.index("2026<annual>")
     mark_at = page.index(_MARK_FLUSH)
@@ -299,7 +311,7 @@ def test_mos_right_mark_sits_next_to_strip():
 
 
 def test_mos_left_annual_mark_is_trail_strip_sibling():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = _annual_page(typst)
     title_at = page.index("2026<annual>")
     mark_at = page.index(_MARK_FLUSH)
@@ -323,7 +335,7 @@ def test_mos_left_annual_mark_is_trail_strip_sibling():
 
 
 def test_daily_mark_is_trail_strip_alone():
-    typst = _generate(load(NOMAD))
+    typst = _generate(load(PAPER))
     page = next(p for p in _pages(typst) if "1 <2026-01-01>" in p)
     title_at = page.index("1 <2026-01-01>")
     mark_at = page.index(_MARK_FLUSH)
@@ -341,7 +353,7 @@ def test_daily_mark_is_trail_strip_alone():
 
 
 def test_mos_right_daily_mark_is_trail_strip_alone():
-    typst = _generate(apply_hand(load(NOMAD), "right"))
+    typst = _generate(apply_hand(load(PAPER), "right"))
     page = next(p for p in _pages(typst) if "1 <2026-01-01>" in p)
     title_at = page.index("1 <2026-01-01>")
     mark_at = page.index(_MARK_FLUSH)
@@ -359,7 +371,7 @@ def test_mos_right_daily_mark_is_trail_strip_alone():
 
 
 def test_mos_right_habits_mark_sits_next_to_strip():
-    typst = _generate(apply_hand(load(NOMAD_EXTRAS), "right"))
+    typst = _generate(apply_hand(load(PAPER_EXTRAS), "right"))
     page = next(p for p in _pages(typst) if "January<habits-january>" in p)
     title_at = page.index("January<habits-january>")
     mark_at = page.index(_MARK_FLUSH)
@@ -458,7 +470,7 @@ def test_heading_stack_matches_follow_trail_lead_after_chip_guard():
     from parch.mos.builder import Builder
 
     title = "text(size: h1)[Title]"
-    dto = load(NOMAD)
+    dto = load(PAPER)
     coord = Coordinator(dto, i18n=load_default())
     builder = Builder(
         i18n=coord.i18n, configurator=coord.configurator, manifest=coord.manifest,
@@ -490,7 +502,7 @@ def test_heading_stack_matches_follow_trail_lead_after_chip_guard():
     assert _TRAIL_HEADING in chipped
     assert _LEAD_PAIR in chipped
 
-    right = apply_hand(load(NOMAD), "right")
+    right = apply_hand(load(PAPER), "right")
     right_coord = Coordinator(right, i18n=load_default())
     right_builder = Builder(
         i18n=right_coord.i18n,

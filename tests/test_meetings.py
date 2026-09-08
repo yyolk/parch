@@ -295,28 +295,25 @@ index_pages = 2
     assert "<meetings-2>" in typst
     assert "<meeting-32>" in typst
     assert "<meeting-33>" not in typst
-    full = "rows: (" + ", ".join(["1fr"] * 16) + ")"
     leftover = "rows: (" + ", ".join(["2 * regular_height"] * 4) + ")"
-    assert full in typst
     assert leftover not in typst
-    assert typst.count(full) == 2
     pages = _pages(typst)
     first = next(page for page in pages if "<meetings>" in page and "<meetings-2>" not in page)
     second = next(page for page in pages if "<meetings-2>" in page)
-    assert full in first
-    assert full in second
+    assert "let pack = 7.0mm" in first
+    assert "let pack = 7.0mm" in second
     assert leftover not in first
     assert leftover not in second
     assert "→" not in second
     board_late = _meeting_page(typst, 17)
-    assert "padded_link(<meetings-2>)" in board_late
-    assert "padded_link(<meetings>)" not in board_late
-    assert "text(size: 0.85em)[17]" in board_late
+    assert "#[] <meeting-17>" in board_late
+    assert "let tile = 5.5mm" in board_late
+    assert "lined_well(lined_fill)" not in board_late
     assert "17/32" not in board_late
     first_meeting = _meeting_page(typst, 1)
-    assert "padded_link(<meetings>)" in first_meeting
-    assert "padded_link(<meetings-2>)" not in first_meeting
-    assert "text(size: 0.85em)[1]" in first_meeting
+    assert "#[] <meeting-1>" in first_meeting
+    assert "let tile = 5.5mm" in first_meeting
+    assert "lined_well(lined_fill)" not in first_meeting
     assert "1/32" not in first_meeting
     assert typst.count("2 * regular_height") == 0
 
@@ -336,19 +333,26 @@ def test_nomad_default_is_one_index_page():
     index = _index_page(typst)
     meeting = _meeting_page(typst)
     assert "→" not in index
-    assert f"columns: ({_NUM_COL}, 1fr)" in index
-    assert "rows: (" + ", ".join(["1fr"] * 16) + ")" in index
+    assert "columns: (9mm, 1fr, 16mm)" in index
+    assert "column-gutter: 2mm" in index
+    assert "align: (horizon, bottom, bottom)" in index
+    assert "let pack = 7.0mm" in index
+    assert 'font: "Liberation Sans")[1.]' in index
+    assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in index
+    assert "stroke: (bottom: regular_stroke + black)" not in index
     assert "2 * regular_height" not in index
     assert "padded_link(<annual>)" not in index
     assert "padded_link(<annual>)" not in meeting
     assert "2026 /" not in index
     assert "2026 /" not in meeting
     assert "1/16" not in meeting
-    assert "text(size: 0.85em)[1]" in meeting
-    assert (
-        "padded_link(<meeting-1>, box(width: 100%, height: 100%"
-        in index
-    )
+    assert "lined_well(lined_fill)" not in meeting
+    assert "let tile = 5.5mm" in meeting
+    assert "columns: (1.4fr, 0.8fr)" in meeting
+    assert "columns: (1fr, 2fr, 1fr)" not in meeting
+    assert "[Name]" in meeting
+    assert "[Date]" in meeting
+    assert "padded_link(<meeting-1>," in index
 
 
 def test_contents_mark_on_meetings_when_index_on():

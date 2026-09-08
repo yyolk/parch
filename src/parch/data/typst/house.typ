@@ -1,8 +1,8 @@
-#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm) = (
+#let page-margin(side, toolbar-edge: none, toolbar-clearance: none, writing-clearance: none, rail-clearance: 0mm, bezel: none) = (
   top: if toolbar-edge == top { toolbar-clearance } else { 0mm },
-  bottom: 0mm,
-  left: if side == right { writing-clearance } else { rail-clearance },
-  right: if side == left { writing-clearance } else { rail-clearance },
+  bottom: if bezel != none { bezel } else { 0mm },
+  left: if bezel != none { bezel } else if side == right { writing-clearance } else { rail-clearance },
+  right: if bezel != none { bezel } else if side == left { writing-clearance } else { rail-clearance },
 )
 
 // House paper is a tiling fill. dotted_centered, lined_fill, and
@@ -390,3 +390,583 @@
     }),
   )
 }
+
+// Nomad Topband. MOS / Scribe do not call these. Glyphs are locked SVGs
+// (icons/*.svg + icons/*-on.svg). Notes is not a chip.
+//
+// Spacing contract (named tokens — Typst 0.15 default rhythm, not 0pt):
+#let bezel = 3mm
+#let toolbar = 8mm
+#let top-air = 0.4mm
+#let chrome-h = 6.5mm
+#let tempo-h = 6mm
+#let hair = 0.4pt
+#let ink = luma(0)
+#let hairline = line(length: 100%, stroke: hair + ink)
+#let regular-h = 7mm
+#let chip-gutter = 1.2mm
+#let chip-inset-x = 0.9mm
+#let chip-inset-y = 1.2mm
+#let icon-chip-inset-x = 0.6mm
+#let icon-chip-inset-y = 1.1mm
+#let strip-tempo-gap = 0mm
+#let well-top = 2.5mm
+#let rhythm = 1.2em
+
+#let _strip-id(name) = if name == "contents" { "menu" } else { name }
+
+// Decode each Lucide once. section-strip reuses these nodes per page.
+#let _icon-h = 3.1mm
+#let _icon-off = (
+  menu: image("icons/menu.svg", height: _icon-h),
+  cal: image("icons/cal.svg", height: _icon-h),
+  q: image("icons/q.svg", height: _icon-h),
+  mon: image("icons/mon.svg", height: _icon-h),
+  wk: image("icons/wk.svg", height: _icon-h),
+  day: image("icons/day.svg", height: _icon-h),
+  tasks: image("icons/tasks.svg", height: _icon-h),
+  habits: image("icons/habits.svg", height: _icon-h),
+  review: image("icons/review.svg", height: _icon-h),
+)
+#let _icon-on = (
+  menu: image("icons/menu-on.svg", height: _icon-h),
+  cal: image("icons/cal-on.svg", height: _icon-h),
+  q: image("icons/q-on.svg", height: _icon-h),
+  mon: image("icons/mon-on.svg", height: _icon-h),
+  wk: image("icons/wk-on.svg", height: _icon-h),
+  day: image("icons/day-on.svg", height: _icon-h),
+  tasks: image("icons/tasks-on.svg", height: _icon-h),
+  habits: image("icons/habits-on.svg", height: _icon-h),
+  review: image("icons/review-on.svg", height: _icon-h),
+)
+
+#let icon-chip(id, active: false, expand: true, stroke: hair) = {
+  let pic = if active { _icon-on.at(id) } else { _icon-off.at(id) }
+  let edge = if stroke != none { stroke } else { hair }
+  box(
+    width: if expand { 100% } else { auto },
+    inset: (x: icon-chip-inset-x, y: icon-chip-inset-y),
+    fill: if active { black } else { white },
+    stroke: edge + black,
+    align(center + horizon, pic),
+  )
+}
+
+// Seated strip chips, decoded once. section-strip only wraps dest overlays.
+#let _chip-off = (
+  menu: icon-chip("menu", active: false, expand: true),
+  cal: icon-chip("cal", active: false, expand: true),
+  q: icon-chip("q", active: false, expand: true),
+  mon: icon-chip("mon", active: false, expand: true),
+  wk: icon-chip("wk", active: false, expand: true),
+  day: icon-chip("day", active: false, expand: true),
+  tasks: icon-chip("tasks", active: false, expand: true),
+  habits: icon-chip("habits", active: false, expand: true),
+  review: icon-chip("review", active: false, expand: true),
+)
+#let _chip-on = (
+  menu: icon-chip("menu", active: true, expand: true),
+  cal: icon-chip("cal", active: true, expand: true),
+  q: icon-chip("q", active: true, expand: true),
+  mon: icon-chip("mon", active: true, expand: true),
+  wk: icon-chip("wk", active: true, expand: true),
+  day: icon-chip("day", active: true, expand: true),
+  tasks: icon-chip("tasks", active: true, expand: true),
+  habits: icon-chip("habits", active: true, expand: true),
+  review: icon-chip("review", active: true, expand: true),
+)
+
+#let strip-icon(name, on: false, size: 3.4mm) = {
+  icon-chip(_strip-id(name), active: on, expand: false)
+}
+
+// items: array of (dest, key). dest is none when the page does not exist.
+#let section-strip(items, active: none, height: chrome-h, stroke: none) = {
+  let n = items.len()
+  if n == 0 { [] } else {
+    grid(
+      columns: (1fr,) * n,
+      rows: (auto,),
+      column-gutter: chip-gutter,
+      align: (center, horizon),
+      ..items.map(item => {
+        let dest = item.at(0)
+        let name = item.at(1)
+        let id = _strip-id(name)
+        let on = dest != none and name == active
+        let seated = if on { _chip-on.at(id) } else { _chip-off.at(id) }
+        // Overlay a taller annot (does not grow the strip). Toolbar slop eats the
+        // top 8mm; a chrome-h-only rect sits at 8.4mm and misses Nomad taps.
+        if dest != none {
+          box(width: 100%, {
+            seated
+            place(top, padded_link(padding: 0pt, dest, box(
+              width: 100%,
+              height: height + 3mm,
+              fill: luma(0%, 1%),
+            )))
+          })
+        } else { seated }
+      }),
+    )
+  }
+}
+
+// Discrete tempo chip. Natural height from chip-inset-y — not tempo-h.
+#let chip(label, active: false, dest: none, expand: false, stroke: hair) = {
+  let edge = if stroke != none { stroke } else { hair }
+  let body = box(
+    width: if expand { 100% } else { auto },
+    inset: (x: chip-inset-x, y: chip-inset-y),
+    fill: if active { black } else { white },
+    stroke: edge + black,
+    align(center + horizon,
+      text(
+        font: "Liberation Sans",
+        size: 7.5pt,
+        fill: if active { white } else { black },
+        weight: if active { "bold" } else { "regular" },
+      )[#label],
+    ),
+  )
+  // Overlay a taller annot so SuperNote can hit below toolbar slop.
+  if dest != none {
+    box(width: if expand { 100% } else { auto }, {
+      body
+      place(top, padded_link(padding: 0pt, dest, box(
+        width: 100%,
+        height: tempo-h + 2mm,
+        fill: luma(0%, 1%),
+      )))
+    })
+  } else { body }
+}
+
+// items: already-built chip(...) nodes from emit.
+#let tempo-row(items) = {
+  let n = items.len()
+  if n == 0 { [] } else {
+    grid(
+      columns: (1fr,) * n,
+      rows: (auto,),
+      column-gutter: chip-gutter,
+      align: (center, horizon),
+      ..items,
+    )
+  }
+}
+
+// Topband under the toolbar dead zone. No side MOS.
+// Chrome only when present: strip → hair → tempo → hair → crumb → hair → body.
+// strip/tempo/title of none emit no phantom hairlines (cover is strip-none).
+#let page-shell(strip, body, tempo: none, title: none, year: none, stroke: none) = {
+  set text(font: "Libertinus Serif")
+  set par(spacing: rhythm)
+  set block(spacing: rhythm)
+  let crumb = if title == none {
+    []
+  } else {
+    block(
+      width: 100%,
+      inset: (top: 0.2mm, bottom: 0.15mm),
+      {
+        set text(font: "Libertinus Serif")
+        grid(
+          columns: (1fr, auto),
+          align: horizon,
+          title,
+          if year == none { [] } else { year },
+        )
+      },
+    )
+  }
+  grid(
+    columns: 1fr,
+    rows: (auto, 1fr),
+    row-gutter: 0pt,
+    {
+      // Locked chrome is 9pt, so 1.2em air matches 04-monthly.typ.
+      // Body keeps document size + rhythm (Annual well-top unsigned here).
+      set text(size: 9pt)
+      set par(spacing: 1.2em)
+      set block(spacing: 1.2em)
+      if strip != none {
+        v(top-air)
+        block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), strip)
+        line(length: 100%, stroke: stroke)
+      }
+      if tempo != none {
+        block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), tempo)
+        line(length: 100%, stroke: stroke)
+      }
+      if title != none {
+        crumb
+        line(length: 100%, stroke: stroke)
+      }
+    },
+    box(width: 100%, height: 100%, inset: (top: well-top), body),
+  )
+}
+
+// Nomad daily: locked 06-daily.typ. MOS keeps daily_well.
+// One layout() for equal row height; hairlines are a tiling fill, not N grids.
+#let _hair-tile(tile, stroke: hair + ink) = tiling(
+  size: (regular-h, tile),
+  line(
+    start: (0pt, tile - 0.15mm),
+    end: (regular-h, tile - 0.15mm),
+    stroke: stroke,
+  ),
+)
+
+// Locked 06-daily.typ / feel4r: one nested row per hour, hairline at bottom.
+// Not a tiled hour fill — that dropped hour 16 and opened air under Schedule.
+#let nomad_daily_hours(start: 7, n: 10) = layout(size => {
+  let hour-h = size.height / n
+  grid(
+    rows: (hour-h,) * n,
+    row-gutter: 0pt,
+    ..range(start, start + n).map(h => grid(
+      columns: (4.5mm, 1fr),
+      column-gutter: 0.65mm,
+      align: (bottom + right, bottom),
+      pad(bottom: 0.08mm, text(
+        size: 6.5pt,
+        fill: luma(40%),
+        font: "Liberation Sans",
+      )[#h]),
+      hairline,
+    )),
+  )
+})
+
+// Locked 06-daily.typ / feel4r: tick + hairline share one row (horizon, bottom).
+// Not _hair-tile — that inset floats ticks off the rule.
+#let nomad_daily_priorities(n: 6) = layout(size => {
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..range(n).map(_ => grid(
+      columns: (auto, 1fr),
+      column-gutter: 1.4mm,
+      align: (horizon, bottom),
+      square(size: 0.8em, stroke: hair + ink),
+      hairline,
+    )),
+  )
+})
+
+#let nomad_daily_notes_preview(more, label: [Notes], lines: 4, tile: 5.8mm) = {
+  let chip = if more == none {
+    []
+  } else {
+    box(
+      inset: (x: 1.2mm, y: 0.35mm),
+      stroke: hair + ink,
+      text(size: 7pt, font: "Liberation Sans")[#more],
+    )
+  }
+  block(width: 100%, {
+    grid(
+      columns: (1fr, auto),
+      align: horizon,
+      text(weight: "bold", size: 8.5pt)[#label],
+      chip,
+    )
+    v(0.3mm)
+    grid(
+      rows: (tile,) * lines,
+      row-gutter: 0pt,
+      ..range(lines).map(_ => align(bottom, hairline)),
+    )
+  })
+}
+
+#let nomad_daily_well(
+  calendar,
+  more,
+  schedule-label: [Schedule],
+  priorities-label: [Priorities],
+  notes-label: [Notes],
+  hour-start: 7,
+  hours: 10,
+  prios: 6,
+  cal-h: 24mm,
+  notes-lines: 4,
+  notes-tile: 5.8mm,
+) = box(width: 100%, height: 100%, {
+  grid(
+    rows: (1fr, auto),
+    row-gutter: 1.0mm,
+    grid(
+      columns: (1.2fr, 0.8fr),
+      column-gutter: 0pt,
+      rows: (1fr,),
+      box(
+        width: 100%,
+        height: 100%,
+        clip: true,
+        stroke: (right: hair + ink, bottom: hair + ink),
+        inset: (top: 0.55mm, right: 2mm, bottom: 1.0mm, left: 0pt),
+        {
+          text(weight: "bold", size: 8.5pt)[#schedule-label]
+          v(0.3mm)
+          nomad_daily_hours(start: hour-start, n: hours)
+        },
+      ),
+      box(
+        width: 100%,
+        height: 100%,
+        clip: true,
+        stroke: (bottom: hair + ink),
+        inset: (top: 0.55mm, left: 2mm, bottom: 1.0mm, right: 0pt),
+        {
+          grid(
+            rows: (cal-h, 1fr),
+            row-gutter: 1.0mm,
+            box(
+              width: 100%,
+              height: 100%,
+              clip: true,
+              stroke: hair + ink,
+              inset: 0.5mm,
+              calendar,
+            ),
+            box(width: 100%, height: 100%, clip: true, {
+              text(weight: "bold", size: 8.5pt)[#priorities-label]
+              v(0.3mm)
+              nomad_daily_priorities(n: prios)
+            }),
+          )
+        },
+      ),
+    ),
+    nomad_daily_notes_preview(
+      more,
+      label: notes-label,
+      lines: notes-lines,
+      tile: notes-tile,
+    ),
+  )
+})
+
+// Nomad daily-notes: #144 tiling fill, not N hairlines / layout().
+// Line sits at tile-0.15mm, so a remnant shorter than that stays blank
+// (same as the old floor-to-whole-tile well).
+#let nomad_notes_fill = lined_fill(
+  regular_height: regular-h,
+  regular_stroke: hair,
+  paint: ink,
+)
+#let nomad_notes_well(tile: regular-h) = lined_well(nomad_notes_fill)
+
+// Nomad weekly: 7×1fr day bands + 18mm week-notes floor (locked 05-weekly.typ).
+// Day tile 3.8mm; notes tile 4.8mm. Stretch row-h to fill leftover (no remnant).
+// No cell top-strokes; no rule above Week notes. MOS keeps week_matrix.
+#let nomad_week_hairs(stroke: none, tile: 3.8mm) = layout(size => {
+  let n = calc.max(2, calc.floor(size.height / tile))
+  let row-h = size.height / n
+  let paint = if stroke == none { hair + ink } else { stroke }
+  box(width: 100%, height: 100%, fill: _hair-tile(row-h, stroke: paint))
+})
+
+#let nomad_week_day(header, stroke: none, tile: 3.8mm) = box(
+  width: 100%,
+  height: 100%,
+  clip: true,
+  inset: (top: 0.45mm, x: 0.2mm, bottom: 0.2mm),
+  {
+    text(size: 7.5pt, weight: "bold")[#header]
+    v(0.3mm)
+    nomad_week_hairs(stroke: stroke, tile: tile)
+  },
+)
+
+#let nomad_week_notes(header, stroke: none, tile: 4.8mm) = box(
+  width: 100%,
+  height: 100%,
+  clip: true,
+  inset: (top: 0.65mm),
+  {
+    text(weight: "bold", size: 8pt)[#header]
+    v(0.3mm)
+    nomad_week_hairs(stroke: stroke, tile: tile)
+  },
+)
+
+#let nomad_week_bands(stroke: none, notes-height: 18mm, tile: 3.8mm, notes-tile: 4.8mm, ..contents) = {
+  let headers = contents.pos()
+  let days = calc.max(headers.len() - 1, 0)
+  let day-headers = headers.slice(0, count: days)
+  let notes = if headers.len() > days { headers.at(days) } else { [] }
+  box(width: 100%, height: 100%, {
+    grid(
+      columns: 1fr,
+      rows: (1fr,) * days + (notes-height,),
+      row-gutter: 0.8mm,
+      ..day-headers.map(h => nomad_week_day(h, stroke: stroke, tile: tile)),
+      nomad_week_notes(notes, stroke: stroke, tile: notes-tile),
+    )
+  })
+}
+
+// Daily rail glance. Fonts stay fixed so day-h → height is linear.
+#let _cal-day-dest(c, dests) = {
+  if c == none or dests.len() < c { none } else { dests.at(c - 1) }
+}
+
+#let _cal-day(c, day-h, day-sz, dest: none, highlight: none) = {
+  let inner = if c == none {
+    []
+  } else if highlight != none and c == highlight {
+    box(
+      width: 88%,
+      height: 88%,
+      fill: black,
+      radius: 0.2mm,
+      align(center + horizon, text(fill: white, size: day-sz, weight: "bold")[#c]),
+    )
+  } else {
+    text(size: day-sz)[#c]
+  }
+  let hit = box(width: 100%, height: day-h, fill: luma(0%, 0%), align(center + horizon, inner))
+  if dest != none { padded_link(padding: 0pt, dest, hit) } else { hit }
+}
+
+#let mini-month(name, start-wd: 3, days: 31, highlight: none, day-h: 2.6mm, weeks: auto, compact: false, dests: ()) = {
+  let day-sz = if compact { 5.5pt } else { 6.5pt }
+  let wd-sz = if compact { 4.8pt } else { 5.5pt }
+  let title-sz = if compact { 6.5pt } else { 7pt }
+  let title-gap = if compact { 0.3mm } else { 0.45mm }
+  let rg = if compact { calc.max(0.25mm, day-h * 0.18) } else { calc.max(0.35mm, day-h * 0.16) }
+  let wd-h = day-h * 0.72
+  set text(font: "Liberation Sans", size: day-sz)
+  let wd = ("M", "T", "W", "T", "F", "S", "S")
+  let cells = ()
+  for i in range(start-wd) { cells.push(none) }
+  for d in range(1, days + 1) { cells.push(d) }
+  let wks = if weeks == auto {
+    calc.max(5, calc.ceil(cells.len() / 7))
+  } else { weeks }
+  while cells.len() < wks * 7 { cells.push(none) }
+  block(width: 100%, {
+    text(weight: "bold", size: title-sz)[#name]
+    v(title-gap)
+    grid(
+      columns: (1fr,) * 7,
+      column-gutter: 0pt,
+      row-gutter: rg,
+      ..wd.map(w => box(
+        width: 100%,
+        height: wd-h,
+        align(center + horizon, text(size: wd-sz, fill: luma(40%), weight: "bold")[#w]),
+      )),
+      // Glance: 31 dests × 365 days is the year RSS floor. year-month keeps dests.
+      ..cells.map(c => _cal-day(c, day-h, day-sz, highlight: highlight)),
+    )
+  })
+}
+
+#let mini-month-fit(name, start-wd: 3, days: 31, highlight: none, compact: false, dests: ()) = {
+  box(width: 100%, height: 100%, clip: true, layout(size => {
+    let wks = 6
+    let title-sz = if compact { 6.5pt } else { 7pt }
+    let title-gap = if compact { 0.3mm } else { 0.45mm }
+    let rg-k = if compact { 0.18 } else { 0.16 }
+    let fixed = title-sz + title-gap
+    let coef = 0.72 + wks + rg-k * (1 + wks)
+    let day-h = calc.max(2.0mm, (size.height - fixed) / coef)
+    mini-month(
+      name,
+      start-wd: start-wd,
+      days: days,
+      highlight: highlight,
+      day-h: day-h,
+      weeks: wks,
+      compact: compact,
+      dests: dests,
+    )
+  }))
+}
+
+// Nomad annual/quarter glance. Locked densify — not LittleCalendar / month_grid.
+#let year-month(name, start-wd: 3, days: 31, dests: ()) = {
+  set text(font: "Liberation Sans")
+  box(width: 100%, height: 100%, clip: true, layout(size => {
+    let wks = 6
+    let title-sz = 6.5pt
+    let wd-sz = 4.5pt
+    let day-sz = 5.5pt
+    let title-gap = 0.3mm
+    let rg-k = 0.28
+    let fixed = title-sz + title-gap
+    let coef = 0.6 + wks + rg-k * wks
+    let day-h = calc.max(1.8mm, (size.height - fixed) / coef)
+    let wd-h = day-h * 0.6
+    let rg = day-h * rg-k
+    let wd = ("M", "T", "W", "T", "F", "S", "S")
+    let cells = ()
+    for i in range(start-wd) { cells.push(none) }
+    for d in range(1, days + 1) { cells.push(d) }
+    while cells.len() < wks * 7 { cells.push(none) }
+    block(width: 100%, {
+      text(weight: "bold", size: title-sz)[#name]
+      v(title-gap)
+      grid(
+        columns: (1fr,) * 7,
+        column-gutter: 0pt,
+        row-gutter: rg,
+        ..wd.map(w => box(
+          width: 100%,
+          height: wd-h,
+          align(center + horizon, text(size: wd-sz, fill: luma(45%), weight: "bold")[#w]),
+        )),
+        ..cells.map(c => _cal-day(c, day-h, day-sz, dest: _cal-day-dest(c, dests))),
+      )
+    })
+  }))
+}
+
+#let nomad_year_grid(..cells) = grid(
+  columns: (1fr, 1fr, 1fr),
+  rows: (1fr, 1fr, 1fr, 1fr),
+  column-gutter: 2.4mm,
+  row-gutter: 1.5mm,
+  ..cells.pos().map(c => box(
+    width: 100%,
+    height: 100%,
+    clip: true,
+    inset: (x: 0.25mm, y: 0.15mm),
+    c,
+  )),
+)
+
+// Nomad quarterly: 26mm month strip + Focus / Notes wells. MOS keeps quarter_well.
+#let nomad_quarter_well(months, focus, notes, strip-height: 26mm) = grid(
+  columns: 1fr,
+  rows: (strip-height, 0.9fr, 1.2fr),
+  row-gutter: 1.5mm,
+  months,
+  focus,
+  notes,
+)
+
+// Nomad monthly notes floor: 5.2mm tiles, remnant blank (same as daily-notes).
+#let nomad_month_notes() = lined_well(lined_fill(
+  regular_height: 5.2mm,
+  regular_stroke: hair,
+  paint: ink,
+))
+
+// Nomad monthly: weekday header + 7×6 days + 20mm Month notes. MOS keeps month_weeks.
+#let nomad_month_well(header, days, notes, notes-height: 20mm) = box(width: 100%, height: 100%, {
+  grid(
+    columns: 1fr,
+    rows: (auto, 1fr, notes-height),
+    row-gutter: 1.4mm,
+    header,
+    days,
+    notes,
+  )
+})

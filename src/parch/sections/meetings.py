@@ -7,6 +7,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.sections._shared import _length_mm
 
 # Match the Projects index so row capacity tracks the same geometry.
@@ -85,12 +86,45 @@ class Meetings:
     def pages(self, manifest: Manifest) -> list[PageData]:
         rpp = self.rows_per_index_page()
         out: list[PageData] = []
+        topband = nomad_topband(self.configurator)
+        year = (
+            f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+            if topband
+            else None
+        )
         for page in range(1, self.index_page_count() + 1):
             start = (page - 1) * rpp + 1
             end = page * rpp
-            out.append(PageData(raw_typst=True, content=self._index(manifest, page, start, end)))
+            page_id = self.index_page_id(page)
+            if topband:
+                out.append(
+                    PageData(
+                        title=(
+                            f'text(size: 10pt, weight: "bold")'
+                            f"{self._index_meetings_cell(manifest, page)}"
+                        ),
+                        content=self._nomad_index_body(manifest, start, end),
+                        page_id=page_id,
+                        strip="quiet",
+                        year=year,
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._index(manifest, page, start, end)))
         for index in range(1, self.pages_num + 1):
-            out.append(PageData(raw_typst=True, content=self._meeting(manifest, index)))
+            if topband:
+                mid = self.meeting_id(index)
+                out.append(
+                    PageData(
+                        title=f'text(size: 10pt, weight: "bold")[Meeting {index}]',
+                        content=self._nomad_meeting_body(manifest, index),
+                        page_id=mid,
+                        strip="quiet",
+                        year=year,
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._meeting(manifest, index)))
         return out
 
     def _heading(self, manifest: Manifest, meetings_cell: str) -> str:
@@ -131,12 +165,12 @@ class Meetings:
             "  )"
         )
 
-    def _index(self, manifest: Manifest, page: int, start: int, end: int) -> str:
+    def _index_rows(self, manifest: Manifest, start: int, end: int) -> str:
         n = max(0, end - start + 1)
-        if n:
-            rows = [self._index_row(manifest, index) for index in range(start, end + 1)]
-            # Every index is full (rpp * index_pages), so 1fr bands eat leftover height.
-            body = f"""grid(
+        if not n:
+            return "[]"
+        rows = [self._index_row(manifest, index) for index in range(start, end + 1)]
+        return f"""grid(
   columns: 1fr,
   rows: ({", ".join(["1fr"] * n)}),
   align: horizon + left,
@@ -144,8 +178,49 @@ class Meetings:
   inset: (x: 4pt, y: 2pt),
 {",\n".join(rows)}
 )"""
-        else:
-            body = "[]"
+
+    def _nomad_index_row(self, manifest: Manifest, index: int) -> str:
+        mid = self.meeting_id(index)
+        hair = "line(length: 100%, stroke: hair + ink)"
+        inner = (
+            "grid(\n"
+            "        columns: (9mm, 1fr, 16mm),\n"
+            "        column-gutter: 2mm,\n"
+            "        rows: (1fr,),\n"
+            "        align: (horizon, bottom, bottom),\n"
+            f'        text(size: 9pt, weight: "bold", font: "Liberation Sans")[{index}.],\n'
+            f"        {hair},\n"
+            f"        {hair},\n"
+            "      )"
+        )
+        if manifest.source(mid):
+            return f"padded_link(<{mid}>, {inner})"
+        return inner
+
+    def _nomad_index_body(self, manifest: Manifest, start: int, end: int) -> str:
+        """Locked 10-meetings index: 7.0mm pack, stretch-fill, N. + name/date hairs."""
+        rows = [
+            self._nomad_index_row(manifest, index) for index in range(start, end + 1)
+        ]
+        if not rows:
+            return "[]"
+        listed = ",\n    ".join(rows)
+        return f"""box(width: 100%, height: 100%, clip: true, layout(size => {{
+  let rows = (
+    {listed},
+  )
+  let pack = 7.0mm
+  let n = calc.min(rows.len(), calc.max(6, calc.floor(size.height / pack)))
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..rows.slice(0, n),
+  )
+}}))"""
+
+    def _index(self, manifest: Manifest, page: int, start: int, end: int) -> str:
+        body = self._index_rows(manifest, start, end)
         return f"""#grid(
   columns: 1fr,
   rows: (auto, 1fr),
@@ -170,6 +245,83 @@ class Meetings:
 
     def _label(self, key: str) -> str:
         return f"[{self.i18n.t(key)}]"
+
+    def _nomad_tick_rows(self, n: int, tile: str) -> str:
+        tick = (
+            "grid(\n"
+            "            columns: (auto, 1fr),\n"
+            "            column-gutter: 1.5mm,\n"
+            "            align: (horizon, bottom),\n"
+            "            square(size: 0.8em, stroke: hair + ink),\n"
+            "            line(length: 100%, stroke: hair + ink),\n"
+            "          )"
+        )
+        ticks = ",\n          ".join([tick] * n)
+        return f"""grid(
+          rows: ({tile},) * {n},
+          row-gutter: 0pt,
+          {ticks},
+        )"""
+
+    def _nomad_meeting_body(self, manifest: Manifest, index: int) -> str:
+        """Locked 10-meetings detail: Name/Date, Topics×4, 5.5mm notes, Actions×5."""
+        mid = self.meeting_id(index)
+        topics = self.i18n.t("topics")
+        notes = self.i18n.t("notes")
+        actions = self.i18n.t("action_items")
+        topic_band = f"{_TOPIC_LINES} * 6.2mm + 5mm"
+        action_band = f"{_ACTION_LINES} * 6.2mm + 5mm"
+        return f"""box(width: 100%, height: 100%, {{
+  place([#[] <{mid}>])
+  grid(
+    rows: (
+      9mm,
+      {topic_band},
+      1fr,
+      {action_band},
+    ),
+    row-gutter: 1.6mm,
+    grid(
+      columns: (1.4fr, 0.8fr),
+      column-gutter: 3mm,
+      rows: (1fr,),
+      box(width: 100%, height: 100%, {{
+        text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Name]
+        v(1fr)
+        line(length: 100%, stroke: hair + ink)
+      }}),
+      box(width: 100%, height: 100%, {{
+        text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Date]
+        v(1fr)
+        line(length: 100%, stroke: hair + ink)
+      }}),
+    ),
+    box(width: 100%, height: 100%, clip: true, {{
+      text(weight: "bold", size: 8.5pt)[{topics}]
+      v(0.4mm)
+      {self._nomad_tick_rows(_TOPIC_LINES, "6.2mm")}
+    }}),
+    box(width: 100%, height: 100%, clip: true, {{
+      text(weight: "bold", size: 8.5pt)[{notes}]
+      v(0.35mm)
+      layout(size => {{
+        let tile = 5.5mm
+        let n = calc.max(4, calc.floor(size.height / tile))
+        let row-h = size.height / n
+        grid(
+          rows: (row-h,) * n,
+          row-gutter: 0pt,
+          ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
+        )
+      }})
+    }}),
+    box(width: 100%, height: 100%, clip: true, {{
+      text(weight: "bold", size: 8.5pt)[{actions}]
+      v(0.4mm)
+      {self._nomad_tick_rows(_ACTION_LINES, "6.2mm")}
+    }}),
+  )
+}})"""
 
     def _meeting(self, manifest: Manifest, index: int) -> str:
         meetings = self.i18n.t("meetings")
@@ -197,6 +349,7 @@ class Meetings:
   {self._ticked_lines(_ACTION_LINES)}
 )"""
         quiet = f"text(size: 0.85em)[{index}]"
+        notes = "lined_fill" if nomad_topband(self.configurator) else "dotted_centered"
         return f"""#[] <{mid}>
 #grid(
   columns: 1fr,
@@ -208,6 +361,6 @@ class Meetings:
   {name_line},
   {topics},
   {self._label("notes")},
-  lined_well(dotted_centered),
+  lined_well({notes}),
   {actions}
 )"""

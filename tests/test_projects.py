@@ -116,6 +116,13 @@ def test_omit_pages_defaults_to_sixteen():
     assert "→" not in typst
 
 
+def test_mos_paper_index_capacity_stays_mos_math():
+    paper = _projects(load(base_config("158x210", extras=True)))
+    nomad = _projects(load(NOMAD))
+    assert paper.rows_per_index_page() == 19
+    assert nomad.rows_per_index_page() == 18
+
+
 def test_pages_three_emits_index_and_three_boards():
     dto = parse_toml(
         _minimal(enable=["projects"], sections="[section.projects]\npages = 3\n"),
@@ -335,7 +342,7 @@ def test_index_paginates_and_late_board_links_to_its_index_page():
     dto = load(NOMAD)
     projects = _projects(dto)
     rpp = projects.rows_per_index_page()
-    assert rpp == 16
+    assert rpp == 18
     n = rpp + 1
     slim = parse_toml(
         _minimal(
@@ -364,14 +371,14 @@ pages = {n}
     board_late = _board_page(typst, n)
     assert f"<project-1>" in board_first
     assert f"<project-{n}>" in board_late
-    assert "padded_link(<projects>)" in board_first
-    assert "padded_link(<projects-2>)" not in board_first
-    assert "padded_link(<projects-2>)" in board_late
-    assert "padded_link(<projects>)" not in board_late
+    assert "#[] <project-1>" in board_first
+    assert f"#[] <project-{n}>" in board_late
+    assert "[Name]" in board_first
+    assert "lined_well(lined_fill)" not in board_first
+    assert "let tile = 5.5mm" in board_first
+    assert "rows: (10mm, 1fr)" in board_first
     assert "padded_link(<annual>)" not in board_late
     assert "padded_link(<projects>)" in pages[2]
-    assert "text(size: 0.85em)[1]" in board_first
-    assert f"text(size: 0.85em)[{n}]" in board_late
     assert "1/16" not in board_first
     assert f"{n}/{n}" not in board_late
 
@@ -381,7 +388,7 @@ def test_nomad_default_is_one_index_page():
     projects = _projects(dto)
     assert projects.pages_num == 16
     assert projects.card_rows == 5
-    assert projects.rows_per_index_page() == 16
+    assert projects.rows_per_index_page() == 18
     assert projects.index_page_count() == 1
     typst = _generate(short_january(dto))
     assert "<projects>" in typst
@@ -392,19 +399,25 @@ def test_nomad_default_is_one_index_page():
     index = _index_page(typst)
     board = _board_page(typst)
     assert "→" not in index
-    assert f"columns: ({_NUM_COL}, 1fr)" in index
-    assert "rows: (" + ", ".join(["2 * regular_height"] * 16) + ")" in index
-    assert "rows: (" + ", ".join(["1fr"] * 16) + ")" not in index
+    assert "columns: (9mm, 1fr)" in index
+    assert "column-gutter: 2mm" in index
+    assert "align: (horizon, bottom)" in index
+    assert "let pack = 7.0mm" in index
+    assert 'font: "Liberation Sans")[1.]' in index
+    assert "2 * regular_height" not in index
+    assert "stroke: (bottom: regular_stroke)" not in index
     assert "padded_link(<annual>)" not in index
     assert "padded_link(<annual>)" not in board
     assert "2026 /" not in index
     assert "2026 /" not in board
     assert "1/16" not in board
-    assert "text(size: 0.85em)[1]" in board
-    assert (
-        "padded_link(<project-1>, box(width: 100%, height: 100%"
-        in index
-    )
+    assert "[Name]" in board
+    assert "lined_well(lined_fill)" not in board
+    assert "lined_well(dotted_centered)" not in board
+    assert "let tile = 5.5mm" in board
+    assert "rows: (10mm, 1fr)" in board
+    assert "column-gutter: 1.8mm" in board
+    assert "padded_link(<project-1>," in index
 
 
 def test_pages_twenty_paginates_without_stretching_leftover_rows():
@@ -419,7 +432,7 @@ pages = 20
         source="pages-20-leftover.toml",
     )
     projects = _projects(slim)
-    assert projects.rows_per_index_page() == 16
+    assert projects.rows_per_index_page() == 18
     assert projects.index_page_count() == 2
     typst = _generate(slim)
     assert "<projects>" in typst
@@ -427,18 +440,21 @@ pages = 20
     assert "<project-20>" in typst
     assert "<project-21>" not in typst
     leftover = "rows: (" + ", ".join(["2 * regular_height"] * 4) + ")"
-    fattened = "rows: (" + ", ".join(["1fr"] * 4) + ")"
-    assert leftover in typst
-    assert fattened not in typst
+    assert leftover not in typst
     pages = _pages(typst)
+    first = next(page for page in pages if "<projects>" in page and "<projects-2>" not in page)
     second = next(page for page in pages if "<projects-2>" in page)
-    assert leftover in second
-    assert fattened not in second
+    assert "let pack = 7.0mm" in first
+    assert "let pack = 7.0mm" in second
+    assert leftover not in first
+    assert leftover not in second
     assert "→" not in second
     board_late = _board_page(typst, 17)
-    assert "1fr, 1fr, 1fr" in board_late
-    assert "padded_link(<projects-2>)" in board_late
-    assert "padded_link(<projects>)" not in board_late
+    assert "#[] <project-17>" in board_late
+    assert "[Name]" in board_late
+    assert "let tile = 5.5mm" in board_late
+    assert "lined_well(lined_fill)" not in board_late
+    assert "column-gutter: 1.8mm" in board_late
 
 
 def test_contents_mark_on_projects_when_index_on():

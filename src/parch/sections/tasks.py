@@ -3,6 +3,8 @@
 Raw Typst only — no MOS chrome. Sibling of Review.
 """
 
+from datetime import date
+
 from parch.calendar import walk
 from parch.calendar.day import Day
 from parch.calendar.week import Week
@@ -11,6 +13,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband, nomad_well_pack_rows
 
 _INDEX_LEFT_INSET = "4mm"
 _INDEX_BOTTOM_INSET = "4mm"
@@ -60,17 +63,60 @@ class Tasks:
         weeks = self._weeks()
         chunks = self._chunks(weeks)
         out: list[PageData] = []
+        topband = nomad_topband(self.configurator)
+        year = (
+            f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+            if topband
+            else None
+        )
         for index, chunk in enumerate(chunks):
-            out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
+            page_id = self.index_id(index)
+            if topband:
+                out.append(
+                    PageData(
+                        title=(
+                            f'text(size: 10pt, weight: "bold")'
+                            f'[{self.i18n.t("tasks")} <{page_id}>]'
+                        ),
+                        content=self._nomad_index_body(
+                            manifest, self._nomad_index_weeks(chunk)
+                        ),
+                        page_id=page_id,
+                        heading_mark=HeadingMark.TRAIL,
+                        year=year,
+                    )
+                )
+            else:
+                out.append(PageData(raw_typst=True, content=self._index(manifest, chunk, index)))
         for index, chunk in enumerate(chunks):
             parent = self.index_id(index)
             for week in chunk:
-                out.append(
-                    PageData(
-                        raw_typst=True,
-                        content=self._week_page(manifest, week, parent),
+                page_id = self.week_page_id(week)
+                if topband:
+                    days = week.days()
+                    rng = self.range_label(days[0], days[-1])
+                    title = (
+                        f'text(size: 10pt, weight: "bold")'
+                        f'[{self.i18n.t("tasks")}  ·  '
+                        f"{self.i18n.t('week_name')} {week.number} <{page_id}>"
+                        f"  ·  {rng}]"
                     )
-                )
+                    out.append(
+                        PageData(
+                            title=title,
+                            content=self._nomad_week_body(manifest, week),
+                            page_id=page_id,
+                            heading_mark=HeadingMark.TRAIL,
+                            year=year,
+                        )
+                    )
+                else:
+                    out.append(
+                        PageData(
+                            raw_typst=True,
+                            content=self._week_page(manifest, week, parent),
+                        )
+                    )
         return out
 
     def _weeks(self) -> list[Week]:
@@ -85,6 +131,8 @@ class Tasks:
 
     def _page_sizes(self, n_weeks: int) -> list[int]:
         n = self.weeks_per_page
+        if nomad_topband(self.configurator):
+            n = min(n, nomad_well_pack_rows(self.configurator))
         if n < 1:
             raise ValueError("weeks_per_page must be at least 1")
         if n_weeks <= 0:
@@ -117,9 +165,27 @@ class Tasks:
     def range_label(self, first: Day, last: Day) -> str:
         first_month = self.i18n.t(f"months.short.{first.month().name}")
         last_month = self.i18n.t(f"months.short.{last.month().name}")
+        if nomad_topband(self.configurator):
+            return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
         if first.day.month == last.day.month and first.day.year == last.day.year:
             return f"{first_month} {first.month_day} {_EN_DASH} {last.month_day}"
         return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
+
+    def _extend_weeks(self, weeks: list[Week], n: int) -> list[Week]:
+        out = list(weeks)
+        cursor = out[-1].day + 7 if out else self.first_week_day
+        while len(out) < n:
+            out.append(Week(weekday_start=self.weekday_start, day=cursor))
+            cursor = cursor + 7
+        return out
+
+    def _nomad_index_weeks(self, chunk: list[Week]) -> list[Week]:
+        """Locked pack: at least 8 rows, prefer weeks_per_page (13)."""
+        cap = nomad_well_pack_rows(self.configurator)
+        target = min(cap, max(_MIN_PACK_ROWS, self.weeks_per_page))
+        if len(chunk) >= target:
+            return chunk
+        return self._extend_weeks(chunk, target)
 
     def _index_row(self, manifest: Manifest, week: Week) -> str:
         hid = self.week_page_id(week)
@@ -144,6 +210,43 @@ class Tasks:
             f"    {band}\n"
             "  )"
         )
+
+    def _nomad_index_row(self, manifest: Manifest, week: Week) -> str:
+        hid = self.week_page_id(week)
+        days = week.days()
+        rng = self.range_label(days[0], days[-1])
+        inner = (
+            "grid(\n"
+            "        columns: (10mm, 1fr),\n"
+            "        column-gutter: 2.5mm,\n"
+            "        rows: (1fr,),\n"
+            "        align: (horizon, horizon),\n"
+            f'        text(size: 9pt, weight: "bold", font: "Liberation Sans")[{week.number}],\n'
+            f"        text(size: 9pt)[{rng}],\n"
+            "      )"
+        )
+        if manifest.source(hid):
+            return f"padded_link(<{hid}>, {inner})"
+        return inner
+
+    def _nomad_index_body(self, manifest: Manifest, weeks: list[Week]) -> str:
+        """Locked 08-tasks index: 7.0mm pack, stretch-fill, week num + range."""
+        if not weeks:
+            return "[]"
+        rows = ",\n    ".join(self._nomad_index_row(manifest, week) for week in weeks)
+        return f"""box(width: 100%, height: 100%, clip: true, layout(size => {{
+  let weeks = (
+    {rows},
+  )
+  let pack = 7.0mm
+  let n = weeks.len()
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..weeks,
+  )
+}}))"""
 
     def _index_body(self, manifest: Manifest, weeks: list[Week]) -> str:
         n = len(weeks)
@@ -203,14 +306,7 @@ class Tasks:
         week_title = f"{week_label} #h(0.6em) {rng}"
         week_cell = manifest.link_or_content(week.id, week_title)
         quiet = f"text(size: 0.85em)[#{week_cell}]"
-        cells = ", ".join(self._day_cell(manifest, day) for day in days)
-        day_strip = f"""grid(
-  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-  rows: {_DAY_STRIP_HEIGHT},
-  align: horizon + center,
-  inset: 0pt,
-  {cells}
-)"""
+        day_strip = self._day_strip(manifest, week)
         return f"""#[] <{page_id}>
 #grid(
   columns: 1fr,
@@ -223,16 +319,91 @@ class Tasks:
   lined_well(task_fill, tile-height: regular_height)
 )"""
 
+    def _day_strip(self, manifest: Manifest, week: Week) -> str:
+        cells = ", ".join(self._day_cell(manifest, day) for day in week.days())
+        return f"""grid(
+  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+  rows: {_DAY_STRIP_HEIGHT},
+  align: horizon + center,
+  inset: 0pt,
+  {cells}
+)"""
+
+    def _nomad_week_body(self, manifest: Manifest, week: Week) -> str:
+        """Locked 08-tasks week: 8mm day chips + 6.0mm tick pack."""
+        chips = ", ".join(self._nomad_day_chip(manifest, day) for day in week.days())
+        tick = (
+            "grid(\n"
+            "              columns: (auto, 1fr),\n"
+            "              column-gutter: 1.5mm,\n"
+            "              align: (horizon, bottom),\n"
+            "              square(size: 0.8em, stroke: hair + ink),\n"
+            "              line(length: 100%, stroke: hair + ink),\n"
+            "            )"
+        )
+        return f"""box(width: 100%, height: 100%, {{
+  grid(
+    rows: ({_DAY_STRIP_HEIGHT}, 1fr),
+    row-gutter: 1.4mm,
+    grid(
+      columns: (1fr,) * 7,
+      column-gutter: 1.0mm,
+      rows: (1fr,),
+      {chips},
+    ),
+    box(width: 100%, height: 100%, clip: true, layout(size => {{
+      let min-row = 6.0mm
+      let top-air = min-row * 0.55
+      let avail = size.height - top-air
+      let n = calc.max(8, calc.floor(avail / min-row))
+      grid(
+        rows: (top-air,) + (min-row,) * n,
+        row-gutter: 0pt,
+        [],
+        ..range(n).map(_ => {tick}),
+      )
+    }})),
+  )
+}})"""
+
+    def _nomad_day_chip(self, manifest: Manifest, day: Day) -> str:
+        letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
+        label = f"{letter}{day.month_day}"
+        active = day.day == self.configurator.start_date().day
+        fill = "ink" if active else "white"
+        text_fill = "white" if active else "ink"
+        chip = (
+            f"box(width: 100%, height: 100%, fill: {fill}, stroke: hair + ink, "
+            "inset: 0.5mm, align(center + horizon, "
+            f'text(size: 6.5pt, weight: "bold", font: "Liberation Sans", '
+            f"fill: {text_fill})[{label}]))"
+        )
+        if manifest.source(day.id):
+            return f"padded_link(<{day.id}>, {chip})"
+        return chip
+
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
-        full = self.i18n.t(f"weekday.full.{day.weekday_name}")
-        label = f"{full} {day.month_day}"
+        if nomad_topband(self.configurator):
+            letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
+            label = f"{letter}{day.month_day}"
+            today = day.day == date.today()
+        else:
+            full = self.i18n.t(f"weekday.full.{day.weekday_name}")
+            label = f"{full} {day.month_day}"
+            today = False
+        ink = (
+            f"text(size: 6pt, fill: white)[{label}]"
+            if today
+            else f"text(size: 6pt)[{label}]"
+        )
         inner = (
             "stack(dir: ttb, spacing: 1pt, "
-            f"box(text(size: 6pt)[{label}]), "
+            f"box({ink}), "
             "line(length: 100%, stroke: regular_stroke + black))"
         )
+        fill = "fill: black, " if today else ""
         band = (
-            "box(width: 100%, height: 100%, align(horizon + center, "
+            f"box(width: 100%, height: 100%, {fill}align(horizon + center, "
             f"{inner}))"
         )
         if manifest.source(day.id):

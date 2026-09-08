@@ -30,6 +30,9 @@ def test_load_en_toml_representative_keys():
     assert i18n.t("done") == "Done"
     assert i18n.t("title") == "TITLE"
     assert i18n.t("date") == "DATE"
+    assert i18n.t("week_notes") == "Week notes"
+    assert i18n.t("month_notes_floor") == "Month notes"
+    assert i18n.t("focus") == "Focus"
 
 
 def test_load_default_prefers_toml():
@@ -81,7 +84,11 @@ def test_generate_english_strings_match_previous_meanings():
     ):
         assert label in typst
     assert "Q1" in typst
-    assert "[], [M], [T], [W], [T], [F], [S], [S]" in typst
+    assert 'fill: luma(40%))[M]' in typst
+    assert 'fill: luma(40%))[T]' in typst
+    assert 'fill: luma(40%))[W]' in typst
+    assert 'fill: luma(40%))[F]' in typst
+    assert 'fill: luma(40%))[S]' in typst
 
 
 def test_path_like_locale_code_is_config_error():

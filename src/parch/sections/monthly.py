@@ -8,6 +8,7 @@ from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.pages.monthly import Monthly as MonthlyPage
 from parch.sections._shared import _side_menu_position
 
@@ -45,14 +46,16 @@ class Monthly:
                 pattern=self.pattern,
                 side=self.side,
             )
+            nomad = nomad_topband(self.configurator)
             out.append(
                 PageData(
-                    title=page.title(),
-                    content=page.content(),
+                    title=page.nomad_title() if nomad else page.title(),
+                    content=page.nomad_content() if nomad else page.content(),
                     page_id=month.id,
                     highlight_months=[month],
                     highlight_quarters=[],
                     nav_links=[],
+                    year="none" if nomad else None,
                 )
             )
         return out

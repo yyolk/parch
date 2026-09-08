@@ -20,7 +20,6 @@ SCRIBE_LINED = base_config("kindle-scribe", paper="lined")
 
 _LINED = [
     PAPER_158_LINED,
-    NOMAD_LINED,
     SCRIBE_LINED,
 ]
 
@@ -196,7 +195,7 @@ def test_mixed_profile_typst_emits_both_rect_patterns():
     assert all("rect_pattern(" not in page for page in extra_pages)
 
 
-@pytest.mark.parametrize("path", [NOMAD, PAPER_158, SCRIBE])
+@pytest.mark.parametrize("path", [PAPER_158, SCRIBE])
 def test_device_jobs_keep_dotted_scratch_areas(path: Path):
     dto = load(path)
     assert dto["planner"]["params"]["scratch_pad"] == "dotted"
@@ -215,6 +214,16 @@ def test_device_jobs_keep_dotted_scratch_areas(path: Path):
     assert "lined_well(dotted_centered)" in typst
     assert "grid.cell(colspan: 3, scratch_pad)" not in typst
     assert "#let scratch_pad = lined_well(dotted_centered)" in typst
+
+
+def test_nomad_topband_job_defaults_to_lined():
+    dto = load(NOMAD)
+    assert dto["planner"]["params"]["scratch_pad"] == "lined"
+    assert _notes_pattern(dto) == "dotted"
+    for name in ("daily_notes", "quarterly", "monthly", "weekly"):
+        assert _section(dto, name)["params"]["pattern"] == "lined"
+    assert load(PAPER_158)["planner"]["params"]["scratch_pad"] == "dotted"
+    assert load(SCRIBE)["planner"]["params"]["scratch_pad"] == "dotted"
 
 
 @pytest.mark.parametrize("path", _LINED)

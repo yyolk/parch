@@ -42,7 +42,7 @@ def test_new_yes_year(tmp_path, capsys):
     assert data["calendar"]["year"] == 2027
     assert data["section"]["cover"]["title"] == "2027"
     assert data["device"]["name"] == "supernote-nomad"
-    assert data["style"]["scratch_pad"] == "dotted"
+    assert data["style"]["scratch_pad"] == "lined"
     assert data["sections"] == list(DEFAULT_SECTIONS)
     assert "projects" not in data["sections"]
     load(out)
@@ -275,12 +275,25 @@ def test_emit_job_is_complete_resume_state():
     assert data["section"]["monthly"]["week_placement"] == "none"
     assert data["section"]["daily"]["right"]["notes"]["pattern"] == "dotted"
     assert data["section"]["daily_notes"]["pattern"] == "lined"
+    assert data["section"]["daily_notes"]["pages"] == 1
     assert data["section"]["daily"]["right"]["notes"]["title_height"] == "4mm"
     assert data["section"]["monthly"]["daily_cell_height"] == "16mm"
     spec = spec_from_data(data)
     assert spec.paper == "lined"
     assert spec.week_placement == "none"
     assert spec.reverse_months_quarters is False
+    assert spec.daily_notes_pages == 1
+
+
+def test_nomad_daily_notes_pages_default_is_one_mos_stays_two():
+    nomad = spec_from_device("supernote-nomad")
+    mos = spec_from_device("158x210")
+    assert nomad.daily_notes_pages == 1
+    assert mos.daily_notes_pages == 2
+    assert tomllib.loads(emit_job(nomad))["section"]["daily_notes"]["pages"] == 1
+    assert tomllib.loads(emit_job(mos))["section"]["daily_notes"]["pages"] == 2
+    resumed = spec_from_data(tomllib.loads(emit_job(spec_from_device("supernote-nomad", daily_notes_pages=2))))
+    assert resumed.daily_notes_pages == 2
 
 
 def test_emit_job_override_reverse_months_quarters_omits_items():
@@ -294,6 +307,23 @@ def test_emit_job_override_reverse_months_quarters_omits_items():
     flipped = emit_job(spec_from_device("supernote-nomad"))
     assert tomllib.loads(flipped)["mos"]["reverse_months_quarters"] is False
     assert "reverse_months_quarters_items" not in flipped
+
+
+def test_spec_from_data_keeps_nomad_hours_without_schedule_table():
+    nomad = spec_from_data({"device": {"name": "supernote-nomad"}})
+    assert nomad.hour_from == 7
+    assert nomad.hour_to == 16
+    mos = spec_from_data({"device": {"name": "158x210"}})
+    assert mos.hour_from == 8
+    assert mos.hour_to == 20
+    custom = spec_from_data(
+        {
+            "device": {"name": "supernote-nomad"},
+            "section": {"daily": {"left": {"schedule": {"hour_from": 9, "hour_to": 17}}}},
+        }
+    )
+    assert custom.hour_from == 9
+    assert custom.hour_to == 17
 
 
 def test_spec_from_data_resumes_reverse_months_quarters():
@@ -327,10 +357,10 @@ def test_new_yes_writes_device_defaults(tmp_path):
     text = out.read_text(encoding="utf-8")
     data = tomllib.loads(text)
     assert data["calendar"]["year"] == 2027
-    assert data["style"]["scratch_pad"] == "dotted"
-    assert data["section"]["daily"]["left"]["schedule"]["hour_from"] == 8
-    assert data["section"]["daily"]["left"]["schedule"]["hour_to"] == 20
-    assert data["section"]["daily"]["right"]["priorities"]["count"] == 5
+    assert data["style"]["scratch_pad"] == "lined"
+    assert data["section"]["daily"]["left"]["schedule"]["hour_from"] == 7
+    assert data["section"]["daily"]["left"]["schedule"]["hour_to"] == 16
+    assert data["section"]["daily"]["right"]["priorities"]["count"] == 6
     assert "week_placement" not in data["section"]["monthly"]
     assert data["mos"]["side_menu"] == "left"
     assert data["mos"]["reverse_months_quarters"] is False

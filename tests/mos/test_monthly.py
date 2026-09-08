@@ -16,6 +16,7 @@ from tests.test_toml_omit_sections import compile_pdf
 from tests.toml_fixtures import omit_toml_sections
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _MONTH_PARAMS = {
     "week_placement": "left",
@@ -215,8 +216,8 @@ def test_title_is_month_without_year_and_kills_calendar_chip():
 
 
 def test_generated_title_is_january_without_year_and_inverts_only_the_month():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-monthly.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="mos-monthly.toml"))
     pages = _month_pages(typst)
     jan = pages["january"]
     aug = pages["august"]
@@ -249,17 +250,46 @@ def test_generated_title_is_january_without_year_and_inverts_only_the_month():
     assert len(month_slices) == 1
 
 
+def test_nomad_title_is_quiet_month_year_together():
+    page = _page("2026-01")
+    assert page.nomad_title() == (
+        'text(size: 10pt, weight: "bold")[January 2026 <month-2026-01-01>]'
+    )
+    assert "text(size: h1)" not in page.nomad_title()
+    content = page.nomad_content()
+    assert "nomad_month_well(" in content
+    assert "column-gutter: 0.7mm" in content
+    assert "row-gutter: 0.7mm" in content
+    assert "rows: (1fr,) * 6" in content
+    assert "rows: (regular_height,)" not in content
+    assert "hair + luma(75%)" in content
+    assert "hair + ink" in content
+    assert "luma(160)" not in content
+    assert "grid.cell(stroke: regular_stroke" not in content
+    assert "lined_well" not in content
+    assert "nomad_month_notes()" in content
+    assert "let tile = 5.2mm" not in content
+    assert "layout(" not in content
+    assert 'text(weight: "bold", size: 8pt)[Month notes]' in content
+    assert 'font: "Liberation Sans", size: 7pt' in content
+    assert 'size: 7.5pt, weight: "bold", font: "Liberation Sans"' in content
+    assert "inset: (top: 0.6mm, left: 0.7mm, rest: 0.5mm)" in content
+
+
 def test_six_row_august_compiles_as_one_pdf_page(tmp_path):
     text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _MONTHLY_ONLY)
     typst = _generate(parse_toml(text, source="nomad-monthly-only.toml"))
     crumbs = [
         page
         for page in typst.split("#pagebreak()")
-        if "text(size: h1)[" in page and "<month-2026-" in page
+        if "nomad_month_well(" in page and "<month-2026-" in page
     ]
     assert len(crumbs) == 12
-    august = next(page for page in crumbs if "August<month-2026-08-01>" in page)
-    assert "rows: (regular_height,) + (1fr,) * 6" in august
+    august = next(page for page in crumbs if "August 2026 <month-2026-08-01>" in page)
+    assert "rows: (1fr,) * 6" in august
+    assert "column-gutter: 0.7mm" in august
+    assert 'text(size: 10pt, weight: "bold")[August 2026 <month-2026-08-01>]' in august
+    assert "year: none" in august
     pdf, stderr = compile_pdf(typst, tmp_path / "monthly-year")
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
     if shutil.which("pdfinfo") is None:

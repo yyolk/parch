@@ -5,6 +5,7 @@ from pathlib import Path
 
 from parch.devices import Device, get_device
 from parch.mos.configurator import Configurator
+from parch.mos.nomad_nav import BEZEL, CHROME_H, nomad_topband
 from parch.mos.scribe_nav import RAIL_EDGE_CLEAR, RAIL_PAD, scribe_hyperpaper_nav
 
 # Single-region wells: lined → lined_fill, dotted → dotted_centered.
@@ -44,11 +45,23 @@ def write_device_typ(workdir: Path, device: str | Device) -> Path:
     return dest
 
 
+def _copy_house_icons(workdir: Path) -> None:
+    """Copy locked Topband SVGs so ``image("icons/menu.svg")`` resolves."""
+    dest_dir = Path(workdir) / "icons"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    icons = files("parch.data") / "typst" / "icons"
+    for item in icons.iterdir():
+        name = item.name
+        if name.endswith(".svg"):
+            (dest_dir / name).write_bytes(item.read_bytes())
+
+
 def copy_house_typ(workdir: Path, device: str | Device | None = None) -> Path:
     """Copy house.typ next to index.typst. When *device* is given, write device.typ."""
     dest = Path(workdir) / HOUSE_TYP
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(house_typ_resource().read_bytes())
+    _copy_house_icons(workdir)
     if device is not None:
         write_device_typ(workdir, device)
     return dest
@@ -72,13 +85,27 @@ class Preamble:
             if scribe_hyperpaper_nav(self.configurator)
             else ""
         )
+        bezel = (
+            f", bezel: {BEZEL}"
+            if nomad_topband(self.configurator)
+            else ""
+        )
+        lined_paint = "paint: black" if nomad_topband(self.configurator) else ""
+        nomad = nomad_topband(self.configurator)
+        text_font = (
+            ',\n  font: "Libertinus Serif"'
+            if nomad
+            else ""
+        )
+        chrome_stroke = "hair" if nomad else "regular_stroke"
+        week_bands_stroke = "hair + ink" if nomad else "regular_stroke + black"
         return f"""#import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin
-#let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance{rail_clear})
+#import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, nomad_month_notes, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
+#let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance{rail_clear}{bezel})
 #set page(width: page-width, height: page-height, margin: page-margin({side}))
 
 #set text(
-  size: {text_size}
+  size: {text_size}{text_font}
 )
 
 #let regular_stroke = {_v(p, 'regular_stroke')}
@@ -92,7 +119,7 @@ class Preamble:
 #let dotted_centered = dotted_centered(regular_height: regular_height)
 #let lined_fill = lined_fill.with(regular_height: regular_height, regular_stroke: regular_stroke)
 #let review_lined = lined_fill(paint: black)
-#let lined_fill = lined_fill()
+#let lined_fill = lined_fill({lined_paint})
 #let task_tick = task_tick.with(regular_stroke: regular_stroke)
 #let task_fill = task_fill(page-width: page-width, regular_height: regular_height, regular_stroke: regular_stroke)
 #let scratch_pad = lined_well({_WELL_PATTERN.get(scratch, scratch)})
@@ -110,7 +137,11 @@ class Preamble:
 #let daily_well = daily_well.with(column-gutter: regular_column_gutter)
 #let quarter_well = quarter_well.with(column-gutter: regular_column_gutter)
 #let nav_header = nav_header.with(height: 10mm, air: 5mm, stroke: regular_stroke)
-#let section_rail = section_rail.with(stroke: regular_stroke, turn: {_v(mos_layout, 'menu_rotate')}, pad: {RAIL_PAD})"""
+#let section_rail = section_rail.with(stroke: regular_stroke, turn: {_v(mos_layout, 'menu_rotate')}, pad: {RAIL_PAD})
+#let section-strip = section-strip.with(height: {CHROME_H}, stroke: {chrome_stroke})
+#let chip = chip.with(stroke: {chrome_stroke})
+#let page-shell = page-shell.with(stroke: {chrome_stroke})
+#let nomad_week_bands = nomad_week_bands.with(stroke: {week_bands_stroke})"""
 
 
 def _v(mapping, key: str):

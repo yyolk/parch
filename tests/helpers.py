@@ -17,12 +17,17 @@ from parch.services.job_file import CANONICAL_SECTIONS, emit_job, spec_from_devi
 _JOB_DIR = Path(tempfile.mkdtemp(prefix="parch-jobs-"))
 
 
-def base_config(stem: str, *, paper: str = "dotted", extras: bool = False) -> Path:
-    """Materialize the default job for a device id. Lined is paper, not a device."""
-    spec = spec_from_device(stem, paper=paper)
+def base_config(stem: str, *, paper: str | None = None, extras: bool = False) -> Path:
+    """Materialize the default job for a device id. Lined is paper, not a device.
+
+    Nomad Topband defaults to lined. Pass ``paper`` to pin dotted or lined.
+    """
+    kwargs = {} if paper is None else {"paper": paper}
+    spec = spec_from_device(stem, **kwargs)
+    resolved = spec.paper
     if extras:
         spec.sections = list(CANONICAL_SECTIONS)
-    suffix = "" if paper == "dotted" else f"-{paper}"
+    suffix = "" if resolved == "dotted" else f"-{resolved}"
     extra = "-extras" if extras else ""
     path = _JOB_DIR / f"{spec.device_id}{suffix}{extra}.toml"
     path.write_text(emit_job(spec), encoding="utf-8")

@@ -7,6 +7,7 @@ from parch.mos.navigation import NavLink, Navigation
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.contents_mark import body_size_token, lead_title, trail_heading
 from parch.mos.preamble import Preamble
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 
 
@@ -22,7 +23,13 @@ class Builder:
 
     def generate(self) -> str:
         body = "\n#pagebreak()\n".join(self.pages)
-        return f"{self.preamble.generate()}\n{self._mos_strip_bind()}\n{body}"
+        binds = [self._mos_strip_bind()]
+        if nomad_topband(self.configurator):
+            strip = self.navigation.nomad_strip_bind()
+            if strip:
+                binds.append(strip)
+        header = "\n".join([self.preamble.generate(), *binds])
+        return f"{header}\n{body}"
 
     def _mos_strip_bind(self) -> str:
         months = self.navigation.year_month_items()
@@ -44,6 +51,8 @@ class Builder:
         return typst
 
     def _layout_page(self, page_spec: PageData) -> str:
+        if nomad_topband(self.configurator):
+            return self._layout_nomad_page(page_spec)
         if scribe_hyperpaper_nav(self.configurator):
             return self._layout_scribe_page(page_spec)
         side = _v(self.mos_layout, "side_menu_position")
@@ -66,6 +75,35 @@ class Builder:
     {heading or "[]"},
     {page_spec.content},
   ),
+)"""
+
+    def _layout_nomad_page(self, page_spec: PageData) -> str:
+        """page-shell(Topband, tempo, title, body). No side MOS."""
+        if page_spec.strip == "none":
+            strip = "none"
+        elif page_spec.strip == "quiet":
+            strip = self.navigation.section_strip_cell(page_spec.page_id, quiet=True)
+        else:
+            strip = self.navigation.section_strip_cell(page_spec.page_id)
+        tempo = page_spec.tempo
+        if tempo is None:
+            tempo = self.navigation.tempo_cell(page_spec.page_id)
+        title = "none" if (not page_spec.heading or not page_spec.title) else page_spec.title
+        year = (
+            "none"
+            if title == "none"
+            else (
+                page_spec.year
+                if page_spec.year is not None
+                else f'text(size: h1)[{self.configurator.start_date().year}]'
+            )
+        )
+        return f"""#page-shell(
+  {strip},
+  {page_spec.content},
+  tempo: {tempo},
+  title: {title},
+  year: {year},
 )"""
 
     def _layout_scribe_page(self, page_spec: PageData) -> str:

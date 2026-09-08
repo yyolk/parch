@@ -8,6 +8,7 @@ from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.pages.quarterly import Quarterly as QuarterlyPage
 from parch.sections._shared import _side_menu_position
 
@@ -45,13 +46,20 @@ class Quarterly:
                 pattern=self.pattern,
                 side=self.side,
             )
+            nomad = nomad_topband(self.configurator)
+            year = (
+                f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+                if nomad
+                else None
+            )
             out.append(
                 PageData(
-                    title=page.title(),
-                    content=page.content(),
+                    title=page.nomad_title() if nomad else page.title(),
+                    content=page.nomad_content() if nomad else page.content(),
                     page_id=quarter.id,
                     highlight_quarters=[quarter],
                     nav_links=[],
+                    year=year,
                 )
             )
         return out

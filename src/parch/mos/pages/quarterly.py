@@ -6,6 +6,7 @@ from parch.calendar.quarter import Quarter
 from parch.i18n import I18n
 from parch.mos.components.little_calendar import LittleCalendar
 from parch.mos.manifest import Manifest
+from parch.mos.components.year_month import year_month_cell
 from parch.mos.preamble import _WELL_PATTERN
 
 
@@ -29,10 +30,66 @@ class Quarterly:
     def title(self) -> str:
         return f'text(size: h1)[{self.i18n.t("quarter.long")} {self.quarter.number} <{self.quarter.id}>]'
 
+    def nomad_title(self) -> str:
+        """Locked crumb: quiet [Quarter N], not h1 / year-in-title."""
+        return (
+            f'text(size: 10pt, weight: "bold")'
+            f'[{self.i18n.t("quarter.long")} {self.quarter.number} <{self.quarter.id}>]'
+        )
+
     def content(self) -> str:
         months = self._months_grid()
         pad = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
         return f"quarter_well({self.side}, {months}, {pad})"
+
+    def nomad_content(self) -> str:
+        """Locked Nomad quarterly: 26mm month strip + Focus / Notes wells."""
+        months = ", ".join(
+            "box(width: 100%, height: 100%, clip: true, "
+            "inset: (x: 0.2mm, y: 0.15mm), "
+            "stroke: (bottom: regular_stroke + black), "
+            f"{year_month_cell(self.i18n, self.manifest, month)})"
+            for month in self.quarter.months()
+        )
+        strip = f"""grid(
+  columns: (1fr, 1fr, 1fr),
+  rows: 1fr,
+  column-gutter: 2.4mm,
+  {months}
+)"""
+        focus = f"""box(width: 100%, height: 100%, clip: true, inset: (top: 0.3mm), {{
+  text(weight: "bold", size: 8.5pt)[{self.i18n.t("focus")}]
+  v(0.35mm)
+  layout(size => {{
+    let row-h = 6.2mm
+    let n = calc.max(4, calc.floor(size.height / row-h))
+    grid(
+      rows: (row-h,) * n,
+      row-gutter: 0pt,
+      ..range(n).map(_ => grid(
+        columns: (auto, 1fr),
+        column-gutter: 1.5mm,
+        align: (horizon, bottom),
+        task_tick(),
+        line(length: 100%, stroke: regular_stroke + black),
+      )),
+    )
+  }})
+}})"""
+        notes = f"""box(width: 100%, height: 100%, clip: true, stroke: (top: regular_stroke + black), inset: (top: 0.6mm), {{
+  text(weight: "bold", size: 8.5pt)[{self.i18n.t("notes")}]
+  v(0.3mm)
+  layout(size => {{
+    let tile = 5.5mm
+    let n = calc.max(5, calc.floor(size.height / tile))
+    grid(
+      rows: (tile,) * n,
+      row-gutter: 0pt,
+      ..range(n).map(_ => align(bottom, line(length: 100%, stroke: regular_stroke + black))),
+    )
+  }})
+}})"""
+        return f"nomad_quarter_well({strip}, {focus}, {notes})"
 
     def _months_grid(self) -> str:
         months = self._months()

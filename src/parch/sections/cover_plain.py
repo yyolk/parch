@@ -2,6 +2,7 @@
 
 from parch.i18n import I18n
 from parch.mos.configurator import Configurator
+from parch.mos.nomad_nav import BEZEL, nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.compose.page_data import PageData
 from parch.sections.annual import Annual
@@ -28,6 +29,15 @@ class CoverPlain:
         return None
 
     def pages(self, manifest) -> list[PageData]:
+        if nomad_topband(self.configurator):
+            return [
+                PageData(
+                    content=self._nomad_cover(manifest),
+                    page_id="cover",
+                    heading=False,
+                    strip="none",
+                )
+            ]
         return [PageData(raw_typst=True, content=self._cover(manifest))]
 
     def _lines(self) -> list[str]:
@@ -82,3 +92,43 @@ class CoverPlain:
   align: center + horizon,
   {body}
 )"""
+
+    def _nomad_cover(self, manifest) -> str:
+        dest = self._dest(manifest)
+        year_label = str(self.configurator.start_date().year)
+        year = self._year(
+            '48pt, weight: "bold", tracking: 1.5pt',
+            year_label,
+            dest,
+            manifest,
+        )
+        # Full-page place: page-shell already inset toolbar + bezel, so
+        # shift the page-sized box back to (0, 0) before measuring ph/2.
+        return f"""{{
+  set par(spacing: 0pt)
+  let year = {year}
+  let rules = box(width: 42mm, {{
+    box(width: 100%, height: 0.7pt, fill: black)
+    v(5.5mm)
+    box(width: 100%, height: 0.35pt, fill: luma(25%))
+  }})
+  layout(size => {{
+    let y = measure(year)
+    let r = measure(rules)
+    let pw = page-width
+    let ph = page-height
+    let footer = text(size: 7.5pt, font: "Liberation Sans", fill: luma(45%))[Supernote Nomad]
+    let f = measure(footer)
+    let footer-bottom = {BEZEL} + 4mm
+    let footer-top = ph - footer-bottom - f.height
+    place(
+      dx: -{BEZEL},
+      dy: -toolbar-clearance,
+      box(width: pw, height: ph, {{
+        place(dx: (pw - y.width) / 2, dy: ph / 2 - y.height / 2, year)
+        place(dx: (pw - r.width) / 2, dy: ph * 2 / 3 - r.height / 2, rules)
+        place(dx: (pw - f.width) / 2, dy: footer-top, footer)
+      }}),
+    )
+  }})
+}}"""

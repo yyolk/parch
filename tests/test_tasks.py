@@ -15,7 +15,7 @@ from tests.test_toml_omit_sections import _LABEL_DEF, _PADDED_LINK, compile_pdf
 from tests.toml_fixtures import _minimal, short_january
 from tests.helpers import base_config, load_default
 
-NOMAD = base_config("supernote-nomad", extras=True)
+NOMAD = base_config("158x210", extras=True)
 _EN_DASH = "–"
 _MARK_RULE = "contents_bars(size:"
 _TRAIL_MARK = "padded_link(<index>, contents_bars"
@@ -411,7 +411,7 @@ def test_unknown_key_on_section_tasks_raises():
         )
 
 
-def test_nomad_ships_tasks_after_review():
+def test_mos_ships_tasks_after_review():
     dto = load(NOMAD)
     names = [s["name"] for s in Configurator(dto).enabled_sections()]
     assert names[-5:] == ["habits", "review", "tasks", "meetings", "colophon"]

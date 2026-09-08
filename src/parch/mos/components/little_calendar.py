@@ -45,17 +45,23 @@ class LittleCalendar:
 )"""
 
     def _generate_none(self) -> str:
-        return f"""grid(
-  align: center + horizon,
-  inset: {self.inset},
-  stroke: none,
-  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-  rows: (auto, auto) + (1fr,) * {WEEK_ROWS},
-  grid.hline(y: 1, stroke: regular_stroke + black),
-  grid.hline(y: 2, stroke: regular_stroke + black),
-  {self._name_cell()}
-  {self._heading()},
-  {self._day_cells()}
+        return f"""box(
+  width: 100%,
+  height: 100%,
+  stroke: regular_stroke + black,
+  inset: 1.2mm,
+  grid(
+    align: center + horizon,
+    inset: {self.inset},
+    stroke: none,
+    columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    rows: (auto, auto) + (1fr,) * {WEEK_ROWS},
+    grid.hline(y: 1, stroke: regular_stroke + black),
+    grid.hline(y: 2, stroke: regular_stroke + black),
+    {self._name_cell()}
+    {self._heading()},
+    {self._day_cells()}
+  )
 )"""
 
     def _name_cell(self) -> str:

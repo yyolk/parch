@@ -7,6 +7,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
 from parch.mos.preamble import _WELL_PATTERN
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.sections._shared import heading_and_well
 
@@ -18,12 +19,14 @@ class DailyNotes:
         i18n: I18n,
         configurator: Configurator,
         pages: int,
-        pattern: str = "dotted",
+        pattern: str | None = None,
     ) -> None:
         self.section_name = section_name
         self.i18n = i18n
         self.configurator = configurator
         self.pages_num = int(pages)
+        if pattern is None:
+            pattern = "lined" if nomad_topband(configurator) else "dotted"
         self.pattern = pattern
 
     def register(self, manifest: Manifest) -> None:
@@ -35,7 +38,22 @@ class DailyNotes:
         for note in self._range():
             heading = self._title(manifest, note)
             well = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
-            if scribe_hyperpaper_nav(self.configurator):
+            nomad = nomad_topband(self.configurator)
+            year = None
+            if nomad:
+                weekday = self.i18n.t(f"weekday.full.{note.day.weekday_name}")
+                month = self.i18n.t(f"months.full.{note.day.month().name}")
+                title = (
+                    f'text(size: 10pt, weight: "bold")'
+                    f'[{self.i18n.t("notes")}  ·  {weekday}  ·  '
+                    f"{month} {note.day.month_day} <{note.id}>]"
+                )
+                content = "nomad_notes_well()"
+                year = (
+                    f'text(size: 7.5pt, weight: "bold")'
+                    f"[{self.configurator.start_date().year}]"
+                )
+            elif scribe_hyperpaper_nav(self.configurator):
                 title = self._nav_title()
                 content = heading_and_well(heading, well)
             else:
@@ -50,6 +68,7 @@ class DailyNotes:
                     highlight_quarters=[],
                     nav_links=[],
                     heading_mark=HeadingMark.TRAIL,
+                    year=year,
                 )
             )
         return out

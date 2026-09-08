@@ -2,16 +2,18 @@
 
 import pytest
 from pypdf import PdfReader
-from pypdf.generic import DictionaryObject, IndirectObject
+from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject, NameObject
 
 from parch.config import load
 from parch.services.generate import Generate
+from parch.services.preview_svg import sample_page_numbers
 from parch.toml_config import parse_toml
 from tests.helpers import base_config, load_default
 from tests.test_toml_omit_sections import compile_pdf
 from tests.toml_fixtures import omit_toml_sections, short_january
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 
 def _links(page):
@@ -25,35 +27,103 @@ def _links(page):
     return rows
 
 
+def _page_ids(reader: PdfReader) -> dict[int, int]:
+    return {page.indirect_reference.idnum: i for i, page in enumerate(reader.pages, 1)}
+
+
+def _dest_array(obj):
+    """Resolve /Dest, or /A GoTo /D when Typst emits an action instead."""
+    dest = obj.get("/Dest")
+    if dest is not None:
+        return dest
+    action = obj.get("/A")
+    if isinstance(action, IndirectObject):
+        action = action.get_object()
+    if not isinstance(action, DictionaryObject):
+        return None
+    if str(action.get("/S", "")) != "/GoTo":
+        return None
+    return action.get("/D")
+
+
+def _dest_page(dest, page_ids: dict[int, int]) -> int | None:
+    if isinstance(dest, IndirectObject):
+        dest = dest.get_object()
+    if isinstance(dest, ArrayObject) and dest:
+        first = dest[0]
+        if isinstance(first, IndirectObject):
+            return page_ids.get(first.idnum)
+    return None
+
+
+def _link_dests(page, page_ids: dict[int, int]):
+    """(x, from_top, w, h, dest_page) for each Link annot."""
+    height = float(page.mediabox.height)
+    rows = []
+    for annot in page.get("/Annots") or []:
+        obj = annot.get_object() if isinstance(annot, IndirectObject) else annot
+        if not isinstance(obj, DictionaryObject) or obj.get("/Subtype") != "/Link":
+            continue
+        x1, y1, x2, y2 = (float(v) for v in obj["/Rect"])
+        rows.append(
+            (
+                min(x1, x2),
+                height - max(y1, y2),
+                abs(x2 - x1),
+                abs(y2 - y1),
+                _dest_page(_dest_array(obj), page_ids),
+            )
+        )
+    return rows
+
+
+def test_dest_array_resolves_goto_action():
+    dest = ArrayObject([NameObject("/P1")])
+    via_dest = DictionaryObject({NameObject("/Dest"): dest})
+    via_action = DictionaryObject(
+        {
+            NameObject("/A"): DictionaryObject(
+                {
+                    NameObject("/S"): NameObject("/GoTo"),
+                    NameObject("/D"): dest,
+                }
+            )
+        }
+    )
+    assert _dest_array(via_dest) is dest
+    assert _dest_array(via_action) is dest
+    assert _dest_array(DictionaryObject()) is None
+
+
 def _annual_page(reader: PdfReader):
-    # Cover, Contents, then Annual on the shipped Nomad job.
+    # Cover, Contents, then Annual on the shipped 158×210 / Nomad jobs.
     return reader.pages[2]
 
 
 def _calendar_year_dto():
     text = omit_toml_sections(
-        NOMAD.read_text(encoding="utf-8"),
+        PAPER.read_text(encoding="utf-8"),
         ["quarterly", "weekly", "daily", "daily_notes"],
     )
     return parse_toml(text, source="hit-year.toml")
 
 
 def test_contents_mark_link_is_square(tmp_path):
-    dto = short_january(load(NOMAD))
+    dto = short_january(load(PAPER))
     typst = Generate(i18n=load_default()).generate(dto)
-    pdf, stderr = compile_pdf(typst, tmp_path / "mark")
+    pdf, stderr = compile_pdf(typst, tmp_path / "mark", device="158x210")
     assert pdf.is_file(), stderr
     links = _links(_annual_page(PdfReader(str(pdf))))
     squares = [row for row in links if abs(row[0] - row[1]) < 0.5 and row[0] > 20]
     assert len(squares) == 1
     width, height, _x, _y = squares[0]
     assert width == pytest.approx(height, abs=0.01)
-    assert 28 < width < 36
+    assert 25 < width < 50
 
 
 def test_mos_tab_links_are_one_cell_each(tmp_path):
     typst = Generate(i18n=load_default()).generate(_calendar_year_dto())
-    pdf, stderr = compile_pdf(typst, tmp_path / "mos")
+    pdf, stderr = compile_pdf(typst, tmp_path / "mos", device="158x210")
     assert pdf.is_file(), stderr
     links = _links(_annual_page(PdfReader(str(pdf))))
     mos = [row for row in links if row[2] < 8]
@@ -62,8 +132,93 @@ def test_mos_tab_links_are_one_cell_each(tmp_path):
     widths = sorted(row[0] for row in mos)
     assert heights[0] == pytest.approx(heights[-1], abs=0.05)
     assert widths[0] == pytest.approx(widths[-1], abs=0.05)
-    assert 18 < widths[0] < 26
+    assert 24 < widths[0] < 32
     assert 20 < heights[0] < 40
     ys = sorted(row[3] for row in mos)
     for prev, nxt in zip(ys, ys[1:]):
         assert nxt == pytest.approx(prev + heights[0], abs=1.0)
+
+
+def test_nomad_topband_chips_are_equal_cells(tmp_path):
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "topband")
+    assert pdf.is_file(), stderr
+    page = _annual_page(PdfReader(str(pdf)))
+    height = float(page.mediabox.height)
+    links = _links(page)
+    top_y = max(row[3] for row in links)
+    strip = [row for row in links if abs(row[3] - top_y) < 3]
+    assert len(strip) >= 6
+    widths = sorted(row[0] for row in strip)
+    heights = sorted(row[1] for row in strip)
+    assert widths[0] == pytest.approx(widths[-1], abs=2.0)
+    assert heights[0] == pytest.approx(heights[-1], abs=2.0)
+    assert 18 < widths[0] < 70
+
+
+def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
+    """Live Jan 1–14 days are PDF links on annual and quarterly year-month.
+
+    Daily mini-cal day cells are a glance (no per-day annots). Tempo stays live.
+    """
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "nomad-days")
+    assert pdf.is_file(), stderr
+    reader = PdfReader(str(pdf))
+    pages = sample_page_numbers(
+        typst,
+        year=2026,
+        week_id="2026W01",
+        jan1="2026-01-01",
+        stems=("annual", "quarterly-q1", "daily-jan1"),
+    )
+    annual = _links(reader.pages[pages["annual"] - 1])
+    days = [row for row in annual if 10 < row[0] < 20 and 6 < row[1] < 12]
+    assert len(days) >= 14
+    quarterly = _links(reader.pages[pages["quarterly-q1"] - 1])
+    qdays = [row for row in quarterly if 10 < row[0] < 20 and 5 < row[1] < 12]
+    assert len(qdays) >= 14
+    daily = _links(reader.pages[pages["daily-jan1"] - 1])
+    mini = [row for row in daily if 12 < row[0] < 22 and 5 < row[1] < 9]
+    assert mini == []
+    tempo = [row for row in daily if row[0] > 80]
+    assert len(tempo) >= 3
+
+
+def test_nomad_daily_tempo_and_weekly_day_are_link_annots(tmp_path):
+    """Daily Jan/Q tempo and weekly Day chip must be live PDF links."""
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "nomad-tempo-day")
+    assert pdf.is_file(), stderr
+    reader = PdfReader(str(pdf))
+    pages = sample_page_numbers(
+        typst,
+        year=2026,
+        week_id="2026W01",
+        jan1="2026-01-01",
+        stems=("daily-jan1", "weekly-w01", "monthly-jan", "quarterly-q1"),
+    )
+    ids = _page_ids(reader)
+    daily = _links(reader.pages[pages["daily-jan1"] - 1])
+    tempo = [row for row in daily if row[0] > 80]
+    assert len(tempo) >= 3
+
+    daily_dests = _link_dests(reader.pages[pages["daily-jan1"] - 1], ids)
+    weekly_dests = _link_dests(reader.pages[pages["weekly-w01"] - 1], ids)
+    d_strip = sorted([r for r in daily_dests if r[1] < 45], key=lambda r: r[0])
+    w_strip = sorted([r for r in weekly_dests if r[1] < 45], key=lambda r: r[0])
+    # short-january strip: contents cal q mon wk day
+    assert len(d_strip) >= 6
+    assert d_strip[2][4] == pages["quarterly-q1"]
+    assert d_strip[3][4] == pages["monthly-jan"]
+    assert d_strip[2][3] > 18
+    assert len(w_strip) >= 6
+    assert w_strip[5][4] == pages["daily-jan1"]
+    assert w_strip[5][3] > 18
+    d_tempo = sorted([r for r in daily_dests if 50 < r[1] < 90], key=lambda r: r[0])
+    assert len(d_tempo) >= 3
+    assert d_tempo[1][4] == pages["monthly-jan"]
+    assert d_tempo[2][4] == pages["quarterly-q1"]

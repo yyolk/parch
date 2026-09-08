@@ -6,10 +6,12 @@ from parch import ConfigError
 from parch.calendar.day import Day
 from parch.config import StrictDict, _to_plain
 from parch.i18n import I18n
+from parch.calendar.dated_note import DatedNote
 from parch.mos.components.daily_notes import DailyNotes
 from parch.mos.components.daily_schedule import DailySchedule
 from parch.mos.components.daily_priorities import DailyPriorities
 from parch.mos.components.little_calendar import LittleCalendar
+from parch.mos.components.year_month import mini_month_cell
 from parch.mos.manifest import Manifest
 
 
@@ -73,6 +75,26 @@ class Daily:
         hours = self._column(self.params.get("left_column") or [])
         writing = self._column(self.params.get("right_column") or [])
         return f"daily_well({self.side}, {hours}, {writing})"
+
+    def nomad_content(self) -> str:
+        """Locked Nomad daily: 1.2/0.8 schedule 7–16, 24mm cal, 6 prios, 4×5.8mm notes."""
+        calendar = mini_month_cell(
+            self.i18n,
+            self.manifest,
+            self.day.month(),
+            highlight=self.day.month_day,
+        )
+        more = "none"
+        note_id = DatedNote(weekday_start=self.day.weekday_start, day=self.day).id
+        if self.manifest.source(note_id):
+            more = self.manifest.link_or_content(note_id, self.i18n.t("more_daily_notes"))
+        return f"""nomad_daily_well(
+  {calendar},
+  {more},
+  schedule-label: [{self.i18n.t("schedule")}],
+  priorities-label: [{self.i18n.t("priorities")}],
+  notes-label: [{self.i18n.t("daily_notes")}],
+)"""
 
     def _column(self, comps: list[Any]) -> str:
         pieces: list[str] = []

@@ -19,7 +19,7 @@ from tests.helpers import base_config, load_default
 def _habit_header_src(name: str) -> str:
     return _habit_header(name)
 
-NOMAD = base_config("supernote-nomad", extras=True)
+NOMAD = base_config("158x210", extras=True)
 MONTHS = (
     "january",
     "february",
@@ -433,7 +433,7 @@ def test_index_is_raw_typst_month_pages_use_mos():
     assert "text(size: h1, [Habits <habits>])" in index
 
 
-def test_nomad_full_year_is_thirteen_pages_of_habits():
+def test_mos_full_year_is_thirteen_pages_of_habits():
     dto = load(NOMAD)
     names = [s["name"] for s in Configurator(dto).enabled_sections()]
     assert "habits" in names
@@ -462,13 +462,13 @@ show_month_name = true
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
 
 
-def test_short_january_nomad_compiles(tmp_path):
+def test_short_january_mos_compiles(tmp_path):
     dto = short_january(load(NOMAD))
     typst = _generate(dto)
     assert "<habits>" in typst
     assert "<habits-january>" in typst
     assert "<habits-february>" not in typst
-    pdf, stderr = compile_pdf(typst, tmp_path / "nomad-habits")
+    pdf, stderr = compile_pdf(typst, tmp_path / "mos-habits")
     assert pdf.is_file() and pdf.stat().st_size > 0, stderr
 
 

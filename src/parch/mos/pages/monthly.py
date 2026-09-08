@@ -38,6 +38,13 @@ class Monthly:
             t'text(size: h1)[{self.i18n.t(f"months.full.{self.month.name}")}<{self.month.id}>]'
         )
 
+    def nomad_title(self) -> str:
+        """Quiet crumb: month + year together (locked 04-monthly.typ)."""
+        return (
+            f'text(size: 10pt, weight: "bold")'
+            f'[{self.i18n.t(f"months.full.{self.month.name}")} {self.month.day.year} <{self.month.id}>]'
+        )
+
     def content(self) -> str:
         calendar = self._calendar()
         return f"""grid(
@@ -47,6 +54,48 @@ class Monthly:
   {calendar},
   lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})
 )"""
+
+    def nomad_content(self) -> str:
+        """Locked 04-monthly.typ: header + 7×6 days + 20mm Month notes."""
+        weeks = self._nomad_weeks()
+        sample = weeks[1] if len(weeks) > 1 else weeks[0]
+        heading = ", ".join(
+            f'align(center)[#text(font: "Liberation Sans", size: 7pt, '
+            f'weight: "bold", fill: luma(40%))[{self.i18n.t(f"weekday.letter.{day.weekday_name}")}]]'
+            for day in sample
+        )
+        header = f"""grid(
+    columns: (1fr,) * 7,
+    column-gutter: 0.7mm,
+    {heading},
+)"""
+        rows = [", ".join(self._nomad_day_cell(day) for day in week) for week in weeks]
+        days = f"""box(width: 100%, height: 100%, grid(
+    columns: (1fr,) * 7,
+    rows: (1fr,) * 6,
+    column-gutter: 0.7mm,
+    row-gutter: 0.7mm,
+    {", ".join(rows)},
+))"""
+        notes = f"""box(
+  width: 100%,
+  height: 100%,
+  clip: true,
+  stroke: (top: hair + ink),
+  inset: (top: 0.7mm),
+  {{
+    text(weight: "bold", size: 8pt)[{self.i18n.t("month_notes_floor")}]
+    v(0.35mm)
+    nomad_month_notes()
+  }}
+)"""
+        return f"nomad_month_well({header}, {days}, {notes})"
+
+    def _nomad_weeks(self) -> list[list[Day | None]]:
+        weeks = list(self._month_in_weeks())
+        while len(weeks) < 6:
+            weeks.append([None] * 7)
+        return weeks[:6]
 
     def _calendar(self) -> str:
         if self.week_placement == "none":
@@ -97,6 +146,18 @@ class Monthly:
             return "[]"
         text = self.manifest.link_or_content(day.id, str(day.month_day))
         return f"grid.cell(align: top + left, inset: 3pt, [#{text}])"
+
+    def _nomad_day_cell(self, day: Day | None) -> str:
+        if day is None:
+            return "box(width: 100%, height: 100%, stroke: hair + luma(75%))"
+        text = self.manifest.link_or_content(day.id, str(day.month_day))
+        return (
+            "box(width: 100%, height: 100%, stroke: hair + ink, "
+            "inset: (top: 0.6mm, left: 0.7mm, rest: 0.5mm), clip: true, {"
+            f'text(size: 7.5pt, weight: "bold", font: "Liberation Sans")[#{text}]; '
+            "v(1fr)"
+            "})"
+        )
 
     def _week_label_cell(self, week: list[Day | None]) -> str:
         current_week = self._first_present_day(week).week()

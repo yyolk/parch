@@ -7,6 +7,7 @@ from parch.i18n import I18n
 from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.compose.page_data import HeadingMark, PageData
+from parch.mos.nomad_nav import nomad_topband
 from parch.mos.pages.weekly import Weekly as WeeklyPage
 
 _EN_DASH = "–"
@@ -45,15 +46,22 @@ class Weekly:
                 pattern=self.pattern,
             )
             thursday = next(day for day in week.days() if day.weekday_name == "thursday")
+            nomad = nomad_topband(self.configurator)
+            year = (
+                f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+                if nomad
+                else None
+            )
             out.append(
                 PageData(
-                    title=self._title(weekly),
-                    content=weekly.content(),
+                    title=self._title(weekly, nomad=nomad),
+                    content=weekly.nomad_content() if nomad else weekly.content(),
                     page_id=week.id,
                     highlight_months=[thursday.month()],
                     highlight_quarters=[],
                     nav_links=[],
                     heading_mark=HeadingMark.TRAIL,
+                    year=year,
                 )
             )
         return out
@@ -65,9 +73,15 @@ class Weekly:
             return f"{first_month} {first.month_day} {_EN_DASH} {last.month_day}"
         return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
 
-    def _title(self, page: WeeklyPage) -> str:
+    def _title(self, page: WeeklyPage, *, nomad: bool = False) -> str:
         days = page.week.days()
         rng = self.range_label(days[0], days[-1])
+        if nomad:
+            return (
+                f'text(size: 10pt, weight: "bold")'
+                f'[{self.i18n.t("week_name")} {page.week.number}'
+                f" <{page.week.id}>  ·  {rng}]"
+            )
         return (
             f"text(size: h1)[{self.i18n.t('week_name')} {page.week.number}"
             f" <{page.week.id}> #h(0.6em) {rng}]"

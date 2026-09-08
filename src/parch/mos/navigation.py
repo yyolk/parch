@@ -12,6 +12,18 @@ from parch.mos.components.quarters_menu import QuartersMenu
 from parch.mos.configurator import Configurator
 from parch.mos.contents_mark import INDEX_ID
 from parch.mos.manifest import Manifest
+from parch.mos.nomad_nav import (
+    context_from_page_id,
+    habits_month_id,
+    index_listing_week,
+    prev_next_week,
+    review_week_id,
+    strip_dest_id,
+    strip_key_for_page_id,
+    strip_keys,
+    tasks_week_id,
+    tempo_kind,
+)
 from parch.mos.scribe_nav import (
     RAIL_LABELS,
     rail_section_names,
@@ -71,6 +83,232 @@ class Navigation:
         if not show_quarters:
             parts.append("show-quarters: false")
         return f"mos_strip({', '.join(parts)})"
+
+    def section_strip_items(self, page_id: str | None = None) -> str:
+        """Typst array of (dest, key) for the Nomad Topband."""
+        pairs: list[str] = []
+        for key in strip_keys(self.configurator):
+            dest = self.manifest.dest(strip_dest_id(key, page_id, self.configurator))
+            pairs.append(f"({dest}, \"{key}\")")
+        if not pairs:
+            return "()"
+        return f"({', '.join(pairs)},)"
+
+    def _strip_home_id(self) -> str:
+        return self.configurator.start_date().id
+
+    def _strip_default_dests(self) -> dict[str, str]:
+        home = self._strip_home_id()
+        return {
+            key: self.manifest.dest(strip_dest_id(key, home, self.configurator))
+            for key in strip_keys(self.configurator)
+        }
+
+    def nomad_strip_bind(self) -> str:
+        """Bind year-home dests once; pages pass only dests that differ."""
+        keys = strip_keys(self.configurator)
+        if not keys:
+            return ""
+        defaults = self._strip_default_dests()
+        params: list[str] = []
+        items: list[str] = []
+        for key in keys:
+            dest = defaults[key]
+            if key in {"contents", "cal"}:
+                items.append(f"({dest}, \"{key}\")")
+            else:
+                params.append(f"{key}: {dest}")
+                items.append(f"({key}, \"{key}\")")
+        return f"#let nomad-strip-items({', '.join(params)}) = ({', '.join(items)},)"
+
+    def section_strip_cell(self, page_id: str | None = None, *, quiet: bool = False) -> str:
+        active = None if quiet else strip_key_for_page_id(page_id)
+        highlight = f"\"{active}\"" if active else "none"
+        keys = strip_keys(self.configurator)
+        if not keys:
+            return f"section-strip((), active: {highlight})"
+        defaults = self._strip_default_dests()
+        overrides: list[str] = []
+        for key in keys:
+            if key in {"contents", "cal"}:
+                continue
+            dest = self.manifest.dest(strip_dest_id(key, page_id, self.configurator))
+            if dest != defaults[key]:
+                overrides.append(f"{key}: {dest}")
+        items = f"nomad-strip-items({', '.join(overrides)})"
+        return f"section-strip({items}, active: {highlight})"
+
+    def tempo_cell(self, page_id: str | None = None) -> str:
+        """Contextual tempo bar, or ``none`` when the page has no tempo."""
+        kind = tempo_kind(page_id)
+        if kind is None:
+            return "none"
+        items = self._tempo_items(page_id, kind)
+        if not items:
+            return "none"
+        return f"tempo-row(({', '.join(items)},))"
+
+    def _tempo_items(self, page_id: str | None, kind: str) -> list[str]:
+        ctx = context_from_page_id(page_id, self.configurator)
+        if kind == "daily":
+            return self._daily_tempo(ctx)
+        if kind == "daily_notes":
+            return self._notes_tempo(ctx)
+        if kind == "weekly":
+            return self._week_tempo(ctx.week, center_id=ctx.week.id if ctx.week else None)
+        if kind == "tasks":
+            week = ctx.tasks_week or ctx.week
+            return self._week_tempo(
+                week,
+                center_id=index_listing_week(self.configurator, week, section="tasks")
+                if week
+                else None,
+                prev_id=tasks_week_id(prev_next_week(week)[0]) if week else None,
+                next_id=tasks_week_id(prev_next_week(week)[1]) if week else None,
+            )
+        if kind == "review":
+            week = ctx.review_week or ctx.week
+            return self._week_tempo(
+                week,
+                center_id=index_listing_week(self.configurator, week, section="review")
+                if week
+                else None,
+                prev_id=review_week_id(prev_next_week(week)[0]) if week else None,
+                next_id=review_week_id(prev_next_week(week)[1]) if week else None,
+            )
+        if kind == "monthly":
+            return self._month_tempo(ctx.month, dest_id=ctx.month.id if ctx.month else None)
+        if kind == "habits":
+            if ctx.month is None:
+                return []
+            prev_m = (ctx.month.day + (-1)).month()
+            next_m = (ctx.month.day.end_of_month() + 1).month()
+            return self._month_tempo(
+                ctx.month,
+                dest_id=habits_month_id(ctx.month),
+                prev_id=habits_month_id(prev_m),
+                next_id=habits_month_id(next_m),
+            )
+        if kind == "quarterly":
+            year = ctx.quarter.day.year if ctx.quarter is not None else None
+            focus = ctx.quarter.number if ctx.quarter is not None else None
+            return self._year_quarter_tempo(year=year, focus=focus)
+        if kind == "annual":
+            return self._year_quarter_tempo()
+        return []
+
+    def _daily_tempo(self, ctx) -> list[str]:
+        chips: list[str] = []
+        if ctx.week is not None:
+            dest = self.manifest.dest(ctx.week.id)
+            label = f"Wk{ctx.week.number}"
+            chips.append(_tempo_chip(dest, label, False))
+        if ctx.month is not None:
+            dest = self.manifest.dest(ctx.month.id)
+            label = self.i18n.t(f"months.short.{ctx.month.name}")
+            chips.append(_tempo_chip(dest, label, True))
+        if ctx.quarter is not None:
+            dest = self.manifest.dest(ctx.quarter.id)
+            label = f"{self.i18n.t('quarter.short')}{ctx.quarter.number}"
+            chips.append(_tempo_chip(dest, label, False))
+        return chips
+
+    def _notes_tempo(self, ctx) -> list[str]:
+        chips: list[str] = []
+        if ctx.day is not None:
+            chips.append(_tempo_chip(self.manifest.dest(ctx.day.id), "Day", True))
+        if ctx.week is not None:
+            chips.append(
+                _tempo_chip(self.manifest.dest(ctx.week.id), f"Wk{ctx.week.number}", False)
+            )
+        if ctx.month is not None:
+            label = self.i18n.t(f"months.short.{ctx.month.name}")
+            chips.append(_tempo_chip(self.manifest.dest(ctx.month.id), label, False))
+        return chips
+
+    def _week_tempo(
+        self,
+        week,
+        *,
+        center_id: str | None,
+        prev_id: str | None = None,
+        next_id: str | None = None,
+    ) -> list[str]:
+        if week is None:
+            return []
+        prev, nxt = prev_next_week(week)
+        if prev_id is None:
+            prev_id = prev.id
+        if next_id is None:
+            next_id = nxt.id
+        if center_id is None:
+            center_id = week.id
+        label = f"Wk{week.number}"
+        return [
+            _tempo_chip(self.manifest.dest(prev_id), "‹", False),
+            _tempo_chip(self.manifest.dest(center_id), label, True),
+            _tempo_chip(self.manifest.dest(next_id), "›", False),
+        ]
+
+    def _month_tempo(
+        self,
+        month,
+        *,
+        dest_id: str | None,
+        prev_id: str | None = None,
+        next_id: str | None = None,
+    ) -> list[str]:
+        if month is None:
+            return []
+        prev = month.day + (-1)
+        nxt = month.day.end_of_month() + 1
+        if prev_id is None:
+            prev_id = prev.month().id
+        if next_id is None:
+            next_id = nxt.month().id
+        if dest_id is None:
+            dest_id = month.id
+        label = self.i18n.t(f"months.short.{month.name}")
+        return [
+            _tempo_chip(self.manifest.dest(prev_id), "‹", False),
+            _tempo_chip(self.manifest.dest(dest_id), label, True),
+            _tempo_chip(self.manifest.dest(next_id), "›", False),
+        ]
+
+    def _year_quarter_tempo(
+        self,
+        *,
+        year: int | None = None,
+        focus: int | None = None,
+    ) -> list[str]:
+        from datetime import date
+
+        from parch.calendar.day import Day
+        from parch.calendar.quarter import Quarter
+
+        y = year if year is not None else self.configurator.start_date().year
+        start = self.configurator.weekday_start()
+        chips = []
+        for month in (1, 4, 7, 10):
+            quarter = Quarter(
+                weekday_start=start,
+                day=Day(weekday_start=start, day=date(y, month, 1)),
+            )
+            label = f"{self.i18n.t('quarter.short')}{quarter.number}"
+            chips.append(_tempo_chip(self.manifest.dest(quarter.id), label, quarter.number == focus))
+        return chips
+
+    def _quarter_tempo(self, quarter) -> list[str]:
+        if quarter is None:
+            return []
+        prev = quarter.day + (-1)
+        nxt = quarter.months()[-1].day.end_of_month() + 1
+        label = f"{self.i18n.t('quarter.short')}{quarter.number}"
+        return [
+            _tempo_chip(self.manifest.dest(prev.quarter().id), "‹", False),
+            _tempo_chip(self.manifest.dest(quarter.id), label, True),
+            _tempo_chip(self.manifest.dest(nxt.quarter().id), "›", False),
+        ]
 
     def section_rail_items(self) -> str:
         """Typst array of (dest, label) for the Scribe section rail."""
@@ -214,6 +452,13 @@ class Navigation:
             if dest != "none":
                 dests.append(dest)
         return dests
+
+
+def _tempo_chip(dest: str, label: str, on: bool) -> str:
+    """Emit a locked-style chip() call. dest is Typst ``none`` or a label."""
+    flag = "true" if on else "false"
+    dest_part = f", dest: {dest}" if dest != "none" else ""
+    return f"chip([{label}], active: {flag}{dest_part}, expand: true)"
 
 
 def _header_chip(dest: str, label: str, on: bool) -> str:

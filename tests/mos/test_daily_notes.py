@@ -12,6 +12,7 @@ from tests.helpers import base_config, load_default, make_configurator
 from tests.toml_fixtures import omit_toml_sections
 
 NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _MARK_RULE = "contents_bars(size:"
 _MARK_FLUSH = "padded_link(<index>, contents_bars"
@@ -210,8 +211,8 @@ def test_pages_one_omits_fraction():
 
 
 def test_generated_trail_mark_alone_and_inverts_january_only():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-daily-notes.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="mos-daily-notes.toml"))
     pages = _note_pages(typst)
     p1 = pages["p1"]
     p2 = pages["p2"]
@@ -258,8 +259,8 @@ def test_generated_trail_mark_alone_and_inverts_january_only():
 
 
 def test_generated_hand_right_trail_mark_alone_left_of_q1():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(apply_hand(parse_toml(text, source="nomad-hand-right-daily-notes.toml"), "right"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(apply_hand(parse_toml(text, source="mos-hand-right-daily-notes.toml"), "right"))
     pages = _note_pages(typst)
     p1 = pages["p1"]
     assert "padded_link(<annual>, [2026])" not in p1

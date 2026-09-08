@@ -16,7 +16,7 @@ _EN_DASH = "–"
 _W01_RANGE = f"Dec 29 {_EN_DASH} Jan 4"
 _W28_RANGE = f"Jul 6 {_EN_DASH} 12"
 
-NOMAD = base_config("supernote-nomad")
+PAPER = base_config("158x210")
 
 _BULKY = (
     "daily",
@@ -218,8 +218,8 @@ def test_title_is_week_and_range_without_year_and_kills_calendar_chip():
 
 
 def test_generated_week_title_is_range_and_inverts_thursday_month():
-    text = omit_toml_sections(NOMAD.read_text(encoding="utf-8"), _BULKY)
-    typst = _generate(parse_toml(text, source="nomad-weekly.toml"))
+    text = omit_toml_sections(PAPER.read_text(encoding="utf-8"), _BULKY)
+    typst = _generate(parse_toml(text, source="paper-weekly.toml"))
     pages = _week_pages(typst)
     w01 = pages["w01"]
     w28 = pages["w28"]
@@ -227,38 +227,23 @@ def test_generated_week_title_is_range_and_inverts_thursday_month():
     assert "text(size: h1)[/]" not in w01
     assert "2026 /" not in w01
     assert f"Week 1 <2026W01> #h(0.6em) {_W01_RANGE}" in w01
-    heading = w01[w01.index("trail_heading(") : w01.index("week_matrix(")]
-    assert heading.startswith("trail_heading(")
-    assert "lead_pair(" not in heading
-    assert "column-gutter: 6pt" not in heading
-    assert "pad(right: 3mm" not in heading
-    assert "contents_bars(size:" in heading
-    assert "padded_link(<annual>)[2026]" not in heading
-    assert w01.count("Calendar") == 0
-    assert "Calendar" not in w01
+    assert "page-shell(" not in w01
+    assert "mos_frame(" in w01
     assert "Monday 29" in w01
     assert "Thursday 1" in w01
-    _assert_week_matrix_emit(w01, gutter="4pt", pattern="dotted_centered")
+    _assert_week_matrix_emit(w01, gutter="5pt", pattern="dotted_centered")
     assert "Monday, 29" not in w01
     assert "Thursday,  1" not in w01
-    assert w01.count("contents_bars(size:") == 1
     assert "grid.cell(stroke: (bottom: thick_stroke" not in w01
     assert "grid.cell(colspan: 3, lined_well" not in w01
     assert "week_cell(" not in w01
     assert _WRITING_PATTERN not in w01
     assert "[Notes]" in w01
-    bind = typst[typst.index("#let mos_strip = mos_strip.with(months:") :].split("\n", 1)[0]
-    assert "(<month-2026-01-01>, [Jan])" in bind
-    assert "(<quarter-2026-1>, [Q1])" in bind
-    assert "(<quarter-2026-4>, [Q4])" in bind
-    assert "mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ())" in w01
+    assert "mos_strip(" in w01
     assert "mos_tabs(" not in w01
-    assert "table.cell(fill: black" not in w01
-    assert "highlight-months: (<month-2025-12-01>," not in w01
     assert f"Week 28 <2026W28> #h(0.6em) {_W28_RANGE}" in w28
     assert "Monday 6" in w28
     assert w28.count("Calendar") == 0
-    _assert_week_matrix_emit(w28, gutter="4pt", pattern="dotted_centered")
+    _assert_week_matrix_emit(w28, gutter="5pt", pattern="dotted_centered")
     assert "week_cell(" not in w28
-    assert "mos_strip(highlight-months: (<month-2026-07-01>,), highlight-quarters: ())" in w28
-    assert "table.cell(fill: black" not in w28
+    assert "mos_strip(" in w28

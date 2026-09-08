@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from parch import ConfigError
 from parch.config import StrictDict
+from parch.devices import is_nomad
 from parch.models import format_validation_error, load_device_profile
 from parch.models.device import (
     AnnualSection,
@@ -135,7 +136,7 @@ def device_profile_to_dto(profile: DeviceProfile) -> dict[str, Any]:
                 merged.setdefault("inset", "3pt")
                 comp["params"] = merged
 
-    scratch = style.scratch_pad or "dotted"
+    scratch = style.scratch_pad or ("lined" if is_nomad(profile.device.name) else "dotted")
     _apply_section_patterns(sections, scratch)
     regular_height = style.regular_height or _default_regular_height(style.type.body)
     link_padding = style.link_padding or _default_link_padding(style.type.body)

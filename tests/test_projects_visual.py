@@ -105,7 +105,7 @@ def test_nomad_index_numbers_left_no_year(tmp_path):
     assert not thick, thick
 
 
-def test_nomad_board_is_three_dotted_columns(tmp_path):
+def test_nomad_board_is_three_lined_columns(tmp_path):
     pdf, typst = _projects_pdf(tmp_path, _NOMAD, "nomad")
     chunk = next(
         c
@@ -113,11 +113,21 @@ def test_nomad_board_is_three_dotted_columns(tmp_path):
         if "project-1" in _LABEL_DEF.findall(c)
     )
     assert "1/16" not in chunk
-    assert "text(size: 0.85em)[1]" in chunk
-    assert chunk.count("lined_well(dotted_centered)") == 3
+    assert "[Name]" in chunk
+    assert "lined_well(lined_fill)" not in chunk
+    assert "lined_well(dotted_centered)" not in chunk
+    assert "let tile = 5.5mm" in chunk
+    assert "column-gutter: 1.8mm" in chunk
     page = _page_index(typst, "project-1")
     png = raster_page(pdf, page, tmp_path / "nomad-board.png", dpi=_DPI)
-    _assert_three_dotted_columns(png)
+    box = ink_bbox(png)
+    assert box is not None
+    with Image.open(png) as src:
+        width, height = src.size
+    x0, y0, x1, y1 = box
+    # Boxed hair columns + Name; dark ink is crumb, Name, To do/Doing/Done.
+    assert x1 - x0 > width * 0.40
+    assert y0 < height * 0.30
 
 
 def test_scribe_board_is_three_dotted_columns(tmp_path):
