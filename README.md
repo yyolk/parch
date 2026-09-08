@@ -42,7 +42,9 @@ parch press supernote-nomad
 
 Full-year Nomad is one Typst document — peak RAM is page-tree count, not `index.typst` size. There is no chunked compile / PDF merge path.
 
-`supernote-nomad` defaults to `[section.daily_notes] pages = 1` (one notes well per day; `pages = 2` is opt-in). Lean notes is **not** enough on a default 8GB Codespace with all sections on — year extras + notes=1 is still ~3.7 GiB Typst CLI, and daily pages dominate (~2.4 GiB of that). Other devices still default to `pages = 2`. Jobs written before this default still say `pages = 2`. Press on a 16GB machine, or omit `daily` / extras, until daily page-tree cost drops.
+`supernote-nomad` defaults to `[section.daily_notes] pages = 1` (one notes well per day; `pages = 2` is opt-in). Lean notes is **not** the 8GB fix. Other devices still default to `pages = 2`. Jobs written before this default still say `pages = 2`.
+
+Default **8GB** Codespaces OOM on a full-year all-sections press. **16GB** works. Typst CLI peak for extras + notes=1 is ~4.0 GiB (`/usr/bin/time -f %M typst compile`, last line only). Daily page trees dominate. Python emit is ~50 MiB — not the peak. `PARCH_TYPST=py` compiles in-process, so `%M` on `uv run parch press` is Python+Typst together; `PARCH_TYPST=cli` (default) spawns `typst`, and the cgroup is Typst **plus** leftover Python/uv/OS (~2–3 GiB). Do not pipe every log line through `awk`. Press on 16GB, or omit `daily` / extras, until daily dest-tree cost drops.
 
 ```shell
 parch new --device supernote-nomad --year 2027 --yes -o mine.toml
