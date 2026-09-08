@@ -263,7 +263,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "column-gutter: chip-gutter" in strip
     assert "rows: (auto,)" in strip
     assert "0.55mm" not in strip
-    assert "padded_link(padding: 0pt, dest, seated)" in strip
+    assert "padded_link(padding: 0pt, dest, box(width: 100%, fill: luma(0%, 0%), seated))" in strip
     chip = house[house.index("#let chip(") : house.index("#let tempo-row(")]
     assert "inset: (x: chip-inset-x, y: chip-inset-y)" in chip
     assert 'font: "Liberation Sans"' in chip

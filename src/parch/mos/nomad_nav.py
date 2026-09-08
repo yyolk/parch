@@ -398,6 +398,16 @@ def _focus_week(ctx: NavContext, configurator) -> Week:
     return day.week()
 
 
+def _first_live_day(week: Week, configurator) -> Day:
+    """First day of *week* inside the planner range (W01 → Jan 1, not Dec 29)."""
+    start = configurator.start_date()
+    end = configurator.end_date()
+    for day in week.days():
+        if start <= day <= end:
+            return day
+    return week.days()[0]
+
+
 def _cross_boundary_day(ctx: NavContext, configurator) -> Day:
     """Tasks uses week start; Review uses week end; Weekly uses Thursday."""
     if ctx.kind == "review_week" and ctx.week is not None:
@@ -406,15 +416,17 @@ def _cross_boundary_day(ctx: NavContext, configurator) -> Day:
         return ctx.week.days()[0]
     if ctx.kind == "weekly" and ctx.week is not None:
         return next(day for day in ctx.week.days() if day.weekday_name == "thursday")
+    if ctx.kind == "daily" and ctx.day is not None:
+        return ctx.day
     if ctx.week is not None:
         return ctx.week.days()[0]
     return ctx.day or configurator.start_date()
 
 
 def _day_from_context(ctx: NavContext, configurator) -> Day:
-    """Topband Day dest: strip-first day, or 1st of the habits month."""
+    """Topband Day dest: first live day in the week, or 1st of the habits month."""
     if ctx.kind in {"tasks_week", "review_week", "weekly"} and ctx.week is not None:
-        return ctx.week.days()[0]
+        return _first_live_day(ctx.week, configurator)
     if ctx.kind == "habits_month" and ctx.month is not None:
         return ctx.month.day
     if ctx.kind == "monthly" and ctx.month is not None:

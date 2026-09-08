@@ -446,7 +446,9 @@
         let name = item.at(1)
         let on = dest != none and name == active
         let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: edge)
-        if dest != none { padded_link(padding: 0pt, dest, seated) } else { seated }
+        if dest != none {
+          padded_link(padding: 0pt, dest, box(width: 100%, fill: luma(0%, 0%), seated))
+        } else { seated }
       }),
     )
   }

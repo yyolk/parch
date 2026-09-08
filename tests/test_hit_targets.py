@@ -114,3 +114,29 @@ def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
     assert len(mini) >= 14
     tempo = [row for row in daily if row[0] > 80 and 10 < row[1] < 16]
     assert len(tempo) >= 3
+
+
+def test_nomad_daily_tempo_and_weekly_day_are_link_annots(tmp_path):
+    """Daily Jan/Q tempo and weekly Day chip must be live PDF links."""
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "nomad-tempo-day")
+    assert pdf.is_file(), stderr
+    reader = PdfReader(str(pdf))
+    pages = sample_page_numbers(
+        typst,
+        year=2026,
+        week_id="2026W01",
+        jan1="2026-01-01",
+        stems=("daily-jan1", "weekly-w01"),
+    )
+    daily = _links(reader.pages[pages["daily-jan1"] - 1])
+    tempo = [row for row in daily if row[0] > 80 and 10 < row[1] < 16]
+    assert len(tempo) >= 3
+    top_y = max(row[3] for row in daily)
+    strip = [row for row in daily if abs(row[3] - top_y) < 3]
+    assert len(strip) >= 6
+    weekly = _links(reader.pages[pages["weekly-w01"] - 1])
+    wtop = max(row[3] for row in weekly)
+    wstrip = [row for row in weekly if abs(row[3] - wtop) < 3]
+    assert len(wstrip) >= 6

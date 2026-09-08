@@ -139,8 +139,8 @@ def test_on_tasks_topband_jumps_week_start_for_mon_q():
     assert strip_dest_id("wk", tasks_w01, cfg) == "2026W01"
     assert strip_dest_id("mon", tasks_w01, cfg) == week.days()[0].month().id
     assert strip_dest_id("q", tasks_w01, cfg) == week.days()[0].quarter().id
-    assert strip_dest_id("day", tasks_w01, cfg) == week.days()[0].id
-    assert strip_dest_id("day", "2026W01", cfg) == week.days()[0].id
+    assert strip_dest_id("day", tasks_w01, cfg) == "2026-01-01"
+    assert strip_dest_id("day", "2026W01", cfg) == "2026-01-01"
 
 
 def test_review_cross_boundary_uses_week_end():
@@ -149,12 +149,15 @@ def test_review_cross_boundary_uses_week_end():
     week = make_day("2025-12-29").week()
     assert strip_dest_id("mon", review_w01, cfg) == week.days()[-1].month().id
     assert strip_dest_id("q", review_w01, cfg) == week.days()[-1].quarter().id
-    assert strip_dest_id("day", review_w01, cfg) == week.days()[0].id
+    assert strip_dest_id("day", review_w01, cfg) == "2026-01-01"
 
 
 def test_habits_day_is_first_of_month_and_quarter_lands_first_month():
     cfg = _cfg("supernote-nomad", extras=True)
     assert strip_dest_id("day", "habits-january", cfg) == "2026-01-01"
+    assert strip_dest_id("q", "2026-01-01", cfg) == "quarter-2026-1"
+    assert strip_dest_id("mon", "2026-01-01", cfg) == "month-2026-01-01"
+    assert strip_dest_id("day", "2026W01", cfg) == "2026-01-01"
     assert strip_dest_id("habits", "quarter-2026-1", cfg) == habits_month_id(
         make_day("2026-01-01").month()
     )
@@ -702,6 +705,13 @@ def test_nomad_calendar_days_and_daily_tempo_link():
     assert "chip([Wk1], active: false, dest: <2026W01>, expand: true)" in daily
     assert "chip([Jan], active: true, dest: <month-2026-01-01>, expand: true)" in daily
     assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in daily
+    assert '(<quarter-2026-1>, "q")' in daily
+    assert '(<month-2026-01-01>, "mon")' in daily
+    assert '(none, "q")' not in daily
+    assert '(none, "mon")' not in daily
+    weekly = _page_with(typst, "Week 1 <2026W01>")
+    assert '(<2026-01-01>, "day")' in weekly
+    assert '(none, "day")' not in weekly
 
 
 def test_nomad_sample_page_numbers_find_topband_dests():
