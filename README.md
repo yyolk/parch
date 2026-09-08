@@ -44,7 +44,7 @@ Full-year Nomad is one Typst document — peak RAM is page-tree count, not `inde
 
 `supernote-nomad` defaults to `[section.daily_notes] pages = 1` (one notes well per day; `pages = 2` is opt-in). Other devices still default to `pages = 2`. Jobs written before this default still say `pages = 2`.
 
-Daily mini-cal day cells are a glance (feel4r) — not 31 dests × 365 pages. Annual / quarterly year-month days still link. Full-year extras Typst CLI (`/usr/bin/time -f %M typst compile`, last line): notes-off **1.84 GiB**, notes=1 **2.65 GiB**, notes=2 **3.12 GiB**. Python emit is ~50 MiB. `PARCH_TYPST=py` is in-process; `PARCH_TYPST=cli` (default) spawns `typst` (cgroup = Typst + leftover Python/uv/OS, ~2–3 GiB). Do not pipe every log line through `awk`. pages=2 stays opt-in; Typst 3.12 GiB + overhead is plausible on default 8GB if notes=1 already fits.
+Daily mini-cal day cells are a glance (feel4r) — not 31 dests × 365 pages. Annual / quarterly year-month days still link. Full-year extras Typst CLI (`/usr/bin/time -f %M typst compile`, last line): notes-off **1.84 GiB**, notes=1 **2.65 GiB**, notes=2 **3.12 GiB**. Python emit is ~50 MiB. `PARCH_TYPST=py` is in-process; `PARCH_TYPST=cli` (default) spawns `typst` (cgroup = Typst + leftover Python/uv/OS, ~2–3 GiB). Do not pipe every log line through `awk`. **pages=1 is the 8GB-supported extras press.** `pages = 2` stays opt-in and still OOMs on default 8GB Codespaces — use **16GB** despite Typst-only ~3.12 GiB.
 
 ```shell
 parch new --device supernote-nomad --year 2027 --yes -o mine.toml
