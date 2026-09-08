@@ -479,19 +479,29 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "T1" in review
     assert "Mon 29" not in review
     assert "Mon 1" not in review
-    colo = _page_with(typst, "[About <colophon>]")
+    colo = _page_with(typst, "[About this notebook <colophon>]")
     assert "section-strip(" in colo
     assert "active: none" in colo
     assert "page-shell(\n  none," not in colo
+    assert 'text(size: 10pt, weight: "bold")[About this notebook <colophon>]' in colo
+    assert 'text(size: h1)[About' not in colo
+    assert 'text(size: h1)[2026]' not in colo
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in colo
+    assert "columns: (32mm, 1fr)" in colo
+    assert "column-gutter: 3mm" in colo
+    assert "row-gutter: 5.5mm" in colo
     assert "[Device]" in colo
     assert "[Page]" in colo
     assert "[Year]" in colo
     assert "[Chrome]" in colo
-    assert 'font: "Liberation Sans")[Device]' in colo
+    assert 'font: "Liberation Sans")[#label]' in colo
     assert "[Topband · no side MOS]" in colo
     assert "[Nomad Topband]" not in colo
     assert "[Edition]" in colo
     assert "[*Version*]" not in colo
+    assert "[118.87 × 158.5 mm]" in colo
+    assert "parch · yyolk" in colo
+    assert "luma(45%)" in colo
     notes = _page_with(typst, "Notes  ·  Thursday  ·  January 1 <daily-note-2026-01-01-page-1>")
     assert "nomad_notes_well()" in notes
     assert "lined_well(lined_fill)" not in notes

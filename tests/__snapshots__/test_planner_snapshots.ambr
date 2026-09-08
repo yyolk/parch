@@ -629,20 +629,35 @@
     'colophon': '''
       #page-shell(
         section-strip(((<index>, "contents"), (<annual>, "cal"), (<quarter-2026-1>, "q"), (<month-2026-01-01>, "mon"), (<2026W01>, "wk"), (<2026-01-01>, "day"),), active: none),
+        {
+        set text(size: 10pt)
+        let row(label, value) = grid(
+          columns: (32mm, 1fr),
+          column-gutter: 3mm,
+          align: (horizon, horizon),
+          text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[#label],
+          text(size: 10pt)[#value],
+        )
+        v(4mm)
         grid(
-        columns: (auto, 1fr),
-        column-gutter: regular_column_gutter,
-        rows: regular_height,
-        align: horizon,
-        text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Device], [SuperNote Nomad],
-        text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Page], [118.87mm × 158.5mm],
-        text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Year], padded_link(<annual>)[2026],
-        text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Chrome], [Topband · no side MOS],
-        text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Edition], [parch VERSION],
-      ),
+          rows: (auto,) * 5,
+          row-gutter: 5.5mm,
+          row([Device], [SuperNote Nomad]),
+          row([Page], [118.87 × 158.5 mm]),
+          row([Year], [2026]),
+          row([Chrome], [Topband · no side MOS]),
+          row([Edition], [parch VERSION]),
+        )
+        v(1fr)
+        align(center, text(
+          size: 7.5pt,
+          fill: luma(45%),
+          font: "Liberation Sans",
+        )[parch · yyolk])
+      },
         tempo: none,
-        title: text(size: h1)[About <colophon>],
-        year: text(size: h1)[2026],
+        title: text(size: 10pt, weight: "bold")[About this notebook <colophon>],
+        year: text(size: 7.5pt, weight: "bold")[2026],
       )
     ''',
     'daily': '''

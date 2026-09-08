@@ -112,33 +112,68 @@ class Colophon:
 
     def pages(self, manifest) -> list[PageData]:
         if nomad_topband(self.configurator) and not self.dump:
+            year_n = self._year()
+            year = (
+                f'text(size: 7.5pt, weight: "bold")[{year_n}]'
+                if year_n is not None
+                else None
+            )
+            title = _escape(DEFAULT_TITLE)
             return [
                 PageData(
-                    title="text(size: h1)[About <colophon>]",
+                    title=f'text(size: 10pt, weight: "bold")[{title} <colophon>]',
                     content=self._nomad_content(manifest),
                     page_id=self.ID,
                     heading_mark=HeadingMark.TRAIL,
                     strip="quiet",
+                    year=year,
                 )
             ]
         return [PageData(raw_typst=True, content=self._content(manifest))]
 
+    def _nomad_page_size(self) -> str:
+        """Locked 13-colophon page line: ``118.87 × 158.5 mm``."""
+        raw = self._page_label()
+        if not raw:
+            return "118.87 × 158.5 mm"
+        cleaned = " ".join(raw.replace("mm", "").split())
+        if "×" in cleaned:
+            return f"{cleaned} mm"
+        return raw
+
     def _nomad_content(self, manifest) -> str:
+        """Locked 13-colophon: 32mm labels, 5.5mm rows, parch · yyolk footer."""
         device = _escape(self._device_label() or "Supernote Nomad")
-        page = _escape(self._page_label())
-        year_cell = self._year_cell(manifest)
+        page = _escape(self._nomad_page_size())
+        year = self._year()
+        year_text = str(year) if year is not None else ""
         version = _escape(__version__)
-        return f"""grid(
-  columns: (auto, 1fr),
-  column-gutter: regular_column_gutter,
-  rows: regular_height,
-  align: horizon,
-  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Device], [{device}],
-  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Page], [{page}],
-  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Year], {year_cell},
-  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Chrome], [Topband · no side MOS],
-  text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[Edition], [parch {version}],
-)"""
+        return f"""{{
+  set text(size: 10pt)
+  let row(label, value) = grid(
+    columns: (32mm, 1fr),
+    column-gutter: 3mm,
+    align: (horizon, horizon),
+    text(size: 9pt, fill: luma(40%), font: "Liberation Sans")[#label],
+    text(size: 10pt)[#value],
+  )
+  v(4mm)
+  grid(
+    rows: (auto,) * 5,
+    row-gutter: 5.5mm,
+    row([Device], [{device}]),
+    row([Page], [{page}]),
+    row([Year], [{year_text}]),
+    row([Chrome], [Topband · no side MOS]),
+    row([Edition], [parch {version}]),
+  )
+  v(1fr)
+  align(center, text(
+    size: 7.5pt,
+    fill: luma(45%),
+    font: "Liberation Sans",
+  )[parch · yyolk])
+}}"""
 
     def _heading(self, manifest, *, labeled: bool = True) -> str:
         """FOLLOW seat: five-bar then the name at 0.5em, own hit."""
