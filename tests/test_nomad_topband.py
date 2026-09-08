@@ -197,7 +197,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section-strip(" in typst
     assert "tempo-row(" in typst
     assert "tempo-bar(" not in typst
-    daily = _page_with(typst, "Thursday · January 1 <2026-01-01>")
+    daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
     assert "page-shell(" in daily
     assert "section-strip(" in daily
     assert 'active: "day"' in daily
@@ -208,26 +208,23 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "nomad_daily_well(" in daily
     assert "daily_well(left" not in daily
     assert "daily_well(right" not in daily
-    assert "[ 7]" in daily
-    assert "[16]" in daily
-    assert "[ 8]" in daily
-    assert 'font: "Liberation Sans")[ 7]' in daily
-    assert "rows: (regular_height,) + (1fr,) * 10" in daily
+    assert 'text(size: 10pt, weight: "bold")[Thursday  ·  January 1 <2026-01-01>]' in daily
+    assert 'text(size: h1)[Thursday' not in daily
+    assert 'text(size: h1)[2026]' not in daily
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in daily
+    assert "chip([Wk1]" in daily
+    assert "chip([Jan], active: true" in daily
+    assert "chip([Q1]" in daily
     assert "place(bottom + left, line(length: 3mm" not in daily
-    assert daily.count("task_tick()") == 6
-    assert "rows: (24mm, 1fr)" in daily
-    assert "stroke: regular_stroke + black" in daily
-    assert "lined_well(lined_fill)" in daily
-    assert "box(inset: (x: 1.4mm, y: 0.35mm)" in daily
-    assert "[More]" in daily
-    assert 'font: "Liberation Sans"' in daily.split("[More]")[0][-80:]
+    assert "lined_well(lined_fill)" not in daily
+    assert "lined_well(dotted_centered)" not in daily
+    assert "padded_link(<daily-note-2026-01-01-page-1>)[More]" in daily
     assert "mini-month(" in daily
     assert "highlight: 1" in daily
     assert "compact: true" in daily
     assert "month_grid(" not in daily
     assert "LittleCalendar" not in daily
     assert "Notes" not in daily.split("section-strip(")[1].split(")", 1)[0]
-    assert 'text(size: h1)[2026]' in daily
     weekly = _page_with(typst, "Week 1 <2026W01>")
     assert 'active: "wk"' in weekly
     assert "nomad_week_bands(" in weekly
@@ -438,9 +435,17 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Nomad Topband]" not in colo
     assert "[Edition]" in colo
     assert "[*Version*]" not in colo
-    notes = _page_with(typst, "[Notes <daily-note-2026-01-01-page-1>]")
-    assert "lined_well(lined_fill)" in notes
+    notes = _page_with(typst, "Notes  ·  Thursday  ·  January 1 <daily-note-2026-01-01-page-1>")
+    assert "nomad_notes_well()" in notes
+    assert "lined_well(lined_fill)" not in notes
     assert "lined_well(dotted_centered)" not in notes
+    assert 'text(size: 10pt, weight: "bold")[Notes  ·  Thursday  ·  January 1 <daily-note-2026-01-01-page-1>]' in notes
+    assert 'text(size: h1)[Notes' not in notes
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in notes
+    assert "chip([Day], active: true" in notes
+    assert "chip([Wk1]" in notes
+    assert "chip([Jan]" in notes
+    assert "chip([Q1]" not in notes
 
 
 def test_nomad_habits_floors_stock_columns_to_five():

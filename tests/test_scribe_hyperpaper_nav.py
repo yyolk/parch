@@ -270,7 +270,7 @@ def test_scribe_daily_and_notes_use_short_crumb_and_keep_heading_in_well():
     assert notes.index("1 <daily-note-2026-01-01-page-1>") < notes.index("lined_well(")
     assert "[*Thursday*]" in notes
     nomad = _generate("supernote-nomad")
-    nomad_daily = _page_with(nomad, "Thursday · January 1 <2026-01-01>")
+    nomad_daily = _page_with(nomad, "Thursday  ·  January 1 <2026-01-01>")
     assert "text(size: h1)[Thursday 1]" not in nomad_daily
     assert "page-shell(" in nomad_daily
     assert "nomad_daily_well(" in nomad_daily

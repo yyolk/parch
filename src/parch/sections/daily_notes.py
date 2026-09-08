@@ -38,11 +38,21 @@ class DailyNotes:
         for note in self._range():
             heading = self._title(manifest, note)
             well = f"lined_well({_WELL_PATTERN.get(self.pattern, self.pattern)})"
-            if nomad_topband(self.configurator):
+            nomad = nomad_topband(self.configurator)
+            year = None
+            if nomad:
+                weekday = self.i18n.t(f"weekday.full.{note.day.weekday_name}")
+                month = self.i18n.t(f"months.full.{note.day.month().name}")
                 title = (
-                    f'text(size: h1)[{self.i18n.t("notes")} <{note.id}>]'
+                    f'text(size: 10pt, weight: "bold")'
+                    f'[{self.i18n.t("notes")}  ·  {weekday}  ·  '
+                    f"{month} {note.day.month_day} <{note.id}>]"
                 )
-                content = well
+                content = "nomad_notes_well()"
+                year = (
+                    f'text(size: 7.5pt, weight: "bold")'
+                    f"[{self.configurator.start_date().year}]"
+                )
             elif scribe_hyperpaper_nav(self.configurator):
                 title = self._nav_title()
                 content = heading_and_well(heading, well)
@@ -58,6 +68,7 @@ class DailyNotes:
                     highlight_quarters=[],
                     nav_links=[],
                     heading_mark=HeadingMark.TRAIL,
+                    year=year,
                 )
             )
         return out

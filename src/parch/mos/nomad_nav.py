@@ -537,6 +537,8 @@ def tempo_kind(page_id: str | None) -> str | None:
     name = section_name_for_page_id(page_id)
     if name == "annual":
         return "annual"
+    if page_id and page_id.startswith("daily-note-"):
+        return "daily_notes"
     if name == "daily":
         return "daily"
     if name == "weekly":

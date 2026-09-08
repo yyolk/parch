@@ -6,6 +6,7 @@ from parch import ConfigError
 from parch.calendar.day import Day
 from parch.config import StrictDict, _to_plain
 from parch.i18n import I18n
+from parch.calendar.dated_note import DatedNote
 from parch.mos.components.daily_notes import DailyNotes
 from parch.mos.components.daily_schedule import DailySchedule
 from parch.mos.components.daily_priorities import DailyPriorities
@@ -76,42 +77,24 @@ class Daily:
         return f"daily_well({self.side}, {hours}, {writing})"
 
     def nomad_content(self) -> str:
-        """Locked Nomad daily: 2/3 schedule 7–16, rail cal+priorities, lined notes floor."""
-        schedule = DailySchedule(
-            i18n=self.i18n,
-            **{
-                "from": 7,
-                "to": 16,
-                "trailing_30_minutes": False,
-                "time_format": "%k",
-                "stretch": True,
-                "hour_font": "Liberation Sans",
-            },
+        """Locked Nomad daily: 1.2/0.8 schedule 7–16, 24mm cal, 6 prios, 4×5.8mm notes."""
+        calendar = mini_month_cell(
+            self.i18n,
+            self.manifest,
+            self.day.month(),
+            highlight=self.day.month_day,
         )
-        calendar = (
-            "box(width: 100%, height: 100%, clip: true, "
-            "stroke: regular_stroke + black, inset: 0.5mm, "
-            f"{mini_month_cell(self.i18n, self.manifest, self.day.month(), highlight=self.day.month_day)})"
-        )
-        priorities = DailyPriorities(i18n=self.i18n, number=6)
-        notes = DailyNotes(
-            i18n=self.i18n,
-            manifest=self.manifest,
-            day=self.day,
-            title_height="4mm",
-            notes_height="1fr",
-            pattern="lined",
-            more_chip=True,
-            chip_font="Liberation Sans",
-        )
-        rail = f"""grid(
-  columns: 1fr,
-  rows: (24mm, 1fr),
-  row-gutter: {self.items_spacing},
+        more = "none"
+        note_id = DatedNote(weekday_start=self.day.weekday_start, day=self.day).id
+        if self.manifest.source(note_id):
+            more = self.manifest.link_or_content(note_id, self.i18n.t("more_daily_notes"))
+        return f"""nomad_daily_well(
   {calendar},
-  {priorities.generate()}
+  {more},
+  schedule-label: [{self.i18n.t("schedule")}],
+  priorities-label: [{self.i18n.t("priorities")}],
+  notes-label: [{self.i18n.t("daily_notes")}],
 )"""
-        return f"nomad_daily_well({schedule.generate()}, {rail}, {notes.generate()})"
 
     def _column(self, comps: list[Any]) -> str:
         pieces: list[str] = []

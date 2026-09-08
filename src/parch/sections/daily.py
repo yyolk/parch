@@ -39,13 +39,20 @@ class Daily:
                 **self.params,
             )
             heading = page.title()
-            if nomad_topband(self.configurator):
+            nomad = nomad_topband(self.configurator)
+            year = None
+            if nomad:
                 weekday = self.i18n.t(f"weekday.full.{day.weekday_name}")
                 month = self.i18n.t(f"months.full.{day.month().name}")
                 title = (
-                    f"text(size: h1)[{weekday} · {month} {day.month_day} <{day.id}>]"
+                    f'text(size: 10pt, weight: "bold")'
+                    f"[{weekday}  ·  {month} {day.month_day} <{day.id}>]"
                 )
                 content = page.nomad_content()
+                year = (
+                    f'text(size: 7.5pt, weight: "bold")'
+                    f"[{self.configurator.start_date().year}]"
+                )
             elif scribe_hyperpaper_nav(self.configurator):
                 title = page.nav_title()
                 content = heading_and_well(heading, page.content())
@@ -60,6 +67,7 @@ class Daily:
                     highlight_months=[day.month()],
                     highlight_quarters=[],
                     heading_mark=HeadingMark.TRAIL,
+                    year=year,
                 )
             )
         return out

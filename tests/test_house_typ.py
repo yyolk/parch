@@ -51,6 +51,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "month_weeks" in names
     assert "week_matrix" in names
     assert "nomad_daily_well" in names
+    assert "nomad_notes_well" in names
     assert "nomad_week_bands" in names
     assert "nomad_month_well" in names
     assert "year-month" in names
@@ -175,7 +176,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let hair = 0.4pt" in house
     assert "#let ink = luma(0)" in house
     assert "#let hairline = line(length: 100%, stroke: hair + ink)" in house
-    shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_well(")]
+    assert "#let regular-h = 7mm" in house
+    shell = house[house.index("#let page-shell(") : house.index("#let nomad_daily_hours(")]
     assert 'set text(font: "Libertinus Serif")' in shell
     assert "set par(spacing: rhythm)" in shell
     assert "set block(spacing: rhythm)" in shell
@@ -193,7 +195,23 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     assert "#let nomad_daily_well(" in house
-    assert "columns: (2fr, 1fr)" in house[house.index("#let nomad_daily_well(") :]
+    daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_well(")]
+    assert "columns: (1.2fr, 0.8fr)" in daily_well
+    assert "column-gutter: 0pt" in daily_well
+    assert "rows: (1fr, auto)" in daily_well
+    assert "row-gutter: 1.0mm" in daily_well
+    assert "notes-tile: 5.8mm" in daily_well
+    assert "notes-lines: 4" in daily_well
+    assert "cal-h: 24mm" in daily_well
+    assert "hour-start: 7" in daily_well
+    assert "hours: 10" in daily_well
+    assert "prios: 6" in daily_well
+    assert "notes-height: 20mm" not in daily_well
+    assert "columns: (2fr, 1fr)" not in daily_well
+    notes_well = house[house.index("#let nomad_notes_well(") : house.index("#let nomad_week_hairs(")]
+    assert "tile: regular-h" in notes_well
+    assert "calc.floor(size.height / tile)" in notes_well
+    assert "lined_well" not in notes_well
     assert "#let nomad_week_bands(" in house
     week_bands = house[house.index("#let nomad_week_bands(") : house.index("#let year-month(")]
     assert "notes-height: 18mm" in week_bands

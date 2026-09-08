@@ -113,6 +113,8 @@ class Navigation:
         ctx = context_from_page_id(page_id, self.configurator)
         if kind == "daily":
             return self._daily_tempo(ctx)
+        if kind == "daily_notes":
+            return self._notes_tempo(ctx)
         if kind == "weekly":
             return self._week_tempo(ctx.week, center_id=ctx.week.id if ctx.week else None)
         if kind == "tasks":
@@ -169,6 +171,19 @@ class Navigation:
             dest = self.manifest.dest(ctx.quarter.id)
             label = f"{self.i18n.t('quarter.short')}{ctx.quarter.number}"
             chips.append(_tempo_chip(dest, label, False))
+        return chips
+
+    def _notes_tempo(self, ctx) -> list[str]:
+        chips: list[str] = []
+        if ctx.day is not None:
+            chips.append(_tempo_chip(self.manifest.dest(ctx.day.id), "Day", True))
+        if ctx.week is not None:
+            chips.append(
+                _tempo_chip(self.manifest.dest(ctx.week.id), f"Wk{ctx.week.number}", False)
+            )
+        if ctx.month is not None:
+            label = self.i18n.t(f"months.short.{ctx.month.name}")
+            chips.append(_tempo_chip(self.manifest.dest(ctx.month.id), label, False))
         return chips
 
     def _week_tempo(

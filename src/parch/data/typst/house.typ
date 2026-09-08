@@ -403,6 +403,7 @@
 #let hair = 0.4pt
 #let ink = luma(0)
 #let hairline = line(length: 100%, stroke: hair + ink)
+#let regular-h = 7mm
 #let chip-gutter = 1.2mm
 #let chip-inset-x = 0.9mm
 #let chip-inset-y = 1.2mm
@@ -537,20 +538,146 @@
   )
 }
 
-// Nomad daily: schedule 2fr | rail 1fr, notes floor. MOS keeps daily_well.
-#let nomad_daily_well(schedule, rail, notes, column-gutter: none, notes-height: 20mm) = grid(
-  columns: 1fr,
-  rows: (1fr, notes-height),
-  row-gutter: 1.2mm,
+// Nomad daily: locked 06-daily.typ. MOS keeps daily_well.
+#let nomad_daily_hours(start: 7, n: 10) = layout(size => {
+  let hour-h = size.height / n
   grid(
-    columns: (2fr, 1fr),
-    rows: 1fr,
-    column-gutter: column-gutter,
-    schedule,
-    rail,
-  ),
-  notes,
-)
+    rows: (hour-h,) * n,
+    row-gutter: 0pt,
+    ..range(start, start + n).map(h => grid(
+      columns: (4.5mm, 1fr),
+      column-gutter: 0.65mm,
+      align: (bottom + right, bottom),
+      pad(bottom: 0.08mm, text(
+        size: 6.5pt,
+        fill: luma(40%),
+        font: "Liberation Sans",
+      )[#h]),
+      hairline,
+    )),
+  )
+})
+
+#let nomad_daily_priorities(n: 6) = layout(size => {
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..range(n).map(_ => grid(
+      columns: (auto, 1fr),
+      column-gutter: 1.4mm,
+      align: (horizon, bottom),
+      square(size: 0.8em, stroke: hair + ink),
+      hairline,
+    )),
+  )
+})
+
+#let nomad_daily_notes_preview(more, label: [Notes], lines: 4, tile: 5.8mm) = {
+  let chip = if more == none {
+    []
+  } else {
+    box(
+      inset: (x: 1.2mm, y: 0.35mm),
+      stroke: hair + ink,
+      text(size: 7pt, font: "Liberation Sans")[#more],
+    )
+  }
+  block(width: 100%, {
+    grid(
+      columns: (1fr, auto),
+      align: horizon,
+      text(weight: "bold", size: 8.5pt)[#label],
+      chip,
+    )
+    v(0.3mm)
+    grid(
+      rows: (tile,) * lines,
+      row-gutter: 0pt,
+      ..range(lines).map(_ => align(bottom, hairline)),
+    )
+  })
+}
+
+#let nomad_daily_well(
+  calendar,
+  more,
+  schedule-label: [Schedule],
+  priorities-label: [Priorities],
+  notes-label: [Notes],
+  hour-start: 7,
+  hours: 10,
+  prios: 6,
+  cal-h: 24mm,
+  notes-lines: 4,
+  notes-tile: 5.8mm,
+) = box(width: 100%, height: 100%, {
+  grid(
+    rows: (1fr, auto),
+    row-gutter: 1.0mm,
+    grid(
+      columns: (1.2fr, 0.8fr),
+      column-gutter: 0pt,
+      rows: (1fr,),
+      box(
+        width: 100%,
+        height: 100%,
+        clip: true,
+        stroke: (right: hair + ink, bottom: hair + ink),
+        inset: (top: 0.55mm, right: 2mm, bottom: 1.0mm, left: 0pt),
+        {
+          text(weight: "bold", size: 8.5pt)[#schedule-label]
+          v(0.3mm)
+          nomad_daily_hours(start: hour-start, n: hours)
+        },
+      ),
+      box(
+        width: 100%,
+        height: 100%,
+        clip: true,
+        stroke: (bottom: hair + ink),
+        inset: (top: 0.55mm, left: 2mm, bottom: 1.0mm, right: 0pt),
+        {
+          grid(
+            rows: (cal-h, 1fr),
+            row-gutter: 1.0mm,
+            box(
+              width: 100%,
+              height: 100%,
+              clip: true,
+              stroke: hair + ink,
+              inset: 0.5mm,
+              calendar,
+            ),
+            box(width: 100%, height: 100%, clip: true, {
+              text(weight: "bold", size: 8.5pt)[#priorities-label]
+              v(0.3mm)
+              nomad_daily_priorities(n: prios)
+            }),
+          )
+        },
+      ),
+    ),
+    nomad_daily_notes_preview(
+      more,
+      label: notes-label,
+      lines: notes-lines,
+      tile: notes-tile,
+    ),
+  )
+})
+
+// Nomad daily-notes: locked 07-daily-notes.typ. Floor whole regular-h tiles.
+#let nomad_notes_well(tile: regular-h) = box(width: 100%, height: 100%, clip: true, {
+  layout(size => {
+    let n = calc.max(8, calc.floor(size.height / tile))
+    grid(
+      rows: (tile,) * n,
+      row-gutter: 0pt,
+      ..range(n).map(_ => align(bottom, hairline)),
+    )
+  })
+})
 
 // Nomad weekly: 7×1fr day bands + 18mm week-notes floor (locked 05-weekly.typ).
 // Day tile 3.8mm; notes tile 4.8mm. Stretch row-h to fill leftover (no remnant).
