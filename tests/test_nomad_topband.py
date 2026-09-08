@@ -404,9 +404,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "row-gutter: 1.5mm" in projects
     assert "column-gutter: 1.8mm" in projects
     assert "let tile = 5.5mm" in projects
-    assert 'text(weight: "bold", size: 8.5pt)[To do]' in projects
-    assert 'text(weight: "bold", size: 8.5pt)[Doing]' in projects
-    assert 'text(weight: "bold", size: 8.5pt)[Done]' in projects
+    assert 'text(weight: "bold", size: 8.5pt)[#label]' in projects
+    assert 'let cols = ("To do", "Doing", "Done")' in projects
     assert "lined_well(lined_fill)" not in projects
     assert "lined_well(dotted_centered)" not in projects
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
