@@ -66,18 +66,27 @@ class Review:
         chunks = self._chunks(weeks)
         out: list[PageData] = []
         topband = nomad_topband(self.configurator)
+        year = (
+            f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+            if topband
+            else None
+        )
         for index, chunk in enumerate(chunks):
             page_id = self.index_id(index)
             if topband:
                 out.append(
                     PageData(
-                        title=f'text(size: h1)[{self.i18n.t("review")} <{page_id}>]',
+                        title=(
+                            f'text(size: 10pt, weight: "bold")'
+                            f'[{self.i18n.t("review")} <{page_id}>]'
+                        ),
                         content=self._nomad_index_body(
                             manifest, self._nomad_index_weeks(chunk)
                         ),
                         page_id=page_id,
                         heading_mark=HeadingMark.TRAIL,
                         strip="quiet",
+                        year=year,
                     )
                 )
             else:
@@ -90,10 +99,10 @@ class Review:
                     days = week.days()
                     rng = self.range_label(days[0], days[-1])
                     title = (
-                        "grid(columns: 1fr, "
-                        f'text(size: h1)[{self.i18n.t("review")} · '
-                        f"{self.i18n.t('week_name')} {week.number} <{page_id}>], "
-                        f"text(size: 0.85em)[{rng}])"
+                        f'text(size: 10pt, weight: "bold")'
+                        f'[{self.i18n.t("review")}  ·  '
+                        f"{self.i18n.t('week_name')} {week.number} <{page_id}>"
+                        f"  ·  {rng}]"
                     )
                     out.append(
                         PageData(
@@ -102,6 +111,7 @@ class Review:
                             page_id=page_id,
                             heading_mark=HeadingMark.TRAIL,
                             strip="quiet",
+                            year=year,
                         )
                     )
                 else:
@@ -337,27 +347,47 @@ class Review:
         return "lined_well(review_lined)"
 
     def _week_body(self, manifest: Manifest, week: Week) -> str:
-        cells = ", ".join(self._day_cell(manifest, day) for day in week.days())
-        day_strip = f"""grid(
-  columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-  rows: {_DAY_STRIP_HEIGHT},
-  align: horizon + center,
-  inset: (x: 2pt, y: 0pt),
-  {cells}
-)"""
-        notes = f"""grid(
-  columns: 1fr,
-  rows: (auto, 1fr),
-  block(inset: (top: 0.4mm, bottom: 0.3mm), [{self.i18n.t("week_notes")}]),
-  {self._week_field()}
-)"""
-        return f"""grid(
-  columns: 1fr,
-  rows: (auto, 1fr),
-  row-gutter: {_INDEX_ROW_GUTTER},
-  {day_strip},
-  {notes}
-)"""
+        """Locked 12-review week: 8mm day chips + 5.5mm Week notes well."""
+        chips = ", ".join(self._nomad_day_chip(manifest, day) for day in week.days())
+        notes = self.i18n.t("week_notes")
+        return f"""box(width: 100%, height: 100%, {{
+  grid(
+    rows: ({_DAY_STRIP_HEIGHT}, 1fr),
+    row-gutter: 1.6mm,
+    grid(
+      columns: (1fr,) * 7,
+      column-gutter: 1.0mm,
+      rows: (1fr,),
+      {chips},
+    ),
+    box(width: 100%, height: 100%, clip: true, {{
+      text(weight: "bold", size: 8.5pt)[{notes}]
+      v(0.4mm)
+      layout(size => {{
+        let tile = 5.5mm
+        let n = calc.max(6, calc.floor(size.height / tile))
+        let row-h = size.height / n
+        grid(
+          rows: (row-h,) * n,
+          row-gutter: 0pt,
+          ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
+        )
+      }})
+    }}),
+  )
+}})"""
+
+    def _nomad_day_chip(self, manifest: Manifest, day: Day) -> str:
+        letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
+        label = f"{letter}{day.month_day}"
+        chip = (
+            "box(width: 100%, height: 100%, stroke: hair + ink, inset: 0.5mm, "
+            "align(center + horizon, "
+            f'text(size: 6.5pt, weight: "bold", font: "Liberation Sans")[{label}]))'
+        )
+        if manifest.source(day.id):
+            return f"padded_link(<{day.id}>, {chip})"
+        return chip
 
     def _day_cell(self, manifest: Manifest, day: Day) -> str:
         if nomad_topband(self.configurator):

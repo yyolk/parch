@@ -409,6 +409,11 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "active: none" in review_index
     assert "page-shell(\n  none," not in review_index
     assert 'active: "review"' not in review_index
+    assert 'active: "habits"' not in review_index
+    assert 'text(size: 10pt, weight: "bold")[Review <review>]' in review_index
+    assert 'text(size: h1)[Review' not in review_index
+    assert 'text(size: h1)[2026]' not in review_index
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in review_index
     assert "let pack = 7.0mm" in review_index
     assert "weeks.slice(0, n)" in review_index
     assert "rows: (5fr, 8fr)" not in review_index
@@ -417,15 +422,22 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "columns: (10mm, 1fr)" in review_index
     assert "[Jan 5 – Jan 11]" in review_index
     assert "[Jan 5 – 11]" not in review_index
-    review = _page_with(typst, "Review · Week 1")
+    review = _page_with(typst, "Review  ·  Week 1")
     assert "section-strip(" in review
     assert "active: none" in review
     assert "page-shell(\n  none," not in review
     assert 'active: "review"' not in review
-    assert "title: grid(columns: 1fr," in review
-    assert "text(size: 0.85em)" in review
-    assert "Review · Week 1 ·" not in review
-    assert "[Week notes]" in review
+    assert 'text(size: 10pt, weight: "bold")[Review  ·  Week 1 <review-2026W01>  ·  Dec 29 – Jan 4]' in review
+    assert 'text(size: h1)[Review' not in review
+    assert "title: grid(columns: 1fr," not in review
+    assert "text(size: 0.85em)" not in review
+    assert "chip([Wk1], active: true" in review
+    assert 'text(weight: "bold", size: 8.5pt)[Week notes]' in review
+    assert "let tile = 5.5mm" in review
+    assert "lined_well(review_lined)" not in review
+    assert "column-gutter: 1.0mm" in review
+    assert "row-gutter: 1.6mm" in review
+    assert "stroke: hair + ink" in review
     assert "M29" in review
     assert "T1" in review
     assert "Mon 29" not in review
