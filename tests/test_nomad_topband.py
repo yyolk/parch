@@ -34,7 +34,7 @@ from parch.sections.colophon import DEFAULT_TITLE, Colophon
 from parch.services.generate import Generate
 from parch.toml_config import parse_toml
 from tests.helpers import base_config, load_default, make_configurator, make_day
-from tests.toml_fixtures import _minimal, short_january
+from tests.toml_fixtures import omit_toml_sections, short_january
 from tests.test_toml_omit_sections import compile_pdf
 
 
@@ -129,7 +129,7 @@ def test_parse_week_id_keeps_iso_week_when_sunday_start():
 
 
 def test_quarter_tempo_uses_page_year_not_start_year():
-    dto = load(base_config("supernote-nomad"))
+    dto = load(base_config("supernote-nomad")).to_plain()
     dto["planner"]["params"]["end_date"] = "2027-12-31"
     cfg = Configurator(dto)
     manifest = Manifest()
@@ -155,16 +155,11 @@ def test_nomad_well_pack_rows_is_eighteen():
 
 
 def test_nomad_contents_omits_more_when_empty():
-    dto = parse_toml(
-        _minimal(
-            device="""[device]
-name = "supernote-nomad"
-ppi = 300""",
-            enable=["index", "annual", "quarterly", "monthly", "weekly", "daily"],
-            sections="",
-        ),
-        source="no-more.toml",
+    text = omit_toml_sections(
+        base_config("supernote-nomad").read_text(encoding="utf-8"),
+        ["colophon"],
     )
+    dto = parse_toml(text, source="no-more.toml")
     typst = Generate(i18n=load_default()).generate(short_january(dto))
     page = _page_with(typst, "[Contents <index>]")
     assert "[MORE]" not in page

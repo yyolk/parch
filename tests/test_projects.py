@@ -116,9 +116,11 @@ def test_omit_pages_defaults_to_sixteen():
     assert "→" not in typst
 
 
-def test_mos_paper_rows_per_index_page_is_sixteen():
-    dto = parse_toml(_minimal(enable=["projects"], sections=""), source="mos-rpp.toml")
-    assert _projects(dto).rows_per_index_page() == 16
+def test_mos_paper_index_capacity_stays_mos_math():
+    paper = _projects(load(base_config("158x210", extras=True)))
+    nomad = _projects(load(NOMAD))
+    assert paper.rows_per_index_page() == 19
+    assert nomad.rows_per_index_page() == 18
 
 
 def test_pages_three_emits_index_and_three_boards():
