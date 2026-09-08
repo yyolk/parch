@@ -54,6 +54,7 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "nomad_notes_well" in names
     assert "nomad_week_bands" in names
     assert "nomad_month_well" in names
+    assert "nomad_month_notes" in names
     assert "year-month" in names
     assert "mini-month" in names
     assert "nomad_year_grid" in names
@@ -236,7 +237,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     hairs = house[house.index("#let nomad_week_hairs(") : house.index("#let nomad_week_day(")]
     assert "tile: 3.8mm" in hairs
     assert "let row-h = size.height / n" in hairs
-    assert "let rule = if stroke == none { hairline }" in hairs
+    assert "_hair-tile(row-h, stroke: paint)" in hairs
+    assert "range(n).map(_ => align(bottom, rule))" not in hairs
     assert "for i in range(n)" not in hairs
     assert "place(top + start" not in hairs
     day = house[house.index("#let nomad_week_day(") : house.index("#let nomad_week_notes(")]
@@ -262,6 +264,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let nomad_quarter_well(" in house
     assert "strip-height: 26mm" in house[house.index("#let nomad_quarter_well(") :]
     assert "0.9fr, 1.2fr" in house[house.index("#let nomad_quarter_well(") :]
+    assert "#let nomad_month_notes()" in house
+    month_notes = house[house.index("#let nomad_month_notes()") : house.index("#let nomad_month_well(")]
+    assert "regular_height: 5.2mm" in month_notes
+    assert "lined_well(lined_fill(" in month_notes
+    assert "layout(" not in month_notes
     assert "#let nomad_month_well(" in house
     month_well = house[house.index("#let nomad_month_well(") :]
     assert "notes-height: 20mm" in month_well

@@ -586,12 +586,12 @@
 
 // Nomad daily: locked 06-daily.typ. MOS keeps daily_well.
 // One layout() for equal row height; hairlines are a tiling fill, not N grids.
-#let _hair-tile(tile) = tiling(
+#let _hair-tile(tile, stroke: hair + ink) = tiling(
   size: (regular-h, tile),
   line(
     start: (0pt, tile - 0.15mm),
     end: (regular-h, tile - 0.15mm),
-    stroke: hair + ink,
+    stroke: stroke,
   ),
 )
 
@@ -751,12 +751,8 @@
 #let nomad_week_hairs(stroke: none, tile: 3.8mm) = layout(size => {
   let n = calc.max(2, calc.floor(size.height / tile))
   let row-h = size.height / n
-  let rule = if stroke == none { hairline } else { line(length: 100%, stroke: stroke) }
-  grid(
-    rows: (row-h,) * n,
-    row-gutter: 0pt,
-    ..range(n).map(_ => align(bottom, rule)),
-  )
+  let paint = if stroke == none { hair + ink } else { stroke }
+  box(width: 100%, height: 100%, fill: _hair-tile(row-h, stroke: paint))
 })
 
 #let nomad_week_day(header, stroke: none, tile: 3.8mm) = box(
@@ -938,6 +934,13 @@
   focus,
   notes,
 )
+
+// Nomad monthly notes floor: 5.2mm tiles, remnant blank (same as daily-notes).
+#let nomad_month_notes() = lined_well(lined_fill(
+  regular_height: 5.2mm,
+  regular_stroke: hair,
+  paint: ink,
+))
 
 // Nomad monthly: weekday header + 7×6 days + 20mm Month notes. MOS keeps month_weeks.
 #let nomad_month_well(header, days, notes, notes-height: 20mm) = box(width: 100%, height: 100%, {

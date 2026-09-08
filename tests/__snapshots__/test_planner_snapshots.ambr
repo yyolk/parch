@@ -289,7 +289,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, nomad_month_notes, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -534,7 +534,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, nomad_month_notes, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance, rail-clearance: 8mm)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       
@@ -697,15 +697,7 @@
         {
           text(weight: "bold", size: 8pt)[Month notes]
           v(0.35mm)
-          layout(size => {
-            let tile = 5.2mm
-            let n = calc.max(2, calc.floor(size.height / tile))
-            grid(
-              rows: (tile,) * n,
-              row-gutter: 0pt,
-              ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
-            )
-          })
+          nomad_month_notes()
         }
       )),
         tempo: tempo-row((chip([‹], active: false, expand: true), chip([Jan], active: true, dest: <month-2026-01-01>, expand: true), chip([›], active: false, expand: true),)),
@@ -715,7 +707,7 @@
     ''',
     'preamble': '''
       #import "device.typ": page-width, page-height, toolbar-edge, toolbar-clearance, writing-clearance, mos-width
-      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
+      #import "house.typ": dotted_centered, lined_fill, task_tick, task_fill, padded_link, contents_bars, lead_pair, trail_heading, mos_frame, well_frame, mos_tabs, mos_rail, mos_strip, month_grid, month_weeks, week_matrix, lined_well, daily_well, quarter_well, nav_header, section_rail, page-margin, section-strip, chip, tempo-row, page-shell, strip-icon, nomad_daily_well, nomad_notes_well, nomad_week_bands, nomad_month_well, nomad_month_notes, year-month, mini-month, nomad_year_grid, nomad_quarter_well, hair, ink
       #let page-margin = page-margin.with(toolbar-edge: toolbar-edge, toolbar-clearance: toolbar-clearance, writing-clearance: writing-clearance, bezel: 3mm)
       #set page(width: page-width, height: page-height, margin: page-margin(left))
       

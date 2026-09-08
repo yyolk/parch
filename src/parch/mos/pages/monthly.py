@@ -86,15 +86,7 @@ class Monthly:
   {{
     text(weight: "bold", size: 8pt)[{self.i18n.t("month_notes_floor")}]
     v(0.35mm)
-    layout(size => {{
-      let tile = 5.2mm
-      let n = calc.max(2, calc.floor(size.height / tile))
-      grid(
-        rows: (tile,) * n,
-        row-gutter: 0pt,
-        ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
-      )
-    }})
+    nomad_month_notes()
   }}
 )"""
         return f"nomad_month_well({header}, {days}, {notes})"

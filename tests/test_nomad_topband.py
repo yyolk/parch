@@ -256,7 +256,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "rows: (1fr,) * 6" in monthly
     assert "rows: (regular_height,) + (1fr,) * 6" not in monthly
     assert "lined_well(lined_fill, tile-height: regular_height)" not in monthly
-    assert "let tile = 5.2mm" in monthly
+    assert "nomad_month_notes()" in monthly
+    assert "let tile = 5.2mm" not in monthly
+    assert "layout(" not in monthly
     assert "hair + luma(75%)" in monthly
     assert "hair + ink" in monthly
     assert "luma(160)" not in monthly
@@ -752,6 +754,11 @@ def test_nomad_emit_writing_wells_are_tiling_not_rect_pattern():
     assert "range(n).map(_ => align(bottom, hairline))" not in notes
     daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
     assert "nomad_daily_well(" in daily
+    monthly = _page_with(typst, "January 2026 <month-2026-01-01>")
+    assert "nomad_month_notes()" in monthly
+    assert "layout(" not in monthly
+    weekly = _page_with(typst, "Week 1 <2026W01>")
+    assert "nomad_week_bands(" in weekly
     assert "rect_pattern" not in typst
     tasks = _page_with(typst, "Tasks  ·  Week 1")
     assert "let min-row = 6.0mm" in tasks
