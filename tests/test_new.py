@@ -309,6 +309,23 @@ def test_emit_job_override_reverse_months_quarters_omits_items():
     assert "reverse_months_quarters_items" not in flipped
 
 
+def test_spec_from_data_keeps_nomad_hours_without_schedule_table():
+    nomad = spec_from_data({"device": {"name": "supernote-nomad"}})
+    assert nomad.hour_from == 7
+    assert nomad.hour_to == 16
+    mos = spec_from_data({"device": {"name": "158x210"}})
+    assert mos.hour_from == 8
+    assert mos.hour_to == 20
+    custom = spec_from_data(
+        {
+            "device": {"name": "supernote-nomad"},
+            "section": {"daily": {"left": {"schedule": {"hour_from": 9, "hour_to": 17}}}},
+        }
+    )
+    assert custom.hour_from == 9
+    assert custom.hour_to == 17
+
+
 def test_spec_from_data_resumes_reverse_months_quarters():
     missing = spec_from_data({"device": {"name": "supernote-nomad"}, "mos": {}})
     assert missing.reverse_months_quarters is False

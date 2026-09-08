@@ -7,7 +7,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
-from parch.mos.nomad_nav import nomad_topband
+from parch.mos.nomad_nav import nomad_topband, nomad_well_pack_rows
 from parch.sections._shared import _length_mm
 
 # Match the index page chrome in `_index` so row capacity tracks the layout.
@@ -55,6 +55,8 @@ class Projects:
 
     def rows_per_index_page(self) -> int:
         """How many 2×-regular_height rows fit on one index page."""
+        if nomad_topband(self.configurator):
+            return nomad_well_pack_rows(self.configurator, pack_mm=7.0, minimum=6)
         page_h = _length_mm(self.configurator.dig_bang("document", "layout", "dimensions", "height"))
         top = _length_mm(self.configurator.dig_bang("document", "layout", "margin", "top"))
         bottom = _length_mm(self.configurator.dig_bang("document", "layout", "margin", "bottom"))
@@ -210,12 +212,12 @@ class Projects:
     {listed},
   )
   let pack = 7.0mm
-  let n = calc.min(rows.len(), calc.max(6, calc.floor(size.height / pack)))
+  let n = rows.len()
   let row-h = size.height / n
   grid(
     rows: (row-h,) * n,
     row-gutter: 0pt,
-    ..rows.slice(0, n),
+    ..rows,
   )
 }}))"""
 

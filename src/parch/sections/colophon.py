@@ -118,7 +118,7 @@ class Colophon:
                 if year_n is not None
                 else None
             )
-            title = _escape(DEFAULT_TITLE)
+            title = _escape(self.title)
             return [
                 PageData(
                     title=f'text(size: 10pt, weight: "bold")[{title} <colophon>]',

@@ -212,9 +212,9 @@ def spec_from_data(data: dict[str, Any]) -> JobSpec:
     monthly = _section_table(data, "monthly")
     if monthly is not None and monthly.get("week_placement") == _WEEK_RAIL_NONE:
         spec.week_placement = _WEEK_RAIL_NONE
-    hour_from, hour_to = _hours_from_data(data)
-    spec.hour_from = hour_from
-    spec.hour_to = hour_to
+    spec.hour_from, spec.hour_to = _hours_from_data(
+        data, spec.hour_from, spec.hour_to
+    )
     spec.priorities_count = _int_from_track(data, "priorities", "count", spec.priorities_count)
     spec.daily_notes_pages = _int_from_section(data, "daily_notes", "pages", spec.daily_notes_pages)
     spec.projects_pages = _int_from_section(data, "projects", "pages", spec.projects_pages)
@@ -395,7 +395,11 @@ def _section_table(data: dict[str, Any], name: str) -> dict[str, Any] | None:
     return None
 
 
-def _hours_from_data(data: dict[str, Any]) -> tuple[int, int]:
+def _hours_from_data(
+    data: dict[str, Any],
+    default_from: int = 8,
+    default_to: int = 20,
+) -> tuple[int, int]:
     daily = _section_table(data, "daily")
     if daily is not None:
         for side in ("left", "right"):
@@ -409,7 +413,7 @@ def _hours_from_data(data: dict[str, Any]) -> tuple[int, int]:
             hour_to = schedule.get("hour_to")
             if isinstance(hour_from, int) and isinstance(hour_to, int):
                 return hour_from, hour_to
-    return 8, 20
+    return default_from, default_to
 
 
 def _int_from_section(data: dict[str, Any], section: str, key: str, default: int) -> int:

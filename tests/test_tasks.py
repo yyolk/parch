@@ -411,7 +411,7 @@ def test_unknown_key_on_section_tasks_raises():
         )
 
 
-def test_nomad_ships_tasks_after_review():
+def test_mos_ships_tasks_after_review():
     dto = load(NOMAD)
     names = [s["name"] for s in Configurator(dto).enabled_sections()]
     assert names[-5:] == ["habits", "review", "tasks", "meetings", "colophon"]

@@ -116,6 +116,11 @@ def test_omit_pages_defaults_to_sixteen():
     assert "→" not in typst
 
 
+def test_mos_paper_rows_per_index_page_is_sixteen():
+    dto = parse_toml(_minimal(enable=["projects"], sections=""), source="mos-rpp.toml")
+    assert _projects(dto).rows_per_index_page() == 16
+
+
 def test_pages_three_emits_index_and_three_boards():
     dto = parse_toml(
         _minimal(enable=["projects"], sections="[section.projects]\npages = 3\n"),
@@ -335,7 +340,7 @@ def test_index_paginates_and_late_board_links_to_its_index_page():
     dto = load(NOMAD)
     projects = _projects(dto)
     rpp = projects.rows_per_index_page()
-    assert rpp == 16
+    assert rpp == 18
     n = rpp + 1
     slim = parse_toml(
         _minimal(
@@ -381,7 +386,7 @@ def test_nomad_default_is_one_index_page():
     projects = _projects(dto)
     assert projects.pages_num == 16
     assert projects.card_rows == 5
-    assert projects.rows_per_index_page() == 16
+    assert projects.rows_per_index_page() == 18
     assert projects.index_page_count() == 1
     typst = _generate(short_january(dto))
     assert "<projects>" in typst
@@ -425,7 +430,7 @@ pages = 20
         source="pages-20-leftover.toml",
     )
     projects = _projects(slim)
-    assert projects.rows_per_index_page() == 16
+    assert projects.rows_per_index_page() == 18
     assert projects.index_page_count() == 2
     typst = _generate(slim)
     assert "<projects>" in typst

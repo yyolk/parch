@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from parch.calendar import walk
-from parch.calendar.day import Day
+from parch.calendar.day import Day, _WEEKDAY_INDEX, normalize_weekday
 from parch.calendar.month import Month
 from parch.calendar.quarter import Quarter
 from parch.calendar.week import Week
@@ -87,6 +87,33 @@ class NavContext:
     quarter: Quarter | None = None
     tasks_week: Week | None = None
     review_week: Week | None = None
+
+
+def _token_mm(token: str) -> float:
+    text = str(token).strip()
+    if text.endswith("mm"):
+        return float(text[:-2].strip())
+    raise ValueError(f"unrecognized length token: {token!r}")
+
+
+def nomad_well_pack_rows(
+    configurator,
+    *,
+    pack_mm: float = 7.0,
+    minimum: int = 6,
+) -> int:
+    """How many pack_mm index rows fit in the Nomad well under page-shell.
+
+    Chrome estimate: top-air 0.4 + strip + tempo + crumb ~8 + well-top 2.5 + hair ~1.
+    Default Nomad (158.5mm, 8mm toolbar) yields 18 rows; 16-project extras still
+    fit one page.
+    """
+    height = _token_mm(configurator.dig_bang("document", "layout", "dimensions", "height"))
+    top = _token_mm(configurator.dig_bang("document", "layout", "margin", "top"))
+    bottom = _token_mm(configurator.dig_bang("document", "layout", "margin", "bottom"))
+    chrome_mm = 0.4 + _token_mm(CHROME_H) + _token_mm(TEMPO_H) + 8.0 + 2.5 + 1.0
+    well_mm = height - top - bottom - chrome_mm
+    return max(minimum, int(well_mm // pack_mm))
 
 
 def nomad_topband(configurator) -> bool:
@@ -174,8 +201,13 @@ def _day(configurator, raw: date | Day) -> Day:
 def parse_week_id(week_id: str, configurator) -> Week:
     year = int(week_id[:4])
     number = int(week_id[5:])
+    start = normalize_weekday(_weekday_start(configurator))
     monday = date.fromisocalendar(year, number, 1)
-    return Week(weekday_start=_weekday_start(configurator), day=_day(configurator, monday))
+    # Stay inside this ISO week: offset Monday by the configured weekday
+    # (Sunday start → Monday+6). Snapping the ISO Monday first would land
+    # in the previous ISO week for year-crossing weeks.
+    anchor = monday + timedelta(days=_WEEKDAY_INDEX[start])
+    return Week(weekday_start=start, day=_day(configurator, anchor))
 
 
 def planner_weeks(configurator) -> list[Week]:

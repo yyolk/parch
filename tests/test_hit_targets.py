@@ -2,7 +2,7 @@
 
 import pytest
 from pypdf import PdfReader
-from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject
+from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject, NameObject
 
 from parch.config import load
 from parch.services.generate import Generate
@@ -31,6 +31,21 @@ def _page_ids(reader: PdfReader) -> dict[int, int]:
     return {page.indirect_reference.idnum: i for i, page in enumerate(reader.pages, 1)}
 
 
+def _dest_array(obj):
+    """Resolve /Dest, or /A GoTo /D when Typst emits an action instead."""
+    dest = obj.get("/Dest")
+    if dest is not None:
+        return dest
+    action = obj.get("/A")
+    if isinstance(action, IndirectObject):
+        action = action.get_object()
+    if not isinstance(action, DictionaryObject):
+        return None
+    if str(action.get("/S", "")) != "/GoTo":
+        return None
+    return action.get("/D")
+
+
 def _dest_page(dest, page_ids: dict[int, int]) -> int | None:
     if isinstance(dest, IndirectObject):
         dest = dest.get_object()
@@ -56,10 +71,28 @@ def _link_dests(page, page_ids: dict[int, int]):
                 height - max(y1, y2),
                 abs(x2 - x1),
                 abs(y2 - y1),
-                _dest_page(obj.get("/Dest"), page_ids),
+                _dest_page(_dest_array(obj), page_ids),
             )
         )
     return rows
+
+
+def test_dest_array_resolves_goto_action():
+    dest = ArrayObject([NameObject("/P1")])
+    via_dest = DictionaryObject({NameObject("/Dest"): dest})
+    via_action = DictionaryObject(
+        {
+            NameObject("/A"): DictionaryObject(
+                {
+                    NameObject("/S"): NameObject("/GoTo"),
+                    NameObject("/D"): dest,
+                }
+            )
+        }
+    )
+    assert _dest_array(via_dest) is dest
+    assert _dest_array(via_action) is dest
+    assert _dest_array(DictionaryObject()) is None
 
 
 def _annual_page(reader: PdfReader):

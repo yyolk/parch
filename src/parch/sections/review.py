@@ -11,7 +11,7 @@ from parch.mos.configurator import Configurator
 from parch.mos.manifest import Manifest
 from parch.mos.contents_mark import body_size_token, heading_height_token, trail_heading
 from parch.compose.page_data import HeadingMark, PageData
-from parch.mos.nomad_nav import nomad_topband
+from parch.mos.nomad_nav import nomad_topband, nomad_well_pack_rows
 from parch.mos.preamble import _WELL_PATTERN
 
 _INDEX_LEFT_INSET = "4mm"
@@ -133,6 +133,8 @@ class Review:
 
     def _page_sizes(self, n_weeks: int) -> list[int]:
         n = self.weeks_per_page
+        if nomad_topband(self.configurator):
+            n = min(n, nomad_well_pack_rows(self.configurator))
         if n < 1:
             raise ValueError("weeks_per_page must be at least 1")
         if n_weeks <= 0:
@@ -181,7 +183,8 @@ class Review:
 
     def _nomad_index_weeks(self, chunk: list[Week]) -> list[Week]:
         """Locked pack: at least 8 rows, prefer weeks_per_page (13)."""
-        target = max(_MIN_PACK_ROWS, self.weeks_per_page)
+        cap = nomad_well_pack_rows(self.configurator)
+        target = min(cap, max(_MIN_PACK_ROWS, self.weeks_per_page))
         if len(chunk) >= target:
             return chunk
         return self._extend_weeks(chunk, target)
@@ -238,12 +241,12 @@ class Review:
     {rows},
   )
   let pack = 7.0mm
-  let n = calc.min(weeks.len(), calc.max(8, calc.floor(size.height / pack)))
+  let n = weeks.len()
   let row-h = size.height / n
   grid(
     rows: (row-h,) * n,
     row-gutter: 0pt,
-    ..weeks.slice(0, n),
+    ..weeks,
   )
 }}))"""
 

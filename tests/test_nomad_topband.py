@@ -6,6 +6,7 @@ from pathlib import Path
 from parch.config import load
 from parch.devices import SUPERNOTE_A6, SUPERNOTE_NOMAD, is_nomad, is_scribe_family
 from parch.mos.configurator import Configurator
+from parch.mos.navigation import Navigation
 from parch.mos.nomad_nav import (
     BEZEL,
     CHROME_H,
@@ -16,6 +17,8 @@ from parch.mos.nomad_nav import (
     context_from_page_id,
     habits_month_id,
     nomad_topband,
+    nomad_well_pack_rows,
+    parse_week_id,
     review_week_id,
     strip_dest_id,
     strip_key_for_page_id,
@@ -27,9 +30,11 @@ from parch.mos.scribe_nav import scribe_hyperpaper_nav
 from parch.mos.manifest import Manifest
 from parch.sections.habits import Habits
 from parch.sections.tasks import Tasks
+from parch.sections.colophon import DEFAULT_TITLE, Colophon
 from parch.services.generate import Generate
-from tests.helpers import base_config, load_default, make_day
-from tests.toml_fixtures import short_january
+from parch.toml_config import parse_toml
+from tests.helpers import base_config, load_default, make_configurator, make_day
+from tests.toml_fixtures import _minimal, short_january
 from tests.test_toml_omit_sections import compile_pdf
 
 
@@ -113,6 +118,71 @@ def test_contents_primary_ends_habits_review_more_is_projects_meetings_about():
     assert more == ["projects", "meetings", "colophon"]
     assert "daily_notes" not in primary
     assert "daily_notes" not in more
+
+
+def test_parse_week_id_keeps_iso_week_when_sunday_start():
+    monday = make_configurator(weekday_start="Monday")
+    sunday = make_configurator(weekday_start="Sunday")
+    assert parse_week_id("2024W01", monday).id == "2024W01"
+    assert parse_week_id("2024W01", sunday).id == "2024W01"
+    assert parse_week_id("2026W01", sunday).id == "2026W01"
+
+
+def test_quarter_tempo_uses_page_year_not_start_year():
+    dto = load(base_config("supernote-nomad"))
+    dto["planner"]["params"]["end_date"] = "2027-12-31"
+    cfg = Configurator(dto)
+    manifest = Manifest()
+    for year in (2026, 2027):
+        for number in (1, 2, 3, 4):
+            manifest.register_source(f"quarter-{year}-{number}")
+    nav = Navigation(load_default(), manifest, cfg)
+    q27 = "".join(nav._tempo_items("quarter-2027-1", "quarterly"))
+    assert "dest: <quarter-2027-1>" in q27
+    assert "dest: <quarter-2027-2>" in q27
+    assert "dest: <quarter-2026-1>" not in q27
+    q26 = "".join(nav._tempo_items("quarter-2026-2", "quarterly"))
+    assert "dest: <quarter-2026-1>" in q26
+    assert "dest: <quarter-2027-1>" not in q26
+    annual = "".join(nav._tempo_items("annual", "annual"))
+    assert "dest: <quarter-2026-1>" in annual
+    assert "dest: <quarter-2027-1>" not in annual
+
+
+def test_nomad_well_pack_rows_is_eighteen():
+    cfg = _cfg("supernote-nomad", extras=True)
+    assert nomad_well_pack_rows(cfg) == 18
+
+
+def test_nomad_contents_omits_more_when_empty():
+    dto = parse_toml(
+        _minimal(
+            device="""[device]
+name = "supernote-nomad"
+ppi = 300""",
+            enable=["index", "annual", "quarterly", "monthly", "weekly", "daily"],
+            sections="",
+        ),
+        source="no-more.toml",
+    )
+    typst = Generate(i18n=load_default()).generate(short_january(dto))
+    page = _page_with(typst, "[Contents <index>]")
+    assert "[MORE]" not in page
+    assert "let gap-h = 0mm" in page
+    assert "Calendar" in page
+
+
+def test_nomad_colophon_uses_custom_title():
+    dto = load(base_config("supernote-nomad"))
+    colo = Colophon(
+        section_name="colophon",
+        i18n=load_default(),
+        configurator=Configurator(dto),
+        title="Provenance",
+    )
+    pages = colo.pages(Manifest())
+    assert "Provenance <colophon>" in pages[0].title
+    assert DEFAULT_TITLE not in pages[0].title
 
 
 def test_into_tasks_wiring_contract():
@@ -489,7 +559,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert 'text(size: h1)[2026]' not in review_index
     assert 'text(size: 7.5pt, weight: "bold")[2026]' in review_index
     assert "let pack = 7.0mm" in review_index
-    assert "weeks.slice(0, n)" in review_index
+    assert "let n = weeks.len()" in review_index
+    assert "weeks.slice(0, n)" not in review_index
     assert "rows: (5fr, 8fr)" not in review_index
     assert 'font: "Liberation Sans")[1]' in review_index
     assert 'font: "Liberation Sans")[13]' in review_index

@@ -163,6 +163,7 @@ class Index:
         n_primary = len(primary_rows)
         n_more = len(more_rows)
         n = n_primary + n_more
+        has_more = n_more > 0
         primary_cells = ",\n      ".join(primary_rows) if primary_rows else "[]"
         more_cells = ",\n      ".join(more_rows) if more_rows else "[]"
         brand = 'text(fill: white, size: 14pt, weight: "bold")[Contents <index>]'
@@ -177,13 +178,17 @@ class Index:
         if not n:
             rows = "auto"
             body_cells = "[]"
-        else:
+        elif has_more:
             rows = f"(row-h,) * {n_primary} + (gap-h,) + (row-h,) * {n_more}"
             body_cells = (
                 f"{primary_cells},\n"
                 f"      align(bottom, pad(bottom: 1mm, {more_head})),\n"
                 f"      {more_cells}"
             )
+        else:
+            rows = f"(row-h,) * {n_primary}"
+            body_cells = primary_cells
+        gap_h = "5mm" if has_more else "0mm"
         return f"""#set text(font: "Libertinus Serif")
 #set par(spacing: 0pt)
 #block(width: 100%, height: 100%, {{
@@ -201,7 +206,7 @@ class Index:
     }}),
     [],
     layout(size => {{
-      let gap-h = 5mm
+      let gap-h = {gap_h}
       let n = {max(n, 1)}
       let avail = size.height - gap-h
       let natural = avail / n
