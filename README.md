@@ -64,8 +64,10 @@ the top of each page. Names look like `year`, `q1`, `month-01`,
 ## Artifacts
 
 - `artifacts/specimen-2026.pdf` — 6 pages (cover, year, Q1, January, first week, 1 Jan).
-- `artifacts/preview/` — PNG rasters of those landings.
-- Full-year N≥2 PDFs are **not** committed. Numbers go in [BENCH.md](BENCH.md).
+- `artifacts/specimen-2026-notes2.pdf` — same + 2 notes pages for 1 Jan (8 pages).
+- `artifacts/planner-2026.pdf` — full 2026 book, N=0 (436 pages, ~3.1 MB).
+- `artifacts/preview/` — PNG rasters of those landings (`cover`, `year`, `quarter`, `month`, `week`, `day`) plus notes pages.
+- Full-year N≥2 PDFs are **not** committed (N=100 was ~76 MB). Numbers: [BENCH.md](BENCH.md).
 
 ## CI
 
