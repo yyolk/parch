@@ -269,6 +269,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert 'font: "Liberation Sans"' in chip
     assert "size: 7.5pt" in chip
     assert "height: 100%" not in chip
+    assert "luma(0%, 0%)" in chip
+    assert "padded_link(padding: 0pt, dest," in chip
     tempo = house[house.index("#let tempo-row(") : house.index("#let page-shell(")]
     assert "column-gutter: chip-gutter" in tempo
     assert "rows: (auto,)" in tempo
@@ -278,7 +280,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "#let icon-habits(" not in house
     assert "Notes chip" not in house
     assert "start-wd: 3" in house[house.index("#let year-month(") :]
+    assert "dests: ()" in house[house.index("#let year-month(") :]
     assert 'set text(font: "Liberation Sans")' in house[house.index("#let year-month(") :]
+    assert "dests: ()" in house[house.index("#let mini-month(") : house.index("#let year-month(")]
+    assert "#let _cal-day(" in house
+    assert "padded_link(padding: 0pt, dest, hit)" in house
     assert "#let contents_bars(" in house
     contents_bars = house[house.index("#let contents_bars(") : house.index("#let lead_pair(")]
     assert contents_bars.startswith(

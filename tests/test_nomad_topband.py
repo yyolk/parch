@@ -680,6 +680,30 @@ def test_nomad_contents_has_more_and_no_notes_chip():
     assert "mos_frame(" not in page
 
 
+def test_nomad_calendar_days_and_daily_tempo_link():
+    """Annual / quarterly / daily mini-cal days and daily tempo chips carry dests."""
+    typst = _generate("supernote-nomad")
+    annual = _page_with(typst, "<annual>]")
+    jan = annual.split("year-month(")[1]
+    assert "dests:" in jan
+    assert "<2026-01-01>" in jan
+    assert "<2026-01-14>" in jan
+    assert jan.split("dests:")[1].count("none") >= 17
+    quarterly = _page_with(typst, "Quarter 1 <quarter-2026-1>")
+    qjan = quarterly.split("year-month(")[1]
+    assert "dests:" in qjan
+    assert "<2026-01-01>" in qjan
+    assert "<2026-01-14>" in qjan
+    daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
+    cal = daily.split("mini-month(")[1]
+    assert "dests:" in cal
+    assert "<2026-01-01>" in cal.split("dests:")[1]
+    assert "<2026-01-02>" in cal.split("dests:")[1]
+    assert "chip([Wk1], active: false, dest: <2026W01>, expand: true)" in daily
+    assert "chip([Jan], active: true, dest: <month-2026-01-01>, expand: true)" in daily
+    assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in daily
+
+
 def test_nomad_sample_page_numbers_find_topband_dests():
     from parch.services.preview_svg import sample_page_numbers
 

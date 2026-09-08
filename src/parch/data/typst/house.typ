@@ -469,7 +469,14 @@
       )[#label],
     ),
   )
-  if dest != none { padded_link(padding: 0pt, dest, body) } else { body }
+  // Transparent fill so the PDF annot covers the chip, not only the glyphs.
+  if dest != none {
+    padded_link(padding: 0pt, dest, box(
+      width: if expand { 100% } else { auto },
+      fill: luma(0%, 0%),
+      body,
+    ))
+  } else { body }
 }
 
 // items: already-built chip(...) nodes from emit.
@@ -734,7 +741,29 @@
 }
 
 // Daily rail glance. Fonts stay fixed so day-h → height is linear.
-#let mini-month(name, start-wd: 3, days: 31, highlight: none, day-h: 2.6mm, weeks: auto, compact: false) = {
+#let _cal-day-dest(c, dests) = {
+  if c == none or dests.len() < c { none } else { dests.at(c - 1) }
+}
+
+#let _cal-day(c, day-h, day-sz, dest: none, highlight: none) = {
+  let inner = if c == none {
+    []
+  } else if highlight != none and c == highlight {
+    box(
+      width: 88%,
+      height: 88%,
+      fill: black,
+      radius: 0.2mm,
+      align(center + horizon, text(fill: white, size: day-sz, weight: "bold")[#c]),
+    )
+  } else {
+    text(size: day-sz)[#c]
+  }
+  let hit = box(width: 100%, height: day-h, fill: luma(0%, 0%), align(center + horizon, inner))
+  if dest != none { padded_link(padding: 0pt, dest, hit) } else { hit }
+}
+
+#let mini-month(name, start-wd: 3, days: 31, highlight: none, day-h: 2.6mm, weeks: auto, compact: false, dests: ()) = {
   let day-sz = if compact { 5.5pt } else { 6.5pt }
   let wd-sz = if compact { 4.8pt } else { 5.5pt }
   let title-sz = if compact { 6.5pt } else { 7pt }
@@ -762,27 +791,12 @@
         height: wd-h,
         align(center + horizon, text(size: wd-sz, fill: luma(40%), weight: "bold")[#w]),
       )),
-      ..cells.map(c => {
-        let inner = if c == none {
-          []
-        } else if highlight != none and c == highlight {
-          box(
-            width: 88%,
-            height: 88%,
-            fill: black,
-            radius: 0.2mm,
-            align(center + horizon, text(fill: white, size: day-sz, weight: "bold")[#c]),
-          )
-        } else {
-          text(size: day-sz)[#c]
-        }
-        box(width: 100%, height: day-h, align(center + horizon, inner))
-      }),
+      ..cells.map(c => _cal-day(c, day-h, day-sz, dest: _cal-day-dest(c, dests), highlight: highlight)),
     )
   })
 }
 
-#let mini-month-fit(name, start-wd: 3, days: 31, highlight: none, compact: false) = {
+#let mini-month-fit(name, start-wd: 3, days: 31, highlight: none, compact: false, dests: ()) = {
   box(width: 100%, height: 100%, clip: true, layout(size => {
     let wks = 6
     let title-sz = if compact { 6.5pt } else { 7pt }
@@ -799,12 +813,13 @@
       day-h: day-h,
       weeks: wks,
       compact: compact,
+      dests: dests,
     )
   }))
 }
 
 // Nomad annual/quarter glance. Locked densify — not LittleCalendar / month_grid.
-#let year-month(name, start-wd: 3, days: 31) = {
+#let year-month(name, start-wd: 3, days: 31, dests: ()) = {
   set text(font: "Liberation Sans")
   box(width: 100%, height: 100%, clip: true, layout(size => {
     let wks = 6
@@ -835,11 +850,7 @@
           height: wd-h,
           align(center + horizon, text(size: wd-sz, fill: luma(45%), weight: "bold")[#w]),
         )),
-        ..cells.map(c => box(
-          width: 100%,
-          height: day-h,
-          align(center + horizon, if c == none { [] } else { text(size: day-sz)[#c] }),
-        )),
+        ..cells.map(c => _cal-day(c, day-h, day-sz, dest: _cal-day-dest(c, dests))),
       )
     })
   }))
