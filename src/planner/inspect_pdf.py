@@ -17,7 +17,19 @@ def inspect(path: str) -> str:
     ]
     dests = reader.named_destinations
     lines.append(f"named_destinations: {len(dests)}")
-    for key in ("cover", "year", "quarters", "months", "weeks", "days", "month-01", "day-2026-01-01"):
+    for key in (
+        "cover",
+        "year",
+        "quarters",
+        "months",
+        "weeks",
+        "days",
+        "month-01",
+        "day-2026-01-01",
+        "day-2026-01-01-notes-1",
+        "day-2026-07-02",
+        "day-2026-07-02-notes-1",
+    ):
         lines.append(f"  dest {key}: {'yes' if key in dests else 'no'}")
 
     annot_pages = 0

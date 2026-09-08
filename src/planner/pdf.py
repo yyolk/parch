@@ -63,6 +63,7 @@ class PlannerPDF(FPDF):
         self.set_title(f"{plan.year} Yearly Planner")
         self.set_compression(True)
         self._section: str | None = None
+        self.notes_pages: int = 0
 
     # --- destinations / links -------------------------------------------------
 

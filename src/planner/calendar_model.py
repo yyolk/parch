@@ -138,5 +138,12 @@ def dest_day(day: date) -> str:
     return f"day-{day.isoformat()}"
 
 
+def dest_day_notes(day: date, n: int) -> str:
+    """1-based dedicated notes page for a calendar day."""
+    if n < 1:
+        raise ValueError("notes page index is 1-based")
+    return f"day-{day.isoformat()}-notes-{n}"
+
+
 def dest_cover() -> str:
     return "cover"

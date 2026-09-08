@@ -30,11 +30,29 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Cover + year + Q1 + January + first week + 1 January only.",
     )
+    parser.add_argument(
+        "--notes-pages",
+        type=int,
+        default=0,
+        metavar="N",
+        help=(
+            "Dedicated lined notes pages after each day page. "
+            "N=0 (default): day page only, with its on-page notes panel. "
+            "N=2: day + 2 notes pages. N=20: day + 20 notes pages."
+        ),
+    )
     args = parser.parse_args(argv)
-    out = Path(args.output) if args.output else Path("artifacts") / f"planner-{args.year}.pdf"
-    if args.specimen and args.output is None:
-        out = Path("artifacts") / f"specimen-{args.year}.pdf"
+    if args.notes_pages < 0:
+        parser.error("--notes-pages must be >= 0")
+    if args.output:
+        out = Path(args.output)
+    elif args.specimen:
+        suffix = f"-notes{args.notes_pages}" if args.notes_pages else ""
+        out = Path("artifacts") / f"specimen-{args.year}{suffix}.pdf"
+    else:
+        suffix = f"-notes{args.notes_pages}" if args.notes_pages else ""
+        out = Path("artifacts") / f"planner-{args.year}{suffix}.pdf"
     out.parent.mkdir(parents=True, exist_ok=True)
-    write_pdf(str(out), year=args.year, specimen=args.specimen)
+    write_pdf(str(out), year=args.year, specimen=args.specimen, notes_pages=args.notes_pages)
     print(out.resolve())
     return 0

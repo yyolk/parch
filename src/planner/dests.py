@@ -9,6 +9,7 @@ from planner.calendar_model import (
     YearPlan,
     dest_cover,
     dest_day,
+    dest_day_notes,
     dest_days,
     dest_month,
     dest_months,
@@ -35,8 +36,10 @@ class PageMap:
         return self.pages[name]
 
 
-def build_page_map(plan: YearPlan, *, specimen: bool) -> PageMap:
-    """Assign pages in emit order: cover, year, quarters, months, weeks, days."""
+def build_page_map(plan: YearPlan, *, specimen: bool, notes_pages: int = 0) -> PageMap:
+    """Assign pages: cover, year, quarters, months, weeks, then each day + N notes."""
+    if notes_pages < 0:
+        raise ValueError("notes_pages must be >= 0")
     mapping = PageMap()
     page = 1
 
@@ -73,5 +76,8 @@ def build_page_map(plan: YearPlan, *, specimen: bool) -> PageMap:
             mapping.put(dest_days(), page)
         mapping.put(dest_day(day), page)
         page += 1
+        for n in range(1, notes_pages + 1):
+            mapping.put(dest_day_notes(day, n), page)
+            page += 1
 
     return mapping

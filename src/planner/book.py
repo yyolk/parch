@@ -9,6 +9,7 @@ from planner.calendar_model import (
     YearPlan,
     dest_cover,
     dest_day,
+    dest_day_notes,
     dest_days,
     dest_month,
     dest_months,
@@ -17,14 +18,17 @@ from planner.calendar_model import (
     dest_weeks,
     dest_year,
 )
-from planner.dests import PageMap, build_page_map
+from planner.dests import build_page_map
 from planner.pdf import MUTE, PAGE_W_MM, PlannerPDF
 
 
-def generate(year: int = 2026, *, specimen: bool = False) -> PlannerPDF:
+def generate(year: int = 2026, *, specimen: bool = False, notes_pages: int = 0) -> PlannerPDF:
+    if notes_pages < 0:
+        raise ValueError("notes_pages must be >= 0")
     plan = YearPlan(year=year)
-    pages = build_page_map(plan, specimen=specimen)
+    pages = build_page_map(plan, specimen=specimen, notes_pages=notes_pages)
     pdf = PlannerPDF(plan, pages)
+    pdf.notes_pages = notes_pages
     _emit_cover(pdf)
     _emit_year(pdf)
     quarters = (1,) if specimen else (1, 2, 3, 4)
@@ -39,11 +43,15 @@ def generate(year: int = 2026, *, specimen: bool = False) -> PlannerPDF:
     days: tuple[date, ...] = (plan.jan1,) if specimen else plan.days
     for day in days:
         _emit_day(pdf, day)
+        for n in range(1, notes_pages + 1):
+            _emit_day_notes(pdf, day, n, notes_pages)
     return pdf
 
 
-def write_pdf(path: str, year: int = 2026, *, specimen: bool = False) -> str:
-    pdf = generate(year, specimen=specimen)
+def write_pdf(
+    path: str, year: int = 2026, *, specimen: bool = False, notes_pages: int = 0
+) -> str:
+    pdf = generate(year, specimen=specimen, notes_pages=notes_pages)
     pdf.output(path)
     return path
 
@@ -232,9 +240,49 @@ def _emit_day(pdf: PlannerPDF, day: date) -> None:
         color=MUTE,
         align="L",
     )
+    if pdf.notes_pages:
+        pdf.boxed_label(
+            x0,
+            y0 + 6.2,
+            28,
+            5.5,
+            f"notes 1/{pdf.notes_pages} >",
+            dest=dest_day_notes(day, 1),
+            size=7,
+            color=MUTE,
+            align="L",
+        )
     notes_y = y0 + cal_h + 2.5
     pdf.set_font("helvetica", "", 7)
     pdf.set_text_color(*MUTE)
     pdf.set_xy(x0, notes_y)
     pdf.cell(40, 3.6, "Notes", align="L")
     pdf.lined_panel(x0, notes_y + 4.0, pdf.content_width(), bottom - (notes_y + 4.0), gap=6.0)
+
+
+def _emit_day_notes(pdf: PlannerPDF, day: date, index: int, total: int) -> None:
+    title = f"{day.strftime('%-d %b')} · Notes {index}/{total}"
+    pdf.begin_page(dests=(dest_day_notes(day, index),), title=title, section="day")
+    x0 = 5.0
+    y0 = pdf.content_top() + 0.4
+    bottom = pdf.content_bottom(nav=True)
+    pdf.boxed_label(
+        x0,
+        y0,
+        16,
+        5.5,
+        "< day",
+        dest=dest_day(day),
+        size=7,
+        color=MUTE,
+        align="L",
+    )
+    prev = dest_day_notes(day, index - 1) if index > 1 else None
+    nxt = dest_day_notes(day, index + 1) if index < total else None
+    pdf.boxed_label(x0 + 18, y0, 14, 5.5, "< prev", dest=prev, size=7, color=MUTE, align="L")
+    pdf.boxed_label(x0 + 34, y0, 14, 5.5, "next >", dest=nxt, size=7, color=MUTE, align="L")
+    pdf.set_font("helvetica", "", 7)
+    pdf.set_text_color(*MUTE)
+    pdf.set_xy(x0, y0 + 7.0)
+    pdf.cell(40, 3.6, "Notes", align="L")
+    pdf.lined_panel(x0, y0 + 10.8, pdf.content_width(), bottom - (y0 + 10.8), gap=6.0)

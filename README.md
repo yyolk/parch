@@ -32,6 +32,7 @@ That writes `artifacts/planner-2026.pdf` (full year).
 ```shell
 .venv/bin/press --specimen          # cover + year + Q1 + Jan + first week + 1 Jan
 .venv/bin/press --year 2026 -o out.pdf
+.venv/bin/press --notes-pages 2     # day + 2 dedicated notes pages per day
 python -m planner --specimen -o artifacts/specimen-2026.pdf
 ```
 
@@ -47,10 +48,22 @@ python -m planner --specimen -o artifacts/specimen-2026.pdf
 | Monthly | 12 | Week-number gutter → week page; day cell → day page. |
 | Weekly | 53 | One row per weekday; date chip → day page. |
 | Daily | 365 | Lined notes + tiny month calendar. Prev/next day chips. |
+| Daily notes | `365 × N` | Optional. `--notes-pages N` (default **0**). |
+
+`--notes-pages N` model: **1 daily page + N dedicated notes pages per day**.
+
+- `N=0` — day page only (existing on-page notes panel). Same as the first spike.
+- `N=2` — day + 2 lined notes pages. Day chips to `notes 1/2`; notes pages chip back to the day and prev/next notes.
+- `N=20` — day + 20 notes pages (benchmark / stress).
+
+Named dests: `day-2026-01-01`, `day-2026-01-01-notes-1`, … `notes-N`. Notes pages use the same section nav chrome as day pages.
 
 Internal jumps use fpdf2 **page links** (`add_link(page=…)`) plus **named
 destinations** bound at the top of each page (`add_link(name=…)`). Names look
 like `year`, `q1`, `month-01`, `week-2025-12-29`, `day-2026-01-01`.
+
+Scaling numbers (full-year 2026, N = 0 / 2 / 10 / 20 / 30 / 50 / 100) live in
+[BENCH.md](BENCH.md).
 
 ## Artifacts
 
