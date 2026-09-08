@@ -68,8 +68,10 @@ flowable story.
 ## Artifacts
 
 - `artifacts/specimen-2026.pdf` — 6 pages (cover, year, Q1, January, first week, 1 Jan).
+- `artifacts/specimen-2026-notes2.pdf` — same + 2 notes pages for 1 Jan (8 pages).
+- `artifacts/planner-2026.pdf` — full 2026 book, N=0 (436 pages, ~4.3 MB).
 - `artifacts/preview/` — PNG rasters of those landings (`cover`, `year`, `quarter`, `month`, `week`, `day`).
-- Full-year N≥2 PDFs are **not** committed. Numbers: [BENCH.md](BENCH.md) (after the bench run).
+- Full-year N≥2 PDFs are **not** committed (N=100 was ~109 MB). Numbers: [BENCH.md](BENCH.md).
 
 ## CI
 
