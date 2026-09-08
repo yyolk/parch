@@ -1,11 +1,11 @@
 .venv
 out/
 .tools/
-docs/samples/
 __pycache__/
 *.pyc
 .pytest_cache
 dist
+build
 *.egg-info
 .ruff_cache
 .mypy_cache
