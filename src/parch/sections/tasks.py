@@ -350,14 +350,11 @@ class Tasks:
     ),
     box(width: 100%, height: 100%, clip: true, layout(size => {{
       let min-row = 6.0mm
-      let n-guess = calc.max(8, calc.floor(size.height / min-row))
-      let row-h-guess = size.height / n-guess
-      let top-air = row-h-guess * 0.55
+      let top-air = min-row * 0.55
       let avail = size.height - top-air
       let n = calc.max(8, calc.floor(avail / min-row))
-      let row-h = avail / n
       grid(
-        rows: (top-air,) + (row-h,) * n,
+        rows: (top-air,) + (min-row,) * n,
         row-gutter: 0pt,
         [],
         ..range(n).map(_ => {tick}),
@@ -369,7 +366,7 @@ class Tasks:
     def _nomad_day_chip(self, manifest: Manifest, day: Day) -> str:
         letter = self.i18n.t(f"weekday.letter.{day.weekday_name}")
         label = f"{letter}{day.month_day}"
-        active = day.day == date.today()
+        active = day.day == self.configurator.start_date().day
         fill = "ink" if active else "white"
         text_fill = "white" if active else "ink"
         chip = (

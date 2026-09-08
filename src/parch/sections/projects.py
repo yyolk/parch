@@ -286,9 +286,8 @@ class Projects:
           layout(size => {{
             let tile = 5.5mm
             let n = calc.max(4, calc.floor(size.height / tile))
-            let row-h = size.height / n
             grid(
-              rows: (row-h,) * n,
+              rows: (tile,) * n,
               row-gutter: 0pt,
               ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
             )

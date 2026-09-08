@@ -291,13 +291,13 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "column-gutter: 1.0mm" in tasks
     assert "row-gutter: 1.4mm" in tasks
     assert "let min-row = 6.0mm" in tasks
+    assert "min-row * 0.55" in tasks
+    assert "rows: (top-air,) + (min-row,) * n" in tasks
+    assert "let row-h = avail / n" not in tasks
     assert "lined_well(task_fill" not in tasks
     assert 'font: "Liberation Sans"' in tasks
-    if date.today() == date(2026, 1, 1):
-        assert "fill: ink" in tasks
-        assert 'fill: white)[T1]' in tasks
-    else:
-        assert 'fill: white)[T1]' not in tasks
+    assert "fill: ink," in tasks
+    assert 'fill: white)[T1]' in tasks
     habits_index = _page_with(typst, "[Habits <habits>]")
     assert "section-strip(" in habits_index
     assert 'active: "habits"' in habits_index
@@ -430,6 +430,8 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "row-gutter: 1.5mm" in projects
     assert "column-gutter: 1.8mm" in projects
     assert "let tile = 5.5mm" in projects
+    assert "rows: (tile,) * n" in projects
+    assert "let row-h = size.height / n" not in projects
     assert 'text(weight: "bold", size: 8.5pt)[#label]' in projects
     assert 'let cols = ("To do", "Doing", "Done")' in projects
     assert "lined_well(lined_fill)" not in projects
@@ -587,15 +589,13 @@ def test_nomad_tasks_day_cell_compares_date_today_not_weekday():
 def test_nomad_tasks_inverts_calendar_today_when_on_strip():
     section = _nomad_tasks_short()
     manifest = Manifest()
-    today = date.today()
-    on = section._nomad_day_chip(manifest, make_day(today.isoformat()))
+    start = section.configurator.start_date().day
+    on = section._nomad_day_chip(manifest, make_day(start.isoformat()))
     assert "fill: ink," in on
     assert "fill: white)" in on
-    other = date(2026, 1, 1)
-    if today != other:
-        off = section._nomad_day_chip(manifest, make_day(other.isoformat()))
-        assert "fill: white," in off
-        assert "fill: ink," not in off
+    off = section._nomad_day_chip(manifest, make_day("2026-01-02"))
+    assert "fill: white," in off
+    assert "fill: ink," not in off
 
 
 def test_mos_tasks_never_inverts_strip_cell():
