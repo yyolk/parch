@@ -585,34 +585,61 @@
 }
 
 // Nomad daily: locked 06-daily.typ. MOS keeps daily_well.
-// 1fr rows fill a bounded parent — no per-page layout() measure.
-#let nomad_daily_hours(start: 7, n: 10) = grid(
-  rows: (1fr,) * n,
-  row-gutter: 0pt,
-  ..range(start, start + n).map(h => grid(
-    columns: (4.5mm, 1fr),
-    column-gutter: 0.65mm,
-    align: (bottom + right, bottom),
-    pad(bottom: 0.08mm, text(
-      size: 6.5pt,
-      fill: luma(40%),
-      font: "Liberation Sans",
-    )[#h]),
-    hairline,
-  )),
+// One layout() for equal row height; hairlines are a tiling fill, not N grids.
+#let _hair-tile(tile) = tiling(
+  size: (regular-h, tile),
+  line(
+    start: (0pt, tile - 0.15mm),
+    end: (regular-h, tile - 0.15mm),
+    stroke: hair + ink,
+  ),
 )
 
-#let nomad_daily_priorities(n: 6) = grid(
-  rows: (1fr,) * n,
-  row-gutter: 0pt,
-  ..range(n).map(_ => grid(
+#let nomad_daily_hours(start: 7, n: 10) = layout(size => {
+  let hour-h = size.height / n
+  grid(
+    columns: (4.5mm, 1fr),
+    column-gutter: 0.65mm,
+    rows: (hour-h,) * n,
+    ..range(n).map(i => grid.cell(
+      x: 0,
+      y: i,
+      align(bottom + right, pad(bottom: 0.08mm, text(
+        size: 6.5pt,
+        fill: luma(40%),
+        font: "Liberation Sans",
+      )[#{start + i}])),
+    )),
+    grid.cell(
+      x: 1,
+      y: 0,
+      rowspan: n,
+      inset: 0pt,
+      box(width: 100%, height: 100%, fill: _hair-tile(hour-h)),
+    ),
+  )
+})
+
+#let nomad_daily_priorities(n: 6) = layout(size => {
+  let row-h = size.height / n
+  grid(
     columns: (auto, 1fr),
     column-gutter: 1.4mm,
-    align: (horizon, bottom),
-    square(size: 0.8em, stroke: hair + ink),
-    hairline,
-  )),
-)
+    rows: (row-h,) * n,
+    ..range(n).map(i => grid.cell(
+      x: 0,
+      y: i,
+      align(horizon, square(size: 0.8em, stroke: hair + ink)),
+    )),
+    grid.cell(
+      x: 1,
+      y: 0,
+      rowspan: n,
+      inset: 0pt,
+      box(width: 100%, height: 100%, fill: _hair-tile(row-h)),
+    ),
+  )
+})
 
 #let nomad_daily_notes_preview(more, label: [Notes], lines: 4, tile: 5.8mm) = {
   let chip = if more == none {
@@ -666,12 +693,11 @@
         clip: true,
         stroke: (right: hair + ink, bottom: hair + ink),
         inset: (top: 0.55mm, right: 2mm, bottom: 1.0mm, left: 0pt),
-        grid(
-          rows: (auto, 1fr),
-          row-gutter: 0.3mm,
-          text(weight: "bold", size: 8.5pt)[#schedule-label],
-          nomad_daily_hours(start: hour-start, n: hours),
-        ),
+        {
+          text(weight: "bold", size: 8.5pt)[#schedule-label]
+          v(0.3mm)
+          nomad_daily_hours(start: hour-start, n: hours)
+        },
       ),
       box(
         width: 100%,
@@ -691,12 +717,11 @@
               inset: 0.5mm,
               calendar,
             ),
-            box(width: 100%, height: 100%, clip: true, grid(
-              rows: (auto, 1fr),
-              row-gutter: 0.3mm,
-              text(weight: "bold", size: 8.5pt)[#priorities-label],
-              nomad_daily_priorities(n: prios),
-            )),
+            box(width: 100%, height: 100%, clip: true, {
+              text(weight: "bold", size: 8.5pt)[#priorities-label]
+              v(0.3mm)
+              nomad_daily_priorities(n: prios)
+            }),
           )
         },
       ),

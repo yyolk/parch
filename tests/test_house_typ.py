@@ -195,11 +195,12 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     hours = house[house.index("#let nomad_daily_hours(") : house.index("#let nomad_daily_priorities(")]
-    assert "layout(" not in hours
-    assert "rows: (1fr,) * n" in hours
+    assert "layout(size => {" in hours
+    assert "_hair-tile(hour-h)" in hours
+    assert "rows: (1fr,) * n" not in hours
     prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
-    assert "layout(" not in prios
-    assert "rows: (1fr,) * n" in prios
+    assert "layout(size => {" in prios
+    assert "_hair-tile(row-h)" in prios
     assert "#let nomad_notes_fill = lined_fill(" in house
     assert "#let nomad_daily_well(" in house
     daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_fill")]
@@ -646,7 +647,8 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
         "}"
     )
     assert "reverse" not in quarter_well
-    assert "rowspan" not in house
+    assert "rowspan" not in quarter_well
+    assert "rowspan" not in house[: house.index("#let nomad_daily_hours(")]
     assert "dir: ltr" in house
     assert "calc.max(measure(title).height, measure(mark).height)" not in house
     assert "measure(seated_title)" not in house

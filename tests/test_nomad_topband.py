@@ -708,13 +708,18 @@ def test_nomad_calendar_days_and_daily_tempo_link():
     assert "chip([Wk1], active: false, dest: <2026W01>, expand: true)" in daily
     assert "chip([Jan], active: true, dest: <month-2026-01-01>, expand: true)" in daily
     assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in daily
-    assert '(<quarter-2026-1>, "q")' in daily
-    assert '(<month-2026-01-01>, "mon")' in daily
-    assert '(none, "q")' not in daily
-    assert '(none, "mon")' not in daily
+    bind = typst[typst.index("#let nomad-strip-items(") :].split("\n", 1)[0]
+    assert "q: <quarter-2026-1>" in bind
+    assert "mon: <month-2026-01-01>" in bind
+    assert "wk: <2026W01>" in bind
+    assert "day: <2026-01-01>" in bind
+    assert 'section-strip(nomad-strip-items(), active: "day")' in daily
+    assert '(none, "q")' not in typst
+    assert '(none, "mon")' not in typst
     weekly = _page_with(typst, "Week 1 <2026W01>")
-    assert '(<2026-01-01>, "day")' in weekly
+    assert "nomad-strip-items(" in weekly
     assert '(none, "day")' not in weekly
+    assert '(none, "day")' not in bind
 
 
 def test_nomad_sample_page_numbers_find_topband_dests():
