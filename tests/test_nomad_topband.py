@@ -259,19 +259,45 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert 'size: 7.5pt, weight: "bold", font: "Liberation Sans"' in monthly
     assert 'text(weight: "bold", size: 8pt)[Month notes]' in monthly
     assert "chip([Jan], active: true" in monthly
+    tasks_index = _page_with(typst, "[Tasks <tasks>]")
+    assert "section-strip(" in tasks_index
+    assert 'active: "tasks"' in tasks_index
+    assert "active: none" not in tasks_index
+    assert "page-shell(\n  none," not in tasks_index
+    assert 'text(size: 10pt, weight: "bold")[Tasks <tasks>]' in tasks_index
+    assert 'text(size: h1)[Tasks' not in tasks_index
+    assert 'text(size: h1)[2026]' not in tasks_index
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in tasks_index
+    assert "let pack = 7.0mm" in tasks_index
+    assert "columns: (10mm, 1fr)" in tasks_index
+    assert "column-gutter: 2.5mm" in tasks_index
+    assert 'font: "Liberation Sans")[1]' in tasks_index
+    assert 'font: "Liberation Sans")[13]' in tasks_index
+    assert "[Jan 5 – Jan 11]" in tasks_index
+    assert "[Jan 5 – 11]" not in tasks_index
     # Strip dests also mention tasks-WEEK; title + active chip locate the page.
-    tasks = _page_with(typst, "Tasks ·")
+    tasks = _page_with(typst, "Tasks  ·  Week 1")
+    assert "section-strip(" in tasks
     assert 'active: "tasks"' in tasks
-    assert "Tasks · Week 1" in tasks
+    assert "active: none" not in tasks
+    assert "page-shell(\n  none," not in tasks
+    assert 'text(size: 10pt, weight: "bold")[Tasks  ·  Week 1 <tasks-2026W01>  ·  Dec 29 – Jan 4]' in tasks
+    assert 'text(size: h1)[Tasks' not in tasks
     assert "padded_link(<2026-01-01>" in tasks
     assert "M29" in tasks
     assert "T1" in tasks
     assert "Mon 29" not in tasks
+    assert "chip([Wk1], active: true" in tasks
+    assert "column-gutter: 1.0mm" in tasks
+    assert "row-gutter: 1.4mm" in tasks
+    assert "let min-row = 6.0mm" in tasks
+    assert "lined_well(task_fill" not in tasks
+    assert 'font: "Liberation Sans"' in tasks
     if date.today() == date(2026, 1, 1):
-        assert "text(size: 6pt, fill: white)[T1]" in tasks
-        assert "fill: black" in tasks
+        assert "fill: ink" in tasks
+        assert 'fill: white)[T1]' in tasks
     else:
-        assert "text(size: 6pt, fill: white)[T1]" not in tasks
+        assert 'fill: white)[T1]' not in tasks
     habits_index = _page_with(typst, "[Habits <habits>]")
     assert "section-strip(" in habits_index
     assert 'active: "habits"' in habits_index
@@ -562,14 +588,14 @@ def test_nomad_tasks_inverts_calendar_today_when_on_strip():
     section = _nomad_tasks_short()
     manifest = Manifest()
     today = date.today()
-    on = section._day_cell(manifest, make_day(today.isoformat()))
-    assert "fill: white" in on
-    assert "fill: black" in on
+    on = section._nomad_day_chip(manifest, make_day(today.isoformat()))
+    assert "fill: ink," in on
+    assert "fill: white)" in on
     other = date(2026, 1, 1)
     if today != other:
-        off = section._day_cell(manifest, make_day(other.isoformat()))
-        assert "fill: white" not in off
-        assert "fill: black" not in off
+        off = section._nomad_day_chip(manifest, make_day(other.isoformat()))
+        assert "fill: white," in off
+        assert "fill: ink," not in off
 
 
 def test_mos_tasks_never_inverts_strip_cell():
