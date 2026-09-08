@@ -471,9 +471,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "lined_well(dotted_centered)" not in meeting
     review_index = _page_with(typst, "[Review <review>]")
     assert "section-strip(" in review_index
-    assert "active: none" in review_index
+    assert 'active: "review"' in review_index
+    assert "active: none" not in review_index
     assert "page-shell(\n  none," not in review_index
-    assert 'active: "review"' not in review_index
     assert 'active: "habits"' not in review_index
     assert 'text(size: 10pt, weight: "bold")[Review <review>]' in review_index
     assert 'text(size: h1)[Review' not in review_index
@@ -489,9 +489,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Jan 5 – 11]" not in review_index
     review = _page_with(typst, "Review  ·  Week 1")
     assert "section-strip(" in review
-    assert "active: none" in review
+    assert 'active: "review"' in review
+    assert "active: none" not in review
     assert "page-shell(\n  none," not in review
-    assert 'active: "review"' not in review
     assert 'text(size: 10pt, weight: "bold")[Review  ·  Week 1 <review-2026W01>  ·  Dec 29 – Jan 4]' in review
     assert 'text(size: h1)[Review' not in review
     assert "title: grid(columns: 1fr," not in review

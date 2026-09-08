@@ -85,7 +85,6 @@ class Review:
                         ),
                         page_id=page_id,
                         heading_mark=HeadingMark.TRAIL,
-                        strip="quiet",
                         year=year,
                     )
                 )
@@ -110,7 +109,6 @@ class Review:
                             content=self._week_body(manifest, week),
                             page_id=page_id,
                             heading_mark=HeadingMark.TRAIL,
-                            strip="quiet",
                             year=year,
                         )
                     )
