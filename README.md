@@ -50,9 +50,11 @@ parch new --device supernote-nomad --year 2027 --yes -o mine.toml
 
 Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip side is `mos.side_menu` (default left). Override with `--hand left|right` on `press`, `proof`, `new`, and `edit`. `--hand` does not reverse the well.
 
+Navigation chrome is **device-gated**. `supernote-nomad` (alias `nomad`) presses **Topband**. Same canvas `118.87×158.5mm` as `supernote-a6` / `supernote-a6x`, but those ids keep **MOS**. There is no `--topband` / `--mos` switch — pick the device id (or `device` in the job TOML).
+
 | Device | Notes |
 | --- | --- |
-| `supernote-nomad` | SuperNote Nomad (A6 X2). Toolbar top 8mm |
+| `supernote-nomad` | SuperNote Nomad (A6 X2). Topband; toolbar top 8mm. Alias `nomad` |
 | `kindle-scribe` | Kindle Scribe. No toolbar |
 | `158x210` | 158×210 mm. No toolbar |
 | `supernote-manta` | SuperNote Manta (A5 X2). Toolbar top 8mm |
@@ -63,8 +65,8 @@ Nineteen devices. Lined is paper (`style.scratch_pad`), not a device. MOS strip 
 | `remarkable-paper-pro-move` | reMarkable Paper Pro Move. No toolbar (Scribe pack). Alias `paper-pro-move` |
 | `supernote-a5` | SuperNote A5. Toolbar top 8mm (Nomad pack). Alias `a5` |
 | `supernote-a5x` | SuperNote A5 X. Same canvas as A5; own name. Alias `a5x` |
-| `supernote-a6` | SuperNote A6. Toolbar top 8mm (Nomad pack). Alias `a6` |
-| `supernote-a6x` | SuperNote A6 X. Same canvas as A6; own name. Alias `a6x` |
+| `supernote-a6` | SuperNote A6. Same canvas as Nomad; MOS chrome (not Topband). Alias `a6` |
+| `supernote-a6x` | SuperNote A6 X. Same canvas as Nomad; MOS chrome (not Topband). Alias `a6x` |
 | `kindle-scribe-11` | Kindle Scribe 11. No toolbar (Scribe pack). Alias `scribe-11` |
 | `kindle-scribe-colorsoft` | Kindle Scribe Colorsoft. Same B&W canvas as Scribe 11. Alias `colorsoft` |
 | `ipad-mini` | iPad mini. No toolbar (Scribe pack). Alias `mini` |
