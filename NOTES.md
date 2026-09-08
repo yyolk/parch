@@ -27,11 +27,11 @@ cells.
 
 ## Memory / emit
 
-A full 2026 book is ~436 pages and a few thousand annotations. fpdf2 held it
-comfortably in this VM; generation is a couple of seconds, not a Typst compile.
-The PDF stays small because it is Helvetica + strokes, no images, no fonts
-embedded. Annotation volume is the thing that would grow if every pixel of
-chrome became a separate link.
+A full 2026 book is **436 pages**, **440 named destinations**, and **~17k link
+annotations**. fpdf2 held it comfortably in this VM; generation was about **2
+seconds**, not a Typst compile. The PDF is **~2.6 MB** (Helvetica + strokes, no
+embedded fonts, no images). Annotation volume is the thing that would grow if
+every pixel of chrome became a separate link.
 
 No intermediate `index.typst`. No subprocess. The “press” is one Python
 process writing bytes. That part felt like the original LYP promise minus the
@@ -59,6 +59,21 @@ Text wrapping and vertical rhythm are manual. Lined notes are a loop of
   `month-01`”.
 - I did not get Typst’s free outline / PDF tagged structure. `start_section`
   exists in fpdf2; this spike barely uses document structure beyond dests.
+
+## How links were checked
+
+No GUI click-through. After `press`, `pypdf` was used to:
+
+- Confirm dest page numbers (cover=1, year=2, Q1=3, January=7, first week=19,
+  1 Jan=72, 31 Dec=436).
+- Confirm the year-page nav strip is five bottom rectangles targeting those
+  section landings, and the cover has **no** bottom-strip annots (only the
+  year numeral → year page).
+- Confirm the year-page January title → page 7 and Jan 1–4 cells → pages 72–75.
+- Confirm the January grid has taps to `day-2026-01-01` and the first week.
+
+Pages were also rasterized with `pdftoppm` to check chrome (nav present except
+cover; active tab wash).
 
 ## Verdict for the question
 

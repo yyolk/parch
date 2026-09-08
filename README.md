@@ -54,9 +54,9 @@ like `year`, `q1`, `month-01`, `week-2025-12-29`, `day-2026-01-01`.
 
 ## Artifacts
 
-- `artifacts/specimen-2026.pdf` — short book (6 pages), committed.
-- Full year: `press` → `artifacts/planner-2026.pdf` (~436 pages). Generate
-  locally; only committed if the file stays small enough to keep in git.
+- `artifacts/specimen-2026.pdf` — 6 pages (cover, year, Q1, January, first week, 1 Jan).
+- `artifacts/planner-2026.pdf` — full 2026 book (436 pages, ~2.6 MB in this environment).
+- `artifacts/preview/` — PNG rasters of those section landings for glanceable review.
 
 ## CI
 

@@ -77,7 +77,7 @@ def _emit_cover(pdf: PlannerPDF) -> None:
 
 
 def _emit_year(pdf: PlannerPDF) -> None:
-    pdf.begin_page(dests=(dest_year(),), title=str(pdf.plan.year), section="year")
+    pdf.begin_page(dests=(dest_year(),), title="Year", section="year")
     x0 = 5.0
     y0 = pdf.content_top() + 1.0
     gap_x = 2.2
