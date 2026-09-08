@@ -40,7 +40,9 @@ parch press supernote-nomad
 
 `--year` also rewrites the cover title year when the old year is in the title.
 
-Full-year Nomad with `daily_notes` (default `pages = 2`) is one Typst document — peak RAM is page count, not `index.typst` size. On an 8GB machine, set `[section.daily_notes] pages = 1` or comment `daily_notes` out of `sections`. There is no chunked compile / PDF merge path.
+Full-year Nomad is one Typst document — peak RAM is page-tree count, not `index.typst` size. There is no chunked compile / PDF merge path.
+
+`supernote-nomad` defaults to `[section.daily_notes] pages = 1` (one notes well per day; `pages = 2` is opt-in). Lean notes is **not** enough on a default 8GB Codespace with all sections on — year extras + notes=1 is still ~3.7 GiB Typst CLI, and daily pages dominate (~2.4 GiB of that). Other devices still default to `pages = 2`. Jobs written before this default still say `pages = 2`. Press on a 16GB machine, or omit `daily` / extras, until daily page-tree cost drops.
 
 ```shell
 parch new --device supernote-nomad --year 2027 --yes -o mine.toml

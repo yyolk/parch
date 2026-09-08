@@ -22,6 +22,7 @@ def test_nomad_year_pages_call_page_shell_not_mos_strip():
     assert typst.count("page-shell(") > 100
     assert typst.count("section-strip(") > 100
     assert typst.count("#let nomad-strip-items(") == 1
+    assert typst.count("#let nomad-cal-dests = (") == 1
     assert typst.count("section-strip(((<") == 0
     assert "section-strip(nomad-strip-items(" in typst
     assert typst.count("mos_strip(highlight-months:") == 0

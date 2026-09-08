@@ -46,8 +46,10 @@ def mini_month_cell(
     days = month.day.end_of_month().month_day
     hl = "none" if highlight is None else str(highlight)
     compact_s = "true" if compact else "false"
+    day = month.day.day
+    dests = f'nomad-cal-dests.at("{day.year}-{day.month:02d}")'
     return (
         f"mini-month({header}, start-wd: {month_start_wd(month)}, days: {days}, "
         f"highlight: {hl}, day-h: {day_h}, weeks: {weeks}, compact: {compact_s}, "
-        f"dests: {month_day_dests(manifest, month)})"
+        f"dests: {dests})"
     )

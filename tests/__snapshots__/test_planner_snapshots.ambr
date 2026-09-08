@@ -111,7 +111,7 @@
     }),
     dict({
       'name': 'daily_notes',
-      'pages': 730,
+      'pages': 365,
     }),
     dict({
       'name': 'colophon',
@@ -664,7 +664,7 @@
       #page-shell(
         section-strip(nomad-strip-items(), active: "day"),
         nomad_daily_well(
-        mini-month(padded_link(<month-2026-01-01>)[January], start-wd: 3, days: 31, highlight: 1, day-h: 2.2mm, weeks: 6, compact: true, dests: (<2026-01-01>, <2026-01-02>, <2026-01-03>, <2026-01-04>, <2026-01-05>, <2026-01-06>, <2026-01-07>, <2026-01-08>, <2026-01-09>, <2026-01-10>, <2026-01-11>, <2026-01-12>, <2026-01-13>, <2026-01-14>, none, none, none, none, none, none, none, none, none, none, none, none, none, none, none, none, none,)),
+        mini-month(padded_link(<month-2026-01-01>)[January], start-wd: 3, days: 31, highlight: 1, day-h: 2.2mm, weeks: 6, compact: true, dests: nomad-cal-dests.at("2026-01")),
         padded_link(<daily-note-2026-01-01-page-1>)[More],
         schedule-label: [Schedule],
         priorities-label: [Priorities],

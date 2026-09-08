@@ -175,6 +175,8 @@ def spec_from_device(device_id: str, **overrides: Any) -> JobSpec:
         cleaned.setdefault("trailing_half_hour", False)
         cleaned.setdefault("priorities_count", 6)
         cleaned.setdefault("habit_columns", 5)
+        # One notes well per day. pages = 2 is opt-in (~+365 pages / year).
+        cleaned.setdefault("daily_notes_pages", 1)
     return JobSpec(device_id=device.id, **cleaned)
 
 

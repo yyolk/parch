@@ -199,9 +199,14 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "layout(size => {" in hours
     assert "_hair-tile(hour-h)" in hours
     assert "rows: (1fr,) * n" not in hours
+    assert "rowspan: n" in hours
     prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
     assert "layout(size => {" in prios
-    assert "_hair-tile(row-h)" in prios
+    assert "align: (horizon, bottom)" in prios
+    assert "column-gutter: 1.4mm" in prios
+    assert "row-gutter: 0pt" in prios
+    assert "_hair-tile" not in prios
+    assert "rowspan" not in prios
     preview = house[house.index("#let nomad_daily_notes_preview(") : house.index("#let nomad_daily_well(")]
     assert "layout(" not in preview
     assert "lines: 4" in preview
@@ -283,6 +288,10 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert 'image("icons/menu.svg", height: _icon-h)' in house
     assert "image(src, height: 3.1mm)" not in house
     assert "_icon-on.at(id)" in house
+    assert "#let _chip-off = (" in house
+    assert "#let _chip-on = (" in house
+    assert "_chip-on.at(id)" in house[house.index("#let section-strip(") : house.index("#let chip(")]
+    assert "icon-chip(_strip-id(name), active: on, expand: true" not in house[house.index("#let section-strip(") : house.index("#let chip(")]
     assert "inset: (x: icon-chip-inset-x, y: icon-chip-inset-y)" in house[house.index("#let icon-chip(") :]
     assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
     strip = house[house.index("#let section-strip(") : house.index("#let chip(")]

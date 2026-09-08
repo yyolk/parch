@@ -275,12 +275,25 @@ def test_emit_job_is_complete_resume_state():
     assert data["section"]["monthly"]["week_placement"] == "none"
     assert data["section"]["daily"]["right"]["notes"]["pattern"] == "dotted"
     assert data["section"]["daily_notes"]["pattern"] == "lined"
+    assert data["section"]["daily_notes"]["pages"] == 1
     assert data["section"]["daily"]["right"]["notes"]["title_height"] == "4mm"
     assert data["section"]["monthly"]["daily_cell_height"] == "16mm"
     spec = spec_from_data(data)
     assert spec.paper == "lined"
     assert spec.week_placement == "none"
     assert spec.reverse_months_quarters is False
+    assert spec.daily_notes_pages == 1
+
+
+def test_nomad_daily_notes_pages_default_is_one_mos_stays_two():
+    nomad = spec_from_device("supernote-nomad")
+    mos = spec_from_device("158x210")
+    assert nomad.daily_notes_pages == 1
+    assert mos.daily_notes_pages == 2
+    assert tomllib.loads(emit_job(nomad))["section"]["daily_notes"]["pages"] == 1
+    assert tomllib.loads(emit_job(mos))["section"]["daily_notes"]["pages"] == 2
+    resumed = spec_from_data(tomllib.loads(emit_job(spec_from_device("supernote-nomad", daily_notes_pages=2))))
+    assert resumed.daily_notes_pages == 2
 
 
 def test_emit_job_override_reverse_months_quarters_omits_items():

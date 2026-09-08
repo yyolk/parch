@@ -205,6 +205,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section-strip(" in daily
     assert "nomad-strip-items(" in daily
     assert typst.count("#let nomad-strip-items(") == 1
+    assert typst.count("#let nomad-cal-dests = (") == 1
     assert 'section-strip(nomad-strip-items(), active: "day")' in daily
     assert 'active: "day"' in daily
     assert "mos_strip(" not in daily
@@ -704,9 +705,10 @@ def test_nomad_calendar_days_and_daily_tempo_link():
     assert "<2026-01-14>" in qjan
     daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
     cal = daily.split("mini-month(")[1]
-    assert "dests:" in cal
-    assert "<2026-01-01>" in cal.split("dests:")[1]
-    assert "<2026-01-02>" in cal.split("dests:")[1]
+    assert 'dests: nomad-cal-dests.at("2026-01")' in cal
+    bind_cal = typst[typst.index("#let nomad-cal-dests") :]
+    assert "<2026-01-01>" in bind_cal
+    assert "<2026-01-02>" in bind_cal
     assert "chip([Wk1], active: false, dest: <2026W01>, expand: true)" in daily
     assert "chip([Jan], active: true, dest: <month-2026-01-01>, expand: true)" in daily
     assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in daily

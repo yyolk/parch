@@ -33,4 +33,4 @@ def test_mini_month_cell_passes_day_dests():
     cell = mini_month_cell(load_default(), manifest, make_month("2026-01"), highlight=1)
     assert "mini-month(" in cell
     assert "highlight: 1" in cell
-    assert "dests: (none, <2026-01-02>," in cell
+    assert 'dests: nomad-cal-dests.at("2026-01")' in cell

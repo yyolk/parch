@@ -121,6 +121,17 @@ class Navigation:
                 items.append(f"({key}, \"{key}\")")
         return f"#let nomad-strip-items({', '.join(params)}) = ({', '.join(items)},)"
 
+    def nomad_cal_dest_bind(self) -> str:
+        """Bind each month's daily dest array once; mini-month looks up by YYYY-MM."""
+        from parch.mos.components.year_month import month_day_dests
+
+        parts: list[str] = []
+        for month in walk(self.start_date.month(), self.end_date.month()):
+            day = month.day.day
+            key = f"{day.year}-{day.month:02d}"
+            parts.append(f'"{key}": {month_day_dests(self.manifest, month)}')
+        return f"#let nomad-cal-dests = ({', '.join(parts)},)"
+
     def section_strip_cell(self, page_id: str | None = None, *, quiet: bool = False) -> str:
         active = None if quiet else strip_key_for_page_id(page_id)
         highlight = f"\"{active}\"" if active else "none"

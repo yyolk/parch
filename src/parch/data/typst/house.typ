@@ -452,13 +452,36 @@
   )
 }
 
+// Seated strip chips, decoded once. section-strip only wraps dest overlays.
+#let _chip-off = (
+  menu: icon-chip("menu", active: false, expand: true),
+  cal: icon-chip("cal", active: false, expand: true),
+  q: icon-chip("q", active: false, expand: true),
+  mon: icon-chip("mon", active: false, expand: true),
+  wk: icon-chip("wk", active: false, expand: true),
+  day: icon-chip("day", active: false, expand: true),
+  tasks: icon-chip("tasks", active: false, expand: true),
+  habits: icon-chip("habits", active: false, expand: true),
+  review: icon-chip("review", active: false, expand: true),
+)
+#let _chip-on = (
+  menu: icon-chip("menu", active: true, expand: true),
+  cal: icon-chip("cal", active: true, expand: true),
+  q: icon-chip("q", active: true, expand: true),
+  mon: icon-chip("mon", active: true, expand: true),
+  wk: icon-chip("wk", active: true, expand: true),
+  day: icon-chip("day", active: true, expand: true),
+  tasks: icon-chip("tasks", active: true, expand: true),
+  habits: icon-chip("habits", active: true, expand: true),
+  review: icon-chip("review", active: true, expand: true),
+)
+
 #let strip-icon(name, on: false, size: 3.4mm) = {
   icon-chip(_strip-id(name), active: on, expand: false)
 }
 
 // items: array of (dest, key). dest is none when the page does not exist.
 #let section-strip(items, active: none, height: chrome-h, stroke: none) = {
-  let edge = if stroke != none { stroke } else { hair }
   let n = items.len()
   if n == 0 { [] } else {
     grid(
@@ -469,8 +492,9 @@
       ..items.map(item => {
         let dest = item.at(0)
         let name = item.at(1)
+        let id = _strip-id(name)
         let on = dest != none and name == active
-        let seated = icon-chip(_strip-id(name), active: on, expand: true, stroke: edge)
+        let seated = if on { _chip-on.at(id) } else { _chip-off.at(id) }
         // Overlay a taller annot (does not grow the strip). Toolbar slop eats the
         // top 8mm; a chrome-h-only rect sits at 8.4mm and misses Nomad taps.
         if dest != none {
@@ -620,24 +644,20 @@
   )
 })
 
+// Locked 06-daily.typ / feel4r: tick + hairline share one row (horizon, bottom).
+// Not _hair-tile — that inset floats ticks off the rule.
 #let nomad_daily_priorities(n: 6) = layout(size => {
   let row-h = size.height / n
   grid(
-    columns: (auto, 1fr),
-    column-gutter: 1.4mm,
     rows: (row-h,) * n,
-    ..range(n).map(i => grid.cell(
-      x: 0,
-      y: i,
-      align(horizon, square(size: 0.8em, stroke: hair + ink)),
+    row-gutter: 0pt,
+    ..range(n).map(_ => grid(
+      columns: (auto, 1fr),
+      column-gutter: 1.4mm,
+      align: (horizon, bottom),
+      square(size: 0.8em, stroke: hair + ink),
+      hairline,
     )),
-    grid.cell(
-      x: 1,
-      y: 0,
-      rowspan: n,
-      inset: 0pt,
-      box(width: 100%, height: 100%, fill: _hair-tile(row-h)),
-    ),
   )
 })
 
