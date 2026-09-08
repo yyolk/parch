@@ -88,6 +88,11 @@ class Projects:
         rpp = self.rows_per_index_page()
         out: list[PageData] = []
         topband = nomad_topband(self.configurator)
+        year = (
+            f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
+            if topband
+            else None
+        )
         for page in range(1, self.index_page_count() + 1):
             start = (page - 1) * rpp + 1
             end = min(page * rpp, self.pages_num)
@@ -95,10 +100,14 @@ class Projects:
             if topband:
                 out.append(
                     PageData(
-                        title=f"text(size: h1){self._index_projects_cell(manifest, page)}",
-                        content=self._index_rows(manifest, start, end),
+                        title=(
+                            f'text(size: 10pt, weight: "bold")'
+                            f"{self._index_projects_cell(manifest, page)}"
+                        ),
+                        content=self._nomad_index_body(manifest, start, end),
                         page_id=page_id,
                         strip="quiet",
+                        year=year,
                     )
                 )
             else:
@@ -108,10 +117,11 @@ class Projects:
                 bid = self.board_id(index)
                 out.append(
                     PageData(
-                        title=f"text(size: h1)[{index}]",
-                        content=self._board_body(manifest, index),
+                        title=f'text(size: 10pt, weight: "bold")[Project {index}]',
+                        content=self._nomad_board_body(manifest, index),
                         page_id=bid,
                         strip="quiet",
+                        year=year,
                     )
                 )
             else:
@@ -170,6 +180,45 @@ class Projects:
 {",\n".join(rows)}
 )"""
 
+    def _nomad_index_row(self, manifest: Manifest, index: int) -> str:
+        bid = self.board_id(index)
+        hair = "line(length: 100%, stroke: hair + ink)"
+        inner = (
+            "grid(\n"
+            "        columns: (9mm, 1fr),\n"
+            "        column-gutter: 2mm,\n"
+            "        rows: (1fr,),\n"
+            "        align: (horizon, bottom),\n"
+            f'        text(size: 9pt, weight: "bold", font: "Liberation Sans")[{index}.],\n'
+            f"        {hair},\n"
+            "      )"
+        )
+        if manifest.source(bid):
+            return f"padded_link(<{bid}>, {inner})"
+        return inner
+
+    def _nomad_index_body(self, manifest: Manifest, start: int, end: int) -> str:
+        """Locked 09-projects index: 7.0mm pack, stretch-fill, N. + name hair."""
+        rows = [
+            self._nomad_index_row(manifest, index) for index in range(start, end + 1)
+        ]
+        if not rows:
+            return "[]"
+        listed = ",\n    ".join(rows)
+        return f"""box(width: 100%, height: 100%, clip: true, layout(size => {{
+  let rows = (
+    {listed},
+  )
+  let pack = 7.0mm
+  let n = calc.min(rows.len(), calc.max(6, calc.floor(size.height / pack)))
+  let row-h = size.height / n
+  grid(
+    rows: (row-h,) * n,
+    row-gutter: 0pt,
+    ..rows.slice(0, n),
+  )
+}}))"""
+
     def _index(self, manifest: Manifest, page: int, start: int, end: int) -> str:
         body = self._index_rows(manifest, start, end)
         return f"""#grid(
@@ -198,23 +247,55 @@ class Projects:
   lined_well({well})
 )"""
 
-    def _board_body(self, manifest: Manifest, index: int) -> str:
-        name_line = """grid(
-  columns: (auto, 1fr),
-  column-gutter: 6pt,
-  align: horizon,
-  text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Name],
-  grid.cell(stroke: (bottom: regular_stroke), []),
-)"""
+    def _nomad_board_body(self, manifest: Manifest, index: int) -> str:
+        """Locked 09-projects board: Name 10mm, 3 boxed 5.5mm wells."""
         bid = self.board_id(index)
+        todo = self.i18n.t("todo")
+        doing = self.i18n.t("doing")
+        done = self.i18n.t("done")
+        cols = ", ".join(f'"{label}"' for label in (todo, doing, done))
         return f"""box(width: 100%, height: 100%, {{
   place([#[] <{bid}>])
+  let cols = ({cols})
   grid(
-    columns: 1fr,
-    rows: (auto, 1fr),
-    row-gutter: 2.5mm,
-    {name_line},
-    {self._kanban("lined_fill")}
+    rows: (10mm, 1fr),
+    row-gutter: 1.5mm,
+    box(
+      width: 100%,
+      height: 100%,
+      stroke: (bottom: hair + ink),
+      inset: (bottom: 1mm),
+      {{
+        text(size: 7.5pt, fill: luma(40%), font: "Liberation Sans")[Name]
+        v(1fr)
+      }},
+    ),
+    grid(
+      columns: (1fr,) * 3,
+      column-gutter: 1.8mm,
+      rows: (1fr,),
+      ..cols.map(label => box(
+        width: 100%,
+        height: 100%,
+        clip: true,
+        stroke: hair + ink,
+        inset: (top: 1.0mm, x: 1.0mm, bottom: 0.8mm),
+        {{
+          text(weight: "bold", size: 8.5pt)[#label]
+          v(0.5mm)
+          layout(size => {{
+            let tile = 5.5mm
+            let n = calc.max(4, calc.floor(size.height / tile))
+            let row-h = size.height / n
+            grid(
+              rows: (row-h,) * n,
+              row-gutter: 0pt,
+              ..range(n).map(_ => align(bottom, line(length: 100%, stroke: hair + ink))),
+            )
+          }})
+        }},
+      )),
+    ),
   )
 }})"""
 

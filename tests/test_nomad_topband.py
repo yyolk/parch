@@ -377,12 +377,37 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "[Q3]" in quarterly
     assert "[Q4]" in quarterly
     assert "‹" not in quarterly.split("tempo-row(")[1].split(")", 1)[0]
+    projects_index = _page_with(typst, "[Projects <projects>]")
+    assert "section-strip(" in projects_index
+    assert "active: none" in projects_index
+    assert "page-shell(\n  none," not in projects_index
+    assert 'text(size: 10pt, weight: "bold")[Projects <projects>]' in projects_index
+    assert 'text(size: h1)[Projects' not in projects_index
+    assert 'text(size: h1)[2026]' not in projects_index
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in projects_index
+    assert "columns: (9mm, 1fr)" in projects_index
+    assert "column-gutter: 2mm" in projects_index
+    assert "align: (horizon, bottom)" in projects_index
+    assert "let pack = 7.0mm" in projects_index
+    assert 'font: "Liberation Sans")[1.]' in projects_index
+    assert 'font: "Liberation Sans")[16.]' in projects_index
+    assert "2 * regular_height" not in projects_index
+    assert "stroke: (bottom: regular_stroke)" not in projects_index
     projects = _page_with(typst, "#[] <project-1>")
     assert "section-strip(" in projects
     assert "active: none" in projects
     assert "page-shell(\n  none," not in projects
+    assert 'text(size: 10pt, weight: "bold")[Project 1]' in projects
+    assert 'text(size: h1)[1]' not in projects
     assert "[Name]" in projects
-    assert projects.count("lined_well(lined_fill)") == 3
+    assert "rows: (10mm, 1fr)" in projects
+    assert "row-gutter: 1.5mm" in projects
+    assert "column-gutter: 1.8mm" in projects
+    assert "let tile = 5.5mm" in projects
+    assert 'text(weight: "bold", size: 8.5pt)[To do]' in projects
+    assert 'text(weight: "bold", size: 8.5pt)[Doing]' in projects
+    assert 'text(weight: "bold", size: 8.5pt)[Done]' in projects
+    assert "lined_well(lined_fill)" not in projects
     assert "lined_well(dotted_centered)" not in projects
     meetings_index = _page_with(typst, "[Meetings <meetings>]")
     assert "section-strip(" in meetings_index
