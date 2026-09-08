@@ -415,15 +415,40 @@
 
 #let _strip-id(name) = if name == "contents" { "menu" } else { name }
 
+// Decode each Lucide once. section-strip reuses these nodes per page.
+#let _icon-h = 3.1mm
+#let _icon-off = (
+  menu: image("icons/menu.svg", height: _icon-h),
+  cal: image("icons/cal.svg", height: _icon-h),
+  q: image("icons/q.svg", height: _icon-h),
+  mon: image("icons/mon.svg", height: _icon-h),
+  wk: image("icons/wk.svg", height: _icon-h),
+  day: image("icons/day.svg", height: _icon-h),
+  tasks: image("icons/tasks.svg", height: _icon-h),
+  habits: image("icons/habits.svg", height: _icon-h),
+  review: image("icons/review.svg", height: _icon-h),
+)
+#let _icon-on = (
+  menu: image("icons/menu-on.svg", height: _icon-h),
+  cal: image("icons/cal-on.svg", height: _icon-h),
+  q: image("icons/q-on.svg", height: _icon-h),
+  mon: image("icons/mon-on.svg", height: _icon-h),
+  wk: image("icons/wk-on.svg", height: _icon-h),
+  day: image("icons/day-on.svg", height: _icon-h),
+  tasks: image("icons/tasks-on.svg", height: _icon-h),
+  habits: image("icons/habits-on.svg", height: _icon-h),
+  review: image("icons/review-on.svg", height: _icon-h),
+)
+
 #let icon-chip(id, active: false, expand: true, stroke: hair) = {
-  let src = if active { "icons/" + id + "-on.svg" } else { "icons/" + id + ".svg" }
+  let pic = if active { _icon-on.at(id) } else { _icon-off.at(id) }
   let edge = if stroke != none { stroke } else { hair }
   box(
     width: if expand { 100% } else { auto },
     inset: (x: icon-chip-inset-x, y: icon-chip-inset-y),
     fill: if active { black } else { white },
     stroke: edge + black,
-    align(center + horizon, image(src, height: 3.1mm)),
+    align(center + horizon, pic),
   )
 }
 
@@ -560,39 +585,34 @@
 }
 
 // Nomad daily: locked 06-daily.typ. MOS keeps daily_well.
-#let nomad_daily_hours(start: 7, n: 10) = layout(size => {
-  let hour-h = size.height / n
-  grid(
-    rows: (hour-h,) * n,
-    row-gutter: 0pt,
-    ..range(start, start + n).map(h => grid(
-      columns: (4.5mm, 1fr),
-      column-gutter: 0.65mm,
-      align: (bottom + right, bottom),
-      pad(bottom: 0.08mm, text(
-        size: 6.5pt,
-        fill: luma(40%),
-        font: "Liberation Sans",
-      )[#h]),
-      hairline,
-    )),
-  )
-})
+// 1fr rows fill a bounded parent — no per-page layout() measure.
+#let nomad_daily_hours(start: 7, n: 10) = grid(
+  rows: (1fr,) * n,
+  row-gutter: 0pt,
+  ..range(start, start + n).map(h => grid(
+    columns: (4.5mm, 1fr),
+    column-gutter: 0.65mm,
+    align: (bottom + right, bottom),
+    pad(bottom: 0.08mm, text(
+      size: 6.5pt,
+      fill: luma(40%),
+      font: "Liberation Sans",
+    )[#h]),
+    hairline,
+  )),
+)
 
-#let nomad_daily_priorities(n: 6) = layout(size => {
-  let row-h = size.height / n
-  grid(
-    rows: (row-h,) * n,
-    row-gutter: 0pt,
-    ..range(n).map(_ => grid(
-      columns: (auto, 1fr),
-      column-gutter: 1.4mm,
-      align: (horizon, bottom),
-      square(size: 0.8em, stroke: hair + ink),
-      hairline,
-    )),
-  )
-})
+#let nomad_daily_priorities(n: 6) = grid(
+  rows: (1fr,) * n,
+  row-gutter: 0pt,
+  ..range(n).map(_ => grid(
+    columns: (auto, 1fr),
+    column-gutter: 1.4mm,
+    align: (horizon, bottom),
+    square(size: 0.8em, stroke: hair + ink),
+    hairline,
+  )),
+)
 
 #let nomad_daily_notes_preview(more, label: [Notes], lines: 4, tile: 5.8mm) = {
   let chip = if more == none {
@@ -646,11 +666,12 @@
         clip: true,
         stroke: (right: hair + ink, bottom: hair + ink),
         inset: (top: 0.55mm, right: 2mm, bottom: 1.0mm, left: 0pt),
-        {
-          text(weight: "bold", size: 8.5pt)[#schedule-label]
-          v(0.3mm)
-          nomad_daily_hours(start: hour-start, n: hours)
-        },
+        grid(
+          rows: (auto, 1fr),
+          row-gutter: 0.3mm,
+          text(weight: "bold", size: 8.5pt)[#schedule-label],
+          nomad_daily_hours(start: hour-start, n: hours),
+        ),
       ),
       box(
         width: 100%,
@@ -670,11 +691,12 @@
               inset: 0.5mm,
               calendar,
             ),
-            box(width: 100%, height: 100%, clip: true, {
-              text(weight: "bold", size: 8.5pt)[#priorities-label]
-              v(0.3mm)
-              nomad_daily_priorities(n: prios)
-            }),
+            box(width: 100%, height: 100%, clip: true, grid(
+              rows: (auto, 1fr),
+              row-gutter: 0.3mm,
+              text(weight: "bold", size: 8.5pt)[#priorities-label],
+              nomad_daily_priorities(n: prios),
+            )),
           )
         },
       ),
@@ -688,17 +710,15 @@
   )
 })
 
-// Nomad daily-notes: locked 07-daily-notes.typ. Floor whole regular-h tiles.
-#let nomad_notes_well(tile: regular-h) = box(width: 100%, height: 100%, clip: true, {
-  layout(size => {
-    let n = calc.max(8, calc.floor(size.height / tile))
-    grid(
-      rows: (tile,) * n,
-      row-gutter: 0pt,
-      ..range(n).map(_ => align(bottom, hairline)),
-    )
-  })
-})
+// Nomad daily-notes: #144 tiling fill, not N hairlines / layout().
+// Line sits at tile-0.15mm, so a remnant shorter than that stays blank
+// (same as the old floor-to-whole-tile well).
+#let nomad_notes_fill = lined_fill(
+  regular_height: regular-h,
+  regular_stroke: hair,
+  paint: ink,
+)
+#let nomad_notes_well(tile: regular-h) = lined_well(nomad_notes_fill)
 
 // Nomad weekly: 7×1fr day bands + 18mm week-notes floor (locked 05-weekly.typ).
 // Day tile 3.8mm; notes tile 4.8mm. Stretch row-h to fill leftover (no remnant).

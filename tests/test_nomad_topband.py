@@ -203,6 +203,9 @@ def test_nomad_emit_uses_page_shell_not_mos():
     daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
     assert "page-shell(" in daily
     assert "section-strip(" in daily
+    assert "nomad-strip-items(" in daily
+    assert typst.count("#let nomad-strip-items(") == 1
+    assert 'section-strip(nomad-strip-items(), active: "day")' in daily
     assert 'active: "day"' in daily
     assert "mos_strip(" not in daily
     assert "mos_frame(" not in daily

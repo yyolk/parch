@@ -23,7 +23,13 @@ class Builder:
 
     def generate(self) -> str:
         body = "\n#pagebreak()\n".join(self.pages)
-        return f"{self.preamble.generate()}\n{self._mos_strip_bind()}\n{body}"
+        binds = [self._mos_strip_bind()]
+        if nomad_topband(self.configurator):
+            strip = self.navigation.nomad_strip_bind()
+            if strip:
+                binds.append(strip)
+        header = "\n".join([self.preamble.generate(), *binds])
+        return f"{header}\n{body}"
 
     def _mos_strip_bind(self) -> str:
         months = self.navigation.year_month_items()

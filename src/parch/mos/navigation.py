@@ -94,10 +94,49 @@ class Navigation:
             return "()"
         return f"({', '.join(pairs)},)"
 
+    def _strip_home_id(self) -> str:
+        return self.configurator.start_date().id
+
+    def _strip_default_dests(self) -> dict[str, str]:
+        home = self._strip_home_id()
+        return {
+            key: self.manifest.dest(strip_dest_id(key, home, self.configurator))
+            for key in strip_keys(self.configurator)
+        }
+
+    def nomad_strip_bind(self) -> str:
+        """Bind year-home dests once; pages pass only dests that differ."""
+        keys = strip_keys(self.configurator)
+        if not keys:
+            return ""
+        defaults = self._strip_default_dests()
+        params: list[str] = []
+        items: list[str] = []
+        for key in keys:
+            dest = defaults[key]
+            if key in {"contents", "cal"}:
+                items.append(f"({dest}, \"{key}\")")
+            else:
+                params.append(f"{key}: {dest}")
+                items.append(f"({key}, \"{key}\")")
+        return f"#let nomad-strip-items({', '.join(params)}) = ({', '.join(items)},)"
+
     def section_strip_cell(self, page_id: str | None = None, *, quiet: bool = False) -> str:
         active = None if quiet else strip_key_for_page_id(page_id)
         highlight = f"\"{active}\"" if active else "none"
-        return f"section-strip({self.section_strip_items(page_id)}, active: {highlight})"
+        keys = strip_keys(self.configurator)
+        if not keys:
+            return f"section-strip((), active: {highlight})"
+        defaults = self._strip_default_dests()
+        overrides: list[str] = []
+        for key in keys:
+            if key in {"contents", "cal"}:
+                continue
+            dest = self.manifest.dest(strip_dest_id(key, page_id, self.configurator))
+            if dest != defaults[key]:
+                overrides.append(f"{key}: {dest}")
+        items = f"nomad-strip-items({', '.join(overrides)})"
+        return f"section-strip({items}, active: {highlight})"
 
     def tempo_cell(self, page_id: str | None = None) -> str:
         """Contextual tempo bar, or ``none`` when the page has no tempo."""

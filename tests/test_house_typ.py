@@ -194,8 +194,15 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "block(width: 100%, inset: (x: bezel, y: strip-tempo-gap), tempo)" in shell
     assert "inset: (x: bezel, top: 1.2mm, bottom: bezel)" not in shell
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
+    hours = house[house.index("#let nomad_daily_hours(") : house.index("#let nomad_daily_priorities(")]
+    assert "layout(" not in hours
+    assert "rows: (1fr,) * n" in hours
+    prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
+    assert "layout(" not in prios
+    assert "rows: (1fr,) * n" in prios
+    assert "#let nomad_notes_fill = lined_fill(" in house
     assert "#let nomad_daily_well(" in house
-    daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_well(")]
+    daily_well = house[house.index("#let nomad_daily_well(") : house.index("#let nomad_notes_fill")]
     assert "columns: (1.2fr, 0.8fr)" in daily_well
     assert "column-gutter: 0pt" in daily_well
     assert "rows: (1fr, auto)" in daily_well
@@ -210,8 +217,10 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "columns: (2fr, 1fr)" not in daily_well
     notes_well = house[house.index("#let nomad_notes_well(") : house.index("#let nomad_week_hairs(")]
     assert "tile: regular-h" in notes_well
-    assert "calc.floor(size.height / tile)" in notes_well
-    assert "lined_well" not in notes_well
+    assert "lined_well(nomad_notes_fill)" in notes_well
+    assert "layout(" not in notes_well
+    assert "calc.floor(size.height / tile)" not in notes_well
+    assert "range(" not in notes_well
     assert "#let nomad_week_bands(" in house
     week_bands = house[house.index("#let nomad_week_bands(") : house.index("#let year-month(")]
     assert "notes-height: 18mm" in week_bands
@@ -256,7 +265,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "rows: (1fr, notes-height)" not in month_well
     assert "#let strip-icon(" in house
     assert "#let icon-chip(" in house
-    assert 'image(src, height: 3.1mm)' in house
+    assert "#let _icon-off = (" in house
+    assert "#let _icon-on = (" in house
+    assert 'image("icons/menu.svg", height: _icon-h)' in house
+    assert "image(src, height: 3.1mm)" not in house
+    assert "_icon-on.at(id)" in house
     assert "inset: (x: icon-chip-inset-x, y: icon-chip-inset-y)" in house[house.index("#let icon-chip(") :]
     assert "height: 100%" not in house[house.index("#let icon-chip(") : house.index("#let strip-icon(")]
     strip = house[house.index("#let section-strip(") : house.index("#let chip(")]

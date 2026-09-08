@@ -40,6 +40,8 @@ parch press supernote-nomad
 
 `--year` also rewrites the cover title year when the old year is in the title.
 
+Full-year Nomad with `daily_notes` (default `pages = 2`) is one Typst document — peak RAM is page count, not `index.typst` size. On an 8GB machine, set `[section.daily_notes] pages = 1` or comment `daily_notes` out of `sections`. There is no chunked compile / PDF merge path.
+
 ```shell
 parch new --device supernote-nomad --year 2027 --yes -o mine.toml
 ```
