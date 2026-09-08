@@ -388,21 +388,34 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section-strip(" in meetings_index
     assert "active: none" in meetings_index
     assert "page-shell(\n  none," not in meetings_index
-    assert "columns: (2em, 1fr, 16mm)" in meetings_index
+    assert 'text(size: 10pt, weight: "bold")[Meetings <meetings>]' in meetings_index
+    assert 'text(size: h1)[Meetings' not in meetings_index
+    assert 'text(size: h1)[2026]' not in meetings_index
+    assert 'text(size: 7.5pt, weight: "bold")[2026]' in meetings_index
+    assert "columns: (9mm, 1fr, 16mm)" in meetings_index
     assert "column-gutter: 2mm" in meetings_index
     assert "align: (horizon, bottom, bottom)" in meetings_index
+    assert "let pack = 7.0mm" in meetings_index
+    assert 'font: "Liberation Sans")[1.]' in meetings_index
+    assert 'font: "Liberation Sans")[16.]' in meetings_index
     assert "grid.cell(stroke: (bottom: regular_stroke + black), [])" not in meetings_index
     assert "stroke: (bottom: regular_stroke + black)" not in meetings_index
     meeting = _page_with(typst, "#[] <meeting-1>")
     assert "section-strip(" in meeting
     assert "active: none" in meeting
     assert "page-shell(\n  none," not in meeting
-    assert "columns: (1fr, 2fr, 1fr)" not in meeting
-    assert "rows: (auto, auto, 1fr, auto)" in meeting
+    assert 'text(size: 10pt, weight: "bold")[Meeting 1]' in meeting
+    assert 'text(size: h1)[1]' not in meeting
+    assert "columns: (1.4fr, 0.8fr)" in meeting
+    assert "row-gutter: 1.6mm" in meeting
+    assert "let tile = 5.5mm" in meeting
+    assert 'text(weight: "bold", size: 8.5pt)[Topics]' in meeting
+    assert 'text(weight: "bold", size: 8.5pt)[Notes]' in meeting
+    assert 'text(weight: "bold", size: 8.5pt)[Action items]' in meeting
     assert "[Name]" in meeting
     assert "[Date]" in meeting
-    assert "lined_well(lined_fill)" in meeting
-    assert meeting.count("task_tick()") == 9
+    assert "lined_well(lined_fill)" not in meeting
+    assert meeting.count("square(size: 0.8em, stroke: hair + ink)") == 9
     assert "lined_well(dotted_centered)" not in meeting
     review_index = _page_with(typst, "[Review <review>]")
     assert "section-strip(" in review_index
