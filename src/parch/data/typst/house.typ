@@ -619,28 +619,24 @@
   ),
 )
 
+// Locked 06-daily.typ / feel4r: one nested row per hour, hairline at bottom.
+// Not a tiled hour fill — that dropped hour 16 and opened air under Schedule.
 #let nomad_daily_hours(start: 7, n: 10) = layout(size => {
   let hour-h = size.height / n
   grid(
-    columns: (4.5mm, 1fr),
-    column-gutter: 0.65mm,
     rows: (hour-h,) * n,
-    ..range(n).map(i => grid.cell(
-      x: 0,
-      y: i,
-      align(bottom + right, pad(bottom: 0.08mm, text(
+    row-gutter: 0pt,
+    ..range(start, start + n).map(h => grid(
+      columns: (4.5mm, 1fr),
+      column-gutter: 0.65mm,
+      align: (bottom + right, bottom),
+      pad(bottom: 0.08mm, text(
         size: 6.5pt,
         fill: luma(40%),
         font: "Liberation Sans",
-      )[#{start + i}])),
+      )[#h]),
+      hairline,
     )),
-    grid.cell(
-      x: 1,
-      y: 0,
-      rowspan: n,
-      inset: 0pt,
-      box(width: 100%, height: 100%, fill: _hair-tile(hour-h)),
-    ),
   )
 })
 

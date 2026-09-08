@@ -197,9 +197,14 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "strip,\n    line(length: 100%, stroke: stroke)," not in shell
     hours = house[house.index("#let nomad_daily_hours(") : house.index("#let nomad_daily_priorities(")]
     assert "layout(size => {" in hours
-    assert "_hair-tile(hour-h)" in hours
+    assert "align: (bottom + right, bottom)" in hours
+    assert "column-gutter: 0.65mm" in hours
+    assert "row-gutter: 0pt" in hours
+    assert "range(start, start + n)" in hours
+    assert "hairline" in hours
+    assert "_hair-tile(hour" not in hours
     assert "rows: (1fr,) * n" not in hours
-    assert "rowspan: n" in hours
+    assert "rowspan" not in hours
     prios = house[house.index("#let nomad_daily_priorities(") : house.index("#let nomad_daily_notes_preview(")]
     assert "layout(size => {" in prios
     assert "align: (horizon, bottom)" in prios
