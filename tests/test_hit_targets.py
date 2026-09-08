@@ -6,6 +6,7 @@ from pypdf.generic import DictionaryObject, IndirectObject
 
 from parch.config import load
 from parch.services.generate import Generate
+from parch.services.preview_svg import sample_page_numbers
 from parch.toml_config import parse_toml
 from tests.helpers import base_config, load_default
 from tests.test_toml_omit_sections import compile_pdf
@@ -86,3 +87,30 @@ def test_nomad_topband_chips_are_equal_cells(tmp_path):
     assert widths[0] == pytest.approx(widths[-1], abs=2.0)
     assert heights[0] == pytest.approx(heights[-1], abs=2.0)
     assert 18 < widths[0] < 70
+
+
+def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
+    """Live Jan 1–14 days are PDF links on annual, quarterly, and daily mini-cal."""
+    dto = short_january(load(NOMAD))
+    typst = Generate(i18n=load_default()).generate(dto)
+    pdf, stderr = compile_pdf(typst, tmp_path / "nomad-days")
+    assert pdf.is_file(), stderr
+    reader = PdfReader(str(pdf))
+    pages = sample_page_numbers(
+        typst,
+        year=2026,
+        week_id="2026W01",
+        jan1="2026-01-01",
+        stems=("annual", "quarterly-q1", "daily-jan1"),
+    )
+    annual = _links(reader.pages[pages["annual"] - 1])
+    days = [row for row in annual if 10 < row[0] < 20 and 6 < row[1] < 12]
+    assert len(days) >= 14
+    quarterly = _links(reader.pages[pages["quarterly-q1"] - 1])
+    qdays = [row for row in quarterly if 10 < row[0] < 20 and 5 < row[1] < 12]
+    assert len(qdays) >= 14
+    daily = _links(reader.pages[pages["daily-jan1"] - 1])
+    mini = [row for row in daily if 12 < row[0] < 22 and 5 < row[1] < 9]
+    assert len(mini) >= 14
+    tempo = [row for row in daily if row[0] > 80 and 10 < row[1] < 16]
+    assert len(tempo) >= 3
