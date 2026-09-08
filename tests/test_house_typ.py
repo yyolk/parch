@@ -320,6 +320,11 @@ def test_preamble_imports_house_and_does_not_inline_bodies():
     assert "dests: ()" in house[house.index("#let year-month(") :]
     assert 'set text(font: "Liberation Sans")' in house[house.index("#let year-month(") :]
     assert "dests: ()" in house[house.index("#let mini-month(") : house.index("#let year-month(")]
+    mini = house[house.index("#let mini-month(") : house.index("#let year-month(")]
+    assert "dest: _cal-day-dest" not in mini
+    assert "highlight: highlight))," in mini
+    year_month = house[house.index("#let year-month(") :]
+    assert "dest: _cal-day-dest(c, dests)" in year_month
     assert "#let _cal-day(" in house
     assert "padded_link(padding: 0pt, dest, hit)" in house
     assert "#let contents_bars(" in house

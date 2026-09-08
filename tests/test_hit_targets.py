@@ -125,7 +125,10 @@ def test_nomad_topband_chips_are_equal_cells(tmp_path):
 
 
 def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
-    """Live Jan 1–14 days are PDF links on annual, quarterly, and daily mini-cal."""
+    """Live Jan 1–14 days are PDF links on annual and quarterly year-month.
+
+    Daily mini-cal day cells are a glance (no per-day annots). Tempo stays live.
+    """
     dto = short_january(load(NOMAD))
     typst = Generate(i18n=load_default()).generate(dto)
     pdf, stderr = compile_pdf(typst, tmp_path / "nomad-days")
@@ -146,7 +149,7 @@ def test_nomad_calendar_day_cells_are_link_annots(tmp_path):
     assert len(qdays) >= 14
     daily = _links(reader.pages[pages["daily-jan1"] - 1])
     mini = [row for row in daily if 12 < row[0] < 22 and 5 < row[1] < 9]
-    assert len(mini) >= 14
+    assert mini == []
     tempo = [row for row in daily if row[0] > 80]
     assert len(tempo) >= 3
 

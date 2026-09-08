@@ -27,10 +27,10 @@ def test_year_month_cell_passes_day_dests():
     assert "none" in cell
 
 
-def test_mini_month_cell_passes_day_dests():
+def test_mini_month_cell_is_glance_without_day_dests():
     manifest = Manifest()
     manifest.register_source("2026-01-02")
     cell = mini_month_cell(load_default(), manifest, make_month("2026-01"), highlight=1)
     assert "mini-month(" in cell
     assert "highlight: 1" in cell
-    assert 'dests: nomad-cal-dests.at("2026-01")' in cell
+    assert "dests:" not in cell

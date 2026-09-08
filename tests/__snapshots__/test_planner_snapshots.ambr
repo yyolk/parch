@@ -664,7 +664,7 @@
       #page-shell(
         section-strip(nomad-strip-items(), active: "day"),
         nomad_daily_well(
-        mini-month(padded_link(<month-2026-01-01>)[January], start-wd: 3, days: 31, highlight: 1, day-h: 2.2mm, weeks: 6, compact: true, dests: nomad-cal-dests.at("2026-01")),
+        mini-month(padded_link(<month-2026-01-01>)[January], start-wd: 3, days: 31, highlight: 1, day-h: 2.2mm, weeks: 6, compact: true),
         padded_link(<daily-note-2026-01-01-page-1>)[More],
         schedule-label: [Schedule],
         priorities-label: [Priorities],

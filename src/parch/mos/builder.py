@@ -28,7 +28,6 @@ class Builder:
             strip = self.navigation.nomad_strip_bind()
             if strip:
                 binds.append(strip)
-            binds.append(self.navigation.nomad_cal_dest_bind())
         header = "\n".join([self.preamble.generate(), *binds])
         return f"{header}\n{body}"
 

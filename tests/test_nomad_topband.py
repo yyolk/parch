@@ -205,7 +205,7 @@ def test_nomad_emit_uses_page_shell_not_mos():
     assert "section-strip(" in daily
     assert "nomad-strip-items(" in daily
     assert typst.count("#let nomad-strip-items(") == 1
-    assert typst.count("#let nomad-cal-dests = (") == 1
+    assert typst.count("#let nomad-cal-dests = (") == 0
     assert 'section-strip(nomad-strip-items(), active: "day")' in daily
     assert 'active: "day"' in daily
     assert "mos_strip(" not in daily
@@ -690,7 +690,10 @@ def test_nomad_contents_has_more_and_no_notes_chip():
 
 
 def test_nomad_calendar_days_and_daily_tempo_link():
-    """Annual / quarterly / daily mini-cal days and daily tempo chips carry dests."""
+    """Annual / quarterly year-month days and daily tempo chips carry dests.
+
+    Daily mini-cal is a glance (feel4r): month title links, day cells do not.
+    """
     typst = _generate("supernote-nomad")
     annual = _page_with(typst, "<annual>]")
     jan = annual.split("year-month(")[1]
@@ -704,11 +707,9 @@ def test_nomad_calendar_days_and_daily_tempo_link():
     assert "<2026-01-01>" in qjan
     assert "<2026-01-14>" in qjan
     daily = _page_with(typst, "Thursday  ·  January 1 <2026-01-01>")
-    cal = daily.split("mini-month(")[1]
-    assert 'dests: nomad-cal-dests.at("2026-01")' in cal
-    bind_cal = typst[typst.index("#let nomad-cal-dests") :]
-    assert "<2026-01-01>" in bind_cal
-    assert "<2026-01-02>" in bind_cal
+    cal = daily.split("mini-month(")[1].split("\n", 1)[0]
+    assert "dests:" not in cal
+    assert "nomad-cal-dests" not in typst
     assert "chip([Wk1], active: false, dest: <2026W01>, expand: true)" in daily
     assert "chip([Jan], active: true, dest: <month-2026-01-01>, expand: true)" in daily
     assert "chip([Q1], active: false, dest: <quarter-2026-1>, expand: true)" in daily

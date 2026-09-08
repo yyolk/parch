@@ -866,7 +866,8 @@
         height: wd-h,
         align(center + horizon, text(size: wd-sz, fill: luma(40%), weight: "bold")[#w]),
       )),
-      ..cells.map(c => _cal-day(c, day-h, day-sz, dest: _cal-day-dest(c, dests), highlight: highlight)),
+      // Glance: 31 dests × 365 days is the year RSS floor. year-month keeps dests.
+      ..cells.map(c => _cal-day(c, day-h, day-sz, highlight: highlight)),
     )
   })
 }
