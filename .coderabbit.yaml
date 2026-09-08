@@ -1,8 +1,0 @@
-# CodeRabbit repo config disabled.
-# Left in place only to turn off request-changes gating and automatic
-# reviews so other agents (Cursor Cloud, etc.) are not fighting CR comments.
-# Delete this file later if you also uninstall the GitHub App.
-reviews:
-  request_changes_workflow: false
-  auto_review:
-    enabled: false

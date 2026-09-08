@@ -1,62 +1,27 @@
 [project]
-name = "parch"
-version = "0.2.15"
-description = "parch -- pages for e-ink."
+name = "planner"
+version = "0.0.0"
+description = "Throwaway ReportLab yearly planner spike (not parch)."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 authors = [
-  { name = "Joseph Chiocchi", email = "joe@yolk.cc" },
+  { name = "spike", email = "spike@example.invalid" },
 ]
-keywords = ["e-ink", "planner", "typst", "supernote"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.14",
-    "Topic :: Printing",
-]
+keywords = ["e-ink", "planner", "reportlab", "pdf"]
 dependencies = [
-    "pydantic>=2.13.4",
-    "questionary",
+  "reportlab>=4.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
-typst-native = ["typst==0.15.0"]
-
-[project.urls]
-Homepage = "https://github.com/yyolk/parch"
-Repository = "https://github.com/yyolk/parch"
-Issues = "https://github.com/yyolk/parch/issues"
+dev = ["pypdf>=5.0"]
 
 [project.scripts]
-parch = "parch.cli:main"
+press = "planner.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/parch"]
-
-
-[tool.uv]
-package = true
-
-[dependency-groups]
-dev = [
-    "pillow>=12.3.0",
-    "pypdf>=6.16.2",
-    "pytest>=8.0",
-    "syrupy>=6.0.0",
-]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src", "."]
-addopts = ["-m", "not slow"]
-markers = [
-    "slow: full-book backend comparison",
-]
+packages = ["src/planner"]

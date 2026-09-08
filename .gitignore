@@ -10,3 +10,5 @@ dist
 .ruff_cache
 .mypy_cache
 .review/
+artifacts/ci-specimen.pdf
+artifacts/planner-*-notes*.pdf
