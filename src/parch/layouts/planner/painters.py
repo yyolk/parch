@@ -153,8 +153,76 @@ def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    """Default seat — not locked; A′ / B / C are comparison variants below."""
     for cell, month in zip(columns(box, 3, gap=4.0), grid.months, strict=True):
         _paint_mini_month(plotter, cell, month)
+
+
+def quarter_seats_a_shortband(box: Rect) -> tuple[Rect, Rect, Rect]:
+    """Older A: top band ≈ well.h/4, three mini-months, leftover empty."""
+    band = rows(box, 4)[0]
+    jan, feb, mar = columns(band, 3, gap=4.0)
+    return jan, feb, mar
+
+
+def quarter_seats_a_note_boxes(box: Rect) -> tuple[tuple[Rect, Rect], ...]:
+    """A′: three columns; each is (compact mini-month, leftover note box)."""
+    cal_h = rows(box, 4, gap=2.6)[0].h
+    gap = 2.6
+    seats: list[tuple[Rect, Rect]] = []
+    for col in columns(box, 3, gap=4.0):
+        cal, rest = col.split_top(cal_h)
+        notes = Rect(rest.x, rest.y + gap, rest.w, rest.h - gap)
+        seats.append((cal, notes))
+    return tuple(seats)
+
+
+def quarter_seats_b_stack(box: Rect) -> tuple[Rect, Rect, Rect]:
+    """Comparison B: top Jan|Feb, bottom Mar at the same cell width, left-aligned."""
+    top, bottom = rows(box, 2, gap=4.0)
+    jan, feb = columns(top, 2, gap=4.0)
+    mar = Rect(bottom.x, bottom.y, jan.w, bottom.h)
+    return jan, feb, mar
+
+
+def quarter_seats_c_stack_notes(box: Rect) -> tuple[tuple[Rect, Rect, Rect], Rect]:
+    """Comparison C: left stacked minis, right shared notes well."""
+    left, right = columns(box, 2, gap=3.4, weights=(0.4, 0.6))
+    return rows(left, 3, gap=3.4), right
+
+
+def paint_quarter_a_shortband(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    for cell, month in zip(quarter_seats_a_shortband(box), grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
+
+
+def paint_quarter_a_note_boxes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    for (cal, notes), month in zip(quarter_seats_a_note_boxes(box), grid.months, strict=True):
+        _paint_mini_month(plotter, cal, month)
+        _paint_note_box(plotter, notes)
+
+
+def paint_quarter_b_stack(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    for cell, month in zip(quarter_seats_b_stack(box), grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
+
+
+def paint_quarter_c_stack_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    months, notes = quarter_seats_c_stack_notes(box)
+    for cell, month in zip(months, grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
+    paint_notes(plotter, notes, Notes(label="Notes"))
+
+
+def _paint_note_box(plotter: Plotter, box: Rect) -> None:
+    """Lined writing box — outline + daily-notes rhythm. Not a Notes section."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = box.inset(1.1, 1.2)
+    pitch = 4.15
+    y = inset.y + pitch
+    while y < inset.bottom - 0.15:
+        plotter.line(inset.x, y, inset.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += pitch
 
 
 def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:

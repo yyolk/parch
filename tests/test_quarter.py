@@ -1,8 +1,21 @@
+import pytest
+
 from parch.books import YearPlanner
 from parch.components import QuarterGrid
-from parch.layouts.planner.painters import strip_active, strip_items
+from parch.geom import Rect
+from parch.layouts.planner.painters import (
+    paint_quarter_a_note_boxes,
+    paint_quarter_c_stack_notes,
+    quarter_seats_a_note_boxes,
+    quarter_seats_a_shortband,
+    quarter_seats_b_stack,
+    quarter_seats_c_stack_notes,
+    strip_active,
+    strip_items,
+)
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
+from parch.tracks import rows
 
 
 def test_quarter_page_and_provisional_nav():
@@ -56,3 +69,76 @@ def test_quarter_links_from_year_and_month_meta():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Q1 2026" in texts
     assert "Quar" in texts
+
+
+def test_quarter_seat_a_short_top_band():
+    box = Rect(4, 20, 110, 80)
+    jan, feb, mar = quarter_seats_a_shortband(box)
+    assert jan.h == pytest.approx(box.h / 4)
+    assert jan.y == feb.y == mar.y == box.y
+    assert jan.x == pytest.approx(box.x)
+    assert mar.right == pytest.approx(box.right)
+    assert jan.bottom < box.bottom - box.h / 2
+
+
+def test_quarter_seat_b_two_plus_one_stack():
+    box = Rect(4, 20, 110, 80)
+    jan, feb, mar = quarter_seats_b_stack(box)
+    assert jan.w == pytest.approx(feb.w)
+    assert mar.w == pytest.approx(jan.w)
+    assert mar.x == pytest.approx(jan.x)
+    assert mar.x == pytest.approx(box.x)
+    assert feb.x > jan.right
+    assert mar.y > jan.bottom
+    assert mar.bottom == pytest.approx(box.bottom)
+
+
+def test_quarter_seat_a_note_boxes_under_each_month():
+    box = Rect(4, 20, 110, 80)
+    seats = quarter_seats_a_note_boxes(box)
+    assert len(seats) == 3
+    year_band = rows(box, 4, gap=2.6)[0].h
+    for i, (cal, notes) in enumerate(seats):
+        assert cal.h == pytest.approx(year_band)
+        assert cal.y == pytest.approx(box.y)
+        assert notes.y > cal.bottom
+        assert notes.bottom == pytest.approx(box.bottom)
+        assert notes.w == pytest.approx(cal.w)
+        assert notes.x == pytest.approx(cal.x)
+        if i:
+            assert cal.x > seats[i - 1][0].right
+
+
+def test_quarter_seat_c_left_stack_right_notes():
+    box = Rect(4, 20, 110, 80)
+    months, notes = quarter_seats_c_stack_notes(box)
+    jan, feb, mar = months
+    assert jan.x == feb.x == mar.x == pytest.approx(box.x)
+    assert jan.w == pytest.approx(feb.w)
+    assert mar.bottom == pytest.approx(box.bottom)
+    assert notes.x > jan.right
+    assert notes.right == pytest.approx(box.right)
+    assert notes.w > jan.w
+    assert notes.h == pytest.approx(box.h)
+
+
+def test_quarter_a_note_boxes_and_c_paint():
+    spec = Spec(notes_pages=1)
+    grid = next(
+        item
+        for item in YearPlanner().pages(spec)[2].components
+        if isinstance(item, QuarterGrid)
+    )
+    well = Rect(4, 20, 110, 120)
+    a = RecordingPlotter()
+    paint_quarter_a_note_boxes(a, well, grid)
+    texts = [op[2] for op in a.ops if op[0] == "text"]
+    assert "Jan" in texts and "Feb" in texts and "Mar" in texts
+    boxes = [op for op in a.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(boxes) == 3
+
+    c = RecordingPlotter()
+    paint_quarter_c_stack_notes(c, well, grid)
+    c_texts = [op[2] for op in c.ops if op[0] == "text"]
+    assert "Jan" in c_texts and "Feb" in c_texts and "Mar" in c_texts
+    assert "Notes" in c_texts
