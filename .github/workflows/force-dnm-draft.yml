@@ -6,7 +6,6 @@ on:
       - opened
       - edited
       - reopened
-      - synchronize
       - labeled
       - unlabeled
       - ready_for_review
@@ -55,16 +54,19 @@ jobs:
             reason=$(IFS=' and '; echo "${reasons[*]}")
           fi
 
-          warning_body="⚠️ Forced this pull request to **draft** because the ${reason}.
+          warning_body="$(printf '%s\n' \
+            "⚠️ Forced this pull request to **draft** because the ${reason}." \
+            '' \
+            'Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.' \
+            "${MARKER}")"
 
-Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.
-${MARKER}"
+          waiting_body="$(printf '%s\n' \
+            'DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.' \
+            "${MARKER}")"
 
-          waiting_body="DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.
-${MARKER}"
-
-          cleared_body="✅ DO NOT MERGE marker cleared. This pull request is ready for review.
-${MARKER}"
+          cleared_body="$(printf '%s\n' \
+            '✅ DO NOT MERGE marker cleared. This pull request is ready for review.' \
+            "${MARKER}")"
 
           find_comment_id() {
             gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
