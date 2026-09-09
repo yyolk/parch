@@ -11,12 +11,18 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.14"
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: uv python install 3.14
       - run: uv sync --group dev
+      - run: uv run python -c "import sys; assert sys.version_info[:2] == (3, 14), sys.version"
       - run: uv run pytest
       - name: Press Nomad MVP
         run: |

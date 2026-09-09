@@ -6,6 +6,8 @@ Exploratory rewrite of [yyolk/parch](https://github.com/yyolk/parch) on this bra
 
 parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
 
+Python 3.14+ required.
+
 ## Architecture
 
 ```
