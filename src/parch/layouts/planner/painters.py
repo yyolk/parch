@@ -130,20 +130,15 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
 
 
 def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
-    cols, rows = 3, 4
-    gap_x, gap_y = 3.4, 2.6
-    cell_w = (box.w - (cols - 1) * gap_x) / cols
-    cell_h = (box.h - (rows - 1) * gap_y) / rows
-    for i, month in enumerate(grid.months):
-        c, r = i % cols, i // cols
-        x = box.x + c * (cell_w + gap_x)
-        y = box.y + r * (cell_h + gap_y)
-        _paint_mini_month(plotter, Rect(x, y, cell_w, cell_h), month)
+    for r, band in enumerate(rows(box, 4, gap=2.6)):
+        for c, cell in enumerate(columns(band, 3, gap=3.4)):
+            _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
 
 
 def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
     pressed = month.dest is not None
     title_h = 3.5
+    dow_h = 2.5
     title = Rect(box.x, box.y, box.w, title_h)
     plotter.text(
         title,
@@ -157,11 +152,12 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
     )
     if month.dest:
         plotter.link(title, month.dest)
-    dow_h = 2.5
-    col_w = box.w / 7
+    dow = Rect(box.x, box.y + title_h, box.w, dow_h)
+    tracks = columns(box, 7)
     for i, label in enumerate(month.weekday_labels):
+        col = tracks[i]
         plotter.text(
-            Rect(box.x + i * col_w, box.y + title_h, col_w, dow_h),
+            Rect(col.x, dow.y, col.w, dow.h),
             label[0],
             size=4.3,
             face="sans",
@@ -169,16 +165,15 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
             small_caps=True,
             align="center",
         )
-    rule_y = box.y + title_h + dow_h
+    rule_y = dow.bottom
     plotter.line(box.x, rule_y, box.right, rule_y, stroke_width=HAIR, stroke_gray=SOFT)
     body = Rect(box.x, rule_y + 0.25, box.w, box.h - title_h - dow_h - 0.25)
-    row_h = body.h / 6
-    for r, week in enumerate(month.weeks):
-        y = body.y + r * row_h
+    for band, week in zip(rows(body, 6), month.weeks, strict=False):
         for c, cell in enumerate(week):
             if cell.day is None:
                 continue
-            num = Rect(body.x + c * col_w, y, col_w, row_h)
+            col = tracks[c]
+            num = Rect(col.x, band.y, col.w, band.h)
             linked = cell.dest is not None
             plotter.text(
                 num,
@@ -260,13 +255,10 @@ def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
 
 
 def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
-    rows = max(1, len(week.days))
-    row_h = box.h / rows
-    for i, day in enumerate(week.days):
-        y = box.y + i * row_h
+    for band, day in zip(rows(box, max(1, len(week.days))), week.days, strict=False):
         ink = INK if day.in_month else MUTED
         plotter.text(
-            Rect(box.x, y + 0.45, 14.0, 5.0),
+            Rect(band.x, band.y + 0.45, 14.0, 5.0),
             day.weekday_label,
             size=6.6,
             face="sans",
@@ -275,7 +267,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
             align="left",
         )
         plotter.text(
-            Rect(box.x + 14.0, y + 0.1, 12.0, 5.8),
+            Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
             size=11,
             bold=True,
@@ -285,7 +277,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         )
         if not day.in_month or day.day.day == 1:
             plotter.text(
-                Rect(box.x + 26.0, y + 0.55, 22.0, 4.8),
+                Rect(band.x + 26.0, band.y + 0.55, 22.0, 4.8),
                 MONTH_NAMES[day.day.month - 1][:3],
                 size=6.6,
                 face="sans",
@@ -294,13 +286,13 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
                 align="left",
             )
         if day.dest:
-            plotter.link(Rect(box.x, y, box.w, 6.4), day.dest)
-        rule_y = y + 6.9
+            plotter.link(Rect(band.x, band.y, band.w, 6.4), day.dest)
+        rule_y = band.y + 6.9
         pitch = 4.15
-        while rule_y < y + row_h - 1.15:
-            plotter.line(box.x, rule_y, box.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+        while rule_y < band.bottom - 1.15:
+            plotter.line(band.x, rule_y, band.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
             rule_y += pitch
-        plotter.line(box.x, y + row_h, box.right, y + row_h, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.line(band.x, band.bottom, band.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
@@ -316,11 +308,9 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
     )
     body = Rect(box.x, box.y + header_h + 0.4, box.w, box.h - header_h - 0.4)
     hours = schedule.hours or (8,)
-    row_h = body.h / len(hours)
-    for i, hour in enumerate(hours):
-        y = body.y + i * row_h
+    for band, hour in zip(rows(body, len(hours)), hours, strict=True):
         plotter.text(
-            Rect(body.x, y, 10.0, row_h),
+            Rect(band.x, band.y, 10.0, band.h),
             f"{hour:2d}",
             size=7,
             face="sans",
@@ -328,10 +318,10 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
             align="left",
         )
         plotter.line(
-            body.x,
-            y + row_h,
-            body.right,
-            y + row_h,
+            band.x,
+            band.bottom,
+            band.right,
+            band.bottom,
             stroke_width=RULE,
             stroke_gray=RULE_C,
         )

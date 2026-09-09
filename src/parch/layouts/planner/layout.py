@@ -4,6 +4,7 @@ from parch.calendar import short_date_range
 from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.devices.nomad import Device
 from parch.geom import Rect
+from parch.tracks import columns
 from parch.layouts.planner.painters import (
     paint_annual,
     paint_cover,
@@ -49,10 +50,7 @@ class PlannerLayout:
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
-                sched_w = well.w * 0.34
-                left, right = well.split_left(sched_w)
-                left = Rect(left.x, left.y, left.w - COL_GAP / 2, left.h)
-                right = Rect(right.x + COL_GAP / 2, right.y, right.w - COL_GAP / 2, right.h)
+                left, right = columns(well, 2, gap=COL_GAP, weights=(0.34, 0.66))
                 paint_schedule(plotter, left, schedule)
                 paint_notes(plotter, right, notes)
             case "daily_notes":
