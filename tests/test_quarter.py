@@ -5,6 +5,7 @@ from parch.components import QuarterGrid
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
     FOCUS_ROWS,
+    focus_content_height,
     paint_quarter_a_focus_notes,
     paint_quarter_a_note_boxes,
     paint_quarter_c_focus_notes,
@@ -158,7 +159,8 @@ def test_quarter_seat_c_focus_over_notes():
     assert focus.x == pytest.approx(notes.x)
     assert focus.x > jan.right
     assert notes.right == pytest.approx(box.right)
-    assert focus.h == pytest.approx(notes.h / 2, abs=1.5)
+    assert focus.h == pytest.approx(focus_content_height())
+    assert notes.h > focus.h
     assert notes.y > focus.bottom
     assert notes.bottom == pytest.approx(box.bottom)
 
@@ -177,9 +179,9 @@ def test_quarter_seat_a_focus_notes_under_short_band():
     assert focus.w == pytest.approx(notes.w)
     assert focus.w == pytest.approx(box.w)
     assert focus.y > jan.bottom
-    assert notes.y > focus.bottom
+    assert notes.y == pytest.approx(focus.bottom + 2.6)
     assert notes.bottom == pytest.approx(box.bottom)
-    assert focus.h == pytest.approx(notes.h)
+    assert focus.h == pytest.approx(focus_content_height())
 
 
 def test_quarter_a_and_c_focus_notes_paint():

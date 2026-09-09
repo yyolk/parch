@@ -217,21 +217,29 @@ def paint_quarter_c_stack_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) 
 def quarter_seats_c_focus_notes(
     box: Rect,
 ) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """C′: left stacked minis; right Focus (⅓) over Notes (⅔)."""
+    """C′: left stacked minis; right content-height Focus over flex Notes."""
     left, right = columns(box, 2, gap=3.4, weights=(0.4, 0.6))
-    focus, notes = rows(right, 2, weights=(1, 2), gap=2.6)
+    focus, notes = _stack_focus_notes(right)
     return rows(left, 3, gap=3.4), focus, notes
 
 
 def quarter_seats_a_focus_notes(
     box: Rect,
 ) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """A″: short year-density month band; leftover is Focus over Notes."""
+    """A″: short year-density month band; leftover is Focus over flex Notes."""
     cal_h = rows(box, 4, gap=2.6)[0].h
     cal_band, rest = box.split_top(cal_h)
     leftover = Rect(rest.x, rest.y + 2.6, rest.w, rest.h - 2.6)
-    focus, notes = rows(leftover, 2, gap=2.6)
+    focus, notes = _stack_focus_notes(leftover)
     return columns(cal_band, 3, gap=4.0), focus, notes
+
+
+def _stack_focus_notes(stack: Rect) -> tuple[Rect, Rect]:
+    """Focus shrinks to checklist content; Notes takes the leftover."""
+    gap = 2.6
+    focus, rest = stack.split_top(focus_content_height())
+    notes = Rect(rest.x, rest.y + gap, rest.w, rest.h - gap)
+    return focus, notes
 
 
 def paint_quarter_c_focus_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -274,17 +282,26 @@ def _paint_note_box(plotter: Plotter, box: Rect, *, label: str | None = None) ->
         y += pitch
 
 
-FOCUS_ROWS = 6
+FOCUS_ROWS = 7
 TICK = 2.4
-FOCUS_PITCH = 5.4
+FOCUS_PITCH = 4.8
+FOCUS_LABEL_H = 3.4
+FOCUS_PAD_TOP = 0.8
+FOCUS_PAD_MID = 1.2
+FOCUS_PAD_BOT = 1.4
+
+
+def focus_content_height() -> float:
+    """Label + tight checklist rows + pad — not a fraction of the parent."""
+    rows_h = TICK + (FOCUS_ROWS - 1) * FOCUS_PITCH
+    return FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID + rows_h + FOCUS_PAD_BOT
 
 
 def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
     """Outlined FOCUS checklist — empty ticks + underline. Not a section."""
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    header_h = 3.4
     plotter.text(
-        Rect(box.x + 1.3, box.y + 0.7, box.w - 2.6, header_h),
+        Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
         "Focus",
         size=6.4,
         face="sans",
@@ -292,20 +309,12 @@ def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
         small_caps=True,
         align="left",
     )
-    body = Rect(
-        box.x + 1.6,
-        box.y + header_h + 1.4,
-        box.w - 3.2,
-        box.h - header_h - 2.6,
-    )
-    if FOCUS_ROWS * FOCUS_PITCH <= body.h:
-        y = body.y
-        for _ in range(FOCUS_ROWS):
-            _paint_focus_row(plotter, body.x, y, body.right)
-            y += FOCUS_PITCH
-        return
-    for band in rows(body, FOCUS_ROWS, gap=0.7):
-        _paint_focus_row(plotter, band.x, band.y, band.right)
+    x = box.x + 1.6
+    right = box.right - 1.6
+    y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
+    for _ in range(FOCUS_ROWS):
+        _paint_focus_row(plotter, x, y, right)
+        y += FOCUS_PITCH
 
 
 def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None:
