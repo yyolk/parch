@@ -66,8 +66,15 @@ class Spec:
         return "cover"
 
     @property
+    def year_dest(self) -> str:
+        return _dest(t"year-{self.year:04d}")
+
+    @property
     def month_dest(self) -> str:
-        return _dest(t"month-{self.year:04d}-{self.month:02d}")
+        return self.dest_for_month(self.month)
+
+    def dest_for_month(self, month: int) -> str:
+        return _dest(t"month-{self.year:04d}-{month:02d}")
 
     @property
     def day_dest(self) -> str:

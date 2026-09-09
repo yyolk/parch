@@ -1,10 +1,12 @@
-"""Planner strip dests. Layout remaps these into Cover · Mon · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Mon · Week · Day · Notes.
 
-WEEK dest: daily/notes → ISO week of that day; week page → self; month → first
+YEAR dest: annual page → self; month/week/day/notes → spec.year_dest.
+
+WEEK dest: daily/notes → ISO week of that day; week page → self; year/month → first
 ISO week that touches the month.
 
 DAY dest: daily/notes → that day; week → first in-month day of the week;
-month → spec.date landing.
+year/month → spec.date landing.
 """
 
 from datetime import date
@@ -16,7 +18,7 @@ from parch.spec import Spec
 def planner_nav(spec: Spec, *, week_dest: str, day: date | None = None) -> tuple[NavItem, ...]:
     landing = day or spec.date
     items = [
-        NavItem("Cover", spec.cover_dest),
+        NavItem("Year", spec.year_dest),
         NavItem("Mon", spec.month_dest),
         NavItem("Week", week_dest),
         NavItem("Day", spec.dest_for_day(landing)),

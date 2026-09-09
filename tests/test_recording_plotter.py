@@ -1,13 +1,13 @@
 from parch.books import YearPlanner
 from parch.calendar import month_days, month_touching_weeks
-from parch.components import CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
+from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 
 def _january_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
-    dests = ["cover", "month-2026-01"]
+    dests = ["cover", spec.year_dest, "month-2026-01"]
     for week in month_touching_weeks(2026, 1, weekday_start=0):
         dests.append(spec.dest_for_week(week[0]))
         for day in week:
@@ -20,7 +20,7 @@ def _january_dests(*, notes_pages: int) -> list[str]:
 
 
 def test_components_do_not_draw():
-    for cls in (CoverTitle, MonthGrid, Notes, Schedule, WeekStrip):
+    for cls in (AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip):
         assert "draw" not in cls.__dict__
 
 
@@ -34,7 +34,7 @@ def test_book_records_january_dests_and_links():
     assert dests == _january_dests(notes_pages=1)
 
     links = plotter.links()
-    assert "cover" in links
+    assert "year-2026" in links
     assert "month-2026-01" in links
     assert "week-2026-W01" in links
     for day in days:

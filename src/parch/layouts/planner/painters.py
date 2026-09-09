@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES
-from parch.components import CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
+from parch.components import AnnualGrid, AnnualMonth, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
@@ -126,6 +126,70 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
         small_caps=True,
         align="center",
     )
+
+
+def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
+    cols, rows = 3, 4
+    gap_x, gap_y = 3.4, 2.6
+    cell_w = (box.w - (cols - 1) * gap_x) / cols
+    cell_h = (box.h - (rows - 1) * gap_y) / rows
+    for i, month in enumerate(grid.months):
+        c, r = i % cols, i // cols
+        x = box.x + c * (cell_w + gap_x)
+        y = box.y + r * (cell_h + gap_y)
+        _paint_mini_month(plotter, Rect(x, y, cell_w, cell_h), month)
+
+
+def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
+    pressed = month.dest is not None
+    title_h = 3.5
+    title = Rect(box.x, box.y, box.w, title_h)
+    plotter.text(
+        title,
+        month.name[:3],
+        size=6.4,
+        bold=pressed,
+        face="sans",
+        gray=INK if pressed else MUTED,
+        small_caps=True,
+        align="left",
+    )
+    if month.dest:
+        plotter.link(title, month.dest)
+    dow_h = 2.5
+    col_w = box.w / 7
+    for i, label in enumerate(month.weekday_labels):
+        plotter.text(
+            Rect(box.x + i * col_w, box.y + title_h, col_w, dow_h),
+            label[0],
+            size=4.3,
+            face="sans",
+            gray=GHOST,
+            small_caps=True,
+            align="center",
+        )
+    rule_y = box.y + title_h + dow_h
+    plotter.line(box.x, rule_y, box.right, rule_y, stroke_width=HAIR, stroke_gray=SOFT)
+    body = Rect(box.x, rule_y + 0.25, box.w, box.h - title_h - dow_h - 0.25)
+    row_h = body.h / 6
+    for r, week in enumerate(month.weeks):
+        y = body.y + r * row_h
+        for c, cell in enumerate(week):
+            if cell.day is None:
+                continue
+            num = Rect(body.x + c * col_w, y, col_w, row_h)
+            linked = cell.dest is not None
+            plotter.text(
+                num,
+                str(cell.day),
+                size=5.3,
+                bold=linked,
+                face="sans",
+                gray=INK if linked else MUTED,
+                align="center",
+            )
+            if linked:
+                plotter.link(num, cell.dest)
 
 
 def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
@@ -296,9 +360,11 @@ def well_rect(device: Device) -> Rect:
 
 
 def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
-    dests: dict[str, str] = {"Cover": "cover"}
+    dests: dict[str, str] = {}
     for item in page.nav:
-        if item.dest.startswith("month-"):
+        if item.dest.startswith("year-"):
+            dests["Year"] = item.dest
+        elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
@@ -307,6 +373,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
     match page.kind:
+        case "annual":
+            dests["Year"] = page.dest
         case "month":
             dests["Mon"] = page.dest
         case "weekly":
@@ -316,12 +384,14 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Cover", "Mon", "Week", "Day", "Notes")
+    order = ("Year", "Mon", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
 def strip_active(kind: str) -> str:
     match kind:
+        case "annual":
+            return "Year"
         case "month":
             return "Mon"
         case "weekly":
@@ -331,4 +401,4 @@ def strip_active(kind: str) -> str:
         case "daily_notes":
             return "Notes"
         case _:
-            return "Cover"
+            return "Year"

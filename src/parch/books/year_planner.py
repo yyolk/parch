@@ -1,10 +1,11 @@
-"""Year planner book — cover → month → each touching week, then that week's days."""
+"""Year planner book — cover → annual → month → each touching week, then days."""
 
 from parch.calendar import month_touching_weeks
 from parch.devices import get_device
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (
+    AnnualSection,
     CoverSection,
     DailyNotesSection,
     DailySection,
@@ -22,6 +23,7 @@ class YearPlanner:
         weekly = WeeklySection(spec)
         built = [
             *CoverSection(spec).pages(),
+            *AnnualSection(spec).pages(),
             *MonthSection(spec).pages(),
         ]
         for week in month_touching_weeks(spec.year, spec.month, spec.weekday_start):

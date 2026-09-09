@@ -16,14 +16,14 @@ class CoverSection:
                 dest=spec.cover_dest,
                 kind="cover",
                 title=str(spec.year),
-                nav=(NavItem(month_name(spec.month), spec.month_dest),),
+                nav=(NavItem(str(spec.year), spec.year_dest),),
                 components=(
                     CoverTitle(
                         year=spec.year,
                         subtitle=spec.title,
                         device_name="SuperNote Nomad",
                         cta_label=f"{label}  >",
-                        cta_dest=spec.month_dest,
+                        cta_dest=spec.year_dest,
                     ),
                 ),
             )
