@@ -1,20 +1,23 @@
 """Page is what a section builds. Layout seats it; painters ink it."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 from parch.components import Component
 
+type PageKind = Literal["cover", "month", "daily", "daily_notes"]
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class NavItem:
     label: str
     dest: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Page:
     dest: str
-    kind: str
+    kind: PageKind
     title: str
     nav: tuple[NavItem, ...]
     components: tuple[Component, ...]

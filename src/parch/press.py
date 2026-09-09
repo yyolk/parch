@@ -1,7 +1,5 @@
 """Press a spec to a PDF. CLI and ``python -m parch``."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
@@ -27,13 +25,15 @@ def press(spec: Spec, output: Path, plotter: Plotter | None = None) -> Path:
 
 
 def _load_spec(token: str | None, *, year: int | None, month: int | None, day: int | None) -> Spec:
-    if token is None or token in _DEVICE_TOKENS:
-        spec = Spec(device=token or "supernote-nomad")
-    else:
-        path = Path(token)
-        if not path.is_file():
+    match token:
+        case None:
+            spec = Spec()
+        case device if device in _DEVICE_TOKENS:
+            spec = Spec(device=device)
+        case path_text if Path(path_text).is_file():
+            spec = Spec.from_path(Path(path_text))
+        case _:
             raise ConfigError(f"spec file not found: {token}")
-        spec = Spec.from_path(path)
     data = {
         "year": spec.year,
         "device": spec.device,

@@ -3,11 +3,14 @@
 from pathlib import Path
 
 from parch.geom import Rect
+from parch.plotter.protocol import TextAlign
+
+type Op = tuple[object, ...]
 
 
 class RecordingPlotter:
     def __init__(self) -> None:
-        self.ops: list[tuple] = []
+        self.ops: list[Op] = []
         self.page = 0
 
     def begin_page(self) -> None:
@@ -48,7 +51,7 @@ class RecordingPlotter:
         content: str,
         *,
         size: float = 10,
-        align: str = "left",
+        align: TextAlign = "left",
         bold: bool = False,
     ) -> None:
         self.ops.append(("text", box, content, size, align, bold))
@@ -61,7 +64,17 @@ class RecordingPlotter:
         path.write_text(repr(self.ops), encoding="utf-8")
 
     def dests(self) -> list[str]:
-        return [op[1] for op in self.ops if op[0] == "add_dest"]
+        found: list[str] = []
+        for op in self.ops:
+            match op:
+                case ("add_dest", str() as name, _):
+                    found.append(name)
+        return found
 
     def links(self) -> list[str]:
-        return [op[2] for op in self.ops if op[0] == "link"]
+        found: list[str] = []
+        for op in self.ops:
+            match op:
+                case ("link", _, str() as dest):
+                    found.append(dest)
+        return found

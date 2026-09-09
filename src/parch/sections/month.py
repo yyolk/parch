@@ -14,12 +14,13 @@ class MonthSection:
         for week in month_weeks(spec.year, spec.month, spec.weekday_start):
             cells = []
             for day in week:
-                if day is None:
-                    cells.append(MonthCell(day=None))
-                elif day == spec.date:
-                    cells.append(MonthCell(day=day.day, dest=spec.day_dest))
-                else:
-                    cells.append(MonthCell(day=day.day))
+                match day:
+                    case None:
+                        cells.append(MonthCell(day=None))
+                    case _ if day == spec.date:
+                        cells.append(MonthCell(day=day.day, dest=spec.day_dest))
+                    case _:
+                        cells.append(MonthCell(day=day.day))
             weeks.append(tuple(cells))
         return [
             Page(

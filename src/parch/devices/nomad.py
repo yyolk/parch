@@ -1,14 +1,17 @@
 """SuperNote Nomad — the only MVP device."""
 
 from dataclasses import dataclass
+from typing import Literal
 
 from parch import ConfigError
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
 
+type ToolbarEdge = Literal["top", "none"]
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, slots=True)
 class Device:
     """Physical page. Toolbar slab is reserved; it is not a writing well."""
 
@@ -19,21 +22,25 @@ class Device:
     page_height: float
     width_px: int
     height_px: int
-    toolbar_edge: str
+    toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
 
     @property
     def content_top(self) -> float:
         """First Y chrome/content may occupy."""
-        if self.toolbar_edge == "top":
-            return self.toolbar_clearance
-        return 0.0
+        match self.toolbar_edge:
+            case "top":
+                return self.toolbar_clearance
+            case _:
+                return 0.0
 
     def toolbar_slab(self) -> Rect | None:
-        if self.toolbar_edge != "top" or self.toolbar_clearance <= 0:
-            return None
-        return Rect(0.0, 0.0, self.page_width, self.toolbar_clearance)
+        match self.toolbar_edge:
+            case "top" if self.toolbar_clearance > 0:
+                return Rect(0.0, 0.0, self.page_width, self.toolbar_clearance)
+            case _:
+                return None
 
     def content_frame(self) -> Rect:
         """Chrome + wells: below the toolbar, inset by writing_clearance."""

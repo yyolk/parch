@@ -1,19 +1,34 @@
 """Tiny press spec — TOML or defaults."""
 
-from __future__ import annotations
-
 import calendar
 import tomllib
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
+type TomlTable = dict[str, object]
 
-@dataclass(frozen=True)
+
+def _dest(template: Template) -> str:
+    """Flatten a dest t-string (prefix + fields + format specs)."""
+    chunks: list[str] = []
+    for part in template:
+        match part:
+            case Interpolation(value=value, format_spec=spec) if spec:
+                chunks.append(format(value, spec))
+            case Interpolation(value=value):
+                chunks.append(str(value))
+            case str() as literal:
+                chunks.append(literal)
+    return "".join(chunks)
+
+
+@dataclass(frozen=True, slots=True)
 class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
@@ -52,7 +67,7 @@ class Spec:
 
     @property
     def month_dest(self) -> str:
-        return f"month-{self.year:04d}-{self.month:02d}"
+        return _dest(t"month-{self.year:04d}-{self.month:02d}")
 
     @property
     def day_dest(self) -> str:
@@ -62,15 +77,17 @@ class Spec:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
-        return f"{self.day_dest}-notes-{index}"
+        return _dest(t"{self.day_dest}-notes-{index}")
 
     @classmethod
-    def from_mapping(cls, data: dict) -> Spec:
-        daily = data.get("daily") or {}
-        daily_notes = data.get("daily_notes") or {}
-        notes_pages = daily.get(
+    def from_mapping(cls, data: TomlTable) -> Spec:
+        daily = data.get("daily")
+        daily_notes = data.get("daily_notes")
+        daily_table = daily if isinstance(daily, dict) else {}
+        notes_table = daily_notes if isinstance(daily_notes, dict) else {}
+        notes_pages = daily_table.get(
             "notes_pages",
-            data.get("notes_pages", daily_notes.get("pages", 2)),
+            data.get("notes_pages", notes_table.get("pages", 2)),
         )
         return cls(
             year=int(data.get("year", 2026)),
@@ -79,8 +96,8 @@ class Spec:
             month=int(data.get("month", 1)),
             day=int(data.get("day", 5)),
             title=str(data.get("title", "Year planner")),
-            schedule_from=int(daily.get("schedule_from", data.get("schedule_from", 7))),
-            schedule_to=int(daily.get("schedule_to", data.get("schedule_to", 16))),
+            schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),
+            schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),
             notes_pages=int(notes_pages),
         )
 

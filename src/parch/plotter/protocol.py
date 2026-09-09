@@ -1,9 +1,11 @@
 """Plotter protocol. Painters take ``plotter: Plotter``; they never see fpdf2."""
 
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 
 from parch.geom import Rect
+
+type TextAlign = Literal["left", "center", "right"]
 
 
 class Plotter(Protocol):
@@ -44,7 +46,7 @@ class Plotter(Protocol):
         content: str,
         *,
         size: float = 10,
-        align: str = "left",
+        align: TextAlign = "left",
         bold: bool = False,
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size)."""

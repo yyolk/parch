@@ -6,8 +6,7 @@ from fpdf import FPDF
 
 from parch.devices.nomad import Device
 from parch.geom import Rect
-
-_ALIGN = {"left": "L", "center": "C", "right": "R"}
+from parch.plotter.protocol import TextAlign
 
 
 class Fpdf2Plotter:
@@ -38,18 +37,19 @@ class Fpdf2Plotter:
         stroke_width: float = 0.2,
         fill_gray: float = 0.92,
     ) -> None:
-        if not stroke and not fill:
-            return
+        match (stroke, fill):
+            case (False, False):
+                return
+            case (True, True):
+                style = "DF"
+            case (False, True):
+                style = "F"
+            case (True, False):
+                style = "D"
         self.pdf.set_line_width(stroke_width)
         level = max(0, min(255, int(round(fill_gray * 255))))
         self.pdf.set_fill_color(level)
         self.pdf.set_draw_color(0)
-        if stroke and fill:
-            style = "DF"
-        elif fill:
-            style = "F"
-        else:
-            style = "D"
         self.pdf.rect(box.x, box.y, box.w, box.h, style=style)
 
     def line(
@@ -71,15 +71,22 @@ class Fpdf2Plotter:
         content: str,
         *,
         size: float = 10,
-        align: str = "left",
+        align: TextAlign = "left",
         bold: bool = False,
     ) -> None:
+        match align:
+            case "center":
+                code = "C"
+            case "right":
+                code = "R"
+            case _:
+                code = "L"
         style = "B" if bold else ""
         self.pdf.set_font("helvetica", style=style, size=size)
         line_h = size * 0.352778
         y = box.y + max(0.0, (box.h - line_h) / 2)
         self.pdf.set_xy(box.x, y)
-        self.pdf.cell(box.w, line_h, content, align=_ALIGN.get(align, "L"))
+        self.pdf.cell(box.w, line_h, content, align=code)
 
     def link(self, box: Rect, dest: str) -> None:
         target = dest if dest.startswith("#") else f"#{dest}"

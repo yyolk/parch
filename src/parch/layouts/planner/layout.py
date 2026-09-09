@@ -31,29 +31,24 @@ class PlannerLayout:
         self._paint_well(page, plotter, well)
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
-        if page.kind == "cover":
-            cover = _one(page, CoverTitle)
-            paint_cover(plotter, well, cover)
-            return
-        if page.kind == "month":
-            grid = _one(page, MonthGrid)
-            paint_month_grid(plotter, well, grid)
-            return
-        if page.kind == "daily":
-            schedule = _one(page, Schedule)
-            notes = _one(page, Notes)
-            sched_w = well.w * 0.40
-            left, right = well.split_left(sched_w)
-            left = Rect(left.x, left.y, left.w - COL_GAP / 2, left.h)
-            right = Rect(right.x + COL_GAP / 2, right.y, right.w - COL_GAP / 2, right.h)
-            paint_schedule(plotter, left, schedule)
-            paint_notes(plotter, right, notes)
-            return
-        if page.kind == "daily_notes":
-            notes = _one(page, Notes)
-            paint_notes(plotter, well, notes)
-            return
-        raise ValueError(f"unknown page kind {page.kind!r}")
+        match page.kind:
+            case "cover":
+                paint_cover(plotter, well, _one(page, CoverTitle))
+            case "month":
+                paint_month_grid(plotter, well, _one(page, MonthGrid))
+            case "daily":
+                schedule = _one(page, Schedule)
+                notes = _one(page, Notes)
+                sched_w = well.w * 0.40
+                left, right = well.split_left(sched_w)
+                left = Rect(left.x, left.y, left.w - COL_GAP / 2, left.h)
+                right = Rect(right.x + COL_GAP / 2, right.y, right.w - COL_GAP / 2, right.h)
+                paint_schedule(plotter, left, schedule)
+                paint_notes(plotter, right, notes)
+            case "daily_notes":
+                paint_notes(plotter, well, _one(page, Notes))
+            case _:
+                raise ValueError(f"unknown page kind {page.kind!r}")
 
 
 def _one[T](page: Page, typ: type[T]) -> T:

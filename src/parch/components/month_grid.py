@@ -3,16 +3,19 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MonthCell:
     day: int | None
     dest: str | None = None
 
 
-@dataclass(frozen=True)
+type MonthWeek = tuple[MonthCell, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MonthGrid:
     year: int
     month: int
     month_name: str
     weekday_labels: tuple[str, ...]
-    weeks: tuple[tuple[MonthCell, ...], ...]
+    weeks: tuple[MonthWeek, ...]
