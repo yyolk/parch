@@ -1,6 +1,7 @@
-from parch.calendar import month_name, month_weeks, weekday_labels
+from parch.calendar import iso_monday, month_name, month_touching_weeks, weekday_labels
 from parch.components import MonthCell, MonthGrid
-from parch.sections.page import NavItem, Page
+from parch.sections.nav import planner_nav
+from parch.sections.page import Page
 from parch.spec import Spec
 
 
@@ -11,27 +12,24 @@ class MonthSection:
     def pages(self) -> list[Page]:
         spec = self.spec
         weeks = []
-        for week in month_weeks(spec.year, spec.month, spec.weekday_start):
+        week_dests: list[str] = []
+        for week in month_touching_weeks(spec.year, spec.month, spec.weekday_start):
             cells = []
             for day in week:
-                match day:
-                    case None:
-                        cells.append(MonthCell(day=None))
-                    case _:
-                        cells.append(MonthCell(day=day.day, dest=spec.dest_for_day(day)))
+                if day.month != spec.month:
+                    cells.append(MonthCell(day=None))
+                else:
+                    cells.append(MonthCell(day=day.day, dest=spec.dest_for_day(day)))
             weeks.append(tuple(cells))
-        nav = [
-            NavItem("Cover", spec.cover_dest),
-            NavItem(f"{spec.day}", spec.day_dest),
-        ]
-        if spec.notes_pages > 0:
-            nav.append(NavItem("Notes", spec.notes_dest(1)))
+            monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+            week_dests.append(spec.dest_for_week(monday))
+        # WEEK nav on the month page: first ISO week that touches the month.
         return [
             Page(
                 dest=spec.month_dest,
                 kind="month",
                 title=f"{month_name(spec.month)} {spec.year}",
-                nav=tuple(nav),
+                nav=planner_nav(spec, week_dest=week_dests[0]),
                 components=(
                     MonthGrid(
                         year=spec.year,
@@ -39,6 +37,7 @@ class MonthSection:
                         month_name=month_name(spec.month),
                         weekday_labels=weekday_labels(spec.weekday_start),
                         weeks=tuple(weeks),
+                        week_dests=tuple(week_dests),
                     ),
                 ),
             )

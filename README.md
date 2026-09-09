@@ -41,9 +41,9 @@ uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
 uv run python -m parch press supernote-nomad -o parch.pdf
 ```
 
-Default spec is year 2026, Monday week start, January. Press walks **every day in January**: cover → month (each day linked) → daily + `notes_pages` wells after each day. `examples/mvp.toml` uses `notes_pages = 1` to keep the artifact small; `2` still works.
+Default spec is year 2026, Monday week start, January. Press walks **every week that touches January**, then that week’s in-month days: cover → month (days + `W01` gutter linked) → weekly → daily + `notes_pages` wells. Bottom nav is Cover · Mon · Week · Day · Notes. `examples/mvp.toml` uses `notes_pages = 1` to keep the artifact small; `2` still works.
 
-Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (full January) and sample PNG previews (cover, month, one daily, one notes).
+Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (full January) and sample PNG previews (cover, month, one week, one daily).
 
 ```shell
 uv run pytest

@@ -1,6 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
-from parch.components import CoverTitle, MonthGrid, Notes, Schedule
+from parch.calendar import short_date_range
+from parch.components import CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
@@ -10,6 +11,7 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_schedule,
+    paint_week,
     paint_toolbar,
     strip_active,
     strip_items,
@@ -39,6 +41,8 @@ class PlannerLayout:
         match page.kind:
             case "month":
                 paint_month_grid(plotter, well, _one(page, MonthGrid))
+            case "weekly":
+                paint_week(plotter, well, _one(page, WeekStrip))
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
@@ -59,6 +63,9 @@ def _header_meta(page: Page) -> str:
         case "month":
             month = _one(page, MonthGrid).month
             return f"Q{(month - 1) // 3 + 1}"
+        case "weekly":
+            week = _one(page, WeekStrip)
+            return short_date_range(week.monday, week.sunday)
         case "daily":
             return page.dest[:4]
         case "daily_notes":

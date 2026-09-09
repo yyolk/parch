@@ -1,10 +1,17 @@
-"""Year planner book — cover → one month → each day (+ notes wells)."""
+"""Year planner book — cover → month → each touching week, then that week's days."""
 
-from parch.calendar import month_days
+from parch.calendar import month_touching_weeks
 from parch.devices import get_device
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
-from parch.sections import CoverSection, DailyNotesSection, DailySection, MonthSection, Page
+from parch.sections import (
+    CoverSection,
+    DailyNotesSection,
+    DailySection,
+    MonthSection,
+    Page,
+    WeeklySection,
+)
 from parch.spec import Spec
 
 
@@ -12,13 +19,18 @@ class YearPlanner:
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)
         notes = DailyNotesSection(spec)
+        weekly = WeeklySection(spec)
         built = [
             *CoverSection(spec).pages(),
             *MonthSection(spec).pages(),
         ]
-        for day in month_days(spec.year, spec.month):
-            built.extend(daily.pages_for(day))
-            built.extend(notes.pages_for(day))
+        for week in month_touching_weeks(spec.year, spec.month, spec.weekday_start):
+            built.extend(weekly.pages_for(week))
+            for day in week:
+                if day.month != spec.month:
+                    continue
+                built.extend(daily.pages_for(day))
+                built.extend(notes.pages_for(day))
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

@@ -19,3 +19,4 @@ class MonthGrid:
     month_name: str
     weekday_labels: tuple[str, ...]
     weeks: tuple[MonthWeek, ...]
+    week_dests: tuple[str, ...]

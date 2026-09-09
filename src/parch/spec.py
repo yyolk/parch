@@ -76,6 +76,11 @@ class Spec:
     def dest_for_day(self, day: date) -> str:
         return day.isoformat()
 
+    def dest_for_week(self, day: date) -> str:
+        """ISO week dest, e.g. ``week-2026-W01``. Monday-start book weeks align with ISO."""
+        iso = day.isocalendar()
+        return _dest(t"week-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:

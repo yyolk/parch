@@ -37,8 +37,8 @@ def test_press_january_pdf(tmp_path: Path):
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    # cover + month + 31 days + 31 notes
-    assert len(reader.pages) >= 64
+    # cover + month + 5 weeks + 31 days + 31 notes
+    assert len(reader.pages) >= 69
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -47,6 +47,8 @@ def test_press_january_pdf(tmp_path: Path):
     dests = _named_dests(reader)
     assert "cover" in dests
     assert "month-2026-01" in dests
+    assert "week-2026-W01" in dests
+    assert "week-2026-W05" in dests
     assert "2026-01-01" in dests
     assert "2026-01-15" in dests
     assert "2026-01-31" in dests

@@ -1,4 +1,4 @@
-# Greenfield Nomad MVP — cover → full January 2026 → each day + notes.
+# Greenfield Nomad MVP — cover → January month → each touching week → that week's days + notes.
 # notes_pages = 1 keeps the January artifact sane; 2 still works.
 year = 2026
 device = "supernote-nomad"

@@ -2,7 +2,8 @@
 
 from datetime import date, timedelta
 
-from parch.components import CoverTitle, MonthGrid, Notes, Schedule
+from parch.calendar import MONTH_NAMES
+from parch.components import CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
@@ -155,8 +156,9 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
         monday = _week_monday(grid, week, r)
         if monday is not None:
             iso = monday.isocalendar().week
+            gutter_box = Rect(box.x, y, gutter - 0.4, row_h)
             plotter.text(
-                Rect(box.x, y, gutter - 0.4, row_h),
+                gutter_box,
                 f"W{iso:02d}",
                 size=5.8,
                 face="sans",
@@ -164,6 +166,8 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
                 small_caps=True,
                 align="left",
             )
+            if r < len(grid.week_dests) and grid.week_dests[r]:
+                plotter.link(Rect(box.x, y, gutter, row_h), grid.week_dests[r])
         for c, day in enumerate(week):
             if day.day is None:
                 continue
@@ -184,6 +188,50 @@ def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
         day = date(grid.year, grid.month, cell.day)
         return day - timedelta(days=c)
     return None
+
+
+def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
+    rows = max(1, len(week.days))
+    row_h = box.h / rows
+    for i, day in enumerate(week.days):
+        y = box.y + i * row_h
+        ink = INK if day.in_month else MUTED
+        plotter.text(
+            Rect(box.x, y + 0.45, 14.0, 5.0),
+            day.weekday_label,
+            size=6.6,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        plotter.text(
+            Rect(box.x + 14.0, y + 0.1, 12.0, 5.8),
+            str(day.day.day),
+            size=11,
+            bold=True,
+            face="sans",
+            gray=ink,
+            align="left",
+        )
+        if not day.in_month or day.day.day == 1:
+            plotter.text(
+                Rect(box.x + 26.0, y + 0.55, 22.0, 4.8),
+                MONTH_NAMES[day.day.month - 1][:3],
+                size=6.6,
+                face="sans",
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
+        if day.dest:
+            plotter.link(Rect(box.x, y, box.w, 6.4), day.dest)
+        rule_y = y + 6.9
+        pitch = 4.15
+        while rule_y < y + row_h - 1.15:
+            plotter.line(box.x, rule_y, box.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+            rule_y += pitch
+        plotter.line(box.x, y + row_h, box.right, y + row_h, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
@@ -252,6 +300,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     for item in page.nav:
         if item.dest.startswith("month-"):
             dests["Mon"] = item.dest
+        elif item.dest.startswith("week-"):
+            dests["Week"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -259,12 +309,14 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "month":
             dests["Mon"] = page.dest
+        case "weekly":
+            dests["Week"] = page.dest
         case "daily":
             dests["Day"] = page.dest
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Cover", "Mon", "Day", "Notes")
+    order = ("Cover", "Mon", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -272,6 +324,8 @@ def strip_active(kind: str) -> str:
     match kind:
         case "month":
             return "Mon"
+        case "weekly":
+            return "Week"
         case "daily":
             return "Day"
         case "daily_notes":
