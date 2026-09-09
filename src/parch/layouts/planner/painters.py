@@ -153,9 +153,8 @@ def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
-    """Default seat — not locked; A″ / B / C′ are comparison variants below."""
-    for cell, month in zip(columns(box, 3, gap=4.0), grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+    """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
+    paint_quarter_a_focus_notes(plotter, box, grid)
 
 
 def quarter_seats_a_shortband(box: Rect) -> tuple[Rect, Rect, Rect]:

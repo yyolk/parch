@@ -75,6 +75,8 @@ def test_quarter_links_from_year_and_month_meta():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Q1 2026" in texts
     assert "Quar" in texts
+    assert "Focus" in texts
+    assert "Notes" in texts
 
 
 def test_quarter_seat_a_short_top_band():
