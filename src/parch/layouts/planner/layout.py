@@ -1,7 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
-from parch.calendar import short_date_range
-from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
+from parch.calendar import quarter_of, short_date_range
+from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, QuarterGrid, Schedule, WeekStrip
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.tracks import columns
@@ -12,6 +12,7 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_nav,
     paint_notes,
+    paint_quarter,
     paint_schedule,
     paint_week,
     paint_toolbar,
@@ -34,7 +35,9 @@ class PlannerLayout:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle))
             case _:
-                paint_header(plotter, device, page.title, _header_meta(page))
+                paint_header(
+                    plotter, device, page.title, _header_meta(page), _header_meta_dest(page)
+                )
                 paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
@@ -43,6 +46,8 @@ class PlannerLayout:
         match page.kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid))
+            case "quarter":
+                paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
                 paint_month_grid(plotter, well, _one(page, MonthGrid))
             case "weekly":
@@ -63,9 +68,11 @@ def _header_meta(page: Page) -> str:
     match page.kind:
         case "annual":
             return "Q1–Q4"
+        case "quarter":
+            return ""
         case "month":
             month = _one(page, MonthGrid).month
-            return f"Q{(month - 1) // 3 + 1}"
+            return f"Q{quarter_of(month)}"
         case "weekly":
             week = _one(page, WeekStrip)
             return short_date_range(week.monday, week.sunday)
@@ -76,6 +83,16 @@ def _header_meta(page: Page) -> str:
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
         case _:
             return ""
+
+
+def _header_meta_dest(page: Page) -> str | None:
+    match page.kind:
+        case "annual":
+            return _one(page, AnnualGrid).quarter_dest
+        case "month":
+            return _one(page, MonthGrid).quarter_dest
+        case _:
+            return None
 
 
 def _one[T](page: Page, typ: type[T]) -> T:

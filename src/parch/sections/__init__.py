@@ -4,6 +4,7 @@ from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
 from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
+from parch.sections.quarter import QuarterSection
 from parch.sections.weekly import WeeklySection
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "NavItem",
     "Page",
     "PageKind",
+    "QuarterSection",
     "WeeklySection",
 ]

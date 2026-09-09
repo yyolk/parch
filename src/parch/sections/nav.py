@@ -1,17 +1,22 @@
-"""Planner strip dests. Layout remaps these into Year · Mon · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Week · Day · Notes.
 
-YEAR dest: annual page → self; month/week/day/notes → spec.year_dest.
+QUAR is provisional — may come out of the strip later.
+
+YEAR dest: annual page → self; elsewhere → spec.year_dest.
+
+QUAR dest: quarter page → self; month/week/day/notes → quarter containing the
+landing month; year → first pressed quarter.
 
 MON dest: month page → that month; daily/notes/week → the landing day's month;
-year → first pressed month.
+year/quarter → first pressed month in that quarter (year uses first pressed month).
 
-WEEK dest: daily/notes → ISO week of that day; week page → self; year/month → first
-ISO week that touches that month (year uses the first pressed month).
+WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
+→ first ISO week that touches the landing month.
 
 DAY / NOTES dests (no generation-time “today”, not spec.day):
 - daily / notes → that day (notes-1)
 - week → first pressed day in that week (a day that has a daily)
-- month → 1st of that month
+- month / quarter → 1st of the landing month
 - year → 1st of the first pressed month
 """
 
@@ -39,6 +44,7 @@ def planner_nav(
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
     items = [
         NavItem("Year", spec.year_dest),
+        NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
         NavItem("Mon", mon),
         NavItem("Week", week_dest),
         NavItem("Day", spec.dest_for_day(landing)),

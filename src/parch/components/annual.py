@@ -18,3 +18,4 @@ class AnnualMonth:
 class AnnualGrid:
     year: int
     months: tuple[AnnualMonth, ...]
+    quarter_dest: str | None = None

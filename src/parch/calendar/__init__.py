@@ -34,6 +34,15 @@ def month_name(month: int) -> str:
     return MONTH_NAMES[month - 1]
 
 
+def quarter_of(month: int) -> int:
+    return (month - 1) // 3 + 1
+
+
+def months_in_quarter(quarter: int) -> tuple[int, int, int]:
+    start = (quarter - 1) * 3 + 1
+    return (start, start + 1, start + 2)
+
+
 def weekday_labels(weekday_start: int) -> tuple[str, ...]:
     return tuple(WEEKDAY_LABELS[(weekday_start + i) % 7] for i in range(7))
 

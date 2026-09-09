@@ -8,6 +8,7 @@ from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
+from parch.calendar import quarter_of
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
@@ -100,6 +101,26 @@ class Spec:
 
     def dest_for_month(self, month: int) -> str:
         return _dest(t"month-{self.year:04d}-{month:02d}")
+
+    def dest_for_quarter(self, quarter: int) -> str:
+        if not 1 <= quarter <= 4:
+            raise ConfigError(f"quarter out of range: {quarter}")
+        return _dest(t"quarter-{self.year:04d}-Q{quarter}")
+
+    def dest_for_quarter_of(self, month: int) -> str:
+        return self.dest_for_quarter(quarter_of(month))
+
+    @property
+    def quarter_dest(self) -> str:
+        return self.dest_for_quarter_of(self.month)
+
+    def pressed_quarters(self) -> tuple[int, ...]:
+        seen: list[int] = []
+        for month in self.months:
+            quarter = quarter_of(month)
+            if quarter not in seen:
+                seen.append(quarter)
+        return tuple(seen)
 
     @property
     def day_dest(self) -> str:

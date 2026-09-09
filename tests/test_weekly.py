@@ -29,9 +29,10 @@ def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[0:6] == [
+    assert dests[0:7] == [
         "cover",
         "year-2026",
+        "quarter-2026-Q1",
         "month-2026-01",
         "month-2026-02",
         "month-2026-03",
@@ -47,6 +48,7 @@ def test_week_dests_and_nav_strip():
     month = next(page for page in pages if page.dest == "month-2026-01")
     assert strip_items(month) == (
         ("Year", "year-2026"),
+        ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
@@ -55,14 +57,14 @@ def test_week_dests_and_nav_strip():
     assert strip_active(month.kind) == "Mon"
 
     feb = next(page for page in pages if page.dest == "month-2026-02")
-    assert strip_items(feb)[1] == ("Mon", "month-2026-02")
-    assert strip_items(feb)[3] == ("Day", "2026-02-01")
-    assert strip_items(feb)[4] == ("Notes", "2026-02-01-notes-1")
+    assert ("Mon", "month-2026-02") in strip_items(feb)
+    assert ("Day", "2026-02-01") in strip_items(feb)
+    assert ("Notes", "2026-02-01-notes-1") in strip_items(feb)
 
     w01 = next(page for page in pages if page.dest == "week-2026-W01")
     assert strip_active(w01.kind) == "Week"
-    assert strip_items(w01)[2] == ("Week", "week-2026-W01")
-    assert strip_items(w01)[3] == ("Day", "2026-01-01")
+    assert ("Week", "week-2026-W01") in strip_items(w01)
+    assert ("Day", "2026-01-01") in strip_items(w01)
 
     jan15 = next(page for page in pages if page.dest == "2026-01-15")
     assert ("Week", "week-2026-W03") in strip_items(jan15)
@@ -73,8 +75,8 @@ def test_week_dests_and_nav_strip():
     assert strip_active(notes.kind) == "Notes"
 
     w06 = next(page for page in pages if page.dest == "week-2026-W06")
-    assert strip_items(w06)[3] == ("Day", "2026-02-02")
-    assert strip_items(w06)[4] == ("Notes", "2026-02-02-notes-1")
+    assert ("Day", "2026-02-02") in strip_items(w06)
+    assert ("Notes", "2026-02-02-notes-1") in strip_items(w06)
 
 
 def test_week_pages_link_pressed_days_only():

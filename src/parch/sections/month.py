@@ -43,6 +43,7 @@ class MonthSection:
                         weekday_labels=weekday_labels(spec.weekday_start),
                         weeks=tuple(weeks),
                         week_dests=tuple(week_dests),
+                        quarter_dest=spec.dest_for_quarter_of(month),
                     ),
                 ),
             )

@@ -1,6 +1,6 @@
 from parch.books import YearPlanner
 from parch.calendar import month_days, months_touching_weeks
-from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
+from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, QuarterGrid, Schedule, WeekStrip
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -8,6 +8,7 @@ from parch.spec import Spec
 def _q1_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
     dests = ["cover", spec.year_dest]
+    dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     dests.extend(spec.dest_for_month(month) for month in spec.months)
     for week in months_touching_weeks(2026, spec.months, weekday_start=0):
         dests.append(spec.dest_for_week(week[0]))
@@ -21,7 +22,7 @@ def _q1_dests(*, notes_pages: int) -> list[str]:
 
 
 def test_components_do_not_draw():
-    for cls in (AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip):
+    for cls in (AnnualGrid, CoverTitle, MonthGrid, Notes, QuarterGrid, Schedule, WeekStrip):
         assert "draw" not in cls.__dict__
 
 

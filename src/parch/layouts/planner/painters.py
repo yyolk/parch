@@ -3,7 +3,16 @@
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES
-from parch.components import AnnualGrid, AnnualMonth, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
+from parch.components import (
+    AnnualGrid,
+    AnnualMonth,
+    CoverTitle,
+    MonthGrid,
+    Notes,
+    QuarterGrid,
+    Schedule,
+    WeekStrip,
+)
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
@@ -28,7 +37,13 @@ def paint_toolbar(_plotter: Plotter, _device: Device) -> None:
     """Nomad top 8 mm stays reserved and unmarked. No fill, no label."""
 
 
-def paint_header(plotter: Plotter, device: Device, title: str, meta: str) -> None:
+def paint_header(
+    plotter: Plotter,
+    device: Device,
+    title: str,
+    meta: str,
+    meta_dest: str | None = None,
+) -> None:
     slab = Rect(0.0, device.content_top, device.page_width, HEADER_H)
     plotter.rect(slab, stroke=False, fill=True, fill_gray=INK)
     gutter = device.writing_clearance
@@ -40,6 +55,8 @@ def paint_header(plotter: Plotter, device: Device, title: str, meta: str) -> Non
         plotter.text(
             meta_box, meta, size=7.4, face="sans", gray=SOFT, align="right", small_caps=True
         )
+        if meta_dest:
+            plotter.link(meta_box, meta_dest)
 
 
 def paint_nav(
@@ -133,6 +150,11 @@ def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+
+
+def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    for cell, month in zip(columns(box, 3, gap=4.0), grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
 
 
 def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
@@ -359,6 +381,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     for item in page.nav:
         if item.dest.startswith("year-"):
             dests["Year"] = item.dest
+        elif item.dest.startswith("quarter-"):
+            dests["Quar"] = item.dest
         elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
@@ -370,6 +394,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
+        case "quarter":
+            dests["Quar"] = page.dest
         case "month":
             dests["Mon"] = page.dest
         case "weekly":
@@ -379,7 +405,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Mon", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -387,6 +413,8 @@ def strip_active(kind: str) -> str:
     match kind:
         case "annual":
             return "Year"
+        case "quarter":
+            return "Quar"
         case "month":
             return "Mon"
         case "weekly":
