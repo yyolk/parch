@@ -33,36 +33,35 @@ jobs:
 
           title_hit=false
           label_hit=false
-          echo "$TITLE"  | grep -qiE 'do[[:space:]_-]*not[[:space:]_-]*merge' && title_hit=true
-          echo "$LABELS" | grep -qiE '(^|,)[[:space:]]*(do[[:space:]_-]*not[[:space:]_-]*merge)[[:space:]]*(,|$)' && label_hit=true
+          if echo "$TITLE" | grep -qiE 'do[[:space:]_-]*not[[:space:]_-]*merge'; then
+            title_hit=true
+          fi
+          if echo "$LABELS" | grep -qiE '(^|,)[[:space:]]*(do[[:space:]_-]*not[[:space:]_-]*merge)[[:space:]]*(,|$)'; then
+            label_hit=true
+          fi
 
           reasons=()
-          [[ "$title_hit" == true ]] && reasons+=('title contains "DO NOT MERGE"')
-          [[ "$label_hit" == true ]] && reasons+=('has a "DO NOT MERGE" label')
+          if [[ "$title_hit" == true ]]; then
+            reasons+=('title contains "DO NOT MERGE"')
+          fi
+          if [[ "$label_hit" == true ]]; then
+            reasons+=('has a "DO NOT MERGE" label')
+          fi
           reason=""
           if ((${#reasons[@]})); then
             reason=$(IFS=' and '; echo "${reasons[*]}")
           fi
 
-          warning_body=$(cat <<EOF
-          ⚠️ Forced this pull request to **draft** because the ${reason}.
+          warning_body="⚠️ Forced this pull request to **draft** because the ${reason}.
 
           Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.
-          ${MARKER}
-          EOF
-          )
+          ${MARKER}"
 
-          waiting_body=$(cat <<EOF
-          DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.
-          ${MARKER}
-          EOF
-          )
+          waiting_body="DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.
+          ${MARKER}"
 
-          cleared_body=$(cat <<EOF
-          ✅ DO NOT MERGE marker cleared. This pull request is ready for review.
-          ${MARKER}
-          EOF
-          )
+          cleared_body="✅ DO NOT MERGE marker cleared. This pull request is ready for review.
+          ${MARKER}"
 
           find_comment_id() {
             gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
