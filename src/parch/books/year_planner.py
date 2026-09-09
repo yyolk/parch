@@ -31,7 +31,7 @@ class YearPlanner:
         for week in months_touching_weeks(spec.year, spec.months, spec.weekday_start):
             built.extend(weekly.pages_for(week))
             for day in week:
-                if not spec.presses(day.month):
+                if not spec.presses_day(day):
                     continue
                 built.extend(daily.pages_for(day))
                 built.extend(notes.pages_for(day))

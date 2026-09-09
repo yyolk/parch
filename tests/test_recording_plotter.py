@@ -5,7 +5,7 @@ from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 
-def _q1_dests(*, notes_pages: int) -> list[str]:
+def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
     dests = ["cover", spec.year_dest]
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
@@ -13,7 +13,7 @@ def _q1_dests(*, notes_pages: int) -> list[str]:
     for week in months_touching_weeks(2026, spec.months, weekday_start=0):
         dests.append(spec.dest_for_week(week[0]))
         for day in week:
-            if not spec.presses(day.month):
+            if not spec.presses_day(day):
                 continue
             dests.append(day.isoformat())
             if notes_pages:
@@ -26,15 +26,16 @@ def test_components_do_not_draw():
         assert "draw" not in cls.__dict__
 
 
-def test_book_records_q1_dests_and_links():
+def test_book_records_year_dests_and_links():
     spec = Spec(notes_pages=1)
     plotter = RecordingPlotter()
     YearPlanner().plot(spec, plotter)
 
     dests = plotter.dests()
-    assert dests == _q1_dests(notes_pages=1)
+    assert dests == _year_dests(notes_pages=1)
     assert dests.count("week-2026-W05") == 1
     assert dests.count("week-2026-W09") == 1
+    assert dests.count("week-2026-W53") == 1
 
     links = plotter.links()
     assert "year-2026" in links
@@ -62,6 +63,6 @@ def test_notes_pages_zero_skips_wells():
     plotter = RecordingPlotter()
     YearPlanner().plot(Spec(notes_pages=0), plotter)
     dests = plotter.dests()
-    assert dests == _q1_dests(notes_pages=0)
+    assert dests == _year_dests(notes_pages=0)
     assert not any("-notes-" in name for name in dests)
     assert "2026-01-05-notes-1" not in plotter.links()

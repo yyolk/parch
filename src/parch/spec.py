@@ -21,7 +21,7 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
         return tuple(int(month) for month in raw)
     if "month" in data:
         return (int(data["month"]),)
-    return (1, 2, 3)
+    return tuple(range(1, 13))
 
 
 def _dest(template: Template) -> str:
@@ -43,7 +43,7 @@ class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
     week_start: str = "monday"
-    months: tuple[int, ...] = (1, 2, 3)
+    months: tuple[int, ...] = tuple(range(1, 13))
     # Unused by nav. TOML/CLI leftover — not a generation-time “today”.
     day: int = 5
     title: str = "Year planner"
@@ -82,6 +82,10 @@ class Spec:
 
     def presses(self, month: int) -> bool:
         return month in self.months
+
+    def presses_day(self, day: date) -> bool:
+        """True when ``day`` is in this spec’s year and a pressed month."""
+        return day.year == self.year and self.presses(day.month)
 
     @property
     def date(self) -> date:

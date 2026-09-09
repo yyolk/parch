@@ -25,6 +25,15 @@ def test_q1_weeks_are_unique():
     assert weeks[-1][-1] == date(2026, 4, 5)
 
 
+def test_year_weeks_are_unique():
+    weeks = months_touching_weeks(2026, tuple(range(1, 13)), weekday_start=0)
+    keys = [week[0].isocalendar()[:2] for week in weeks]
+    assert len(keys) == len(set(keys))
+    assert len(weeks) == 53
+    assert weeks[0][0] == date(2025, 12, 29)
+    assert weeks[-1][0] == date(2026, 12, 28)
+
+
 def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
@@ -33,16 +42,16 @@ def test_week_dests_and_nav_strip():
         "cover",
         "year-2026",
         "quarter-2026-Q1",
+        "quarter-2026-Q2",
+        "quarter-2026-Q3",
+        "quarter-2026-Q4",
         "month-2026-01",
-        "month-2026-02",
-        "month-2026-03",
-        "week-2026-W01",
     ]
     assert dests.index("week-2026-W02") < dests.index("2026-01-05")
     assert dests.index("week-2026-W05") < dests.index("2026-01-26")
-    assert dests.index("month-2026-02") < dests.index("week-2026-W01")
+    assert dests.index("month-2026-07") < dests.index("week-2026-W01")
     assert [name for name in dests if name.startswith("week-")] == [
-        f"week-2026-W{week:02d}" for week in range(1, 15)
+        f"week-2026-W{week:02d}" for week in range(1, 54)
     ]
 
     month = next(page for page in pages if page.dest == "month-2026-01")
@@ -90,8 +99,10 @@ def test_week_pages_link_pressed_days_only():
     assert "2026-01-01" in links
     assert "2026-02-01" in dests
     assert "2026-03-31" in dests
+    assert "2026-04-01" in dests
+    assert "2026-12-31" in dests
     assert "2025-12-29" not in dests
-    assert "2026-04-01" not in dests
+    assert "week-2026-W53" in dests
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Week 01" in texts

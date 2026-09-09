@@ -31,13 +31,16 @@ def test_quarter_page_and_provisional_nav():
         "cover",
         "year-2026",
         "quarter-2026-Q1",
+        "quarter-2026-Q2",
+        "quarter-2026-Q3",
+        "quarter-2026-Q4",
         "month-2026-01",
-        "month-2026-02",
-        "month-2026-03",
-        "week-2026-W01",
     ]
     assert [page.dest for page in pages if page.dest.startswith("quarter-")] == [
-        "quarter-2026-Q1"
+        "quarter-2026-Q1",
+        "quarter-2026-Q2",
+        "quarter-2026-Q3",
+        "quarter-2026-Q4",
     ]
 
     quarter = pages[2]
@@ -65,16 +68,24 @@ def test_quarter_page_and_provisional_nav():
     assert ("Quar", "quarter-2026-Q1") in strip_items(feb)
     jan15 = next(page for page in pages if page.dest == "2026-01-15")
     assert ("Quar", "quarter-2026-Q1") in strip_items(jan15)
+    july = next(page for page in pages if page.dest == "month-2026-07")
+    assert ("Quar", "quarter-2026-Q3") in strip_items(july)
+    q3 = next(page for page in pages if page.dest == "quarter-2026-Q3")
+    assert q3.title == "Q3 2026"
 
 
 def test_quarter_links_from_year_and_month_meta():
     plotter = RecordingPlotter()
     YearPlanner().plot(Spec(notes_pages=1), plotter)
     assert "quarter-2026-Q1" in plotter.dests()
+    assert "quarter-2026-Q3" in plotter.dests()
     assert "quarter-2026-Q1" in plotter.links()
+    assert "quarter-2026-Q3" in plotter.links()
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Q1 2026" in texts
+    assert "Q3 2026" in texts
     assert "Quar" in texts
+    assert "Focus" in texts
     assert "Focus" in texts
     assert "Notes" in texts
 

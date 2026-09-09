@@ -7,13 +7,17 @@ def test_dest_names_from_tstrings():
     spec = Spec()
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
-    assert spec.months == (1, 2, 3)
+    assert spec.months == tuple(range(1, 13))
     assert spec.month == 1
     assert spec.presses(3)
-    assert not spec.presses(4)
+    assert spec.presses(12)
+    assert spec.presses_day(date(2026, 12, 31))
+    assert not spec.presses_day(date(2025, 12, 29))
+    assert not spec.presses_day(date(2027, 1, 1))
     assert spec.quarter_dest == "quarter-2026-Q1"
     assert spec.dest_for_quarter(1) == "quarter-2026-Q1"
-    assert spec.pressed_quarters() == (1,)
+    assert spec.dest_for_quarter(3) == "quarter-2026-Q3"
+    assert spec.pressed_quarters() == (1, 2, 3, 4)
     assert spec.month_dest == "month-2026-01"
     assert spec.dest_for_month(1) == "month-2026-01"
     assert spec.day_dest == "2026-01-05"

@@ -16,14 +16,14 @@ class WeeklySection:
         monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
         sunday = monday + timedelta(days=6)
         iso = monday.isocalendar()
-        pressed = [d for d in week if spec.presses(d.month)]
+        pressed = [d for d in week if spec.presses_day(d)]
         landing = pressed[0]
         days = tuple(
             WeekDay(
                 day=day,
                 weekday_label=WEEKDAY_LABELS[day.weekday()],
-                dest=spec.dest_for_day(day) if spec.presses(day.month) else None,
-                in_month=spec.presses(day.month),
+                dest=spec.dest_for_day(day) if spec.presses_day(day) else None,
+                in_month=spec.presses_day(day),
             )
             for day in week
         )

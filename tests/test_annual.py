@@ -12,10 +12,10 @@ def test_annual_page_and_year_nav():
         "cover",
         "year-2026",
         "quarter-2026-Q1",
+        "quarter-2026-Q2",
+        "quarter-2026-Q3",
+        "quarter-2026-Q4",
         "month-2026-01",
-        "month-2026-02",
-        "month-2026-03",
-        "week-2026-W01",
     ]
     cover = pages[0]
     assert cover.components[0].cta_dest == "year-2026"
@@ -42,33 +42,39 @@ def test_annual_page_and_year_nav():
     assert january.dest == "month-2026-01"
     assert february.dest == "month-2026-02"
     assert march.dest == "month-2026-03"
-    assert april.dest is None
+    assert april.dest == "month-2026-04"
+    assert grid.months[11].dest == "month-2026-12"
     assert any(cell.dest == "2026-01-15" for week in january.weeks for cell in week)
     assert any(cell.dest == "2026-02-01" for week in february.weeks for cell in week)
-    assert all(cell.dest is None for week in april.weeks for cell in week)
+    assert any(cell.dest == "2026-04-01" for week in april.weeks for cell in week)
 
 
-def test_annual_paint_links_q1_only():
+def test_annual_paint_links_all_months():
     plotter = RecordingPlotter()
     YearPlanner().plot(Spec(notes_pages=1), plotter)
     dests = plotter.dests()
     links = plotter.links()
     assert dests[1] == "year-2026"
-    assert dests[2] == "quarter-2026-Q1"
+    assert dests[2:6] == [
+        "quarter-2026-Q1",
+        "quarter-2026-Q2",
+        "quarter-2026-Q3",
+        "quarter-2026-Q4",
+    ]
     assert "year-2026" in links
     assert "quarter-2026-Q1" in links
+    assert "quarter-2026-Q3" in links
     assert "month-2026-01" in links
-    assert "month-2026-02" in links
-    assert "month-2026-03" in links
+    assert "month-2026-07" in links
+    assert "month-2026-12" in links
     assert "2026-01-01" in links
-    assert "2026-02-01" in dests
-    assert "2026-03-31" in dests
-    assert "month-2026-04" not in dests
-    assert "month-2026-04" not in links
-    assert "2026-04-01" not in dests
-    assert "2026-04-01" not in links
+    assert "2026-04-01" in dests
+    assert "2026-04-01" in links
+    assert "2026-07-15" in dests
+    assert "2026-12-31" in dests
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Year" in texts
     assert "Cover" not in texts
     assert "Jan" in texts
     assert "Dec" in texts
+    assert "Focus" in texts
