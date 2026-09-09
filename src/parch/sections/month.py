@@ -22,15 +22,18 @@ class MonthSection:
                     case _:
                         cells.append(MonthCell(day=day.day))
             weeks.append(tuple(cells))
+        nav = [
+            NavItem("Cover", spec.cover_dest),
+            NavItem(f"{spec.day}", spec.day_dest),
+        ]
+        if spec.notes_pages > 0:
+            nav.append(NavItem("Notes", spec.notes_dest(1)))
         return [
             Page(
                 dest=spec.month_dest,
                 kind="month",
                 title=f"{month_name(spec.month)} {spec.year}",
-                nav=(
-                    NavItem("Cover", spec.cover_dest),
-                    NavItem(f"{spec.day}", spec.day_dest),
-                ),
+                nav=tuple(nav),
                 components=(
                     MonthGrid(
                         year=spec.year,

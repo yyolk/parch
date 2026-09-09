@@ -6,6 +6,7 @@ from typing import Literal, Protocol
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
+type TextFace = Literal["sans", "serif"]
 
 
 class Plotter(Protocol):
@@ -26,8 +27,9 @@ class Plotter(Protocol):
         fill: bool = False,
         stroke_width: float = 0.2,
         fill_gray: float = 0.92,
+        stroke_gray: float = 0.0,
     ) -> None:
-        """Stroke and/or fill a rectangle. ``fill_gray`` is 0 black … 1 white."""
+        """Stroke and/or fill a rectangle. Grays are 0 black … 1 white."""
 
     def line(
         self,
@@ -37,6 +39,7 @@ class Plotter(Protocol):
         y2: float,
         *,
         stroke_width: float = 0.2,
+        stroke_gray: float = 0.0,
     ) -> None:
         """Stroke a segment."""
 
@@ -48,6 +51,9 @@ class Plotter(Protocol):
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
+        face: TextFace = "sans",
+        gray: float = 0.0,
+        small_caps: bool = False,
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size)."""
 

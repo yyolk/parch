@@ -1,21 +1,9 @@
 from parch.books import YearPlanner
 from parch.devices import NOMAD
-from parch.geom import Rect
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 TOOLBAR = 8.0
-
-
-def _well_rects(plotter: RecordingPlotter) -> list[Rect]:
-    """Outer stroked wells: schedule/notes boxes and month cells sit at y >= 8."""
-    boxes = []
-    for op in plotter.ops:
-        if op[0] == "rect":
-            box = op[1]
-            if box.y >= TOOLBAR - 0.01 and box.h > 20:
-                boxes.append(box)
-    return boxes
 
 
 def test_content_stays_below_toolbar():
@@ -28,13 +16,15 @@ def test_content_stays_below_toolbar():
         for op in plotter.ops
         if op[0] == "rect" and op[1].y == 0 and op[1].h == TOOLBAR
     ]
-    assert toolbar_fills, "toolbar slab should be painted"
+    assert not toolbar_fills, "toolbar slab must stay unmarked"
 
-    for box in _well_rects(plotter):
-        assert box.y >= TOOLBAR
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "toolbar 8 mm - not a well" not in texts
 
     frame = NOMAD.content_frame()
     assert frame.y == TOOLBAR
     for op in plotter.ops:
-        if op[0] == "text" and op[2] in {"Schedule", "Notes"}:
-            assert op[1].y >= TOOLBAR
+        if op[0] == "text":
+            assert op[1].y >= TOOLBAR - 0.01
+        if op[0] == "rect":
+            assert op[1].y >= TOOLBAR - 0.01

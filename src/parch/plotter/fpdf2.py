@@ -1,4 +1,4 @@
-"""Single fpdf2-backed plotter."""
+"""Single fpdf2-backed plotter. Liberation Serif/Sans, fake small-caps."""
 
 from pathlib import Path
 from typing import override
@@ -6,8 +6,22 @@ from typing import override
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
+from parch.fonts import font_dir
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign
+from parch.plotter.protocol import Plotter, TextAlign, TextFace
+
+SANS = "Sans"
+SERIF = "Serif"
+SMCP_SCALE = 0.76
+SMCP_TRACK_EM = 0.14
+
+
+def _pt_mm(pt: float) -> float:
+    return pt * 25.4 / 72.0
+
+
+def _level(gray: float) -> int:
+    return max(0, min(255, int(round(gray * 255))))
 
 
 class Fpdf2Plotter(Plotter):
@@ -16,9 +30,66 @@ class Fpdf2Plotter(Plotter):
         self.pdf = FPDF(unit="mm", format=(device.page_width, device.page_height))
         self.pdf.set_auto_page_break(auto=False, margin=0)
         self.pdf.set_margins(0, 0, 0)
-        self.pdf.set_font("helvetica", size=10)
+        self.pdf.set_compression(True)
+        root = font_dir()
+        self.pdf.add_font(SANS, "", str(root / "LiberationSans-Regular.ttf"))
+        self.pdf.add_font(SANS, "B", str(root / "LiberationSans-Bold.ttf"))
+        self.pdf.add_font(SERIF, "", str(root / "LiberationSerif-Regular.ttf"))
+        self.pdf.add_font(SERIF, "B", str(root / "LiberationSerif-Bold.ttf"))
+        self.pdf.set_font(SANS, size=10)
         self.pdf.set_text_color(0)
         self.pdf.set_draw_color(0)
+
+    def _family(self, face: TextFace) -> str:
+        return SERIF if face == "serif" else SANS
+
+    def _ink(self, gray: float) -> None:
+        level = _level(gray)
+        self.pdf.set_text_color(level)
+
+    def _draw(self, gray: float) -> None:
+        self.pdf.set_draw_color(_level(gray))
+
+    def _smcp_width(self, text: str, size: float, family: str, style: str) -> float:
+        chars = text.upper()
+        if not chars:
+            return 0.0
+        self.pdf.set_font(family, style, size * SMCP_SCALE)
+        track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
+        return sum(self.pdf.get_string_width(ch) for ch in chars) + track * (len(chars) - 1)
+
+    def _draw_smcp(
+        self,
+        box: Rect,
+        content: str,
+        *,
+        size: float,
+        align: TextAlign,
+        bold: bool,
+        face: TextFace,
+        gray: float,
+    ) -> None:
+        family = self._family(face)
+        style = "B" if bold else ""
+        tw = self._smcp_width(content, size, family, style)
+        cap = _pt_mm(size * SMCP_SCALE) * 0.72
+        baseline = box.y + (box.h + cap) / 2.0 - 0.12
+        match align:
+            case "center":
+                tx = box.x + (box.w - tw) / 2.0
+            case "right":
+                tx = box.x + box.w - tw
+            case _:
+                tx = box.x
+        self._ink(gray)
+        self.pdf.set_font(family, style, size * SMCP_SCALE)
+        track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
+        chars = content.upper()
+        last = len(chars) - 1
+        cx = tx
+        for i, ch in enumerate(chars):
+            self.pdf.text(cx, baseline, ch)
+            cx += self.pdf.get_string_width(ch) + (track if i < last else 0)
 
     @override
     def begin_page(self) -> None:
@@ -41,6 +112,7 @@ class Fpdf2Plotter(Plotter):
         fill: bool = False,
         stroke_width: float = 0.2,
         fill_gray: float = 0.92,
+        stroke_gray: float = 0.0,
     ) -> None:
         match (stroke, fill):
             case (False, False):
@@ -52,9 +124,8 @@ class Fpdf2Plotter(Plotter):
             case (True, False):
                 style = "D"
         self.pdf.set_line_width(stroke_width)
-        level = max(0, min(255, int(round(fill_gray * 255))))
-        self.pdf.set_fill_color(level)
-        self.pdf.set_draw_color(0)
+        self.pdf.set_fill_color(_level(fill_gray))
+        self._draw(stroke_gray)
         self.pdf.rect(box.x, box.y, box.w, box.h, style=style)
 
     @override
@@ -66,9 +137,10 @@ class Fpdf2Plotter(Plotter):
         y2: float,
         *,
         stroke_width: float = 0.2,
+        stroke_gray: float = 0.0,
     ) -> None:
         self.pdf.set_line_width(stroke_width)
-        self.pdf.set_draw_color(0)
+        self._draw(stroke_gray)
         self.pdf.line(x1, y1, x2, y2)
 
     @override
@@ -80,20 +152,32 @@ class Fpdf2Plotter(Plotter):
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
+        face: TextFace = "sans",
+        gray: float = 0.0,
+        small_caps: bool = False,
     ) -> None:
+        if not content:
+            return
+        if small_caps:
+            self._draw_smcp(
+                box, content, size=size, align=align, bold=bold, face=face, gray=gray
+            )
+            return
+        family = self._family(face)
+        style = "B" if bold else ""
+        self.pdf.set_font(family, style, size)
+        self._ink(gray)
+        cap = _pt_mm(size) * 0.72
+        baseline = box.y + (box.h + cap) / 2.0 - 0.12
+        tw = self.pdf.get_string_width(content)
         match align:
             case "center":
-                code = "C"
+                tx = box.x + (box.w - tw) / 2.0
             case "right":
-                code = "R"
+                tx = box.x + box.w - tw
             case _:
-                code = "L"
-        style = "B" if bold else ""
-        self.pdf.set_font("helvetica", style=style, size=size)
-        line_h = size * 0.352778
-        y = box.y + max(0.0, (box.h - line_h) / 2)
-        self.pdf.set_xy(box.x, y)
-        self.pdf.cell(box.w, line_h, content, align=code)
+                tx = box.x
+        self.pdf.text(tx, baseline, content)
 
     @override
     def link(self, box: Rect, dest: str) -> None:

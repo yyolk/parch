@@ -35,7 +35,8 @@ def test_book_records_dests_and_links():
     assert "Notes" in texts
     assert "Notes 1/2" in texts
     assert "Notes 2/2" in texts
-    assert "toolbar 8 mm - not a well" in texts
+    assert "Year Book" in texts
+    assert "toolbar 8 mm - not a well" not in texts
 
 
 def test_notes_pages_zero_skips_wells():
