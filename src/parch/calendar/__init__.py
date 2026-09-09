@@ -1,37 +1,46 @@
-"""Calendar entities (Day / Week / Month / Quarter) with Ruby-style succ ranges."""
+"""Slim calendar: one month, Monday-first weeks."""
 
-from collections.abc import Iterator
-from typing import Protocol, TypeVar
+import calendar as pycal
+from datetime import date
 
-from parch.calendar.day import WEEKDAYS, Day
-from parch.calendar.month import Month
-from parch.calendar.quarter import Quarter
-from parch.calendar.week import Week
-from parch.calendar.dated_note import DatedNote
+MONTH_NAMES = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
 
-T = TypeVar("T", bound="ComparableSucc")
+WEEKDAY_LABELS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+WEEKDAY_FULL = (
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+)
 
 
-class ComparableSucc(Protocol):
-    def succ(self) -> T: ...  # type: ignore[misc]
-
-    def __le__(self, other: object) -> bool: ...
+def month_name(month: int) -> str:
+    return MONTH_NAMES[month - 1]
 
 
-def walk(start: T, end: T) -> Iterator[T]:
-    """Inclusive range ``start..end`` using ``succ``, like Ruby."""
-    current = start
-    while current <= end:
-        yield current
-        current = current.succ()  # type: ignore[assignment]
+def weekday_labels(weekday_start: int) -> tuple[str, ...]:
+    return tuple(WEEKDAY_LABELS[(weekday_start + i) % 7] for i in range(7))
 
 
-__all__ = [
-    "WEEKDAYS",
-    "Day",
-    "Week",
-    "Month",
-    "Quarter",
-    "DatedNote",
-    "walk",
-]
+def month_weeks(year: int, month: int, weekday_start: int = 0) -> list[list[date | None]]:
+    cal = pycal.Calendar(firstweekday=weekday_start)
+    weeks: list[list[date | None]] = []
+    for week in cal.monthdatescalendar(year, month):
+        weeks.append([d if d.month == month else None for d in week])
+    return weeks

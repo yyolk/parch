@@ -1,4 +1,4 @@
-"""parch: Python port of kudrykv/LYP yearly e-ink planner."""
+"""parch: fixed e-ink PDF pages."""
 
 from importlib.metadata import PackageNotFoundError, version
 
@@ -12,9 +12,5 @@ class Error(Exception):
     """Base package error."""
 
 
-class InternalError(Error):
-    """Programming / invariant error."""
-
-
 class ConfigError(Error):
-    """Invalid or incomplete planner configuration."""
+    """Invalid or incomplete press spec."""

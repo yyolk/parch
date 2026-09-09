@@ -1,0 +1,56 @@
+"""Plotter protocol. Painters take ``plotter: Plotter``; they never see fpdf2."""
+
+from pathlib import Path
+from typing import Protocol
+
+from parch.geom import Rect
+
+
+class Plotter(Protocol):
+    def begin_page(self) -> None:
+        """Start a new page. Destinations bind to the current page."""
+
+    def reserve_dest(self, name: str) -> None:
+        """Reserve a named destination so earlier pages can link to it."""
+
+    def add_dest(self, name: str) -> None:
+        """Bind a named destination to the current page."""
+
+    def rect(
+        self,
+        box: Rect,
+        *,
+        stroke: bool = True,
+        fill: bool = False,
+        stroke_width: float = 0.2,
+        fill_gray: float = 0.92,
+    ) -> None:
+        """Stroke and/or fill a rectangle. ``fill_gray`` is 0 black … 1 white."""
+
+    def line(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        *,
+        stroke_width: float = 0.2,
+    ) -> None:
+        """Stroke a segment."""
+
+    def text(
+        self,
+        box: Rect,
+        content: str,
+        *,
+        size: float = 10,
+        align: str = "left",
+        bold: bool = False,
+    ) -> None:
+        """Draw a single line of text inside ``box`` (pt size)."""
+
+    def link(self, box: Rect, dest: str) -> None:
+        """Invisible hit target to a named destination."""
+
+    def finish(self, path: Path) -> None:
+        """Write the document to ``path``."""
