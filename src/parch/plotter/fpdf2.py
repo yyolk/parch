@@ -138,9 +138,13 @@ class Fpdf2Plotter(Plotter):
         *,
         stroke_width: float = 0.2,
         stroke_gray: float = 0.0,
+        stroke_rgb: tuple[int, int, int] | None = None,
     ) -> None:
         self.pdf.set_line_width(stroke_width)
-        self._draw(stroke_gray)
+        if stroke_rgb is not None:
+            self.pdf.set_draw_color(*stroke_rgb)
+        else:
+            self._draw(stroke_gray)
         self.pdf.line(x1, y1, x2, y2)
 
     @override

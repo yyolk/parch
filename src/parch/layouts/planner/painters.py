@@ -200,7 +200,8 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     dow_h = 4.2
     header = Rect(grid_x, box.y, grid_w, dow_h)
     for i, label in enumerate(grid.weekday_labels):
-        cell = Rect(header.x + i * col_w, header.y, col_w, header.h)
+        # Same inset + left align as day numerals so letters sit on the column they head.
+        cell = Rect(header.x + i * col_w + 0.5, header.y, col_w - 1.0, header.h)
         plotter.text(
             cell,
             label[0],
@@ -208,7 +209,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             face="sans",
             gray=MUTED,
             small_caps=True,
-            align="center",
+            align="left",
         )
     plotter.line(box.x, header.bottom, box.right, header.bottom, stroke_width=HAIR, stroke_gray=INK)
 
@@ -243,6 +244,10 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             if day.dest:
                 plotter.link(Rect(cx, y, col_w, row_h), day.dest)
         plotter.line(box.x, y + row_h, box.right, y + row_h, stroke_width=HAIR, stroke_gray=SOFT)
+    # Debug: day-column edges (not the week-gutter). Remove after yolk inspects alignment.
+    for i in range(8):
+        x = grid_x + i * col_w
+        plotter.line(x, box.y, x, box.bottom, stroke_width=HAIR, stroke_rgb=(255, 0, 0))
 
 
 def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
