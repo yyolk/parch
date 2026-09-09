@@ -1,28 +1,33 @@
 """Recording plotter for tests — same protocol, no PDF."""
 
 from pathlib import Path
+from typing import override
 
 from parch.geom import Rect
-from parch.plotter.protocol import TextAlign
+from parch.plotter.protocol import Plotter, TextAlign
 
 type Op = tuple[object, ...]
 
 
-class RecordingPlotter:
+class RecordingPlotter(Plotter):
     def __init__(self) -> None:
         self.ops: list[Op] = []
         self.page = 0
 
+    @override
     def begin_page(self) -> None:
         self.page += 1
         self.ops.append(("begin_page", self.page))
 
+    @override
     def reserve_dest(self, name: str) -> None:
         self.ops.append(("reserve_dest", name))
 
+    @override
     def add_dest(self, name: str) -> None:
         self.ops.append(("add_dest", name, self.page))
 
+    @override
     def rect(
         self,
         box: Rect,
@@ -34,6 +39,7 @@ class RecordingPlotter:
     ) -> None:
         self.ops.append(("rect", box, stroke, fill, stroke_width, fill_gray))
 
+    @override
     def line(
         self,
         x1: float,
@@ -45,6 +51,7 @@ class RecordingPlotter:
     ) -> None:
         self.ops.append(("line", x1, y1, x2, y2, stroke_width))
 
+    @override
     def text(
         self,
         box: Rect,
@@ -56,9 +63,11 @@ class RecordingPlotter:
     ) -> None:
         self.ops.append(("text", box, content, size, align, bold))
 
+    @override
     def link(self, box: Rect, dest: str) -> None:
         self.ops.append(("link", box, dest))
 
+    @override
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(repr(self.ops), encoding="utf-8")

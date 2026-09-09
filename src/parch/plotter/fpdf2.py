@@ -1,15 +1,16 @@
 """Single fpdf2-backed plotter."""
 
 from pathlib import Path
+from typing import override
 
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
 from parch.geom import Rect
-from parch.plotter.protocol import TextAlign
+from parch.plotter.protocol import Plotter, TextAlign
 
 
-class Fpdf2Plotter:
+class Fpdf2Plotter(Plotter):
     def __init__(self, device: Device) -> None:
         self.device = device
         self.pdf = FPDF(unit="mm", format=(device.page_width, device.page_height))
@@ -19,15 +20,19 @@ class Fpdf2Plotter:
         self.pdf.set_text_color(0)
         self.pdf.set_draw_color(0)
 
+    @override
     def begin_page(self) -> None:
         self.pdf.add_page()
 
+    @override
     def reserve_dest(self, name: str) -> None:
         self.pdf.set_link(name=name)
 
+    @override
     def add_dest(self, name: str) -> None:
         self.pdf.add_link(name=name)
 
+    @override
     def rect(
         self,
         box: Rect,
@@ -52,6 +57,7 @@ class Fpdf2Plotter:
         self.pdf.set_draw_color(0)
         self.pdf.rect(box.x, box.y, box.w, box.h, style=style)
 
+    @override
     def line(
         self,
         x1: float,
@@ -65,6 +71,7 @@ class Fpdf2Plotter:
         self.pdf.set_draw_color(0)
         self.pdf.line(x1, y1, x2, y2)
 
+    @override
     def text(
         self,
         box: Rect,
@@ -88,10 +95,12 @@ class Fpdf2Plotter:
         self.pdf.set_xy(box.x, y)
         self.pdf.cell(box.w, line_h, content, align=code)
 
+    @override
     def link(self, box: Rect, dest: str) -> None:
         target = dest if dest.startswith("#") else f"#{dest}"
         self.pdf.link(box.x, box.y, box.w, box.h, target)
 
+    @override
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.pdf.output(str(path))
