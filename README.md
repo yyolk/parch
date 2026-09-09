@@ -22,6 +22,11 @@ Source is rebuilt clean — no copy from #204 / #205 branches.
 Chrome is invented for this spike (black header slab + washed footer tabs).
 It does **not** copy MOS / rail / band.
 
+Type is **Liberation Serif** (titles / cover year) + **Liberation Sans**
+(chrome / calendars), vendored under SIL OFL 1.1. Small caps on labels and
+nav are a fake (uppercase at 0.76× with tracking) — fpdf2 has no `smcp`.
+See [NOTES.md](NOTES.md).
+
 ## Install and generate
 
 Python 3.12+.
@@ -66,7 +71,7 @@ the top of each page. Names look like `year`, `q1`, `month-01`,
 - `artifacts/specimen-2026.pdf` — 6 pages (cover, year, Q1, January, first week, 1 Jan).
 - `artifacts/specimen-2026-notes2.pdf` — same + 2 notes pages for 1 Jan (8 pages).
 - `artifacts/planner-2026.pdf` — full 2026 book, N=0 (436 pages, ~3.1 MB).
-- `artifacts/preview/` — PNG rasters of those landings (`cover`, `year`, `quarter`, `month`, `week`, `day`) plus notes pages.
+- `artifacts/preview/` — PNG rasters of those landings (`cover`, `year`, `quarter`, `month`, `week`, `day`) plus notes pages and `type-sample.png` (cover + day side-by-side).
 - Full-year N≥2 PDFs are **not** committed (N=100 was ~76 MB). Numbers: [BENCH.md](BENCH.md).
 
 ## CI

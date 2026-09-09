@@ -35,6 +35,8 @@ from planner.paint import (
     MUTED,
     PAGE_H,
     PAGE_W,
+    SANS,
+    SERIF,
     SOFT,
     WASH,
     Book,
@@ -126,10 +128,32 @@ def draw_cover(pdf: Book, year: int) -> None:
     stroke_rect(pdf, outer, outer, PAGE_W - 2 * outer, PAGE_H - 2 * outer, color=INK, width=HAIR)
     stroke_rect(pdf, inner, inner, PAGE_W - 2 * inner, PAGE_H - 2 * inner, color=INK, width=HAIR)
 
-    text_box(pdf, 0, 34, PAGE_W, 8, "YEAR BOOK", size=8.5, color=MUTED)
+    text_box(
+        pdf,
+        0,
+        34,
+        PAGE_W,
+        8,
+        "Year Book",
+        size=10,
+        family=SERIF,
+        color=MUTED,
+        small_caps=True,
+    )
     year_y, year_h = 54, 18
-    text_box(pdf, 0, year_y, PAGE_W, year_h, str(year), size=40, style="B", color=INK)
-    numeral_w = 42
+    text_box(
+        pdf,
+        0,
+        year_y,
+        PAGE_W,
+        year_h,
+        str(year),
+        size=42,
+        style="B",
+        family=SERIF,
+        color=INK,
+    )
+    numeral_w = 46
     pdf.tap((PAGE_W - numeral_w) / 2, year_y, numeral_w, year_h, dest_year())
     text_box(
         pdf,
@@ -137,9 +161,11 @@ def draw_cover(pdf: Book, year: int) -> None:
         80,
         CONTENT_W,
         6,
-        "monday weeks · 106 × 144 mm",
-        size=8,
+        "monday weeks  ·  106 × 144 mm",
+        size=8.2,
+        family=SANS,
         color=MUTED,
+        small_caps=True,
     )
     text_box(
         pdf,
@@ -148,8 +174,10 @@ def draw_cover(pdf: Book, year: int) -> None:
         CONTENT_W,
         5,
         "fpdf2 spike v2",
-        size=7,
+        size=7.2,
+        family=SANS,
         color=MUTED,
+        small_caps=True,
     )
 
 
@@ -179,7 +207,19 @@ def draw_quarter(pdf: Book, year: int, quarter: int) -> None:
         x = GUTTER + i * (mw + gap)
         mini_month(pdf, x, CONTENT_TOP, mw, mh, year, month)
     notes_y = CONTENT_TOP + mh + 3.4
-    text_box(pdf, GUTTER, notes_y, 20, 3.2, "notes", size=6.2, color=MUTED, align="L")
+    text_box(
+        pdf,
+        GUTTER,
+        notes_y,
+        24,
+        3.2,
+        "notes",
+        size=6.4,
+        family=SANS,
+        color=MUTED,
+        align="L",
+        small_caps=True,
+    )
     lined_rules(pdf, GUTTER, notes_y + 3.4, CONTENT_W, CONTENT_BOTTOM - (notes_y + 3.4), pitch=4.1)
 
 
@@ -194,7 +234,18 @@ def draw_month(pdf: Book, year: int, month: int) -> None:
     y = CONTENT_TOP
     dow_h = 4.2
     for i, letter in enumerate(DOW_LETTERS):
-        text_box(pdf, grid_x + i * cw, y, cw, dow_h, letter, size=6.6, color=MUTED)
+        text_box(
+            pdf,
+            grid_x + i * cw,
+            y,
+            cw,
+            dow_h,
+            letter,
+            size=6.6,
+            family=SANS,
+            color=MUTED,
+            small_caps=True,
+        )
     hairline(pdf, GUTTER, y + dow_h, PAGE_W - GUTTER, y + dow_h, color=INK, width=HAIR)
     y = y + dow_h + 0.6
     row_h = (CONTENT_BOTTOM - y) / max(len(weeks), 5)
@@ -208,9 +259,11 @@ def draw_month(pdf: Book, year: int, month: int) -> None:
             gutter - 0.4,
             row_h,
             f"W{iso:02d}",
-            size=5.6,
+            size=5.8,
+            family=SANS,
             color=MUTED,
             align="L",
+            small_caps=True,
         )
         pdf.tap(GUTTER, y, gutter, row_h, dest_week(monday))
         for di, day in enumerate(week):
@@ -263,10 +316,12 @@ def draw_week(pdf: Book, year: int, monday: date) -> None:
             rail - 1.0,
             3.6,
             DOW[i],
-            size=7,
+            size=7.2,
             style="B" if in_year else "",
+            family=SANS,
             color=INK if in_year else MUTED,
             align="L",
+            small_caps=True,
         )
         text_box(
             pdf,
@@ -276,6 +331,7 @@ def draw_week(pdf: Book, year: int, monday: date) -> None:
             3.2,
             f"{day.day} {MONTHS_ABBR[day.month - 1]}",
             size=5.8,
+            family=SANS,
             color=INK if in_year else MUTED,
             align="L",
         )
@@ -320,7 +376,18 @@ def _draw_chip_row(
         w = max(12.0, 2.4 + len(label) * 1.55)
         if dest is None:
             stroke_rect(pdf, x, y, w, h, color=SOFT, width=HAIR)
-            text_box(pdf, x, y, w, h, label, size=6.5, color=GHOST)
+            text_box(
+                pdf,
+                x,
+                y,
+                w,
+                h,
+                label,
+                size=6.6,
+                family=SANS,
+                color=GHOST,
+                small_caps=True,
+            )
         else:
             chip(pdf, x, y, w, h, label, dest)
         x += w + gap
@@ -338,9 +405,33 @@ def draw_day(pdf: Book, year: int, day: date, notes_pages: int) -> None:
     cal_h = 34.0
     mini_month(pdf, GUTTER, y, left_w, cal_h, year, day.month, highlight=day)
     more_y = y + cal_h + 2.2
-    text_box(pdf, GUTTER, more_y, left_w, 3.0, "more", size=6.2, color=MUTED, align="L")
+    text_box(
+        pdf,
+        GUTTER,
+        more_y,
+        left_w,
+        3.0,
+        "more",
+        size=6.4,
+        family=SANS,
+        color=MUTED,
+        align="L",
+        small_caps=True,
+    )
     lined_rules(pdf, GUTTER, more_y + 3.0, left_w, CONTENT_BOTTOM - (more_y + 3.0), pitch=4.0)
-    text_box(pdf, right_x, y, right_w, 3.0, "today", size=6.2, color=MUTED, align="L")
+    text_box(
+        pdf,
+        right_x,
+        y,
+        right_w,
+        3.0,
+        "today",
+        size=6.4,
+        family=SANS,
+        color=MUTED,
+        align="L",
+        small_caps=True,
+    )
     lined_rules(pdf, right_x, y + 3.0, right_w, CONTENT_BOTTOM - (y + 3.0), pitch=4.0)
 
 
@@ -357,5 +448,17 @@ def draw_notes(pdf: Book, year: int, day: date, n: int, notes_pages: int) -> Non
     else:
         items.append(("next", None))
     y = _draw_chip_row(pdf, CONTENT_TOP, items)
-    text_box(pdf, GUTTER, y, 20, 3.0, "notes", size=6.2, color=MUTED, align="L")
+    text_box(
+        pdf,
+        GUTTER,
+        y,
+        24,
+        3.0,
+        "notes",
+        size=6.4,
+        family=SANS,
+        color=MUTED,
+        align="L",
+        small_caps=True,
+    )
     lined_rules(pdf, GUTTER, y + 3.0, CONTENT_W, CONTENT_BOTTOM - (y + 3.0), pitch=4.15)

@@ -20,6 +20,26 @@ This v2 rebuilds the fpdf2 canvas and aims at that #205 bar. Shared
 on one rhythm. Header and nav are full-bleed. Notes are a pitch loop, not a
 sparse framed well. Still not parch chrome — no MOS, no rail, no house style.
 
+## Type (Liberation + fake small caps)
+
+Helvetica is gone. Vendored **Liberation Fonts 2.1.5** (SIL OFL 1.1) live in
+`src/planner/fonts/` — Regular + Bold for Sans and Serif. `Book` calls
+`add_font` once at construct.
+
+**Pairing:** Liberation **Serif** for titles and the cover year numeral;
+Liberation **Sans** for chrome, nav, calendars, chips, and labels.
+
+**Small caps:** fpdf2 has no OpenType `smcp`. This spike uses a practical
+fake: uppercase at **0.76×** the requested size, with **0.14 em** tracking
+between glyphs (`draw_smcp` / `text_box(..., small_caps=True)`). Applied to
+nav tabs, cover eyebrow + specs, header meta, month abbreviations, weekday
+letters, week-number gutter, and section labels (`notes` / `today` / `more`
+/ chips). Titles and calendar dates stay full-size mixed case / figures so
+the hierarchy still reads.
+
+Unicode is available now (Liberation is not a core Latin-1 font), so cover
+copy can keep `×` without the old Helvetica encode crash.
+
 ## Link model
 
 fpdf2 has two useful layers:

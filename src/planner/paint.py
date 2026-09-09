@@ -2,11 +2,15 @@
 
 fpdf2 user space is top-left, millimetres. `text()` y is a baseline;
 `link()` y is the top of the tap rectangle. Keep those separate.
+
+Type: Liberation Serif for titles / cover year; Liberation Sans for chrome,
+nav, calendars. Small caps are a fake (uppercase at SMCP_SCALE with tracking).
 """
 
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 from fpdf import FPDF
 
@@ -42,6 +46,12 @@ WASH = (236, 236, 236)
 RULE_C = (198, 198, 198)
 SOFT = (210, 210, 210)
 
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+SANS = "Sans"
+SERIF = "Serif"
+SMCP_SCALE = 0.76
+SMCP_TRACK_EM = 0.14
+
 
 class Book(FPDF):
     """Portrait 106 × 144 mm card. Dest map is filled before emit."""
@@ -53,6 +63,10 @@ class Book(FPDF):
         self.set_compression(True)
         self.dests = dests
         self._page_links: dict[int, int] = {}
+        self.add_font(SANS, "", str(FONT_DIR / "LiberationSans-Regular.ttf"))
+        self.add_font(SANS, "B", str(FONT_DIR / "LiberationSans-Bold.ttf"))
+        self.add_font(SERIF, "", str(FONT_DIR / "LiberationSerif-Regular.ttf"))
+        self.add_font(SERIF, "B", str(FONT_DIR / "LiberationSerif-Bold.ttf"))
 
     def link_to_page(self, page: int) -> int:
         handle = self._page_links.get(page)
@@ -80,6 +94,38 @@ def pt_mm(pt: float) -> float:
     return pt * 25.4 / 72.0
 
 
+def smcp_track(size: float) -> float:
+    return pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
+
+
+def smcp_width(pdf: Book, text: str, size: float, family: str, style: str) -> float:
+    chars = text.upper()
+    if not chars:
+        return 0.0
+    pdf.set_font(family, style, size * SMCP_SCALE)
+    track = smcp_track(size)
+    return sum(pdf.get_string_width(ch) for ch in chars) + track * (len(chars) - 1)
+
+
+def draw_smcp(
+    pdf: Book,
+    x: float,
+    baseline: float,
+    text: str,
+    size: float,
+    family: str,
+    style: str,
+) -> None:
+    chars = text.upper()
+    pdf.set_font(family, style, size * SMCP_SCALE)
+    track = smcp_track(size)
+    cx = x
+    last = len(chars) - 1
+    for i, ch in enumerate(chars):
+        pdf.text(cx, baseline, ch)
+        cx += pdf.get_string_width(ch) + (track if i < last else 0)
+
+
 def text_box(
     pdf: Book,
     x: float,
@@ -90,16 +136,22 @@ def text_box(
     *,
     size: float = 8,
     style: str = "",
+    family: str = SANS,
     color: tuple[int, int, int] = INK,
     align: str = "C",
+    small_caps: bool = False,
 ) -> None:
     """Optically centre `text` in a box. Baseline, not cell-top."""
     if not text:
         return
-    pdf.set_font("Helvetica", style, size)
     pdf.set_text_color(*color)
-    tw = pdf.get_string_width(text)
-    cap = pt_mm(size) * 0.72
+    if small_caps:
+        tw = smcp_width(pdf, text, size, family, style)
+        cap = pt_mm(size * SMCP_SCALE) * 0.72
+    else:
+        pdf.set_font(family, style, size)
+        tw = pdf.get_string_width(text)
+        cap = pt_mm(size) * 0.72
     baseline = y + (h + cap) / 2.0 - 0.12
     if align == "C":
         tx = x + (w - tw) / 2.0
@@ -107,7 +159,11 @@ def text_box(
         tx = x + w - tw
     else:
         tx = x
-    pdf.text(tx, baseline, text)
+    if small_caps:
+        draw_smcp(pdf, tx, baseline, text, size, family, style)
+    else:
+        pdf.set_font(family, style, size)
+        pdf.text(tx, baseline, text)
 
 
 def hairline(
@@ -162,8 +218,9 @@ def header(pdf: Book, title: str, meta: str) -> None:
         PAGE_W - 2 * GUTTER - meta_w - 1.5,
         HEADER_H,
         title,
-        size=10.5,
+        size=11,
         style="B",
+        family=SERIF,
         color=PAPER,
         align="L",
     )
@@ -174,10 +231,11 @@ def header(pdf: Book, title: str, meta: str) -> None:
         meta_w,
         HEADER_H,
         meta,
-        size=7.5,
-        style="",
+        size=7.4,
+        family=SANS,
         color=(210, 210, 210),
         align="R",
+        small_caps=True,
     )
 
 
@@ -207,9 +265,11 @@ def nav(pdf: Book, year: int, active: str) -> None:
             slot,
             NAV_H,
             label,
-            size=7.5,
+            size=7.6,
             style="B" if on else "",
+            family=SANS,
             color=PAPER if on else INK,
+            small_caps=True,
         )
         pdf.tap(x, y, slot, NAV_H, dest)
         if i and not on and items[i - 1][2] != active:
@@ -233,7 +293,7 @@ def chip(
     dest: str | None,
 ) -> None:
     stroke_rect(pdf, x, y, w, h, color=INK, width=HAIR)
-    text_box(pdf, x, y, w, h, label, size=6.5, color=INK)
+    text_box(pdf, x, y, w, h, label, size=6.6, family=SANS, color=INK, small_caps=True)
     pdf.tap(x, y, w, h, dest)
 
 
@@ -282,10 +342,12 @@ def mini_month(
         inner_w - 0.8,
         title_h,
         MONTHS_ABBR[month - 1],
-        size=7,
+        size=7.2,
         style="B",
+        family=SANS,
         color=INK,
         align="L",
+        small_caps=True,
     )
     pdf.tap(inner_x, y + 0.2, inner_w, title_h + 0.4, dest_month(month))
     grid_y = y + title_h + 0.6
@@ -298,8 +360,10 @@ def mini_month(
             cw,
             dow_h,
             letter,
-            size=5.2,
+            size=5.4,
+            family=SANS,
             color=MUTED,
+            small_caps=True,
         )
     weeks = mini_month_weeks(year, month)
     body_y = grid_y + dow_h
