@@ -11,6 +11,8 @@ on:
       - ready_for_review
 
 permissions:
+  contents: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -54,14 +56,14 @@ jobs:
 
           warning_body="⚠️ Forced this pull request to **draft** because the ${reason}.
 
-          Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.
-          ${MARKER}"
+Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.
+${MARKER}"
 
           waiting_body="DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.
-          ${MARKER}"
+${MARKER}"
 
           cleared_body="✅ DO NOT MERGE marker cleared. This pull request is ready for review.
-          ${MARKER}"
+${MARKER}"
 
           find_comment_id() {
             gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
