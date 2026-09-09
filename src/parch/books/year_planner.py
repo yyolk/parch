@@ -1,9 +1,9 @@
-"""Year planner book — MVP emits cover → one month → one day."""
+"""Year planner book — MVP emits cover → one month → one day → notes wells."""
 
 from parch.devices import get_device
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
-from parch.sections import CoverSection, DailySection, MonthSection, Page
+from parch.sections import CoverSection, DailyNotesSection, DailySection, MonthSection, Page
 from parch.spec import Spec
 
 
@@ -13,6 +13,7 @@ class YearPlanner:
             *CoverSection(spec).pages(),
             *MonthSection(spec).pages(),
             *DailySection(spec).pages(),
+            *DailyNotesSection(spec).pages(),
         ]
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

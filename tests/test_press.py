@@ -37,7 +37,7 @@ def test_press_mvp_pdf(tmp_path: Path):
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    assert len(reader.pages) == 3
+    assert len(reader.pages) == 5
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -47,6 +47,8 @@ def test_press_mvp_pdf(tmp_path: Path):
     assert "cover" in dests
     assert "month-2026-01" in dests
     assert "2026-01-05" in dests
+    assert "2026-01-05-notes-1" in dests
+    assert "2026-01-05-notes-2" in dests
     assert _link_count(reader) >= 1
 
 
@@ -56,4 +58,4 @@ def test_cli_press_toml(tmp_path: Path):
     out = tmp_path / "job.pdf"
     assert main(["press", str(spec), "-o", str(out)]) == 0
     assert out.is_file()
-    assert len(PdfReader(out).pages) == 3
+    assert len(PdfReader(out).pages) == 5

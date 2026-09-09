@@ -2,17 +2,19 @@
 %éëñ¿
 1 0 obj
 <<
-/Count 3
+/Count 5
 /Kids [3 0 R
 5 0 R
-7 0 R]
+7 0 R
+9 0 R
+11 0 R]
 /MediaBox [0 0 336.95 449.29]
 /Type /Pages
 >>
 endobj
 2 0 obj
 <<
-/Names <</Dests <</Names [(2026-01-05) [7 0 R /XYZ 0.0 449.29 null] (cover) [3 0 R /XYZ 0.0 449.29 null] (month-2026-01) [5 0 R /XYZ 0.0 449.29 null]]>>>>
+/Names <</Dests <</Names [(2026-01-05) [7 0 R /XYZ 0.0 449.29 null] (2026-01-05-notes-1) [9 0 R /XYZ 0.0 449.29 null] (2026-01-05-notes-2) [11 0 R /XYZ 0.0 449.29 null] (cover) [3 0 R /XYZ 0.0 449.29 null] (month-2026-01) [5 0 R /XYZ 0.0 449.29 null]]>>>>
 /OpenAction [3 0 R /FitH null]
 /PageLayout /OneColumn
 /Pages 1 0 R
@@ -35,7 +37,7 @@ endobj
 /Type /Annot>>]
 /Contents 4 0 R
 /Parent 1 0 R
-/Resources 11 0 R
+/Resources 15 0 R
 /Type /Page
 >>
 endobj
@@ -71,7 +73,7 @@ endobj
 /Type /Annot>>]
 /Contents 6 0 R
 /Parent 1 0 R
-/Resources 12 0 R
+/Resources 16 0 R
 /Type /Page
 >>
 endobj
@@ -94,32 +96,114 @@ endobj
 /Annots [<</Border [0 0 0]
 /Dest (cover)
 /F 4
-/Rect [184.19 403.94 252.64 423.78]
+/Rect [184.19 403.94 229.06 423.78]
 /Subtype /Link
 /Type /Annot>>
 <</Border [0 0 0]
 /Dest (month-2026-01)
 /F 4
-/Rect [254.90 403.94 323.35 423.78]
+/Rect [231.33 403.94 276.21 423.78]
+/Subtype /Link
+/Type /Annot>>
+<</Border [0 0 0]
+/Dest (2026-01-05-notes-1)
+/F 4
+/Rect [278.47 403.94 323.35 423.78]
 /Subtype /Link
 /Type /Annot>>]
 /Contents 8 0 R
 /Parent 1 0 R
-/Resources 13 0 R
+/Resources 17 0 R
 /Type /Page
 >>
 endobj
 8 0 obj
 <<
 /Filter /FlateDecode
-/Length 662
+/Length 672
 >>
 stream
-xœ•Ïn1Æï}Š9Â!ƒg<şwÁ¡H¨yBÓV(mD)ôõ¯½»/•¸$ùâß~cöx./Š‡ı*Bwú#¤Iç”eÒÎHA.à}Ä`ÇŒ1ÃÓn×Ç+Å#ÁÃÌu}„«‹÷{x÷‰ Vl÷?Aÿ#0zå)ÀşÜÁ›çÓéøíú	2<<ÀOÏp/‡ãñ-ìè³ğUë%Ò²DèÄ’«uYíxÖK]å†Â‚”@HW—ºŸOl9¦¨IPÖ‡Š®ÊcÊ3ŠÀ
-jLÅ²Æ<”b—0i:Yk}8ı9<­µ8÷ºwsÊSîƒÓåõã+¹øêˆ'~çuş®˜¹òf®”êîûì‘h)põışpóûxX«tû0<cv³6Ûşmr^ì!m"ïş¾ÔMZı›>Îqt7Ê˜×³y3MÇ˜ÄØ4=ØÔlµöbSF=­6]6Òx·!·±aİTZ×£+ÖˆˆF*¾îébÓõ`CÉÛ¾"ŞØİ"“M×£¶gZ³!¿±a×¶iz´q½ÉFF›Ö_‹K“ƒIô˜M0aôm6“K“cº	Å¤7Ë™>×ÕL²zÌİ%T2·—ÎSÂµ—N'ÈØ__NÏ‡_fİ}î®~©™îš»D“‚!×³RAF¦YWp&Ô1$C4m	–s¢iKè-¢!š6½LÃJtm	=AÑ´%B<'š¶„^Á¢iKè@`C4m	§Q’!š6eÍĞ­D×–HtN4m	½Ò¥¢iKx=ˆfçº¶„6’˜}éÚ®_3á–‹ 9MšñXj7,ãMšñÀõe´Œ7iOÆÔæøUy–åÙx“uü/7vÁ¡
+xœ”ÍnS1…÷}ŠYÂ"ƒgü¿Á¢H¨yBÓ"”6¢úúŒ¯íë‰/l’œøÜoî{ÌpyaĞYx–¯ìˆáN~ø¸è“[´1à\FÎ`mÀìaÇŒ!ÁãnÇãÅÅÁ}÷5}„«‹·{xó ÛşŞï/~€üGÖc°àÄOö7`à^=NÇ/×àşvğpz‚kx>¯aÿ]…ÏR/’”%BëÀB2¥.»^ë2ˆo*ì"8’nÃZ÷ãé¼®Ñ“a
+’%y(KWc’H$!ØQF‰I¢X{Ls©ì1©EèF­w§ß‡ÇQ‹­tb_f/$v-Ï¤ËëÅ‰	]ü'›˜8ŸNO‡Ÿ/$l¥	ƒxybg%	“U×¼í:–sd“E¢µÄÕ×o‡›_ÇÃ¨ÒğÑ£Ï²d“éZœøw¼÷ÈiÅCÜl^ãÛ\¶{ğ«>ö@¦q
+!m^Ó0F§0UON\j¯˜<c8´40MÏW‡¥aÈl0,ÛªBkzÆ˜Œ~DD4c(Û²§+¦é	CÑê	%Ş`¼l‘Ê¦é#ƒG6d76õ
+é˜ªgŒ1hU6nÆÔI])UN`1©`üÌa‹*—*çt#:•JØ´³|nY}º•FúxÉ{ÊAø¯ñ’×ñn¯i„;½OW»Õtõ)‘‹"ŠÑ§rVŠ‘‘©ëbì!ú¨Uk»sGÕÚab¹t‡£jå(÷“÷ÃÑ´vÈqôN9ªÖÎUk‡\Ş*GÕÚ!•£jí0%)GÕÊAI24ÃÑ´vD:wT­Ş¡ËÊQµvX9ˆjçšÖ$§ö¥ií0í"è³^Í‘Â™¡Jµr™†u½JµîåbT[R¥>Ë¨ãWäY–gëU–õ?ªÕÒ
 endstream
 endobj
 9 0 obj
+<<
+/Annots [<</Border [0 0 0]
+/Dest (cover)
+/F 4
+/Rect [184.19 403.94 229.06 423.78]
+/Subtype /Link
+/Type /Annot>>
+<</Border [0 0 0]
+/Dest (month-2026-01)
+/F 4
+/Rect [231.33 403.94 276.21 423.78]
+/Subtype /Link
+/Type /Annot>>
+<</Border [0 0 0]
+/Dest (2026-01-05)
+/F 4
+/Rect [278.47 403.94 323.35 423.78]
+/Subtype /Link
+/Type /Annot>>]
+/Contents 10 0 R
+/Parent 1 0 R
+/Resources 18 0 R
+/Type /Page
+>>
+endobj
+10 0 obj
+<<
+/Filter /FlateDecode
+/Length 464
+>>
+stream
+xœ…’ËAE÷ù
+/aOùQ¯-#„È‘i”¤Eˆ˜ßÇ•ê¤ÜA#VÉé:m·o™áqP^í§2%x¶?1_¸ä¢T+r‘„5ÂšSÓÆëÍâ„‰àpõfŞÃ÷Õ‡<|&HMÛ<Á§ÍêØ3’ˆI@Í§›ŸàŞ§iÿc{‚‡¬á8a¯»ış=l^ì]øfı2Y["„Z_¶r|å[_óî+R%›6İú~™è}£e<TìÍj£	æb¹XL°¦Š–•åq´Ü÷«k²†„:~œşìN£‹#o×¾TbÍ(|_éq{turAÍÿ«S¦z_'¾±Ø÷[b¹qµX
+¡º‰ùß‰s[$)‚D·ò_§óî÷2à¹~ë¸Â™ÛÎ7`³y±`,‘éÊÍ›¥ÖwÀº:;!ä¶Cè<®¶5q3;!FuBg'Ä´:;A*FqBg'ØóÈNèì„`’:Š%†0³2-…ÎNˆŠZĞÙ	’QİeÍìmQ‡ĞÙ	AÚv¡óJZœwÇ©¢º›ê8#£ºkèè6á²ón×úÇÛñ_7­
+endstream
+endobj
+11 0 obj
+<<
+/Annots [<</Border [0 0 0]
+/Dest (cover)
+/F 4
+/Rect [184.19 403.94 229.06 423.78]
+/Subtype /Link
+/Type /Annot>>
+<</Border [0 0 0]
+/Dest (month-2026-01)
+/F 4
+/Rect [231.33 403.94 276.21 423.78]
+/Subtype /Link
+/Type /Annot>>
+<</Border [0 0 0]
+/Dest (2026-01-05)
+/F 4
+/Rect [278.47 403.94 323.35 423.78]
+/Subtype /Link
+/Type /Annot>>]
+/Contents 12 0 R
+/Parent 1 0 R
+/Resources 19 0 R
+/Type /Page
+>>
+endobj
+12 0 obj
+<<
+/Filter /FlateDecode
+/Length 464
+>>
+stream
+xœ…’ËAE÷ù
+/aOùQ¯-#„È‘i”¤Eˆ˜ßÇ•ê¤ÜA#VÉé:m·o™áqP^í§2%x¶?1_¸ä¢T+r‘„5ÂšSÓÆëÍâ„‰àpõfŞÃ÷Õ‡<|&HMÛ<Á§ÍêØ3’ˆI@Í§›ŸàŞ§iÿc{‚‡¬á8a¯»ış=l^ì]øfı2Y["„Z_¶r|å[_óî+R%›6İú~™ø}£e<TìÍj£	æb¹XL°¦Š–•åq´Ü÷«k²†„:~œşìN£‹#o×¾TbÍ(|_éq{turAÍÿ«S¦z_'¾±Ø÷[b¹qµX
+¡º‰ùß‰s[$)‚D·ò_§óî÷2à¹~ë¸Â™ÛÎ7`³y±`,‘éÊÍ›¥ÖwÀº:;!ä¶Cè<®¶5q3;!FuBg'Ä´:;A*FqBg'ØóÈNèì„`’:Š%†0³2-…ÎNˆŠZĞÙ	’QİeÍìmQ‡ĞÙ	AÚv¡óJZœwÇ©¢º›ê8#£ºkèè6á²ón×úÇÛñ_X¯
+endstream
+endobj
+13 0 obj
 <<
 /BaseFont /Helvetica
 /Encoding /WinAnsiEncoding
@@ -127,7 +211,7 @@ endobj
 /Type /Font
 >>
 endobj
-10 0 obj
+14 0 obj
 <<
 /BaseFont /Helvetica-Bold
 /Encoding /WinAnsiEncoding
@@ -135,56 +219,76 @@ endobj
 /Type /Font
 >>
 endobj
-11 0 obj
+15 0 obj
 <<
-/Font <</F1 9 0 R
-/F2 10 0 R>>
+/Font <</F1 13 0 R
+/F2 14 0 R>>
 /ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
 >>
 endobj
-12 0 obj
+16 0 obj
 <<
-/Font <</F1 9 0 R
-/F2 10 0 R>>
+/Font <</F1 13 0 R
+/F2 14 0 R>>
 /ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
 >>
 endobj
-13 0 obj
+17 0 obj
 <<
-/Font <</F1 9 0 R
-/F2 10 0 R>>
+/Font <</F1 13 0 R
+/F2 14 0 R>>
 /ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
 >>
 endobj
-14 0 obj
+18 0 obj
 <<
-/CreationDate (D:20260909042044Z)
+/Font <</F1 13 0 R
+/F2 14 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+19 0 obj
+<<
+/Font <</F1 13 0 R
+/F2 14 0 R>>
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+>>
+endobj
+20 0 obj
+<<
+/CreationDate (D:20260909043952Z)
 >>
 endobj
 xref
-0 15
+0 21
 0000000000 65535 f 
 0000000015 00000 n 
-0000000114 00000 n 
-0000000372 00000 n 
-0000000684 00000 n 
-0000001083 00000 n 
-0000001491 00000 n 
-0000002276 00000 n 
-0000002581 00000 n 
-0000003315 00000 n 
-0000003412 00000 n 
-0000003515 00000 n 
-0000003614 00000 n 
-0000003713 00000 n 
-0000003812 00000 n 
+0000000127 00000 n 
+0000000486 00000 n 
+0000000798 00000 n 
+0000001197 00000 n 
+0000001605 00000 n 
+0000002390 00000 n 
+0000002811 00000 n 
+0000003555 00000 n 
+0000003969 00000 n 
+0000004506 00000 n 
+0000004921 00000 n 
+0000005458 00000 n 
+0000005556 00000 n 
+0000005659 00000 n 
+0000005759 00000 n 
+0000005859 00000 n 
+0000005959 00000 n 
+0000006059 00000 n 
+0000006159 00000 n 
 trailer
 <<
-/Size 15
+/Size 21
 /Root 2 0 R
-/Info 14 0 R
-/ID [<377BA19FFEEA9367540DF268FDA2C837><377BA19FFEEA9367540DF268FDA2C837>]
+/Info 20 0 R
+/ID [<ED1D11CF872A76506972141D74F7B353><ED1D11CF872A76506972141D74F7B353>]
 >>
 startxref
-3868
+6215
 %%EOF

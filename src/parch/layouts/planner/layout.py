@@ -49,6 +49,10 @@ class PlannerLayout:
             paint_schedule(plotter, left, schedule)
             paint_notes(plotter, right, notes)
             return
+        if page.kind == "daily_notes":
+            notes = _one(page, Notes)
+            paint_notes(plotter, well, notes)
+            return
         raise ValueError(f"unknown page kind {page.kind!r}")
 
 

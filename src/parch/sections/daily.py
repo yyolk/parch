@@ -13,15 +13,18 @@ class DailySection:
         day = spec.date
         weekday = WEEKDAY_FULL[day.weekday()]
         hours = tuple(range(spec.schedule_from, spec.schedule_to + 1))
+        nav = [
+            NavItem("Cover", spec.cover_dest),
+            NavItem(month_name(spec.month)[:3], spec.month_dest),
+        ]
+        if spec.notes_pages > 0:
+            nav.append(NavItem("Notes", spec.notes_dest(1)))
         return [
             Page(
                 dest=spec.day_dest,
                 kind="daily",
                 title=f"{weekday[:3]} {day.day}",
-                nav=(
-                    NavItem("Cover", spec.cover_dest),
-                    NavItem(month_name(spec.month)[:3], spec.month_dest),
-                ),
+                nav=tuple(nav),
                 components=(
                     Schedule(label="Schedule", hours=hours),
                     Notes(label="Notes"),

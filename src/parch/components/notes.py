@@ -1,4 +1,4 @@
-"""Lined notes well — data only."""
+"""Lined notes well — data only. Used on the daily seat and on daily_notes pages."""
 
 from dataclasses import dataclass
 

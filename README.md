@@ -39,7 +39,7 @@ uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
 uv run python -m parch press supernote-nomad -o parch.pdf
 ```
 
-Default spec is year 2026, Monday week start, January, daily page 5 Jan. The PDF is cover → one month → one daily (schedule strip + notes), with named destinations and internal links.
+Default spec is year 2026, Monday week start, January, daily page 5 Jan, `notes_pages = 2`. The PDF is cover → one month → one daily (schedule strip + notes) → two lined daily_notes wells, with named destinations and internal links (daily → notes-1, notes → daily/month/cover).
 
 Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) and the PNG page previews beside it.
 

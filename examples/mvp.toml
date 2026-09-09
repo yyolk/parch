@@ -1,4 +1,4 @@
-# Greenfield Nomad MVP — cover → January 2026 → Monday 5 January.
+# Greenfield Nomad MVP — cover → January 2026 → Monday 5 January → notes x2.
 year = 2026
 device = "supernote-nomad"
 week_start = "monday"
@@ -9,3 +9,4 @@ title = "Year planner"
 [daily]
 schedule_from = 7
 schedule_to = 16
+notes_pages = 2
