@@ -50,9 +50,8 @@ class RecordingPlotter(Plotter):
         *,
         stroke_width: float = 0.2,
         stroke_gray: float = 0.0,
-        stroke_rgb: tuple[int, int, int] | None = None,
     ) -> None:
-        self.ops.append(("line", x1, y1, x2, y2, stroke_width, stroke_gray, stroke_rgb))
+        self.ops.append(("line", x1, y1, x2, y2, stroke_width, stroke_gray))
 
     @override
     def text(

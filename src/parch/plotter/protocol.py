@@ -40,9 +40,8 @@ class Plotter(Protocol):
         *,
         stroke_width: float = 0.2,
         stroke_gray: float = 0.0,
-        stroke_rgb: tuple[int, int, int] | None = None,
     ) -> None:
-        """Stroke a segment. ``stroke_rgb`` overrides gray (debug overlays)."""
+        """Stroke a segment."""
 
     def text(
         self,

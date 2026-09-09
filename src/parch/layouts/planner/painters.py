@@ -8,6 +8,7 @@ from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
+from parch.tracks import columns, rows
 
 HAIR = 0.18
 RULE = 0.12
@@ -194,16 +195,16 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
 
 def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     gutter = 8.0
-    grid_x = box.x + gutter
-    grid_w = box.w - gutter
-    col_w = grid_w / 7
+    day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
+    tracks = columns(day_grid, 7)
     dow_h = 4.2
-    header = Rect(grid_x, box.y, grid_w, dow_h)
+    header = Rect(day_grid.x, box.y, day_grid.w, dow_h)
+    # Shared inset + left align for weekday letters and day numerals.
+    inset = 0.5
     for i, label in enumerate(grid.weekday_labels):
-        # Same inset + left align as day numerals so letters sit on the column they head.
-        cell = Rect(header.x + i * col_w + 0.5, header.y, col_w - 1.0, header.h)
+        col = tracks[i]
         plotter.text(
-            cell,
+            Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
             size=6.6,
             face="sans",
@@ -213,17 +214,14 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
         )
     plotter.line(box.x, header.bottom, box.right, header.bottom, stroke_width=HAIR, stroke_gray=INK)
 
-    body_y = header.bottom + 0.6
-    rows = max(1, len(grid.weeks))
-    row_h = (box.bottom - body_y) / rows
-    for r, week in enumerate(grid.weeks):
-        y = body_y + r * row_h
+    body = Rect(box.x, header.bottom + 0.6, box.w, box.bottom - header.bottom - 0.6)
+    bands = rows(body, max(1, len(grid.weeks)))
+    for r, (band, week) in enumerate(zip(bands, grid.weeks, strict=False)):
         monday = _week_monday(grid, week, r)
         if monday is not None:
             iso = monday.isocalendar().week
-            gutter_box = Rect(box.x, y, gutter - 0.4, row_h)
             plotter.text(
-                gutter_box,
+                Rect(box.x, band.y, gutter - 0.4, band.h),
                 f"W{iso:02d}",
                 size=5.8,
                 face="sans",
@@ -232,22 +230,24 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
                 align="left",
             )
             if r < len(grid.week_dests) and grid.week_dests[r]:
-                plotter.link(Rect(box.x, y, gutter, row_h), grid.week_dests[r])
+                plotter.link(Rect(box.x, band.y, gutter, band.h), grid.week_dests[r])
         for c, day in enumerate(week):
             if day.day is None:
                 continue
-            cx = grid_x + c * col_w
-            num = Rect(cx + 0.5, y + 0.7, col_w - 1.0, 5.4)
+            col = tracks[c]
+            cell = Rect(col.x, band.y, col.w, band.h)
             plotter.text(
-                num, str(day.day), size=8.5, bold=True, face="sans", gray=INK, align="left"
+                Rect(cell.x + inset, cell.y + 0.7, cell.w - 2 * inset, 5.4),
+                str(day.day),
+                size=8.5,
+                bold=True,
+                face="sans",
+                gray=INK,
+                align="left",
             )
             if day.dest:
-                plotter.link(Rect(cx, y, col_w, row_h), day.dest)
-        plotter.line(box.x, y + row_h, box.right, y + row_h, stroke_width=HAIR, stroke_gray=SOFT)
-    # Debug: day-column edges (not the week-gutter). Remove after yolk inspects alignment.
-    for i in range(8):
-        x = grid_x + i * col_w
-        plotter.line(x, box.y, x, box.bottom, stroke_width=HAIR, stroke_rgb=(255, 0, 0))
+                plotter.link(cell, day.dest)
+        plotter.line(box.x, band.bottom, box.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
