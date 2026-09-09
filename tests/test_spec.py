@@ -7,6 +7,10 @@ def test_dest_names_from_tstrings():
     spec = Spec()
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
+    assert spec.months == (1, 2, 3)
+    assert spec.month == 1
+    assert spec.presses(3)
+    assert not spec.presses(4)
     assert spec.month_dest == "month-2026-01"
     assert spec.dest_for_month(1) == "month-2026-01"
     assert spec.day_dest == "2026-01-05"

@@ -14,6 +14,15 @@ _WEEK_STARTS = {"monday": 0, "sunday": 6}
 type TomlTable = dict[str, object]
 
 
+def _parse_months(data: TomlTable) -> tuple[int, ...]:
+    raw = data.get("months")
+    if isinstance(raw, list) and raw:
+        return tuple(int(month) for month in raw)
+    if "month" in data:
+        return (int(data["month"]),)
+    return (1, 2, 3)
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -33,7 +42,7 @@ class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
     week_start: str = "monday"
-    month: int = 1
+    months: tuple[int, ...] = (1, 2, 3)
     day: int = 5
     title: str = "Year planner"
     schedule_from: int = 7
@@ -43,8 +52,15 @@ class Spec:
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
             raise ConfigError(f"week_start must be monday or sunday, not {self.week_start!r}")
-        if not 1 <= self.month <= 12:
-            raise ConfigError(f"month out of range: {self.month}")
+        if not self.months:
+            raise ConfigError("months must not be empty")
+        seen: set[int] = set()
+        for month in self.months:
+            if not 1 <= month <= 12:
+                raise ConfigError(f"month out of range: {month}")
+            if month in seen:
+                raise ConfigError(f"duplicate month {month}")
+            seen.add(month)
         last = calendar.monthrange(self.year, self.month)[1]
         if not 1 <= self.day <= last:
             raise ConfigError(f"day {self.day} is not in {self.year}-{self.month:02d}")
@@ -56,6 +72,14 @@ class Spec:
     @property
     def weekday_start(self) -> int:
         return _WEEK_STARTS[self.week_start]
+
+    @property
+    def month(self) -> int:
+        """First pressed month — MON landing for year/cover."""
+        return self.months[0]
+
+    def presses(self, month: int) -> bool:
+        return month in self.months
 
     @property
     def date(self) -> date:
@@ -111,7 +135,7 @@ class Spec:
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
             week_start=str(data.get("week_start", "monday")).lower(),
-            month=int(data.get("month", 1)),
+            months=_parse_months(data),
             day=int(data.get("day", 5)),
             title=str(data.get("title", "Year planner")),
             schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),

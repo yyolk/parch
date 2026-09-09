@@ -1,17 +1,18 @@
 from parch.books import YearPlanner
-from parch.calendar import month_days, month_touching_weeks
+from parch.calendar import month_days, months_touching_weeks
 from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, Schedule, WeekStrip
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 
-def _january_dests(*, notes_pages: int) -> list[str]:
+def _q1_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
-    dests = ["cover", spec.year_dest, "month-2026-01"]
-    for week in month_touching_weeks(2026, 1, weekday_start=0):
+    dests = ["cover", spec.year_dest]
+    dests.extend(spec.dest_for_month(month) for month in spec.months)
+    for week in months_touching_weeks(2026, spec.months, weekday_start=0):
         dests.append(spec.dest_for_week(week[0]))
         for day in week:
-            if day.month != 1:
+            if not spec.presses(day.month):
                 continue
             dests.append(day.isoformat())
             if notes_pages:
@@ -24,22 +25,27 @@ def test_components_do_not_draw():
         assert "draw" not in cls.__dict__
 
 
-def test_book_records_january_dests_and_links():
+def test_book_records_q1_dests_and_links():
     spec = Spec(notes_pages=1)
     plotter = RecordingPlotter()
     YearPlanner().plot(spec, plotter)
 
     dests = plotter.dests()
-    days = month_days(2026, 1)
-    assert dests == _january_dests(notes_pages=1)
+    assert dests == _q1_dests(notes_pages=1)
+    assert dests.count("week-2026-W05") == 1
+    assert dests.count("week-2026-W09") == 1
 
     links = plotter.links()
     assert "year-2026" in links
     assert "month-2026-01" in links
+    assert "month-2026-02" in links
+    assert "month-2026-03" in links
     assert "week-2026-W01" in links
-    for day in days:
-        assert day.isoformat() in links
-    assert "2026-01-05-notes-1" in links
+    assert "week-2026-W14" in links
+    for month in spec.months:
+        for day in month_days(2026, month):
+            assert day.isoformat() in links
+    assert "2026-02-15-notes-1" in links
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Schedule" in texts
@@ -47,6 +53,7 @@ def test_book_records_january_dests_and_links():
     assert "Notes 1/1" in texts
     assert "Year Book" in texts
     assert "Week 01" in texts
+    assert "February 2026" in texts
     assert "toolbar 8 mm - not a well" not in texts
 
 
@@ -54,6 +61,6 @@ def test_notes_pages_zero_skips_wells():
     plotter = RecordingPlotter()
     YearPlanner().plot(Spec(notes_pages=0), plotter)
     dests = plotter.dests()
-    assert dests == _january_dests(notes_pages=0)
+    assert dests == _q1_dests(notes_pages=0)
     assert not any("-notes-" in name for name in dests)
     assert "2026-01-05-notes-1" not in plotter.links()

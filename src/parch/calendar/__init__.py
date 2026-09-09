@@ -52,6 +52,23 @@ def month_touching_weeks(year: int, month: int, weekday_start: int = 0) -> list[
     return [list(week) for week in cal.monthdatescalendar(year, month)]
 
 
+def months_touching_weeks(
+    year: int, months: tuple[int, ...], weekday_start: int = 0
+) -> list[list[date]]:
+    """ISO/Monday weeks that touch any of ``months``, each week once (first seen)."""
+    seen: set[tuple[int, int]] = set()
+    out: list[list[date]] = []
+    for month in months:
+        for week in month_touching_weeks(year, month, weekday_start):
+            monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+            key = (monday.isocalendar().year, monday.isocalendar().week)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(week)
+    return out
+
+
 def iso_monday(day: date) -> date:
     """Monday of the ISO week that contains ``day`` (weekday_start=monday books)."""
     return day - timedelta(days=day.weekday())

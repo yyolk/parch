@@ -1,6 +1,6 @@
-"""Year planner book — cover → annual → month → each touching week, then days."""
+"""Year planner book — cover → annual → Q1 months → each touching week once, then days."""
 
-from parch.calendar import month_touching_weeks
+from parch.calendar import months_touching_weeks
 from parch.devices import get_device
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
@@ -26,10 +26,10 @@ class YearPlanner:
             *AnnualSection(spec).pages(),
             *MonthSection(spec).pages(),
         ]
-        for week in month_touching_weeks(spec.year, spec.month, spec.weekday_start):
+        for week in months_touching_weeks(spec.year, spec.months, spec.weekday_start):
             built.extend(weekly.pages_for(week))
             for day in week:
-                if day.month != spec.month:
+                if not spec.presses(day.month):
                     continue
                 built.extend(daily.pages_for(day))
                 built.extend(notes.pages_for(day))

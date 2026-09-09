@@ -38,7 +38,7 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         "year": spec.year,
         "device": spec.device,
         "week_start": spec.week_start,
-        "month": spec.month,
+        "months": list(spec.months),
         "day": spec.day,
         "title": spec.title,
         "schedule_from": spec.schedule_from,
@@ -48,7 +48,7 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
     if year is not None:
         data["year"] = year
     if month is not None:
-        data["month"] = month
+        data["months"] = [month]
     if day is not None:
         data["day"] = day
     return Spec.from_mapping(data)

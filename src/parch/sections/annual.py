@@ -14,7 +14,7 @@ class AnnualSection:
         labels = weekday_labels(spec.weekday_start)
         months: list[AnnualMonth] = []
         for month in range(1, 13):
-            pressed = month == spec.month
+            pressed = spec.presses(month)
             weeks = []
             for week in month_weeks(spec.year, month, spec.weekday_start):
                 cells = []

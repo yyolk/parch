@@ -1,7 +1,7 @@
 from datetime import date
 
 from parch.books import YearPlanner
-from parch.calendar import month_touching_weeks
+from parch.calendar import month_touching_weeks, months_touching_weeks
 from parch.layouts.planner.painters import strip_active, strip_items
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
@@ -16,19 +16,32 @@ def test_january_2026_touching_weeks():
     assert weeks[-1][-1] == date(2026, 2, 1)
 
 
+def test_q1_weeks_are_unique():
+    weeks = months_touching_weeks(2026, (1, 2, 3), weekday_start=0)
+    keys = [week[0].isocalendar()[:2] for week in weeks]
+    assert len(keys) == len(set(keys))
+    assert len(weeks) == 14
+    assert weeks[0][0] == date(2025, 12, 29)
+    assert weeks[-1][-1] == date(2026, 4, 5)
+
+
 def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[0:4] == ["cover", "year-2026", "month-2026-01", "week-2026-W01"]
+    assert dests[0:6] == [
+        "cover",
+        "year-2026",
+        "month-2026-01",
+        "month-2026-02",
+        "month-2026-03",
+        "week-2026-W01",
+    ]
     assert dests.index("week-2026-W02") < dests.index("2026-01-05")
     assert dests.index("week-2026-W05") < dests.index("2026-01-26")
+    assert dests.index("month-2026-02") < dests.index("week-2026-W01")
     assert [name for name in dests if name.startswith("week-")] == [
-        "week-2026-W01",
-        "week-2026-W02",
-        "week-2026-W03",
-        "week-2026-W04",
-        "week-2026-W05",
+        f"week-2026-W{week:02d}" for week in range(1, 15)
     ]
 
     month = next(page for page in pages if page.dest == "month-2026-01")
@@ -54,17 +67,23 @@ def test_week_dests_and_nav_strip():
     assert ("Week", "week-2026-W03") in strip_items(notes)
     assert strip_active(notes.kind) == "Notes"
 
+    feb = next(page for page in pages if page.dest == "month-2026-02")
+    assert strip_items(feb)[1] == ("Mon", "month-2026-02")
 
-def test_week_pages_link_in_month_days_only():
+
+def test_week_pages_link_pressed_days_only():
     spec = Spec(notes_pages=1)
     plotter = RecordingPlotter()
     YearPlanner().plot(spec, plotter)
     links = plotter.links()
+    dests = plotter.dests()
     assert "week-2026-W01" in links
-    assert "week-2026-W05" in links
+    assert "week-2026-W14" in links
     assert "2026-01-01" in links
-    assert "2025-12-29" not in plotter.dests()
-    assert "2026-02-01" not in plotter.dests()
+    assert "2026-02-01" in dests
+    assert "2026-03-31" in dests
+    assert "2025-12-29" not in dests
+    assert "2026-04-01" not in dests
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Week 01" in texts

@@ -16,14 +16,14 @@ class WeeklySection:
         monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
         sunday = monday + timedelta(days=6)
         iso = monday.isocalendar()
-        in_month = [d for d in week if d.month == spec.month]
-        landing = in_month[0]
+        pressed = [d for d in week if spec.presses(d.month)]
+        landing = pressed[0]
         days = tuple(
             WeekDay(
                 day=day,
                 weekday_label=WEEKDAY_LABELS[day.weekday()],
-                dest=spec.dest_for_day(day) if day.month == spec.month else None,
-                in_month=day.month == spec.month,
+                dest=spec.dest_for_day(day) if spec.presses(day.month) else None,
+                in_month=spec.presses(day.month),
             )
             for day in week
         )
@@ -33,7 +33,7 @@ class WeeklySection:
                 dest=dest,
                 kind="weekly",
                 title=f"Week {iso.week:02d}",
-                nav=planner_nav(spec, week_dest=dest, day=landing),
+                nav=planner_nav(spec, week_dest=dest, day=landing, month=landing.month),
                 components=(
                     WeekStrip(
                         iso_year=iso.year,

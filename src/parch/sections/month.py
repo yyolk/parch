@@ -10,31 +10,36 @@ class MonthSection:
         self.spec = spec
 
     def pages(self) -> list[Page]:
+        built: list[Page] = []
+        for month in self.spec.months:
+            built.extend(self.pages_for(month))
+        return built
+
+    def pages_for(self, month: int) -> list[Page]:
         spec = self.spec
         weeks = []
         week_dests: list[str] = []
-        for week in month_touching_weeks(spec.year, spec.month, spec.weekday_start):
+        for week in month_touching_weeks(spec.year, month, spec.weekday_start):
             cells = []
             for day in week:
-                if day.month != spec.month:
+                if day.month != month:
                     cells.append(MonthCell(day=None))
                 else:
                     cells.append(MonthCell(day=day.day, dest=spec.dest_for_day(day)))
             weeks.append(tuple(cells))
             monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
             week_dests.append(spec.dest_for_week(monday))
-        # WEEK nav on the month page: first ISO week that touches the month.
         return [
             Page(
-                dest=spec.month_dest,
+                dest=spec.dest_for_month(month),
                 kind="month",
-                title=f"{month_name(spec.month)} {spec.year}",
-                nav=planner_nav(spec, week_dest=week_dests[0]),
+                title=f"{month_name(month)} {spec.year}",
+                nav=planner_nav(spec, week_dest=week_dests[0], month=month),
                 components=(
                     MonthGrid(
                         year=spec.year,
-                        month=spec.month,
-                        month_name=month_name(spec.month),
+                        month=month,
+                        month_name=month_name(month),
                         weekday_labels=weekday_labels(spec.weekday_start),
                         weeks=tuple(weeks),
                         week_dests=tuple(week_dests),

@@ -31,14 +31,14 @@ def _link_count(reader: PdfReader) -> int:
     return count
 
 
-def test_press_january_pdf(tmp_path: Path):
+def test_press_q1_pdf(tmp_path: Path):
     out = tmp_path / "mvp.pdf"
     press(Spec(notes_pages=1), out)
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    # cover + annual + month + 5 weeks + 31 days + 31 notes
-    assert len(reader.pages) >= 70
+    # cover + annual + 3 months + 14 weeks + 90 days + 90 notes
+    assert len(reader.pages) >= 199
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -48,13 +48,16 @@ def test_press_january_pdf(tmp_path: Path):
     assert "cover" in dests
     assert "year-2026" in dests
     assert "month-2026-01" in dests
+    assert "month-2026-02" in dests
+    assert "month-2026-03" in dests
     assert "week-2026-W01" in dests
-    assert "week-2026-W05" in dests
+    assert "week-2026-W14" in dests
     assert "2026-01-01" in dests
-    assert "2026-01-15" in dests
-    assert "2026-01-31" in dests
-    assert "2026-01-15-notes-1" in dests
-    assert _link_count(reader) >= 31
+    assert "2026-02-15" in dests
+    assert "2026-03-31" in dests
+    assert "2026-02-15-notes-1" in dests
+    assert "2026-04-01" not in dests
+    assert _link_count(reader) >= 90
 
 
 def test_cli_press_toml(tmp_path: Path):

@@ -1,9 +1,9 @@
-# Greenfield Nomad MVP — cover → annual → January month → each touching week → days + notes.
-# notes_pages = 1 keeps the January artifact sane; 2 still works.
+# Greenfield Nomad MVP — cover → annual → Q1 months → each touching ISO week once → days + notes.
+# notes_pages = 1 keeps the Q1 artifact sane; 2 still works.
 year = 2026
 device = "supernote-nomad"
 week_start = "monday"
-month = 1
+months = [1, 2, 3]
 day = 5
 title = "Year planner"
 
