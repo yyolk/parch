@@ -1,4 +1,5 @@
-# Greenfield Nomad MVP — cover → January 2026 → Monday 5 January → notes x2.
+# Greenfield Nomad MVP — cover → full January 2026 → each day + notes.
+# notes_pages = 1 keeps the January artifact sane; 2 still works.
 year = 2026
 device = "supernote-nomad"
 week_start = "monday"
@@ -9,4 +10,4 @@ title = "Year planner"
 [daily]
 schedule_from = 7
 schedule_to = 16
-notes_pages = 2
+notes_pages = 1

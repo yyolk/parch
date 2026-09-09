@@ -17,10 +17,14 @@ class MonthSection:
                 match day:
                     case None:
                         cells.append(MonthCell(day=None))
-                    case _ if day == spec.date:
-                        cells.append(MonthCell(day=day.day, dest=spec.day_dest))
                     case _:
-                        cells.append(MonthCell(day=day.day))
+                        cells.append(
+                            MonthCell(
+                                day=day.day,
+                                dest=spec.dest_for_day(day),
+                                highlight=day == spec.date,
+                            )
+                        )
             weeks.append(tuple(cells))
         nav = [
             NavItem("Cover", spec.cover_dest),

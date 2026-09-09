@@ -73,11 +73,17 @@ class Spec:
     def day_dest(self) -> str:
         return self.date.isoformat()
 
-    def notes_dest(self, index: int) -> str:
+    def dest_for_day(self, day: date) -> str:
+        return day.isoformat()
+
+    def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
-        return _dest(t"{self.day_dest}-notes-{index}")
+        return _dest(t"{day.isoformat()}-notes-{index}")
+
+    def notes_dest(self, index: int) -> str:
+        return self.dest_for_notes(self.date, index)
 
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:

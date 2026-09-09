@@ -44,3 +44,8 @@ def month_weeks(year: int, month: int, weekday_start: int = 0) -> list[list[date
     for week in cal.monthdatescalendar(year, month):
         weeks.append([d if d.month == month else None for d in week])
     return weeks
+
+
+def month_days(year: int, month: int) -> list[date]:
+    last = pycal.monthrange(year, month)[1]
+    return [date(year, month, day) for day in range(1, last + 1)]

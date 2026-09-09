@@ -1,6 +1,6 @@
 from datetime import date
 
-from parch.calendar import month_weeks, weekday_labels
+from parch.calendar import month_days, month_weeks, weekday_labels
 
 
 def test_january_2026_monday_start():
@@ -11,3 +11,7 @@ def test_january_2026_monday_start():
     assert weeks[0][0] is None
     assert date(2026, 1, 5).weekday() == 0
     assert weeks[1][0] == date(2026, 1, 5)
+    days = month_days(2026, 1)
+    assert days[0] == date(2026, 1, 1)
+    assert days[-1] == date(2026, 1, 31)
+    assert len(days) == 31

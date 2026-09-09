@@ -31,13 +31,14 @@ def _link_count(reader: PdfReader) -> int:
     return count
 
 
-def test_press_mvp_pdf(tmp_path: Path):
+def test_press_january_pdf(tmp_path: Path):
     out = tmp_path / "mvp.pdf"
-    press(Spec(), out)
+    press(Spec(notes_pages=1), out)
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    assert len(reader.pages) == 5
+    # cover + month + 31 days + 31 notes
+    assert len(reader.pages) >= 64
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -46,16 +47,22 @@ def test_press_mvp_pdf(tmp_path: Path):
     dests = _named_dests(reader)
     assert "cover" in dests
     assert "month-2026-01" in dests
-    assert "2026-01-05" in dests
-    assert "2026-01-05-notes-1" in dests
-    assert "2026-01-05-notes-2" in dests
-    assert _link_count(reader) >= 1
+    assert "2026-01-01" in dests
+    assert "2026-01-15" in dests
+    assert "2026-01-31" in dests
+    assert "2026-01-15-notes-1" in dests
+    assert _link_count(reader) >= 31
 
 
 def test_cli_press_toml(tmp_path: Path):
     spec = tmp_path / "job.toml"
-    spec.write_text('year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nday = 5\n', encoding="utf-8")
+    spec.write_text(
+        'year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nday = 5\nnotes_pages = 1\n',
+        encoding="utf-8",
+    )
     out = tmp_path / "job.pdf"
     assert main(["press", str(spec), "-o", str(out)]) == 0
     assert out.is_file()
-    assert len(PdfReader(out).pages) == 5
+    dests = _named_dests(PdfReader(out))
+    assert "2026-01-01" in dests
+    assert "2026-01-31" in dests
