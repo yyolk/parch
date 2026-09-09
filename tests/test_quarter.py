@@ -4,11 +4,16 @@ from parch.books import YearPlanner
 from parch.components import QuarterGrid
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
+    FOCUS_ROWS,
+    paint_quarter_a_focus_notes,
     paint_quarter_a_note_boxes,
+    paint_quarter_c_focus_notes,
     paint_quarter_c_stack_notes,
+    quarter_seats_a_focus_notes,
     quarter_seats_a_note_boxes,
     quarter_seats_a_shortband,
     quarter_seats_b_stack,
+    quarter_seats_c_focus_notes,
     quarter_seats_c_stack_notes,
     strip_active,
     strip_items,
@@ -142,3 +147,57 @@ def test_quarter_a_note_boxes_and_c_paint():
     c_texts = [op[2] for op in c.ops if op[0] == "text"]
     assert "Jan" in c_texts and "Feb" in c_texts and "Mar" in c_texts
     assert "Notes" in c_texts
+
+
+def test_quarter_seat_c_focus_over_notes():
+    box = Rect(4, 20, 110, 90)
+    months, focus, notes = quarter_seats_c_focus_notes(box)
+    jan, feb, mar = months
+    assert jan.x == pytest.approx(box.x)
+    assert mar.bottom == pytest.approx(box.bottom)
+    assert focus.x == pytest.approx(notes.x)
+    assert focus.x > jan.right
+    assert notes.right == pytest.approx(box.right)
+    assert focus.h == pytest.approx(notes.h / 2, abs=1.5)
+    assert notes.y > focus.bottom
+    assert notes.bottom == pytest.approx(box.bottom)
+
+
+def test_quarter_seat_a_focus_notes_under_short_band():
+    box = Rect(4, 20, 110, 90)
+    months, focus, notes = quarter_seats_a_focus_notes(box)
+    jan, feb, mar = months
+    year_band = rows(box, 4, gap=2.6)[0].h
+    assert jan.h == pytest.approx(year_band)
+    assert jan.y == feb.y == mar.y == pytest.approx(box.y)
+    assert jan.x == pytest.approx(box.x)
+    assert mar.right == pytest.approx(box.right)
+    assert focus.y == pytest.approx(notes.y)
+    assert focus.y > jan.bottom
+    assert focus.w == pytest.approx(notes.w)
+    assert notes.right == pytest.approx(box.right)
+    assert focus.bottom == pytest.approx(box.bottom)
+    assert notes.bottom == pytest.approx(box.bottom)
+
+
+def test_quarter_a_and_c_focus_notes_paint():
+    spec = Spec(notes_pages=1)
+    grid = next(
+        item
+        for item in YearPlanner().pages(spec)[2].components
+        if isinstance(item, QuarterGrid)
+    )
+    well = Rect(4, 20, 110, 120)
+    for paint in (paint_quarter_a_focus_notes, paint_quarter_c_focus_notes):
+        plotter = RecordingPlotter()
+        paint(plotter, well, grid)
+        texts = [op[2] for op in plotter.ops if op[0] == "text"]
+        assert "Jan" in texts and "Feb" in texts and "Mar" in texts
+        assert "Focus" in texts
+        assert "Notes" in texts
+        ticks = [
+            op
+            for op in plotter.ops
+            if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(2.4)
+        ]
+        assert len(ticks) == FOCUS_ROWS

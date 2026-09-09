@@ -153,7 +153,7 @@ def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
-    """Default seat — not locked; A′ / B / C are comparison variants below."""
+    """Default seat — not locked; A″ / B / C′ are comparison variants below."""
     for cell, month in zip(columns(box, 3, gap=4.0), grid.months, strict=True):
         _paint_mini_month(plotter, cell, month)
 
@@ -214,15 +214,111 @@ def paint_quarter_c_stack_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) 
     paint_notes(plotter, notes, Notes(label="Notes"))
 
 
-def _paint_note_box(plotter: Plotter, box: Rect) -> None:
+def quarter_seats_c_focus_notes(
+    box: Rect,
+) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
+    """C′: left stacked minis; right Focus (⅓) over Notes (⅔)."""
+    left, right = columns(box, 2, gap=3.4, weights=(0.4, 0.6))
+    focus, notes = rows(right, 2, weights=(1, 2), gap=2.6)
+    return rows(left, 3, gap=3.4), focus, notes
+
+
+def quarter_seats_a_focus_notes(
+    box: Rect,
+) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
+    """A″: short year-density month band; leftover is Focus | Notes."""
+    cal_h = rows(box, 4, gap=2.6)[0].h
+    cal_band, rest = box.split_top(cal_h)
+    leftover = Rect(rest.x, rest.y + 2.6, rest.w, rest.h - 2.6)
+    focus, notes = columns(leftover, 2, gap=3.4)
+    return columns(cal_band, 3, gap=4.0), focus, notes
+
+
+def paint_quarter_c_focus_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    months, focus, notes = quarter_seats_c_focus_notes(box)
+    for cell, month in zip(months, grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
+    _paint_focus_box(plotter, focus)
+    paint_notes(plotter, notes, Notes(label="Notes"))
+
+
+def paint_quarter_a_focus_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+    months, focus, notes = quarter_seats_a_focus_notes(box)
+    for cell, month in zip(months, grid.months, strict=True):
+        _paint_mini_month(plotter, cell, month)
+    _paint_focus_box(plotter, focus)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def _paint_note_box(plotter: Plotter, box: Rect, *, label: str | None = None) -> None:
     """Lined writing box — outline + daily-notes rhythm. Not a Notes section."""
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    inset = box.inset(1.1, 1.2)
+    top = 1.2
+    if label:
+        header_h = 3.4
+        plotter.text(
+            Rect(box.x + 1.3, box.y + 0.7, box.w - 2.6, header_h),
+            label,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        top = header_h + 1.4
+    inset = Rect(box.x + 1.1, box.y + top, box.w - 2.2, box.h - top - 1.2)
     pitch = 4.15
     y = inset.y + pitch
     while y < inset.bottom - 0.15:
         plotter.line(inset.x, y, inset.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += pitch
+
+
+FOCUS_ROWS = 6
+TICK = 2.4
+FOCUS_PITCH = 5.4
+
+
+def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
+    """Outlined FOCUS checklist — empty ticks + underline. Not a section."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    header_h = 3.4
+    plotter.text(
+        Rect(box.x + 1.3, box.y + 0.7, box.w - 2.6, header_h),
+        "Focus",
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    body = Rect(
+        box.x + 1.6,
+        box.y + header_h + 1.4,
+        box.w - 3.2,
+        box.h - header_h - 2.6,
+    )
+    if FOCUS_ROWS * FOCUS_PITCH <= body.h:
+        y = body.y
+        for _ in range(FOCUS_ROWS):
+            _paint_focus_row(plotter, body.x, y, body.right)
+            y += FOCUS_PITCH
+        return
+    for band in rows(body, FOCUS_ROWS, gap=0.7):
+        _paint_focus_row(plotter, band.x, band.y, band.right)
+
+
+def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None:
+    tick = Rect(x, y, TICK, TICK)
+    plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(
+        tick.right + 1.4,
+        tick.bottom,
+        right,
+        tick.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
