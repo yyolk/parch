@@ -49,10 +49,15 @@ def test_week_dests_and_nav_strip():
         ("Year", "year-2026"),
         ("Mon", "month-2026-01"),
         ("Week", "week-2026-W01"),
-        ("Day", "2026-01-05"),
-        ("Notes", "2026-01-05-notes-1"),
+        ("Day", "2026-01-01"),
+        ("Notes", "2026-01-01-notes-1"),
     )
     assert strip_active(month.kind) == "Mon"
+
+    feb = next(page for page in pages if page.dest == "month-2026-02")
+    assert strip_items(feb)[1] == ("Mon", "month-2026-02")
+    assert strip_items(feb)[3] == ("Day", "2026-02-01")
+    assert strip_items(feb)[4] == ("Notes", "2026-02-01-notes-1")
 
     w01 = next(page for page in pages if page.dest == "week-2026-W01")
     assert strip_active(w01.kind) == "Week"
@@ -67,8 +72,9 @@ def test_week_dests_and_nav_strip():
     assert ("Week", "week-2026-W03") in strip_items(notes)
     assert strip_active(notes.kind) == "Notes"
 
-    feb = next(page for page in pages if page.dest == "month-2026-02")
-    assert strip_items(feb)[1] == ("Mon", "month-2026-02")
+    w06 = next(page for page in pages if page.dest == "week-2026-W06")
+    assert strip_items(w06)[3] == ("Day", "2026-02-02")
+    assert strip_items(w06)[4] == ("Notes", "2026-02-02-notes-1")
 
 
 def test_week_pages_link_pressed_days_only():

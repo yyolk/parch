@@ -43,6 +43,7 @@ class Spec:
     device: str = "supernote-nomad"
     week_start: str = "monday"
     months: tuple[int, ...] = (1, 2, 3)
+    # Unused by nav. TOML/CLI leftover — not a generation-time “today”.
     day: int = 5
     title: str = "Year planner"
     schedule_from: int = 7

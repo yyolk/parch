@@ -26,8 +26,8 @@ def test_annual_page_and_year_nav():
         ("Year", "year-2026"),
         ("Mon", "month-2026-01"),
         ("Week", "week-2026-W01"),
-        ("Day", "2026-01-05"),
-        ("Notes", "2026-01-05-notes-1"),
+        ("Day", "2026-01-01"),
+        ("Notes", "2026-01-01-notes-1"),
     )
     assert all(label != "Cover" for label, _ in strip_items(annual))
 
