@@ -172,12 +172,14 @@ def test_quarter_seat_a_focus_notes_under_short_band():
     assert jan.y == feb.y == mar.y == pytest.approx(box.y)
     assert jan.x == pytest.approx(box.x)
     assert mar.right == pytest.approx(box.right)
-    assert focus.y == pytest.approx(notes.y)
-    assert focus.y > jan.bottom
+    assert focus.x == pytest.approx(notes.x)
+    assert focus.x == pytest.approx(box.x)
     assert focus.w == pytest.approx(notes.w)
-    assert notes.right == pytest.approx(box.right)
-    assert focus.bottom == pytest.approx(box.bottom)
+    assert focus.w == pytest.approx(box.w)
+    assert focus.y > jan.bottom
+    assert notes.y > focus.bottom
     assert notes.bottom == pytest.approx(box.bottom)
+    assert focus.h == pytest.approx(notes.h)
 
 
 def test_quarter_a_and_c_focus_notes_paint():

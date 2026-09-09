@@ -226,11 +226,11 @@ def quarter_seats_c_focus_notes(
 def quarter_seats_a_focus_notes(
     box: Rect,
 ) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """A″: short year-density month band; leftover is Focus | Notes."""
+    """A″: short year-density month band; leftover is Focus over Notes."""
     cal_h = rows(box, 4, gap=2.6)[0].h
     cal_band, rest = box.split_top(cal_h)
     leftover = Rect(rest.x, rest.y + 2.6, rest.w, rest.h - 2.6)
-    focus, notes = columns(leftover, 2, gap=3.4)
+    focus, notes = rows(leftover, 2, gap=2.6)
     return columns(cal_band, 3, gap=4.0), focus, notes
 
 
