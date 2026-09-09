@@ -169,16 +169,9 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
                 continue
             cx = grid_x + c * col_w
             num = Rect(cx + 0.5, y + 0.7, col_w - 1.0, 5.4)
-            if day.highlight:
-                mark = Rect(cx + 0.35, y + 0.55, 7.2, 5.8)
-                plotter.rect(mark, stroke=False, fill=True, fill_gray=INK)
-                plotter.text(
-                    num, str(day.day), size=8.5, bold=True, face="sans", gray=PAPER, align="left"
-                )
-            else:
-                plotter.text(
-                    num, str(day.day), size=8.5, bold=True, face="sans", gray=INK, align="left"
-                )
+            plotter.text(
+                num, str(day.day), size=8.5, bold=True, face="sans", gray=INK, align="left"
+            )
             if day.dest:
                 plotter.link(Rect(cx, y, col_w, row_h), day.dest)
         plotter.line(box.x, y + row_h, box.right, y + row_h, stroke_width=HAIR, stroke_gray=SOFT)

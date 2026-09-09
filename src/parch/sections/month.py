@@ -18,13 +18,7 @@ class MonthSection:
                     case None:
                         cells.append(MonthCell(day=None))
                     case _:
-                        cells.append(
-                            MonthCell(
-                                day=day.day,
-                                dest=spec.dest_for_day(day),
-                                highlight=day == spec.date,
-                            )
-                        )
+                        cells.append(MonthCell(day=day.day, dest=spec.dest_for_day(day)))
             weeks.append(tuple(cells))
         nav = [
             NavItem("Cover", spec.cover_dest),
