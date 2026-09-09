@@ -1,0 +1,112 @@
+name: Force DNM to draft
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - labeled
+      - unlabeled
+      - ready_for_review
+
+permissions:
+  pull-requests: write
+
+jobs:
+  force-draft:
+    if: github.event.pull_request.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce DO NOT MERGE as draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          set -euo pipefail
+
+          MARKER='<!-- dnm-forced-draft -->'
+
+          title_hit=false
+          label_hit=false
+          echo "$TITLE"  | grep -qiE 'do[[:space:]_-]*not[[:space:]_-]*merge' && title_hit=true
+          echo "$LABELS" | grep -qiE '(^|,)[[:space:]]*(do[[:space:]_-]*not[[:space:]_-]*merge)[[:space:]]*(,|$)' && label_hit=true
+
+          reasons=()
+          [[ "$title_hit" == true ]] && reasons+=('title contains "DO NOT MERGE"')
+          [[ "$label_hit" == true ]] && reasons+=('has a "DO NOT MERGE" label')
+          reason=""
+          if ((${#reasons[@]})); then
+            reason=$(IFS=' and '; echo "${reasons[*]}")
+          fi
+
+          warning_body=$(cat <<EOF
+          ⚠️ Forced this pull request to **draft** because the ${reason}.
+
+          Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.
+          ${MARKER}
+          EOF
+          )
+
+          waiting_body=$(cat <<EOF
+          DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.
+          ${MARKER}
+          EOF
+          )
+
+          cleared_body=$(cat <<EOF
+          ✅ DO NOT MERGE marker cleared. This pull request is ready for review.
+          ${MARKER}
+          EOF
+          )
+
+          find_comment_id() {
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
+              --jq --arg m "$MARKER" \
+              '[.[] | select(.body | contains($m)) | .id][0] // empty'
+          }
+
+          upsert_comment() {
+            local body="$1"
+            local id current
+            id=$(find_comment_id)
+            if [[ -n "$id" ]]; then
+              current=$(gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" --jq .body)
+              if [[ "$current" == "$body" ]]; then
+                echo "Comment already up to date"
+                return
+              fi
+              gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="$body" >/dev/null
+              echo "Updated existing DNM comment ${id}"
+            else
+              gh pr comment "$PR" --body "$body" >/dev/null
+              echo "Posted DNM comment"
+            fi
+          }
+
+          if [[ "$title_hit" == true || "$label_hit" == true ]]; then
+            if [[ "$IS_DRAFT" != true ]]; then
+              gh pr ready "$PR" --undo
+              echo "Converted PR #${PR} to draft"
+            else
+              echo "Already draft"
+            fi
+            upsert_comment "$warning_body"
+            exit 0
+          fi
+
+          id=$(find_comment_id)
+          if [[ -z "$id" ]]; then
+            echo "No DNM marker and no existing bot comment"
+            exit 0
+          fi
+
+          if [[ "$IS_DRAFT" == true ]]; then
+            upsert_comment "$waiting_body"
+          else
+            upsert_comment "$cleared_body"
+          fi
