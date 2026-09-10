@@ -230,15 +230,15 @@ def test_meetings_index_focus_seats():
 
     stub, head, agenda = meetings_index_focus_parts(focus)
     assert stub.x > focus.x
-    assert head.x > stub.right
+    assert head.x == pytest.approx(stub.right)
     assert agenda.y > head.bottom
     assert agenda.bottom < focus.bottom
     assert head.w > stub.w
 
     row_stub, row_title, row_date = meetings_index_list_row(listing[0])
     assert row_stub.x > listing[0].x
-    assert row_title.x > row_stub.right
-    assert row_date.x > row_title.right
+    assert row_title.x == pytest.approx(row_stub.right)
+    assert row_date.x == pytest.approx(row_title.right + MEET_HEAD_COL_GAP)
     assert row_date.right < listing[0].right
     assert row_title.w > row_date.w
 
@@ -269,6 +269,10 @@ def test_meetings_index_focus_paint_links():
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(MEET_INDEX_MARK)
     ]
     assert len(hero_marks) == 1
+    hero = hero_marks[0][1]
+    title_box = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "Title")
+    assert hero.y < title_box.bottom
+    assert hero.bottom > title_box.y
     list_marks = [
         op
         for op in plotter.ops

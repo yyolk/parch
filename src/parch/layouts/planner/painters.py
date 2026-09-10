@@ -931,7 +931,8 @@ def _paint_meetings_index_focus_panel(
 ) -> None:
     plotter.rect(focus, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     stub, head, agenda = meetings_index_focus_parts(focus)
-    _paint_meeting_slot_mark(plotter, stub, slot.number, size=MEET_INDEX_MARK, text_size=7.0)
+    mark_stub = Rect(stub.x, head.y, stub.w, head.h)
+    _paint_meeting_slot_mark(plotter, mark_stub, slot.number, size=MEET_INDEX_MARK, text_size=7.0)
     title, dated = columns(head, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
     _paint_meeting_writein(plotter, title, "Title")
     _paint_meeting_writein(plotter, dated, "Date")
