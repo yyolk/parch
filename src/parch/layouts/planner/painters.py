@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsWaiting,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,133 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+WAIT_BAND_GAP = 2.6
+WAIT_LABEL_H = 3.4
+WAIT_LABEL_GAP = 1.0
+WAIT_INSET_X = 1.8
+WAIT_INSET_Y = 1.2
+WAIT_ROW_GAP = 1.6
+WAIT_NAME_H = 4.8
+WAIT_WHO_GAP = 0.4
+WAIT_WHO_H = 3.2
+WAIT_NOTES_GAP = 1.6
+WAIT_NOTES_LINES = 2
+WAIT_NOTES_PITCH = 4.15
+WAIT_NOTES_PAD = 1.2
+WAIT_BANDS = (
+    ("Moving", False),
+    ("Waiting on…", True),
+    ("Blocked", True),
+)
+WAIT_NOTES_LABEL = "Next unblock"
+
+
+def waiting_row_height(*, stuck: bool) -> float:
+    """Tick + name; Waiting/Blocked add a who/what underline."""
+    if stuck:
+        return WAIT_NAME_H + WAIT_WHO_GAP + WAIT_WHO_H
+    return WAIT_NAME_H
+
+
+def waiting_notes_height() -> float:
+    """Tiny next-unblock strip — not a fourth flex band."""
+    return WAIT_LABEL_H + WAIT_NOTES_GAP + WAIT_NOTES_LINES * WAIT_NOTES_PITCH + WAIT_NOTES_PAD
+
+
+def projects_waiting_seats(well: Rect, n: int) -> tuple[tuple[Rect, Rect, Rect], Rect]:
+    """Three equal friction bands over a tiny next-unblock strip."""
+    notes_h = waiting_notes_height()
+    body, rest = well.split_top(well.h - notes_h - WAIT_BAND_GAP)
+    notes = Rect(rest.x, rest.y + WAIT_BAND_GAP, rest.w, notes_h)
+    moving, waiting, blocked = rows(body, 3, gap=WAIT_BAND_GAP)
+    return (moving, waiting, blocked), notes
+
+
+def projects_waiting_band_seats(
+    band: Rect, n: int, *, stuck: bool
+) -> tuple[Rect, tuple[Rect, ...]]:
+    """Label + content-height rows from the top of an outlined band."""
+    inner = band.inset(WAIT_INSET_X, WAIT_INSET_Y)
+    label, rest = inner.split_top(WAIT_LABEL_H)
+    row_h = waiting_row_height(stuck=stuck)
+    count = max(1, n)
+    stack_h = count * row_h + (count - 1) * WAIT_ROW_GAP
+    stack = Rect(rest.x, rest.y + WAIT_LABEL_GAP, rest.w, stack_h)
+    return label, rows(stack, count, gap=WAIT_ROW_GAP)
+
+
+def projects_waiting_row_seats(row: Rect, *, stuck: bool) -> tuple[Rect, Rect | None]:
+    """Tick+name; optional who/what underline under Waiting/Blocked."""
+    name = Rect(row.x, row.y, row.w, WAIT_NAME_H)
+    if not stuck:
+        return name, None
+    who = Rect(row.x, name.bottom + WAIT_WHO_GAP, row.w, WAIT_WHO_H)
+    return name, who
+
+
+def projects_waiting_notes_seats(notes: Rect) -> tuple[Rect, Rect]:
+    """Next-unblock scaps over leftover lined rules."""
+    label, rest = notes.split_top(WAIT_LABEL_H)
+    lines = Rect(rest.x, rest.y + WAIT_NOTES_GAP, rest.w, rest.h - WAIT_NOTES_GAP)
+    return label, lines
+
+
+def paint_projects_waiting(plotter: Plotter, box: Rect, board: ProjectsWaiting) -> None:
+    """Thesis P — friction board. Where energy is stuck, not Todo→Done."""
+    bands, notes = projects_waiting_seats(box, board.rows)
+    for band, (label, stuck) in zip(bands, WAIT_BANDS, strict=True):
+        _paint_waiting_band(plotter, band, board.rows, label, stuck=stuck)
+    _paint_waiting_notes(plotter, notes)
+
+
+def _paint_waiting_band(
+    plotter: Plotter, band: Rect, n: int, label: str, *, stuck: bool
+) -> None:
+    plotter.rect(band, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    title, project_rows = projects_waiting_band_seats(band, n, stuck=stuck)
+    plotter.text(
+        title,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    for row in project_rows:
+        name, who = projects_waiting_row_seats(row, stuck=stuck)
+        y = name.y + (name.h - TICK) / 2
+        _paint_focus_row(plotter, name.x, y, name.right)
+        if who is not None:
+            _paint_waiting_who(plotter, who)
+
+
+def _paint_waiting_who(plotter: Plotter, box: Rect) -> None:
+    """Thin who/what underline — aligned under the name rule, no tick."""
+    x = box.x + TICK + 1.4
+    y = box.y + box.h * 0.72
+    plotter.line(x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def _paint_waiting_notes(plotter: Plotter, box: Rect) -> None:
+    label, lines = projects_waiting_notes_seats(box)
+    plotter.text(
+        label,
+        WAIT_NOTES_LABEL,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    y = lines.y + WAIT_NOTES_PITCH
+    drawn = 0
+    while y < lines.bottom - 0.15 and drawn < WAIT_NOTES_LINES:
+        plotter.line(lines.x, y, lines.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += WAIT_NOTES_PITCH
+        drawn += 1
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1068,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_waiting":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1097,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_waiting":
             return ""
         case _:
             return "Year"
