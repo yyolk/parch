@@ -1,0 +1,10 @@
+# Thesis A — classic 3-column Projects board. Throwaway; not the year walk.
+# Press: uv run parch press examples/exp-projects-a.toml -o /tmp/exp-projects-a.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+book = "projects_columns"
+
+[projects_board]
+cards = 4
+ticks = 3

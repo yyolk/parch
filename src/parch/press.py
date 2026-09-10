@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from parch import ConfigError
-from parch.books.year_planner import YearPlanner
+from parch.books import planner_book
 from parch.devices import get_device
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
@@ -19,7 +19,7 @@ def press(spec: Spec, output: Path, plotter: Plotter | None = None) -> Path:
     device = get_device(spec.device)
     if plotter is None:
         plotter = Fpdf2Plotter(device)
-    YearPlanner().plot(spec, plotter)
+    planner_book(spec).plot(spec, plotter)
     plotter.finish(output)
     return output
 
@@ -48,6 +48,9 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         "priority_rows": spec.priority_rows,
         "project_cards": spec.project_cards,
         "project_tasks": spec.project_tasks,
+        "book": spec.book,
+        "board_cards": spec.board_cards,
+        "board_ticks": spec.board_ticks,
     }
     if year is not None:
         data["year"] = year

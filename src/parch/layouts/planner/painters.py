@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsColumns,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,78 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+BOARD_COL_GAP = 2.8
+BOARD_HEADER_H = 5.4
+BOARD_HEADER_GAP = 1.2
+BOARD_CARD_GAP = 2.2
+BOARD_INSET_X = 1.5
+BOARD_INSET_Y = 1.3
+BOARD_NAME_H = 5.0
+BOARD_TICK_PAD = 0.6
+BOARD_LABELS = ("Todo", "Doing", "Done")
+
+
+def project_board_columns(well: Rect) -> tuple[Rect, ...]:
+    """Todo | Doing | Done — three equal tracks."""
+    return columns(well, 3, gap=BOARD_COL_GAP)
+
+
+def project_board_column_seats(col: Rect, cards: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Small-caps header over stacked card tracks."""
+    header, rest = col.split_top(BOARD_HEADER_H)
+    body = Rect(rest.x, rest.y + BOARD_HEADER_GAP, rest.w, rest.h - BOARD_HEADER_GAP)
+    return header, rows(body, cards, gap=BOARD_CARD_GAP)
+
+
+def project_board_card_seats(card: Rect) -> tuple[Rect, Rect]:
+    """Name underline band over leftover tick well, after a quiet inset."""
+    return card.inset(BOARD_INSET_X, BOARD_INSET_Y).split_top(BOARD_NAME_H)
+
+
+def paint_projects_columns(plotter: Plotter, box: Rect, board: ProjectsColumns) -> None:
+    """Thesis A well — 3-column board. No spine/arrows/graph/legend."""
+    for label, col in zip(BOARD_LABELS, project_board_columns(box), strict=True):
+        header, cards = project_board_column_seats(col, board.cards)
+        _paint_board_column_header(plotter, header, label)
+        for card in cards:
+            plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+            name, ticks = project_board_card_seats(card)
+            _paint_board_name(plotter, name)
+            _paint_board_ticks(plotter, ticks, board.ticks)
+
+
+def _paint_board_column_header(plotter: Plotter, header: Rect, label: str) -> None:
+    plotter.text(
+        Rect(header.x + 0.4, header.y, header.w - 0.8, header.h - 1.0),
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    rule_y = header.bottom - 0.4
+    plotter.line(header.x, rule_y, header.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def _paint_board_name(plotter: Plotter, header: Rect) -> None:
+    plotter.line(
+        header.x,
+        header.bottom,
+        header.right,
+        header.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+
+
+def _paint_board_ticks(plotter: Plotter, box: Rect, n: int) -> None:
+    y = box.y + BOARD_TICK_PAD
+    for _ in range(max(1, n)):
+        _paint_focus_row(plotter, box.x, y, box.right)
+        y += FOCUS_PITCH
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -942,6 +1015,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_board":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -970,6 +1045,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
+            return ""
+        case "projects_board":
             return ""
         case _:
             return "Year"
