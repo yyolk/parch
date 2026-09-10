@@ -1,5 +1,6 @@
 """Painters take ``plotter: Plotter``. Components never draw themselves."""
 
+import math
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
@@ -284,10 +285,15 @@ CLONE_CARD_WEIGHTS = (0.50, 0.50)
 CLONE_INSET_X = 1.6
 CLONE_INSET_Y = 1.4
 CLONE_COL_GAP = 3.4
-CLONE_TAG_H = 5.2
+CLONE_STRIP_H = 4.0
+CLONE_STRIP_MIN_FRAC = 0.6
+CLONE_ICON = 2.1
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
+CLONE_ICONS = ("star", "triangle", "circle", "diamond", "plus", "square")
+CLONE_P_CORNER = (2.2, 1.85)
+CLONE_P_SIZE = 4.4
 
 
 def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
@@ -302,27 +308,27 @@ def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tu
 
 
 def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
-    """spine, P+name, secondary field, tasks, notes, tags."""
+    """spine, P+name, secondary field, tasks, notes, bottom icon strip."""
     spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
     body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
         CLONE_INSET_X, CLONE_INSET_Y
     )
-    left, right = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    main, strip = rows(
+        body,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(body.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
+    )
+    left, right = columns(main, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
     name_h, left_rest = left.split_top(PROJECT_HEADER_H)
     secondary, notes = right.split_top(PROJECT_HEADER_H)
-    mid = Rect(
+    tasks = Rect(
         left_rest.x,
         left_rest.y + PROJECT_LEFT_GAP,
         left_rest.w,
         left_rest.h - PROJECT_LEFT_GAP,
     )
-    tasks, tags = rows(
-        mid,
-        2,
-        gap=PROJECT_LEFT_GAP,
-        weights=(mid.h - CLONE_TAG_H - PROJECT_LEFT_GAP, CLONE_TAG_H),
-    )
-    return spine, name_h, secondary, tasks, notes, tags
+    return spine, name_h, secondary, tasks, notes, strip
 
 
 def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
@@ -335,9 +341,9 @@ def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBo
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
     for card, rail in zip(cards, rails, strict=True):
-        spine, name_h, secondary, tasks, notes, tags = projects_clone_a_card(card)
+        spine, name_h, secondary, tasks, notes, strip = projects_clone_a_card(card)
         plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
-        _paint_project_name(plotter, name_h)
+        _paint_clone_priority(plotter, name_h)
         sec_y = secondary.y + (secondary.h - PROJECT_P) / 2
         plotter.rect(
             Rect(secondary.x, sec_y, secondary.w, PROJECT_P),
@@ -348,9 +354,35 @@ def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBo
         )
         _paint_clone_tasks(plotter, tasks, board.tasks)
         _paint_note_box(plotter, notes)
-        _paint_clone_tags(plotter, tags)
+        _paint_clone_icon_strip(plotter, strip)
         _paint_clone_status_track(plotter, rail)
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
+    """P-box: muted corner-fraction label, leftover is write-in. Clone only."""
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    cw, ch = CLONE_P_CORNER
+    plotter.text(
+        Rect(mark.x + 0.18, mark.y + 0.12, cw, ch),
+        "P",
+        size=CLONE_P_SIZE,
+        face="serif",
+        gray=MUTED,
+        align="left",
+    )
+    rule_y = mark.bottom
+    plotter.line(
+        mark.right + 1.4,
+        rule_y,
+        header.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    return rule_y
 
 
 def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
@@ -368,18 +400,135 @@ def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
         y += FOCUS_PITCH
 
 
-def _paint_clone_tags(plotter: Plotter, box: Rect) -> None:
-    """# and diamond association marks — Liberation has no ★ glyph."""
-    hash_slot, star_slot = columns(box, 2, gap=1.4)
-    mark_h = min(PROJECT_P, box.h - 0.4)
-    hash_y = hash_slot.y + (hash_slot.h - mark_h) / 2
-    hash_box = Rect(hash_slot.x, hash_y, mark_h, mark_h)
-    plotter.rect(hash_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(hash_box, "#", size=6.2, face="sans", gray=INK, align="center")
-    star_y = star_slot.y + (star_slot.h - mark_h) / 2
-    star_box = Rect(star_slot.x, star_y, mark_h, mark_h)
-    plotter.rect(star_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    _paint_diamond(plotter, star_box.inset(0.9, 0.9))
+def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
+    """Filled association icons on tracks.columns — no frames."""
+    slots = columns(box, len(CLONE_ICONS), gap=2.2)
+    for slot, kind in zip(slots, CLONE_ICONS, strict=True):
+        s = min(CLONE_ICON, slot.h - 0.25, slot.w - 0.25)
+        icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
+        _paint_clone_icon(plotter, icon, kind)
+
+
+def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
+    match kind:
+        case "square":
+            plotter.rect(box, stroke=False, fill=True, fill_gray=INK)
+        case "plus":
+            arm = 0.30
+            plotter.rect(
+                Rect(box.x + box.w * (1 - arm) / 2, box.y, box.w * arm, box.h),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
+            plotter.rect(
+                Rect(box.x, box.y + box.h * (1 - arm) / 2, box.w, box.h * arm),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
+        case "circle":
+            _fill_circle(plotter, box)
+        case "diamond":
+            _fill_diamond(plotter, box)
+        case "triangle":
+            _fill_triangle(plotter, box)
+        case "star":
+            _fill_star(plotter, box)
+        case _:
+            raise ValueError(f"unknown clone icon {kind!r}")
+
+
+def _scan_box(box: Rect, *, n: int = 11) -> tuple[list[float], float]:
+    dy = box.h / n
+    return [box.y + (i + 0.5) * dy for i in range(n)], dy
+
+
+def _fill_circle(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - cy) / ry
+        if abs(t) >= 1:
+            continue
+        half = rx * math.sqrt(max(0.0, 1.0 - t * t))
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_diamond(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = abs((y - cy) / ry)
+        if t >= 1:
+            continue
+        half = rx * (1.0 - t)
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_triangle(plotter: Plotter, box: Rect) -> None:
+    """Point-up triangle inscribed in ``box``."""
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - box.y) / box.h
+        half = (box.w / 2) * t
+        cx = box.x + box.w / 2
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_star(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    r = min(box.w, box.h) / 2
+    pts = _star_poly(cx, cy, r)
+    ys, dy = _scan_box(box, n=13)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        xs = _poly_xs_at(pts, y)
+        xs.sort()
+        for i in range(0, len(xs) - 1, 2):
+            spans.append((y - dy / 2, xs[i], xs[i + 1]))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
+    r_in = r * 0.38
+    pts: list[tuple[float, float]] = []
+    for i in range(10):
+        ang = math.radians(-90 + i * 36)
+        rad = r if i % 2 == 0 else r_in
+        pts.append((cx + rad * math.cos(ang), cy + rad * math.sin(ang)))
+    return pts
+
+
+def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:
+    xs: list[float] = []
+    n = len(pts)
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        if (y0 <= y < y1) or (y1 <= y < y0):
+            if y1 != y0:
+                xs.append(x0 + (x1 - x0) * (y - y0) / (y1 - y0))
+    return xs
+
+
+def _fill_span_rows(plotter: Plotter, spans: list[tuple[float, float, float]], dy: float) -> None:
+    for y, x0, x1 in spans:
+        if x1 - x0 > 0.08:
+            plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=INK)
 
 
 def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
