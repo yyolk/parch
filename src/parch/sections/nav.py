@@ -37,6 +37,11 @@ TASK dest (strip label **Task**):
 - index page → self
 - weekly Tasks dest → the index that lists that week (header chip is the same dest)
 
+REV dest (strip label **Rev**):
+- present only when ``review_dest`` is passed (experiment pages)
+- index page → self
+- weekly Review dest → the index that lists that week (header chip is the same dest)
+
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
 
@@ -69,6 +74,7 @@ def planner_nav(
     proj_dest: str | None = None,
     meet_dest: str | None = None,
     task_dest: str | None = None,
+    review_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
@@ -83,6 +89,8 @@ def planner_nav(
     ]
     if task_dest is not None:
         items.append(NavItem("Task", task_dest))
+    if review_dest is not None:
+        items.append(NavItem("Rev", review_dest))
     items.extend(
         [
             NavItem("Week", week_dest),

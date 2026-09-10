@@ -47,6 +47,8 @@ Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) 
 
 Thesis C (parallel, **not** in the year walk): month-banded Tasks index + weekly Tasks dest. **Task** tab → index; dest header chip is the ISO week and returns to the owning quarter index. Proof: [`artifacts/mvp/exp-tasks-index-c-months.png`](artifacts/mvp/exp-tasks-index-c-months.png) and [`artifacts/mvp/exp-tasks-index-c-dest.png`](artifacts/mvp/exp-tasks-index-c-dest.png).
 
+Thesis B (parallel, **not** in the year walk): minimal month-banded Review index + weekly Review dest (`review-{iso_year}-W{nn}`). Three columns — Went well | To improve | Focus next — via `tracks.columns`; light checklists fill the well (no extra Notes, no redundant Review caption). **Rev** tab → index; dest header chip is the ISO week and returns to the owning quarter index. Proof: [`artifacts/mvp/exp-review-dest-b.png`](artifacts/mvp/exp-review-dest-b.png).
+
 ```shell
 uv run pytest
 ```

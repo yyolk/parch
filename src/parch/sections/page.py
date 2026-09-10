@@ -15,6 +15,8 @@ type PageKind = Literal[
     "meeting",
     "tasks_index",
     "task",
+    "review_index",
+    "review",
     "quarter",
     "month",
     "habits",
