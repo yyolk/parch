@@ -3,7 +3,6 @@ import pytest
 from parch.books import YearPlanner
 from parch.components import ProjectLeaf, ProjectsBoard, ProjectsIndexSpines
 from parch.devices.nomad import NOMAD
-from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
@@ -16,8 +15,9 @@ from parch.layouts.planner.painters import (
     PROJECT_P,
     PROJECT_STATUS_MARK,
     TICK,
-    paint_projects,
+    paint_project,
     paint_projects_index_spines,
+    project_card_seats,
     projects_index_spine_planks,
     projects_index_spine_row_count,
     projects_index_spine_row_counts,
@@ -276,8 +276,17 @@ def test_project_leaf_reuses_card_craft():
     spec = Spec(notes_pages=1)
     page = next(p for p in _index_pages(spec) if p.dest == "project-2026-atlas")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_projects(plotter, Rect(4, 20, 110, 90), board)
+    paint_project(plotter, well, board)
+    frames = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(well.w)
+    ]
+    assert len(frames) == 1
+    assert frames[0][1].h == pytest.approx(project_card_seats(well, 3)[0].h)
+    assert frames[0][1].h < well.h * 0.5
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("P") == 1
     assert texts.count("Todo") == 1

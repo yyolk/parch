@@ -414,6 +414,12 @@ def _paint_stacked_spine_title(
         )
 
 
+def paint_project(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """One G-adjacent card at board height — not a stretched well."""
+    card = project_card_seats(box, 3)[0]
+    paint_projects(plotter, card, board)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)

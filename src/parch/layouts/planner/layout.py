@@ -30,6 +30,7 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_priorities,
+    paint_project,
     paint_projects,
     paint_projects_index_spines,
     paint_quarter,
@@ -81,7 +82,7 @@ class PlannerLayout:
             case "projects_index_spines":
                 paint_projects_index_spines(plotter, well, _one(page, ProjectsIndexSpines))
             case "project":
-                paint_projects(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
