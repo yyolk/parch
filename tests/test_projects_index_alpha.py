@@ -159,7 +159,7 @@ def test_index_alpha_column_split_and_seats():
     cap, rows = projects_index_alpha_letter_and_rows(bands[0], 2)
     assert cap.h == pytest.approx(INDEX_ALPHA_LETTER_H)
     assert len(rows) == 2
-    assert rows[0].y > cap.bottom
+    assert rows[0].y == pytest.approx(cap.bottom)
     assert rows[-1].bottom == pytest.approx(bands[0].bottom)
     assert rows[0].h == pytest.approx(INDEX_ALPHA_ENTRY_H)
 
@@ -191,7 +191,8 @@ def test_index_alpha_paint_is_book_not_kanban():
     assert "Doing" not in texts
     assert "Done" not in texts
     assert "PROJECT" not in texts
-    assert "Focus" not in texts
+    focus = [op for op in plotter.ops if op[0] == "text" and op[2] == "Focus"]
+    assert focus and all(op[6] == "serif" and not op[8] for op in focus)
 
     letters = [op for op in plotter.ops if op[0] == "text" and op[2] in {g[0] for g in projects_index_alpha_groups(board.entries)}]
     assert all(op[8] for op in letters)
