@@ -291,13 +291,13 @@ CLONE_STRIP_H = 2.8
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
-# Alternate linear/solid, keep like silhouettes apart (plus≠cross, circle≠hexagon).
+# Alternate linear/solid; circle≠crescent≠hexagon, plus≠cross, triangle≠diamond.
 CLONE_ICONS = (
     "plus",
     "circle",
     "diamond",
     "square",
-    "star",
+    "crescent",
     "hexagon",
     "cross",
     "triangle",
@@ -481,8 +481,8 @@ def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
             _fill_diamond(plotter, box)
         case "triangle":
             _fill_triangle(plotter, box)
-        case "star":
-            _fill_star(plotter, box)
+        case "crescent":
+            _fill_crescent(plotter, box)
         case "hexagon":
             _fill_hexagon(plotter, box)
         case "cross":
@@ -551,10 +551,36 @@ def _fill_poly(plotter: Plotter, box: Rect, pts: list[tuple[float, float]], *, n
     _fill_span_rows(plotter, spans, dy)
 
 
-def _fill_star(plotter: Plotter, box: Rect) -> None:
+def _fill_crescent(plotter: Plotter, box: Rect) -> None:
+    """Waxing crescent — outer disc minus an offset disc. Distinct from circle."""
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
-    _fill_poly(plotter, box, _star_poly(cx, cy, min(box.w, box.h) / 2), n=13)
+    rx = box.w / 2
+    ry = box.h / 2
+    ox = cx + rx * 0.36
+    r2x = rx * 0.78
+    r2y = ry * 0.78
+    ys, dy = _scan_box(box, n=13)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - cy) / ry
+        if abs(t) >= 1:
+            continue
+        half = rx * math.sqrt(max(0.0, 1.0 - t * t))
+        left, right = cx - half, cx + half
+        t2 = (y - cy) / r2y
+        if abs(t2) < 1:
+            cut = r2x * math.sqrt(max(0.0, 1.0 - t2 * t2))
+            cut_l, cut_r = ox - cut, ox + cut
+            if cut_l <= left < cut_r < right:
+                left = cut_r
+            elif left < cut_l < right <= cut_r:
+                right = cut_l
+            elif cut_l <= left and right <= cut_r:
+                continue
+        if right - left > 0.08:
+            spans.append((y - dy / 2, left, right))
+    _fill_span_rows(plotter, spans, dy)
 
 
 def _fill_hexagon(plotter: Plotter, box: Rect) -> None:
@@ -575,16 +601,6 @@ def _fill_cross(plotter: Plotter, box: Rect) -> None:
     x0, y0, x1, y1 = box.x, box.y, box.right, box.bottom
     _fill_poly(plotter, box, [(x0 + t, y0), (x1, y1 - t), (x1 - t, y1), (x0, y0 + t)])
     _fill_poly(plotter, box, [(x1 - t, y0), (x1, y0 + t), (x0 + t, y1), (x0, y1 - t)])
-
-
-def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
-    r_in = r * 0.38
-    pts: list[tuple[float, float]] = []
-    for i in range(10):
-        ang = math.radians(-90 + i * 36)
-        rad = r if i % 2 == 0 else r_in
-        pts.append((cx + rad * math.cos(ang), cy + rad * math.sin(ang)))
-    return pts
 
 
 def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:

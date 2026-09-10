@@ -196,7 +196,7 @@ def test_projects_clone_a_tracks():
         "circle",
         "diamond",
         "square",
-        "star",
+        "crescent",
         "hexagon",
         "cross",
         "triangle",
