@@ -37,7 +37,7 @@ class HabitSection:
                         month=month,
                         month_name=month_name(month),
                         days=days,
-                        rows=spec.habit_rows,
+                        rows=spec.habit_columns,
                         month_dest=spec.dest_for_month(month),
                         day_dests=dests,
                         quarter_dest=spec.dest_for_quarter_of(month),

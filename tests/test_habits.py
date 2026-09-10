@@ -4,7 +4,6 @@ from parch.books import YearPlanner
 from parch.components import HabitGrid
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
-    HABIT_TRANSPOSED_COLS,
     HABIT_WASH,
     HABIT_WASH_CROSS,
     habit_dow_letter,
@@ -44,7 +43,7 @@ def test_habit_pages_follow_each_month():
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31
-    assert grid.rows == 12
+    assert grid.rows == 10
     assert grid.month_dest == "month-2026-07"
     assert grid.day_dests[14] == "2026-07-15"
 
@@ -73,7 +72,7 @@ def test_habit_paint_smoke_and_month_chip_link():
     ink = RecordingPlotter()
     paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
-    assert len(cells) == HABIT_TRANSPOSED_COLS * 31
+    assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
     assert fills
     labels = [op[2] for op in ink.ops if op[0] == "text"]
@@ -83,7 +82,7 @@ def test_habit_paint_smoke_and_month_chip_link():
 
 def test_habit_transposed_seat_and_paint():
     box = Rect(4, 20, 110, 120)
-    day_col, names, bands = habit_seats_transposed(box, 31, HABIT_TRANSPOSED_COLS)
+    day_col, names, bands = habit_seats_transposed(box, 31, 10)
     assert len(names) == 10
     assert len(bands) == 31
     assert day_col.x == pytest.approx(box.x)
@@ -97,12 +96,12 @@ def test_habit_transposed_seat_and_paint():
     ink = RecordingPlotter()
     paint_habit_grid_transposed(ink, box, grid)
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
-    assert len(cells) == 10 * 31
+    assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
     grays = {op[5] for op in fills}
     assert grays == {HABIT_WASH, HABIT_WASH_CROSS}
     assert HABIT_WASH_CROSS > 0.9
-    odd_rows, odd_cols = 31 // 2, HABIT_TRANSPOSED_COLS // 2
+    odd_rows, odd_cols = 31 // 2, grid.rows // 2
     assert len(fills) == odd_rows + odd_cols + odd_rows * odd_cols
     labels = [op[2] for op in ink.ops if op[0] == "text"]
     assert "1" in labels and "31" in labels
@@ -114,6 +113,17 @@ def test_habit_transposed_seat_and_paint():
     assert all("·" not in label for label in labels)
 
 
+def test_habit_paint_follows_spec_columns():
+    spec = Spec(notes_pages=1, habit_columns=8)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    assert grid.rows == 8
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == 8 * 31
+
+
 def test_habit_weekday_zebra_paint():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
@@ -121,7 +131,7 @@ def test_habit_weekday_zebra_paint():
     ink = RecordingPlotter()
     paint_habit_grid_weekday_zebra(ink, Rect(4, 20, 110, 120), grid)
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
-    assert len(cells) == 12 * 31
+    assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
     assert len(fills) == grid.rows // 2
     assert {op[5] for op in fills} == {HABIT_WASH}
@@ -157,7 +167,7 @@ def test_habit_day_labels_link_to_dailies():
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     box = Rect(4, 20, 110, 120)
-    day_col, names, _bands = habit_seats_transposed(box, grid.days, HABIT_TRANSPOSED_COLS)
+    day_col, names, _bands = habit_seats_transposed(box, grid.days, grid.rows)
     ink = RecordingPlotter()
     paint_habit_grid(ink, box, grid)
     hits = [(op[1], op[2]) for op in ink.ops if op[0] == "link"]

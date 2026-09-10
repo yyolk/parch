@@ -15,6 +15,19 @@ _WEEK_STARTS = {"monday": 0, "sunday": 6}
 type TomlTable = dict[str, object]
 
 
+def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
+    """Sealed default is 10 columns. Prefer ``[habits] columns``; ``rows`` still accepted."""
+    for table, key in (
+        (habits_table, "columns"),
+        (habits_table, "rows"),
+        (data, "habit_columns"),
+        (data, "habit_rows"),
+    ):
+        if key in table:
+            return int(table[key])
+    return 10
+
+
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
     raw = data.get("months")
     if isinstance(raw, list) and raw:
@@ -50,7 +63,7 @@ class Spec:
     schedule_from: int = 7
     schedule_to: int = 16
     notes_pages: int = 2
-    habit_rows: int = 12
+    habit_columns: int = 10
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -71,8 +84,8 @@ class Spec:
             raise ConfigError("schedule hours must be 0–23 and from ≤ to")
         if self.notes_pages < 0:
             raise ConfigError("notes_pages must be >= 0")
-        if not 4 <= self.habit_rows <= 16:
-            raise ConfigError("habit_rows must be 4–16")
+        if not 4 <= self.habit_columns <= 16:
+            raise ConfigError("habit_columns must be 4–16")
 
     @property
     def weekday_start(self) -> int:
@@ -175,7 +188,7 @@ class Spec:
             schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),
             schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),
             notes_pages=int(notes_pages),
-            habit_rows=int(habits_table.get("rows", data.get("habit_rows", 12))),
+            habit_columns=_habit_columns(data, habits_table),
         )
 
     @classmethod

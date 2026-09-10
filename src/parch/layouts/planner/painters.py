@@ -399,7 +399,6 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
 HABIT_LABEL_W = 28.0
 HABIT_HEAD_H = 4.2
 HABIT_HEAD_DOW_H = 7.6
-HABIT_TRANSPOSED_COLS = 10
 HABIT_DAY_W = 13.0
 HABIT_DOW_W = 5.2
 HABIT_NAME_H = 16.0
@@ -463,9 +462,9 @@ def paint_habit_grid_rows(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
 
 
 def habit_seats_transposed(
-    box: Rect, days: int, habits: int = HABIT_TRANSPOSED_COLS
+    box: Rect, days: int, habits: int
 ) -> tuple[Rect, tuple[Rect, ...], tuple[Rect, ...]]:
-    """Comparison seat: day labels left, habit name slots across the top."""
+    """Day labels left, habit name slots across the top. ``habits`` comes from the spec."""
     day_col, rest = box.split_left(HABIT_DAY_W)
     name_band, below = rest.split_top(HABIT_NAME_H)
     body = Rect(below.x, below.y + HABIT_BODY_GAP, below.w, below.h - HABIT_BODY_GAP)
@@ -549,7 +548,7 @@ def _stripe_span(tracks: tuple[Rect, ...], index: int, *, axis: str, end: float)
 
 def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
     """Days down the left (``1 W``), habit name slots across the top, pale zebra."""
-    habits = HABIT_TRANSPOSED_COLS
+    habits = max(1, grid.rows)
     day_col, names, bands = habit_seats_transposed(box, grid.days, habits)
     matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
     day_tracks = columns(matrix, habits, gap=0.4)

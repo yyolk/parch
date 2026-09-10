@@ -12,4 +12,4 @@ schedule_to = 16
 notes_pages = 1
 
 [habits]
-rows = 12
+columns = 10
