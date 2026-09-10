@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectLeaf,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -180,6 +182,11 @@ PROJECT_P = 5.0
 PROJECT_STATUS_MARK = 3.2
 PROJECT_NOTE_PITCH = 4.15
 PROJECT_STATUS_LABELS = ("Todo", "Doing", "Done")
+INDEX_INSET_Y = 5.0
+INDEX_DATE_W = 16.0
+INDEX_SPINE_W = 10.0
+INDEX_NODE = 3.2
+INDEX_NAME_GAP = 2.6
 
 
 def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
@@ -218,23 +225,51 @@ def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
 def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
     for card in project_card_seats(box, board.cards):
-        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        left, right = project_card_columns(card)
-        header, tasks, status = project_card_left_seats(left)
-        rule_y = _paint_project_name(plotter, header)
-        _paint_project_tasks(plotter, tasks, board.tasks)
-        _paint_project_status(plotter, status)
-        _paint_project_notes(plotter, right, first_y=rule_y)
+        _paint_project_card(plotter, card, tasks=board.tasks)
 
 
-def _paint_project_name(plotter: Plotter, header: Rect) -> float:
+def _paint_project_card(
+    plotter: Plotter, card: Rect, *, tasks: int, name: str = "", when: str = ""
+) -> None:
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    left, right = project_card_columns(card)
+    header, task_box, status = project_card_left_seats(left)
+    rule_y = _paint_project_name(plotter, header, name=name, when=when)
+    _paint_project_tasks(plotter, task_box, tasks)
+    _paint_project_status(plotter, status)
+    _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+def _paint_project_name(
+    plotter: Plotter, header: Rect, *, name: str = "", when: str = ""
+) -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
     rule_y = mark.bottom
-    plotter.line(
+    when_w = 12.0 if when else 0.0
+    field = Rect(
         mark.right + 1.4,
+        header.y,
+        max(header.right - mark.right - 1.4 - when_w, 1),
+        header.h,
+    )
+    if name:
+        plotter.text(field, name, size=8.2, face="serif", gray=INK, align="left")
+        if when:
+            plotter.text(
+                Rect(field.right, header.y, when_w, header.h),
+                when,
+                size=5.8,
+                face="sans",
+                gray=MUTED,
+                small_caps=True,
+                align="right",
+            )
+        return rule_y
+    plotter.line(
+        field.x,
         rule_y,
         header.right,
         rule_y,
@@ -242,6 +277,59 @@ def _paint_project_name(plotter: Plotter, header: Rect) -> float:
         stroke_gray=RULE_C,
     )
     return rule_y
+
+
+def projects_index_timeline(box: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal row tracks for named timeline nodes, inset from the well edge."""
+    inner = Rect(box.x, box.y + INDEX_INSET_Y, box.w, box.h - 2 * INDEX_INSET_Y)
+    return rows(inner, max(1, n))
+
+
+def projects_index_node_seats(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Date | spine | printed name — one milestone row."""
+    date, rest = row.split_left(INDEX_DATE_W)
+    spine, name = rest.split_left(INDEX_SPINE_W)
+    return date, spine, name
+
+
+def paint_projects_index_timeline(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis M — vertical spine, printed titles beside nodes, each a leaf dest."""
+    seats = projects_index_timeline(box, len(index.nodes))
+    first_spine = projects_index_node_seats(seats[0])[1]
+    cx = first_spine.x + first_spine.w / 2
+    y0 = seats[0].y + seats[0].h / 2
+    y1 = seats[-1].y + seats[-1].h / 2
+    plotter.line(cx, y0, cx, y1, stroke_width=HAIR, stroke_gray=INK)
+    for seat, node in zip(seats, index.nodes, strict=True):
+        date, spine, name = projects_index_node_seats(seat)
+        cy = seat.y + seat.h / 2
+        mark = Rect(cx - INDEX_NODE / 2, cy - INDEX_NODE / 2, INDEX_NODE, INDEX_NODE)
+        plotter.line(date.right, cy, mark.x, cy, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            date,
+            node.when,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="right",
+        )
+        plotter.text(
+            Rect(spine.right + INDEX_NAME_GAP, name.y, max(name.w - INDEX_NAME_GAP, 1), name.h),
+            node.name,
+            size=9.4,
+            face="serif",
+            gray=INK,
+            align="left",
+        )
+        plotter.link(seat, node.dest)
+
+
+def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
+    """G-adjacent leaf — one board-height card with the printed project name."""
+    card = project_card_seats(box, 3)[0]
+    _paint_project_card(plotter, card, tasks=leaf.tasks, name=leaf.name, when=leaf.when)
 
 
 def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:
@@ -921,6 +1009,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Year"] = item.dest
         elif item.dest.startswith("quarter-"):
             dests["Quar"] = item.dest
+        elif item.dest.startswith("projects-index-"):
+            dests["Proj"] = item.dest
         elif item.dest.endswith("-habits"):
             dests["Habit"] = item.dest
         elif item.dest.startswith("month-"):
@@ -942,6 +1032,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1043,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes", "Proj")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1065,9 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index":
+            return "Proj"
+        case "project":
+            return "Proj"
         case _:
             return "Year"
