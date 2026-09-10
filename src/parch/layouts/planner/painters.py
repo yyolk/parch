@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectLeaf,
     ProjectsBoard,
+    ProjectsIndexBands,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -180,6 +182,13 @@ PROJECT_P = 5.0
 PROJECT_STATUS_MARK = 3.2
 PROJECT_NOTE_PITCH = 4.15
 PROJECT_STATUS_LABELS = ("Todo", "Doing", "Done")
+INDEX_BAND_LABELS = ("Active", "Waiting", "Done")
+INDEX_BAND_GAP = 2.6
+INDEX_BAND_INSET_X = 1.8
+INDEX_BAND_INSET_Y = 1.4
+INDEX_BAND_HEAD_H = 4.2
+INDEX_HEAD_GAP = 0.8
+INDEX_ROW_GAP = 1.0
 
 
 def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
@@ -225,6 +234,52 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_tasks(plotter, tasks, board.tasks)
         _paint_project_status(plotter, status)
         _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+def projects_index_bands(well: Rect, bands: int = 3) -> tuple[Rect, ...]:
+    """Equal horizontal status bands. Not kanban columns."""
+    return rows(well, bands, gap=INDEX_BAND_GAP)
+
+
+def projects_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Band label over linked tick+name rows, after a quiet inset."""
+    inner = band.inset(INDEX_BAND_INSET_X, INDEX_BAND_INSET_Y)
+    head, rest = inner.split_top(INDEX_BAND_HEAD_H)
+    body = Rect(rest.x, rest.y + INDEX_HEAD_GAP, rest.w, rest.h - INDEX_HEAD_GAP)
+    return head, rows(body, n, gap=INDEX_ROW_GAP)
+
+
+def paint_projects_index_bands(plotter: Plotter, box: Rect, board: ProjectsIndexBands) -> None:
+    """Thesis D — index partitioned by status. Tick + name rows; no swim-lane board."""
+    for band_box, band in zip(projects_index_bands(box, len(board.bands)), board.bands, strict=True):
+        plotter.rect(band_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        head, lines = projects_index_band_seats(band_box, len(band.rows))
+        plotter.text(
+            head,
+            band.label,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        plotter.line(
+            head.x,
+            head.bottom,
+            head.right,
+            head.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+        for line, row in zip(lines, band.rows, strict=True):
+            y = line.y + (line.h - TICK) / 2
+            _paint_focus_row(plotter, line.x, y, line.right)
+            plotter.link(line, row.dest)
+
+
+def paint_project_leaf(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
+    """One G-craft card filling the well — existing stacked-card painter, cards=1."""
+    paint_projects(plotter, box, ProjectsBoard(year=leaf.year, cards=1, tasks=leaf.tasks))
 
 
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
@@ -927,6 +982,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-index-bands-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -942,6 +999,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index_bands":
+            dests["Proj"] = page.dest
+        case "project":
+            dests["Proj"] = dests.get("Proj", page.dest)
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1010,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Proj", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1032,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index_bands" | "project":
+            return "Proj"
         case _:
             return "Year"
