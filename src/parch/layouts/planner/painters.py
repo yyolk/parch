@@ -291,16 +291,18 @@ CLONE_STRIP_H = 2.8
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
-# Alternate linear/solid; circle≠crescent≠hexagon, plus≠cross, triangle≠diamond.
+# Nine marks: S L SS L SS L S. Star only touches plus (linear).
+# plus≠cross, circle≠crescent≠hexagon, triangle≠diamond.
 CLONE_ICONS = (
-    "plus",
-    "circle",
-    "diamond",
+    "triangle",
+    "cross",
+    "hexagon",
     "square",
     "crescent",
-    "hexagon",
-    "cross",
-    "triangle",
+    "diamond",
+    "circle",
+    "plus",
+    "star",
 )
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
@@ -450,7 +452,7 @@ def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> Non
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
     """Filled icons, even spread on tracks.columns across the strip seat."""
-    slots = columns(box, len(CLONE_ICONS), gap=1.3)
+    slots = columns(box, len(CLONE_ICONS), gap=1.05)
     for slot, kind in zip(slots, CLONE_ICONS, strict=True):
         s = min(CLONE_ICON, slot.h - 0.2, slot.w)
         icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
@@ -487,6 +489,8 @@ def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
             _fill_hexagon(plotter, box)
         case "cross":
             _fill_cross(plotter, box)
+        case "star":
+            _fill_star(plotter, box)
         case _:
             raise ValueError(f"unknown clone icon {kind!r}")
 
@@ -601,6 +605,24 @@ def _fill_cross(plotter: Plotter, box: Rect) -> None:
     x0, y0, x1, y1 = box.x, box.y, box.right, box.bottom
     _fill_poly(plotter, box, [(x0 + t, y0), (x1, y1 - t), (x1 - t, y1), (x0, y0 + t)])
     _fill_poly(plotter, box, [(x1 - t, y0), (x1, y0 + t), (x0 + t, y1), (x0, y1 - t)])
+
+
+def _fill_star(plotter: Plotter, box: Rect) -> None:
+    """Five-point star — restored; kept off the other spiky/heavy marks."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    r = min(box.w, box.h) / 2
+    _fill_poly(plotter, box, _star_poly(cx, cy, r), n=13)
+
+
+def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
+    r_in = r * 0.38
+    pts: list[tuple[float, float]] = []
+    for i in range(10):
+        ang = math.radians(-90 + i * 36)
+        rad = r if i % 2 == 0 else r_in
+        pts.append((cx + rad * math.cos(ang), cy + rad * math.sin(ang)))
+    return pts
 
 
 def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:

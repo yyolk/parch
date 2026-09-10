@@ -192,14 +192,15 @@ def test_projects_clone_a_tracks():
     assert notes.bottom == pytest.approx(strip.bottom)
     assert notes.right < cards[0].right
     assert CLONE_ICONS == (
-        "plus",
-        "circle",
-        "diamond",
+        "triangle",
+        "cross",
+        "hexagon",
         "square",
         "crescent",
-        "hexagon",
-        "cross",
-        "triangle",
+        "diamond",
+        "circle",
+        "plus",
+        "star",
     )
 
 
