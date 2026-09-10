@@ -194,7 +194,7 @@ def test_paint_spines_writeins_and_links():
     rules = [
         op
         for op in plotter.ops
-        if op[0] == "line" and op[5] == pytest.approx(RULE_C)
+        if op[0] == "line" and op[6] == pytest.approx(RULE_C)
     ]
     assert len(rules) == writeins
 
