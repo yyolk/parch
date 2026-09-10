@@ -277,6 +277,71 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+PROJECTS_TWO_UP_CARDS = 2
+PROJECTS_TWO_UP_TASKS = 6
+PROJECTS_TWO_UP_GAP = 3.4
+PROJECTS_TWO_UP_COL_GAP = 3.2
+PROJECTS_TWO_UP_COL_WEIGHTS = (0.44, 0.56)
+PROJECTS_TWO_UP_INSET_X = 2.2
+PROJECTS_TWO_UP_INSET_Y = 2.0
+PROJECTS_TWO_UP_HEADER_H = 7.0
+PROJECTS_TWO_UP_STATUS_H = 7.8
+PROJECTS_TWO_UP_LEFT_GAP = 1.6
+
+
+def projects_two_up(well: Rect) -> tuple[Rect, Rect]:
+    """Thesis D: two half-page project sheets stacked in the well."""
+    top, bottom = rows(well, PROJECTS_TWO_UP_CARDS, gap=PROJECTS_TWO_UP_GAP)
+    return top, bottom
+
+
+def projects_two_up_columns(card: Rect) -> tuple[Rect, Rect]:
+    """Tasks | generous notes, after a sheet inset."""
+    return columns(
+        card.inset(PROJECTS_TWO_UP_INSET_X, PROJECTS_TWO_UP_INSET_Y),
+        2,
+        gap=PROJECTS_TWO_UP_COL_GAP,
+        weights=PROJECTS_TWO_UP_COL_WEIGHTS,
+    )
+
+
+def projects_two_up_tasks_height(tasks: int = PROJECTS_TWO_UP_TASKS) -> float:
+    """Content height for Focus-craft ticks — no Focus label, no flex fill."""
+    return 0.4 + TICK + (max(1, tasks) - 1) * FOCUS_PITCH
+
+
+def projects_two_up_left(
+    left: Rect, *, tasks: int = PROJECTS_TWO_UP_TASKS
+) -> tuple[Rect, Rect, Rect]:
+    """P+name, content-height ticks, Todo/Doing/Done sitting under the list."""
+    header, rest = left.split_top(PROJECTS_TWO_UP_HEADER_H)
+    tasks_box = Rect(
+        rest.x,
+        rest.y + PROJECTS_TWO_UP_LEFT_GAP,
+        rest.w,
+        projects_two_up_tasks_height(tasks),
+    )
+    status = Rect(
+        rest.x,
+        tasks_box.bottom + PROJECTS_TWO_UP_LEFT_GAP,
+        rest.w,
+        PROJECTS_TWO_UP_STATUS_H,
+    )
+    return header, tasks_box, status
+
+
+def paint_projects_two_up(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """Thesis D — two half-page sheets. Parallel to ``paint_projects``; not the default."""
+    for card in projects_two_up(box):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        left, right = projects_two_up_columns(card)
+        header, tasks, status = projects_two_up_left(left)
+        rule_y = _paint_project_name(plotter, header)
+        _paint_project_tasks(plotter, tasks, PROJECTS_TWO_UP_TASKS)
+        _paint_project_status(plotter, status)
+        _paint_project_notes(plotter, right, first_y=rule_y)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)

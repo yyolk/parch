@@ -11,11 +11,23 @@ from parch.layouts.planner.painters import (
     PROJECT_P,
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
+    PROJECTS_TWO_UP_CARDS,
+    PROJECTS_TWO_UP_COL_WEIGHTS,
+    PROJECTS_TWO_UP_STATUS_H,
+    PROJECTS_TWO_UP_TASKS,
     TICK,
+    paint_header,
+    paint_nav,
     paint_projects,
+    paint_projects_two_up,
+    paint_toolbar,
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
+    projects_two_up,
+    projects_two_up_columns,
+    projects_two_up_left,
+    projects_two_up_tasks_height,
     strip_active,
     strip_items,
 )
@@ -149,5 +161,113 @@ def test_projects_header_year_and_seven_tabs():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Projects" in texts
     assert "2026" in texts
+    assert texts.count("P") == 3
+    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
+        assert label in texts
+
+
+def test_projects_two_up_seat_taller_than_three_stack():
+    well = well_rect(NOMAD)
+    top, bottom = projects_two_up(well)
+    triple = project_card_seats(well, 3)
+    assert top.x == pytest.approx(well.x)
+    assert top.y == pytest.approx(well.y)
+    assert top.w == pytest.approx(well.w)
+    assert bottom.x == pytest.approx(well.x)
+    assert bottom.w == pytest.approx(well.w)
+    assert bottom.bottom == pytest.approx(well.bottom)
+    assert top.h == pytest.approx(bottom.h)
+    assert top.h > triple[0].h
+    assert bottom.y > top.bottom
+    assert len(triple) == 3
+    assert PROJECTS_TWO_UP_CARDS == 2
+
+
+def test_projects_two_up_sheet_seats():
+    well = Rect(4, 20, 110, 90)
+    card = projects_two_up(well)[0]
+    left, right = projects_two_up_columns(card)
+    header, tasks, status = projects_two_up_left(left)
+    assert left.x > card.x
+    assert right.right < card.right
+    assert left.right < right.x
+    assert right.w > left.w
+    share = left.w + right.w
+    assert left.w / share == pytest.approx(
+        PROJECTS_TWO_UP_COL_WEIGHTS[0] / sum(PROJECTS_TWO_UP_COL_WEIGHTS)
+    )
+    assert header.y == pytest.approx(left.y)
+    assert header.x == pytest.approx(left.x)
+    assert tasks.y > header.bottom
+    assert status.y > tasks.bottom
+    assert status.h == pytest.approx(PROJECTS_TWO_UP_STATUS_H)
+    assert status.bottom < left.bottom
+    assert tasks.h == pytest.approx(projects_two_up_tasks_height(PROJECTS_TWO_UP_TASKS))
+    assert right.h > tasks.h
+    assert right.bottom == pytest.approx(left.bottom)
+
+
+def test_projects_two_up_paints_six_ticks_and_status():
+    board = ProjectsBoard(year=2026, cards=2, tasks=6)
+    plotter = RecordingPlotter()
+    paint_projects_two_up(plotter, well_rect(NOMAD), board)
+
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("P") == 2
+    assert texts.count("Todo") == 2
+    assert texts.count("Doing") == 2
+    assert texts.count("Done") == 2
+    assert "PROJECT" not in texts
+    assert "Focus" not in texts
+    assert "Notes" not in texts
+
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert len(ticks) == PROJECTS_TWO_UP_CARDS * PROJECTS_TWO_UP_TASKS
+
+    marks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(PROJECT_STATUS_MARK)
+    ]
+    assert len(marks) == 6
+
+    p_boxes = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+    ]
+    assert len(p_boxes) == 2
+
+    fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
+    assert fills == []
+
+
+def test_projects_two_up_chrome_still_seven_tabs():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    plotter = RecordingPlotter()
+    plotter.begin_page()
+    PlannerLayout().paint(page, plotter, NOMAD)
+    default_ps = [op[2] for op in plotter.ops if op[0] == "text"].count("P")
+    assert default_ps == 3
+
+    exp = RecordingPlotter()
+    exp.begin_page()
+    paint_toolbar(exp, NOMAD)
+    paint_header(exp, NOMAD, page.title, str(board.year))
+    paint_nav(exp, NOMAD, strip_items(page), strip_active(page.kind))
+    paint_projects_two_up(exp, well_rect(NOMAD), board)
+    texts = [op[2] for op in exp.ops if op[0] == "text"]
+    assert "Projects" in texts
+    assert "2026" in texts
+    assert texts.count("P") == 2
     for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
         assert label in texts
