@@ -138,6 +138,11 @@ class Spec:
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
 
+    @property
+    def projects_roster_dest(self) -> str:
+        """Parallel dense-roster experiment — not the default Projects dest."""
+        return _dest(t"projects-roster-{self.year:04d}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")

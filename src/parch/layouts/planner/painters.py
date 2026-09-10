@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsRoster,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -225,6 +226,39 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_tasks(plotter, tasks, board.tasks)
         _paint_project_status(plotter, status)
         _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+# Thesis B — dense roster. Parallel to paint_projects; do not swap the default.
+ROSTER_ROW_GAP = 1.8
+ROSTER_INSET_X = 1.6
+ROSTER_INSET_Y = 1.1
+ROSTER_BAND_GAP = 0.7
+ROSTER_NAME_H = 5.8
+ROSTER_STATUS_H = 5.6
+
+
+def roster_row_seats(well: Rect, n: int) -> tuple[Rect, ...]:
+    """One compact track per project — maximize count, keep a writable gap."""
+    return rows(well, n, gap=ROSTER_ROW_GAP)
+
+
+def roster_row_bands(card: Rect) -> tuple[Rect, Rect]:
+    """P+name over one-line Todo/Doing/Done. No notes pocket, no task ticks."""
+    return rows(
+        card.inset(ROSTER_INSET_X, ROSTER_INSET_Y),
+        2,
+        gap=ROSTER_BAND_GAP,
+        weights=(ROSTER_NAME_H, ROSTER_STATUS_H),
+    )
+
+
+def paint_projects_dense(plotter: Plotter, box: Rect, roster: ProjectsRoster) -> None:
+    """Thesis B — eight compact rows. Trade depth for overview."""
+    for card in roster_row_seats(box, roster.rows):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        header, status = roster_row_bands(card)
+        _paint_project_name(plotter, header)
+        _paint_project_status(plotter, status)
 
 
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
@@ -940,7 +974,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_roster":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1003,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_roster":
             return ""
         case _:
             return "Year"
