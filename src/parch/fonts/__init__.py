@@ -1,4 +1,4 @@
-"""Vendored Liberation Sans/Serif (OFL-1.1)."""
+"""Vendored Martian Grotesk (UI sans) + Liberation Serif (OFL-1.1)."""
 
 from pathlib import Path
 
