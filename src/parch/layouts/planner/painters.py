@@ -983,7 +983,7 @@ TASK_INDEX_LINE_H = 5.4
 TASK_INDEX_WEEK_W = 12.0
 # Longest 6.2 smcp ``short_date_range`` (e.g. ``30 Nov–6 Dec``) is ≈14.29 mm.
 TASK_INDEX_RANGE_W = 14.8
-TASK_INDEX_WRITE_GAP = 1.06
+TASK_INDEX_WRITE_GAP = 1.41
 TASK_GAP = 2.6
 
 

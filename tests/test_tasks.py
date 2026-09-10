@@ -159,7 +159,7 @@ def test_tasks_index_seats_weighted_by_weeks():
     assert dated.x == pytest.approx(stub.right)
     assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
     assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
-    assert TASK_INDEX_WRITE_GAP == pytest.approx(1.06)
+    assert TASK_INDEX_WRITE_GAP == pytest.approx(1.41)
     via_cols = columns(strip, 2, gap=0, weights=(TASK_INDEX_WEEK_W, max(strip.w - TASK_INDEX_WEEK_W, 1)))
     rest = via_cols[1]
     write_w = max(rest.w - TASK_INDEX_WRITE_GAP - TASK_INDEX_RANGE_W, 1)
