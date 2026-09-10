@@ -7,12 +7,27 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    CLONE_RAIL_W,
+    CLONE_STATUS_RAIL_W,
+    CLONE_TRACK_MARK,
+    HABIT_WASH,
+    INK,
+    PAPER,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
+    WASH,
+    clone_craft_body,
+    clone_craft_columns,
+    clone_craft_left,
+    clone_craft_rail,
+    clone_craft_seats,
+    clone_craft_shell,
+    clone_craft_status_rail,
     paint_projects,
+    paint_projects_clone_craft,
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
@@ -151,3 +166,137 @@ def test_projects_header_year_and_seven_tabs():
     assert "2026" in texts
     for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
         assert label in texts
+
+
+def test_clone_craft_seats_rail_and_status_track():
+    well = Rect(4, 20, 110, 90)
+    cards = clone_craft_seats(well, 3)
+    assert len(cards) == 3
+    assert cards[0].y == pytest.approx(well.y)
+    assert cards[0].w == pytest.approx(well.w)
+    assert cards[-1].bottom == pytest.approx(well.bottom)
+    assert cards[1].y > cards[0].bottom
+
+    rail, body, status = clone_craft_shell(cards[0])
+    assert rail == clone_craft_rail(cards[0])
+    assert body == clone_craft_body(cards[0])
+    assert status == clone_craft_status_rail(cards[0])
+    assert rail.w == pytest.approx(CLONE_RAIL_W)
+    assert rail.x == pytest.approx(cards[0].x)
+    assert rail.h == pytest.approx(cards[0].h)
+    assert body.x == pytest.approx(rail.right)
+    assert status.w == pytest.approx(CLONE_STATUS_RAIL_W)
+    assert status.x == pytest.approx(body.right)
+    assert status.right == pytest.approx(cards[0].right)
+    assert status.h == pytest.approx(cards[0].h)
+    assert body.w == pytest.approx(cards[0].w - CLONE_RAIL_W - CLONE_STATUS_RAIL_W)
+
+    left, notes = clone_craft_columns(body)
+    assert left.x > body.x
+    assert notes.right < body.right
+    assert left.right < notes.x
+    assert notes.w > left.w
+    assert notes.right < status.x
+
+    header, tasks = clone_craft_left(left)
+    assert header.y == pytest.approx(left.y)
+    assert tasks.y > header.bottom
+    assert tasks.bottom == pytest.approx(left.bottom)
+
+
+def test_clone_craft_paint_uses_nomad_ink():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_projects_clone_craft(plotter, well, board)
+
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("P") == 3
+    assert texts.count("Todo") == 3
+    assert texts.count("Doing") == 3
+    assert texts.count("Done") == 3
+    assert "PROJECT" not in texts
+    assert "TO DO" not in texts
+    assert "IN PROGRESS" not in texts
+    assert "DONE!" not in texts
+    assert "Focus" not in texts
+    assert "Notes" not in texts
+
+    rails = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[1].w == pytest.approx(CLONE_RAIL_W)
+        and op[5] == pytest.approx(INK)
+    ]
+    assert len(rails) == 3
+
+    inverted = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[1].w == pytest.approx(PROJECT_P)
+        and op[5] == pytest.approx(INK)
+    ]
+    assert len(inverted) == 3
+    p_ink = [op for op in plotter.ops if op[0] == "text" and op[2] == "P"]
+    assert all(op[7] == pytest.approx(PAPER) for op in p_ink)
+
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert len(ticks) == 3 * 4
+
+    marks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and op[3]
+        and op[1].w == pytest.approx(CLONE_TRACK_MARK)
+        and op[5] == pytest.approx(PAPER)
+    ]
+    assert len(marks) == 9
+
+    zebra = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[3] and not op[2] and op[5] == pytest.approx(HABIT_WASH)
+    ]
+    assert len(zebra) == 3 * 2
+
+    bands = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[5] == pytest.approx(WASH)
+        and op[1].w == pytest.approx(CLONE_STATUS_RAIL_W)
+    ]
+    assert len(bands) == 3
+
+
+def test_clone_craft_does_not_replace_default_paint():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    plotter = RecordingPlotter()
+    plotter.begin_page()
+    PlannerLayout().paint(page, plotter, NOMAD)
+    rails = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[1].w == pytest.approx(CLONE_RAIL_W)
+    ]
+    assert rails == []

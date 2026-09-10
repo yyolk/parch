@@ -277,6 +277,148 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+CLONE_RAIL_W = 2.2
+CLONE_STATUS_RAIL_W = 21.0
+CLONE_CARD_GAP = 2.6
+CLONE_INSET_X = 1.6
+CLONE_INSET_Y = 1.3
+CLONE_COL_GAP = 2.4
+CLONE_COL_WEIGHTS = (0.44, 0.56)
+CLONE_HEADER_H = 6.2
+CLONE_LEFT_GAP = 1.0
+CLONE_TASK_PAD = 0.4
+CLONE_TRACK_MARK = 3.2
+CLONE_STAGE_H = 8.0
+CLONE_STAGE_GAP = 2.4
+
+
+def clone_craft_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
+    """Three stacked modules — same card count as the default board."""
+    return rows(well, cards, gap=CLONE_CARD_GAP)
+
+
+def clone_craft_shell(card: Rect) -> tuple[Rect, Rect, Rect]:
+    """Silent black rail | writing body | wash status rail."""
+    rail, rest = card.split_left(CLONE_RAIL_W)
+    body, status = rest.split_left(rest.w - CLONE_STATUS_RAIL_W)
+    return rail, body, status
+
+
+def clone_craft_rail(card: Rect) -> Rect:
+    """Narrow black spine. No rotated type."""
+    return clone_craft_shell(card)[0]
+
+
+def clone_craft_body(card: Rect) -> Rect:
+    """Hair-outlined writing body between the two rails."""
+    return clone_craft_shell(card)[1]
+
+
+def clone_craft_status_rail(card: Rect) -> Rect:
+    """Full-height stage rail — reference gray band, orthogonal labels."""
+    return clone_craft_shell(card)[2]
+
+
+def clone_craft_columns(body: Rect) -> tuple[Rect, Rect]:
+    """Tasks | lined notes, after a quiet inset."""
+    return columns(
+        body.inset(CLONE_INSET_X, CLONE_INSET_Y),
+        2,
+        gap=CLONE_COL_GAP,
+        weights=CLONE_COL_WEIGHTS,
+    )
+
+
+def clone_craft_left(left: Rect) -> tuple[Rect, Rect]:
+    """P+name, then task ticks."""
+    header, rest = left.split_top(CLONE_HEADER_H)
+    tasks = Rect(rest.x, rest.y + CLONE_LEFT_GAP, rest.w, rest.h - CLONE_LEFT_GAP)
+    return header, tasks
+
+
+def paint_projects_clone_craft(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """Kanban-shaped stack in Nomad ink. Parallel to ``paint_projects``; not the default."""
+    for card in clone_craft_seats(box, board.cards):
+        rail, body, status = clone_craft_shell(card)
+        plotter.rect(rail, stroke=False, fill=True, fill_gray=INK)
+        rest = Rect(body.x, body.y, body.w + status.w, body.h)
+        plotter.rect(rest, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        _wash(plotter, status, WASH)
+        left, notes = clone_craft_columns(body)
+        header, tasks = clone_craft_left(left)
+        rule_y = _paint_project_name_inverted(plotter, header)
+        _paint_clone_craft_tasks(plotter, tasks, board.tasks)
+        _paint_project_notes(plotter, notes, first_y=rule_y)
+        _paint_clone_craft_status(plotter, status)
+
+
+def _paint_project_name_inverted(plotter: Plotter, header: Rect) -> float:
+    """Daily-style inverted P slab + name rule. Open circle in the reference."""
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    plotter.rect(mark, stroke=False, fill=True, fill_gray=INK)
+    plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=PAPER, align="center")
+    rule_y = mark.bottom
+    plotter.line(
+        mark.right + 1.4,
+        rule_y,
+        header.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    return rule_y
+
+
+def _paint_clone_craft_tasks(plotter: Plotter, box: Rect, n: int) -> None:
+    """Focus ticks with pale zebra — not circular bullets."""
+    y = box.y + CLONE_TASK_PAD
+    for i in range(max(1, n)):
+        if i % 2:
+            top = max(y - 0.35, box.y)
+            wash = Rect(box.x, top, box.w, min(FOCUS_PITCH, box.bottom - top))
+            _wash(plotter, wash, HABIT_WASH)
+        _paint_focus_row(plotter, box.x, y, box.right)
+        y += FOCUS_PITCH
+
+
+def _paint_clone_craft_status(plotter: Plotter, box: Rect) -> None:
+    """Stacked Todo / Doing / Done on the right rail. Orthogonal scaps, no arrow."""
+    total = 3 * CLONE_STAGE_H + 2 * CLONE_STAGE_GAP
+    y = box.y + max((box.h - total) / 2, 1.2)
+    marks: list[Rect] = []
+    for label in PROJECT_STATUS_LABELS:
+        slot = Rect(box.x + 1.3, y, box.w - 2.2, CLONE_STAGE_H)
+        mark = Rect(
+            slot.x,
+            slot.y + (slot.h - CLONE_TRACK_MARK) / 2,
+            CLONE_TRACK_MARK,
+            CLONE_TRACK_MARK,
+        )
+        plotter.rect(
+            mark,
+            stroke=True,
+            fill=True,
+            fill_gray=PAPER,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+        plotter.text(
+            Rect(mark.right + 0.8, slot.y, max(slot.right - mark.right - 0.8, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        marks.append(mark)
+        y += CLONE_STAGE_H + CLONE_STAGE_GAP
+    cx = marks[0].x + marks[0].w / 2
+    for above, below in zip(marks, marks[1:]):
+        plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=SOFT)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
