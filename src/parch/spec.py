@@ -255,6 +255,31 @@ class Spec:
         iso = day.isocalendar()
         return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
 
+    def dest_for_reviews_index(self, quarter: int) -> str:
+        if not 1 <= quarter <= 4:
+            raise ConfigError(f"reviews index quarter out of range: {quarter}")
+        return _dest(t"reviews-index-{self.year:04d}-Q{quarter}")
+
+    @property
+    def reviews_index_dest(self) -> str:
+        """Rev landing — first pressed quarter’s month-column index."""
+        return self.dest_for_reviews_index(self.pressed_quarters()[0])
+
+    def dest_for_reviews_index_of(self, day: date) -> str:
+        """Index page whose month column first lists the ISO week of ``day``."""
+        key = day.isocalendar()[:2]
+        for month in self.months:
+            for week in month_touching_weeks(self.year, month, self.weekday_start):
+                monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+                if monday.isocalendar()[:2] == key:
+                    return self.dest_for_reviews_index(quarter_of(month))
+        return self.reviews_index_dest
+
+    def dest_for_review(self, day: date) -> str:
+        """Weekly Review dest, e.g. ``review-2026-W01`` — not the planner week page."""
+        iso = day.isocalendar()
+        return _dest(t"review-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
