@@ -203,7 +203,7 @@ def test_projects_index_after_board_and_nav_lands_there():
     assert CLONE_ICONS == PROJECT_GLYPHS
 
 
-def test_paint_projects_index_glyphs_prints_titles_and_links():
+def test_paint_projects_index_glyphs_writein_underlines_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -212,16 +212,15 @@ def test_paint_projects_index_glyphs_prints_titles_and_links():
     paint_projects_index_glyphs(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    for title, status in PROJECT_ROSTER[:9]:
-        assert title in texts
+    for title, _status in PROJECT_ROSTER[:9]:
+        assert title not in texts
     assert texts.count("Doing") == 3
     assert texts.count("Todo") == 3
     assert texts.count("Done") == 1
-    assert "Cabin reno" in texts
-    assert "Year theme" in texts
+    assert "Cabin reno" not in texts
+    assert "Year theme" not in texts
     assert "PROJECT" not in texts
     assert "Focus" not in texts
-    assert "Attic store" not in texts
 
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3] and not op[2]]
     assert len(fills) > 9
@@ -239,11 +238,13 @@ def test_paint_projects_index_glyphs_prints_titles_and_links():
 
     links = plotter.links()
     assert links == [f"project-2026-{n:02d}" for n in range(1, 10)]
-    title_links = [op for op in plotter.ops if op[0] == "link"]
-    assert all(op[1].w < well.w for op in title_links)
+    name_links = [op for op in plotter.ops if op[0] == "link"]
+    assert all(op[1].w < well.w for op in name_links)
 
-    rules = [op for op in plotter.ops if op[0] == "line" and op[1] == pytest.approx(well.x)]
-    assert len(rules) == 9
+    underlines = [op for op in plotter.ops if op[0] == "line"]
+    assert len(underlines) == 9
+    for op in underlines:
+        assert op[1] > well.x
 
 
 def test_projects_index_header_and_proj_tab_active():
@@ -256,24 +257,24 @@ def test_projects_index_header_and_proj_tab_active():
     assert "Projects" in texts
     assert "2026" in texts
     assert "Proj" in texts
-    assert "Cabin reno" in texts
+    assert "Cabin reno" not in texts
     assert plotter.links().count("project-2026-01") == 1
     assert "projects-index-2026" in plotter.links()
 
 
-def test_project_leaf_is_g_craft_with_printed_title():
+def test_project_leaf_is_g_craft_with_empty_name_field():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     leaf_page = next(p for p in pages if p.dest == "project-2026-01")
     assert leaf_page.kind == "project"
-    assert leaf_page.title == "Cabin reno"
+    assert leaf_page.title == "Project 01"
     assert strip_active(leaf_page.kind) == "Proj"
     assert strip_items(leaf_page) == NAV8
 
     leaf = next(item for item in leaf_page.components if isinstance(item, ProjectLeaf))
     assert leaf.year == 2026
     assert leaf.number == 1
-    assert leaf.title == "Cabin reno"
+    assert leaf.title == "Project 01"
     assert leaf.glyph == "triangle"
     assert leaf.status == "Doing"
     assert leaf.tasks == 4
@@ -283,7 +284,8 @@ def test_project_leaf_is_g_craft_with_printed_title():
     plotter.begin_page()
     PlannerLayout().paint(leaf_page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Cabin reno" in texts
+    assert "Project 01" in texts
+    assert "Cabin reno" not in texts
     assert "Index" in texts
     assert "2026" in texts
     assert "P" in texts
@@ -293,7 +295,7 @@ def test_project_leaf_is_g_craft_with_printed_title():
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
     paint_project(ink, well, leaf)
-    assert "Cabin reno" in [op[2] for op in ink.ops if op[0] == "text"]
+    assert "Cabin reno" not in [op[2] for op in ink.ops if op[0] == "text"]
     spines = [
         op
         for op in ink.ops

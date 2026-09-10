@@ -42,13 +42,13 @@ class ProjectsSection:
                 Page(
                     dest=entry.dest,
                     kind="project",
-                    title=entry.title,
+                    title=f"Project {number:02d}",
                     nav=nav,
                     components=(
                         ProjectLeaf(
                             year=spec.year,
                             number=number,
-                            title=entry.title,
+                            title=f"Project {number:02d}",
                             glyph=entry.glyph,
                             status=entry.status,
                             tasks=spec.project_tasks,

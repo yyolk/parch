@@ -310,7 +310,6 @@ INDEX_GLYPH = 4.2
 INDEX_GLYPH_GAP = 2.2
 INDEX_STATUS_W = 16.0
 INDEX_ROW_GAP = 1.6
-INDEX_TITLE_SIZE = 9.0
 
 
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
@@ -385,7 +384,7 @@ def paint_projects_clone_faithful(
     Dot-grid notes (2.8 mm pitch), not graph: light hairline dots.
     Status nodes are open squares — ``Plotter`` has no circle primitive.
     Spine is a narrow ink bar; rotated PROJECT / chevrons stay off.
-    Optional ``titles`` print in the name field (Thesis H leaves).
+    Optional ``titles`` print in the name field; Thesis H leaves leave it blank.
     """
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
@@ -702,37 +701,37 @@ def _paint_diamond(plotter: Plotter, box: Rect) -> None:
 
 
 def projects_index_glyph_rows(box: Rect, n: int) -> tuple[Rect, ...]:
-    """Equal row tracks for the glyph + titled projects index."""
+    """Equal row tracks for the glyph + write-in projects index."""
     return rows(box, n, gap=INDEX_ROW_GAP)
 
 
 def paint_projects_index_glyphs(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis H — G-strip glyph + printed title + optional status. Title links."""
+    """Thesis H — G-strip glyph + empty name underline + optional status. Name links."""
     seats = projects_index_glyph_rows(box, len(index.rows))
     for seat, entry in zip(seats, index.rows, strict=True):
-        title_hit = _paint_projects_index_glyph_row(plotter, seat, entry)
-        plotter.link(title_hit, entry.dest)
+        name_hit = _paint_projects_index_glyph_row(plotter, seat, entry)
+        plotter.link(name_hit, entry.dest)
 
 
 def _paint_projects_index_glyph_row(plotter: Plotter, box: Rect, entry: ProjectEntry) -> Rect:
-    """One G glyph, printed title, optional short status. No write-in underline."""
+    """One G glyph, blank write-in underline, optional short status."""
     gy = box.y + (box.h - INDEX_GLYPH) / 2
     glyph = Rect(box.x + 0.2, gy, INDEX_GLYPH, INDEX_GLYPH)
     _paint_clone_icon(plotter, glyph, entry.glyph)
     status_w = INDEX_STATUS_W if entry.status else 0.0
-    title = Rect(
+    name = Rect(
         glyph.right + INDEX_GLYPH_GAP,
         box.y,
         max(box.right - status_w - (glyph.right + INDEX_GLYPH_GAP) - 1.2, 1),
         box.h,
     )
-    plotter.text(
-        title,
-        entry.title,
-        size=INDEX_TITLE_SIZE,
-        face="serif",
-        gray=INK,
-        align="left",
+    plotter.line(
+        name.x,
+        glyph.bottom,
+        name.right,
+        glyph.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
     )
     if entry.status:
         plotter.text(
@@ -744,15 +743,14 @@ def _paint_projects_index_glyph_row(plotter: Plotter, box: Rect, entry: ProjectE
             small_caps=True,
             align="right",
         )
-    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
-    return title
+    return name
 
 
 def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
-    """Individual G-craft leaf — one board-height clone card, printed title."""
+    """Individual G-craft leaf — one board-height clone card, empty name field."""
     card = project_card_seats(box, 3)[0]
     board = ProjectsBoard(year=leaf.year, cards=1, tasks=leaf.tasks)
-    paint_projects_clone_faithful(plotter, card, board, titles=(leaf.title,))
+    paint_projects_clone_faithful(plotter, card, board)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:

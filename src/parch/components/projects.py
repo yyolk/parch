@@ -16,7 +16,7 @@ PROJECT_GLYPHS = (
     "star",
 )
 
-# Printed titles + optional short status. Not write-in underlines.
+# Catalog labels (not inked — index name fields are write-in underlines).
 PROJECT_ROSTER = (
     ("Cabin reno", "Doing"),
     ("Thesis draft", "Todo"),
@@ -40,7 +40,7 @@ class ProjectsBoard:
 
 @dataclass(frozen=True, slots=True)
 class ProjectEntry:
-    """One named index row — glyph + printed title + optional status + leaf dest."""
+    """One index row — glyph + write-in name dest + optional status."""
 
     title: str
     glyph: str
@@ -50,7 +50,7 @@ class ProjectEntry:
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
-    """Glyph + titled roster — each title dests to a leaf."""
+    """Glyph + write-in roster — each name underline dests to a leaf."""
 
     year: int
     rows: tuple[ProjectEntry, ...]
