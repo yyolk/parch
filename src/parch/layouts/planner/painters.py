@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsLog,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,81 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+LOG_HEAD_H = 8.0
+LOG_STATUS_W = 50.0
+LOG_HEAD_GAP = 2.4
+LOG_BODY_GAP = 2.4
+LOG_ENTRY_GAP = 1.6
+LOG_DATE_W = 22.0
+LOG_DATE_H = 3.8
+LOG_DATE_LINE_GAP = 0.9
+LOG_LINE_COUNT = 3
+LOG_LINE_PITCH = PROJECT_NOTE_PITCH
+
+
+def projects_log_seats(well: Rect, entries: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Name+status head over stacked dated log entries."""
+    head, rest = well.split_top(LOG_HEAD_H)
+    body = Rect(rest.x, rest.y + LOG_BODY_GAP, rest.w, rest.h - LOG_BODY_GAP)
+    return head, rows(body, max(1, entries), gap=LOG_ENTRY_GAP)
+
+
+def projects_log_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """P+name underline | Todo / Doing / Done for the project as a whole."""
+    name, _status = head.split_left(head.w - LOG_STATUS_W)
+    name = Rect(name.x, name.y, max(name.w - LOG_HEAD_GAP, 1), name.h)
+    status = Rect(name.right + LOG_HEAD_GAP, head.y, head.right - name.right - LOG_HEAD_GAP, head.h)
+    return name, status
+
+
+def projects_log_entry_seats(entry: Rect) -> tuple[Rect, Rect]:
+    """Small date underline over leftover lined what-moved rules."""
+    date = Rect(entry.x, entry.y, LOG_DATE_W, LOG_DATE_H)
+    lines = Rect(
+        entry.x,
+        date.bottom + LOG_DATE_LINE_GAP,
+        entry.w,
+        max(entry.h - LOG_DATE_H - LOG_DATE_LINE_GAP, 1),
+    )
+    return date, lines
+
+
+def paint_projects_log(plotter: Plotter, box: Rect, journal: ProjectsLog) -> None:
+    """Thesis N — dated progress journal for one project. Not an index/detail split."""
+    head, entries = projects_log_seats(box, journal.entries)
+    name, status = projects_log_head_seats(head)
+    _paint_project_name(plotter, name)
+    _paint_project_status(plotter, status)
+    for entry in entries:
+        date, lines = projects_log_entry_seats(entry)
+        _paint_log_date(plotter, date)
+        _paint_log_lines(plotter, lines)
+        plotter.line(
+            entry.x,
+            entry.bottom,
+            entry.right,
+            entry.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+
+
+def _paint_log_date(plotter: Plotter, box: Rect) -> None:
+    """Blank date underline — user writes when this entry happened."""
+    y = box.y + box.h * 0.82
+    plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def _paint_log_lines(plotter: Plotter, box: Rect) -> None:
+    """2–3 lined rules for what moved. Not Focus ticks."""
+    y = box.y + LOG_LINE_PITCH
+    drawn = 0
+    while y < box.bottom - 0.15 and drawn < LOG_LINE_COUNT:
+        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += LOG_LINE_PITCH
+        drawn += 1
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1016,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_log":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1045,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_log":
             return ""
         case _:
             return "Year"

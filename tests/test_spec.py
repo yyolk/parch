@@ -25,8 +25,10 @@ def test_dest_names_from_tstrings():
     assert spec.habit_columns == 10
     assert spec.priority_rows == 6
     assert spec.projects_dest == "projects-2026"
+    assert spec.projects_log_dest == "projects-log-2026"
     assert spec.project_cards == 3
     assert spec.project_tasks == 4
+    assert spec.project_log_entries == 6
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
@@ -44,9 +46,11 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_path(Path("examples/mvp.toml")).habit_columns == 10
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_cards == 2
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_tasks == 5
+    assert Spec.from_mapping({"projects": {"log_entries": 5}}).project_log_entries == 5
     mvp = Spec.from_path(Path("examples/mvp.toml"))
     assert mvp.project_cards == 3
     assert mvp.project_tasks == 4
+    assert mvp.project_log_entries == 6
 
 
 def test_value_bags_are_slotted():
