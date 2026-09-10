@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsMatrix,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -181,6 +182,16 @@ PROJECT_STATUS_MARK = 3.2
 PROJECT_NOTE_PITCH = 4.15
 PROJECT_STATUS_LABELS = ("Todo", "Doing", "Done")
 
+MATRIX_NOTES_GAP = 2.6
+MATRIX_WELL_WEIGHTS = (2.0, 1.0)
+MATRIX_NAME_W = 40.0
+MATRIX_NAME_GAP = 1.6
+MATRIX_HEAD_H = 8.6
+MATRIX_HEAD_GAP = 0.45
+MATRIX_COL_GAP = 0.45
+MATRIX_ROW_GAP = 0.45
+MATRIX_CELL_PAD = 2.2
+
 
 def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
     """One row track per project card."""
@@ -275,6 +286,64 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+def projects_matrix_seats(box: Rect) -> tuple[Rect, Rect]:
+    """Scorecard over a notes band. Weights (2, 1) after ``MATRIX_NOTES_GAP``."""
+    return rows(box, 2, gap=MATRIX_NOTES_GAP, weights=MATRIX_WELL_WEIGHTS)
+
+
+def projects_matrix_grid(
+    matrix: Rect, rows_n: int, criteria: int
+) -> tuple[Rect, tuple[Rect, ...], tuple[Rect, ...], tuple[Rect, ...]]:
+    """Name column, criteria header slots, project bands, score columns."""
+    name, rest = matrix.split_left(MATRIX_NAME_W)
+    rest = Rect(rest.x + MATRIX_NAME_GAP, rest.y, rest.w - MATRIX_NAME_GAP, rest.h)
+    head_band, below = rest.split_top(MATRIX_HEAD_H)
+    body = Rect(below.x, below.y + MATRIX_HEAD_GAP, below.w, below.h - MATRIX_HEAD_GAP)
+    heads = columns(head_band, criteria, gap=MATRIX_COL_GAP)
+    score_cols = columns(Rect(body.x, body.y, body.w, body.h), criteria, gap=MATRIX_COL_GAP)
+    bands = rows(Rect(matrix.x, body.y, matrix.w, body.h), max(1, rows_n), gap=MATRIX_ROW_GAP)
+    return name, heads, bands, score_cols
+
+
+def projects_matrix_score_box(cell: Rect) -> Rect:
+    """Centered square score cell — checkbox-sized, not a stretched card."""
+    side = min(cell.w, cell.h) - MATRIX_CELL_PAD
+    return Rect(
+        cell.x + (cell.w - side) / 2,
+        cell.y + (cell.h - side) / 2,
+        side,
+        side,
+    )
+
+
+def paint_projects_matrix(plotter: Plotter, box: Rect, board: ProjectsMatrix) -> None:
+    """Thesis J — blank projects × criteria scorecard, notes band under the grid."""
+    matrix, notes = projects_matrix_seats(box)
+    name, heads, bands, score_cols = projects_matrix_grid(matrix, board.rows, board.criteria)
+    for i, _band in enumerate(bands):
+        if i % 2 == 0:
+            continue
+        y0, y1 = _stripe_span(bands, i, axis="y", end=matrix.bottom)
+        _wash(plotter, Rect(matrix.x, y0, matrix.w, y1 - y0), HABIT_WASH)
+    for col in heads:
+        plotter.line(
+            col.x + 0.3,
+            col.bottom - 1.1,
+            col.right - 0.3,
+            col.bottom - 1.1,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+    plotter.line(matrix.x, heads[0].bottom, matrix.right, heads[0].bottom, stroke_width=HAIR, stroke_gray=SOFT)
+    for band in bands:
+        header = Rect(name.x, band.y, name.w, band.h)
+        _paint_project_name(plotter, header)
+        for col in score_cols:
+            cell = projects_matrix_score_box(Rect(col.x, band.y, col.w, band.h))
+            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    _paint_note_box(plotter, notes)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -942,6 +1011,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_matrix":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -970,6 +1041,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
+            return ""
+        case "projects_matrix":
             return ""
         case _:
             return "Year"
