@@ -51,6 +51,7 @@ def test_quarter_page_and_provisional_nav():
         ("Year", "year-2026"),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
+        ("Habit", "month-2026-01-habits"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),

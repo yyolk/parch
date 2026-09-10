@@ -35,10 +35,12 @@ def test_habit_pages_follow_each_month():
     july = next(page for page in pages if page.dest == "month-2026-07-habits")
     assert july.kind == "habits"
     assert july.title == "Habits · July 2026"
-    assert strip_active(july.kind) == ""
+    assert strip_active(july.kind) == "Habit"
+    assert ("Habit", "month-2026-07-habits") in strip_items(july)
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)
-    assert all(label != "Habits" for label, _ in strip_items(july))
+    labels = [label for label, _ in strip_items(july)]
+    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"]
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31
@@ -71,12 +73,12 @@ def test_habit_paint_smoke_and_month_chip_link():
     ink = RecordingPlotter()
     paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
-    assert len(cells) == 12 * 31
-    fills = [op for op in ink.ops if op[0] == "rect" and op[3]]
-    assert fills == []
+    assert len(cells) == HABIT_TRANSPOSED_COLS * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
+    assert fills
     labels = [op[2] for op in ink.ops if op[0] == "text"]
     assert "1" in labels and "31" in labels
-    assert "Habit" in labels
+    assert "W" in labels
 
 
 def test_habit_transposed_seat_and_paint():
@@ -128,3 +130,43 @@ def test_habit_weekday_zebra_paint():
     assert "W" in labels and "F" in labels and "M" in labels
     assert "Habit" in labels
     assert all("1W" not in label and "31F" not in label for label in labels)
+
+
+def test_habit_nav_landings():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+
+    def habit_dest(dest: str) -> str:
+        page = next(p for p in pages if p.dest == dest)
+        return dict(strip_items(page))["Habit"]
+
+    assert habit_dest("year-2026") == "month-2026-01-habits"
+    assert habit_dest("quarter-2026-Q1") == "month-2026-01-habits"
+    assert habit_dest("quarter-2026-Q3") == "month-2026-07-habits"
+    assert habit_dest("month-2026-07") == "month-2026-07-habits"
+    assert habit_dest("month-2026-07-habits") == "month-2026-07-habits"
+    assert habit_dest("week-2026-W01") == "month-2026-01-habits"
+    assert habit_dest("week-2026-W06") == "month-2026-02-habits"
+    assert habit_dest("2026-07-15") == "month-2026-07-habits"
+    assert habit_dest("2026-07-15-notes-1") == "month-2026-07-habits"
+    assert habit_dest("2026-01-15") == "month-2026-01-habits"
+
+
+def test_habit_day_labels_link_to_dailies():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    box = Rect(4, 20, 110, 120)
+    day_col, names, _bands = habit_seats_transposed(box, grid.days, HABIT_TRANSPOSED_COLS)
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, box, grid)
+    hits = [(op[1], op[2]) for op in ink.ops if op[0] == "link"]
+    dests = [dest for _, dest in hits]
+    assert dests.count("2026-07-01") == 1
+    assert dests.count("2026-07-31") == 1
+    assert all(f"2026-07-{day:02d}" in dests for day in range(1, 32))
+    for hit, dest in hits:
+        if dest.startswith("2026-07-"):
+            assert hit.x == pytest.approx(day_col.x)
+            assert hit.right == pytest.approx(day_col.right)
+            assert hit.right <= names[0].x + 0.01

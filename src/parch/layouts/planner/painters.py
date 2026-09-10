@@ -414,7 +414,12 @@ def habit_dow_letter(year: int, month: int, day: int) -> str:
 
 
 def paint_habit_grid(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
-    """Day × habit matrix. Left name slots; hairline check cells. No streak math."""
+    """Locked default: days left with weekday, habit columns, pale zebra."""
+    paint_habit_grid_transposed(plotter, box, grid)
+
+
+def paint_habit_grid_rows(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
+    """Habits as rows, days across. Comparison only — not the default."""
     label, rest = box.split_left(HABIT_LABEL_W)
     matrix = Rect(rest.x + 1.6, rest.y, rest.w - 1.6, rest.h)
     head = Rect(box.x, box.y, box.w, HABIT_HEAD_H)
@@ -543,7 +548,7 @@ def _stripe_span(tracks: tuple[Rect, ...], index: int, *, axis: str, end: float)
 
 
 def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
-    """Habits across the top, days down the left. Comparison only — not the default."""
+    """Days down the left (``1 W``), habit name slots across the top, pale zebra."""
     habits = HABIT_TRANSPOSED_COLS
     day_col, names, bands = habit_seats_transposed(box, grid.days, habits)
     matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
@@ -775,7 +780,9 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Year"] = item.dest
         elif item.dest.startswith("quarter-"):
             dests["Quar"] = item.dest
-        elif item.dest.startswith("month-") and not item.dest.endswith("-habits"):
+        elif item.dest.endswith("-habits"):
+            dests["Habit"] = item.dest
+        elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
@@ -790,6 +797,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Quar"] = page.dest
         case "month":
             dests["Mon"] = page.dest
+        case "habits":
+            dests["Habit"] = page.dest
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -797,7 +806,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -816,6 +825,6 @@ def strip_active(kind: str) -> str:
         case "daily_notes":
             return "Notes"
         case "habits":
-            return ""
+            return "Habit"
         case _:
             return "Year"

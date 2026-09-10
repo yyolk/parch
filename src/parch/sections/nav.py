@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -9,6 +9,18 @@ landing month; year → first pressed quarter.
 
 MON dest: month page → that month; daily/notes/week → the landing day's month;
 year/quarter → first pressed month in that quarter (year uses first pressed month).
+
+HABITS dest (``spec.dest_for_habits(month)``; strip label **Habit**):
+- habits page → that month’s habits (self)
+- month page → habits for that month
+- daily / notes → habits for the landing day’s month
+- week → habits for the month of the first pressed day in that week
+  (same landing month as DAY would use from week)
+- quarter → habits for first pressed month in that quarter
+- year → habits for first pressed month
+
+Mirror Mon: Habits dest = ``spec.dest_for_habits(landing.month)``, or the
+explicit ``month`` when on a month / habits page.
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
@@ -42,10 +54,12 @@ def planner_nav(
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
+    habit_month = month if month is not None else landing.month
     items = [
         NavItem("Year", spec.year_dest),
         NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
         NavItem("Mon", mon),
+        NavItem("Habit", spec.dest_for_habits(habit_month)),
         NavItem("Week", week_dest),
         NavItem("Day", spec.dest_for_day(landing)),
     ]

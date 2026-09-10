@@ -59,6 +59,7 @@ def test_week_dests_and_nav_strip():
         ("Year", "year-2026"),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
+        ("Habit", "month-2026-01-habits"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
@@ -74,6 +75,7 @@ def test_week_dests_and_nav_strip():
     assert strip_active(w01.kind) == "Week"
     assert ("Week", "week-2026-W01") in strip_items(w01)
     assert ("Day", "2026-01-01") in strip_items(w01)
+    assert ("Habit", "month-2026-01-habits") in strip_items(w01)
 
     jan15 = next(page for page in pages if page.dest == "2026-01-15")
     assert ("Week", "week-2026-W03") in strip_items(jan15)
