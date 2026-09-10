@@ -25,6 +25,7 @@ def test_dest_names_from_tstrings():
     assert spec.habit_columns == 10
     assert spec.priority_rows == 6
     assert spec.projects_dest == "projects-2026"
+    assert spec.projects_horizon_dest == "projects-horizon-2026"
     assert spec.project_cards == 3
     assert spec.project_tasks == 4
     assert spec.day_dest == "2026-01-05"

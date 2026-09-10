@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsHorizon,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,95 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+HORIZON_LABELS = ("This week", "This month", "Someday")
+HORIZON_GAP = 2.6
+HORIZON_INSET_X = 1.8
+HORIZON_INSET_Y = 1.4
+HORIZON_LABEL_H = 3.8
+HORIZON_LABEL_GAP = 1.2
+HORIZON_SLOT_GAP = 2.2
+HORIZON_SLOT_NAME_H = 5.4
+HORIZON_NOTE_GAP = 1.0
+HORIZON_TICK_GAP = 1.6
+
+
+def projects_horizon_seats(well: Rect) -> tuple[Rect, ...]:
+    """Three stacked horizon bands — This week, This month, Someday."""
+    return rows(well, len(HORIZON_LABELS), gap=HORIZON_GAP)
+
+
+def projects_horizon_band_seats(band: Rect, slots: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Horizon label over equal writable slots inside the band inset."""
+    inner = band.inset(HORIZON_INSET_X, HORIZON_INSET_Y)
+    label, rest = inner.split_top(HORIZON_LABEL_H)
+    body = Rect(rest.x, rest.y + HORIZON_LABEL_GAP, rest.w, rest.h - HORIZON_LABEL_GAP)
+    return label, rows(body, max(1, slots), gap=HORIZON_SLOT_GAP)
+
+
+def projects_horizon_name_and_ticks(row: Rect, ticks: int) -> tuple[Rect, Rect]:
+    """Name underline on the left; 1–2 bare Focus ticks on the right."""
+    n = max(1, ticks)
+    tick_w = n * TICK + (n - 1) * HORIZON_TICK_GAP + 0.4
+    name, rest = row.split_left(row.w - tick_w - HORIZON_TICK_GAP)
+    ticks_box = Rect(rest.x + HORIZON_TICK_GAP, rest.y, tick_w, rest.h)
+    return name, ticks_box
+
+
+def projects_horizon_slot_seats(slot: Rect) -> tuple[Rect, Rect]:
+    """Name+ticks row over one notes rule. Leftover is air, not a notes pocket."""
+    name, rest = slot.split_top(HORIZON_SLOT_NAME_H)
+    notes = Rect(rest.x, rest.y + HORIZON_NOTE_GAP, rest.w, PROJECT_NOTE_PITCH)
+    return name, notes
+
+
+def paint_projects_horizon(plotter: Plotter, box: Rect, board: ProjectsHorizon) -> None:
+    """Thesis I — time horizons with blank writable slots. Not a roster or kanban."""
+    for band, label in zip(projects_horizon_seats(box), HORIZON_LABELS, strict=True):
+        _paint_horizon_band(plotter, band, label, board.slots, board.ticks)
+
+
+def _paint_horizon_band(
+    plotter: Plotter, band: Rect, label: str, slots: int, ticks: int
+) -> None:
+    plotter.rect(band, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    head, lines = projects_horizon_band_seats(band, slots)
+    plotter.text(
+        head,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(
+        head.x, head.bottom, head.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT
+    )
+    for slot in lines:
+        _paint_horizon_slot(plotter, slot, ticks)
+
+
+def _paint_horizon_slot(plotter: Plotter, slot: Rect, ticks: int) -> None:
+    name, notes = projects_horizon_slot_seats(slot)
+    rule, marks = projects_horizon_name_and_ticks(name, ticks)
+    rule_y = rule.y + (rule.h + TICK) / 2
+    plotter.line(
+        rule.x, rule_y, rule.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C
+    )
+    mark_y = marks.y + (marks.h - TICK) / 2
+    for col in columns(marks, max(1, ticks), gap=HORIZON_TICK_GAP):
+        mark = Rect(col.x, mark_y, TICK, TICK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(
+        notes.x,
+        notes.y + notes.h * 0.55,
+        notes.right,
+        notes.y + notes.h * 0.55,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -942,6 +1032,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_horizon":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -970,6 +1062,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
+            return ""
+        case "projects_horizon":
             return ""
         case _:
             return "Year"
