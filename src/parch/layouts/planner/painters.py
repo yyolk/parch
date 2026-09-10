@@ -237,12 +237,12 @@ CHIP_GLYPH_GAP = 2.0
 
 
 def projects_index_chip_seats(well: Rect, n: int) -> tuple[Rect, ...]:
-    """Equal-height named pills stacked in the well."""
+    """Equal-height write-in pills stacked in the well."""
     return rows(well, max(1, n), gap=CHIP_GAP)
 
 
 def paint_projects_index_chips(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis F — named chips. Printed titles, whole-chip links, no write-in rules."""
+    """Thesis F — write-in chips. Empty name underline, whole-chip links."""
     for seat, chip in zip(
         projects_index_chip_seats(box, len(index.chips)), index.chips, strict=True
     ):
@@ -254,14 +254,21 @@ def paint_projects_index_chips(plotter: Plotter, box: Rect, index: ProjectsIndex
             CHIP_GLYPH,
             CHIP_GLYPH,
         )
-        title = Rect(inner.x, inner.y, max(glyph.x - inner.x - CHIP_GLYPH_GAP, 1), inner.h)
-        plotter.text(title, chip.title, size=10, face="serif", gray=INK, align="left")
+        rule_y = glyph.bottom
+        plotter.line(
+            inner.x,
+            rule_y,
+            glyph.x - CHIP_GLYPH_GAP,
+            rule_y,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
         _paint_chip_status(plotter, glyph, chip.status)
         plotter.link(seat, chip.dest)
 
 
 def _paint_chip_status(plotter: Plotter, mark: Rect, status: str) -> None:
-    """Tiny open / nested / filled square. Not a name underline."""
+    """Tiny open / nested / filled square beside the name write-in."""
     if status == "done":
         plotter.rect(mark, stroke=False, fill=True, fill_gray=INK)
         return
@@ -410,21 +417,13 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
 
 
 def paint_project(plotter: Plotter, box: Rect, page: ProjectPage) -> None:
-    """One G-craft card filling the well. Title is printed in the name field."""
+    """One G-craft card filling the well. Name field is a blank write-in."""
     board, rail = projects_clone_a_well(box)
     _wash(plotter, rail, WASH)
     spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(board)
     plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
     _paint_clone_priority(plotter, name_h)
     plotter.rect(name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(
-        Rect(name_field.x + 1.1, name_field.y, max(name_field.w - 2.0, 1), name_field.h),
-        page.title,
-        size=8.4,
-        face="serif",
-        gray=INK,
-        align="left",
-    )
     _paint_clone_tasks(plotter, tasks)
     _paint_clone_dot_grid(plotter, notes)
     _paint_clone_icon_strip(plotter, strip)

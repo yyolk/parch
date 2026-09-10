@@ -1,6 +1,6 @@
 from parch.calendar import month_touching_weeks
 from parch.components import ProjectChip, ProjectPage, ProjectsBoard, ProjectsIndex
-from parch.components.projects import SAMPLE_PROJECTS
+from parch.components.projects import SAMPLE_STATUSES
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -15,10 +15,8 @@ class ProjectsSection:
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         nav = planner_nav(spec, week_dest=spec.dest_for_week(first[0]))
         chips = tuple(
-            ProjectChip(title=title, dest=spec.dest_for_project(slot), status=status)
-            for slot, (title, status) in enumerate(
-                SAMPLE_PROJECTS[: spec.project_index_rows], start=1
-            )
+            ProjectChip(dest=spec.dest_for_project(slot), status=status)
+            for slot, status in enumerate(SAMPLE_STATUSES[: spec.project_index_rows], start=1)
         )
         built = [
             Page(
@@ -52,13 +50,12 @@ class ProjectsSection:
             Page(
                 dest=chip.dest,
                 kind="project",
-                title=chip.title,
+                title="Project",
                 nav=nav,
                 components=(
                     ProjectPage(
                         year=spec.year,
                         slot=slot,
-                        title=chip.title,
                         dest=chip.dest,
                         index_dest=spec.projects_index_dest,
                         tasks=spec.project_tasks,

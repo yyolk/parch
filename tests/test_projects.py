@@ -2,7 +2,6 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import ProjectPage, ProjectsBoard, ProjectsIndex
-from parch.components.projects import SAMPLE_PROJECTS
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
@@ -191,22 +190,28 @@ def test_projects_index_named_chips_and_proj_nav():
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
     assert roster.year == 2026
     assert roster.dest == "projects-index-2026"
-    assert [chip.title for chip in roster.chips] == [name for name, _ in SAMPLE_PROJECTS[:9]]
-    assert roster.chips[0].title == "Kitchen reno"
-    assert roster.chips[1].title == "Parch MVP"
-    assert roster.chips[2].title == "Taxes 2026"
     assert [chip.dest for chip in roster.chips] == [
         f"project-2026-{slot:02d}" for slot in range(1, 10)
+    ]
+    assert [chip.status for chip in roster.chips] == [
+        "todo",
+        "doing",
+        "todo",
+        "done",
+        "todo",
+        "doing",
+        "todo",
+        "done",
+        "todo",
     ]
 
     leaf = next(page for page in pages if page.dest == "project-2026-02")
     assert leaf.kind == "project"
-    assert leaf.title == "Parch MVP"
+    assert leaf.title == "Project"
     assert strip_active(leaf.kind) == "Proj"
     assert ("Proj", "projects-index-2026") in strip_items(leaf)
     card = next(item for item in leaf.components if isinstance(item, ProjectPage))
     assert card.slot == 2
-    assert card.title == "Parch MVP"
     assert card.dest == "project-2026-02"
     assert card.index_dest == "projects-index-2026"
     assert card.tasks == 4
@@ -226,7 +231,7 @@ def test_projects_index_chip_seats():
     assert seats[0].h == pytest.approx(leftover / 9)
 
 
-def test_projects_index_chips_print_names_and_link():
+def test_projects_index_chips_write_in_and_link():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -235,15 +240,10 @@ def test_projects_index_chips_print_names_and_link():
     paint_projects_index_chips(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Kitchen reno" in texts
-    assert "Parch MVP" in texts
-    assert "Taxes 2026" in texts
-    assert "Garden beds" in texts
-    assert "Studio move" in texts
-    assert "P" not in texts
-    assert "PROJECT" not in texts
-    assert "Focus" not in texts
-    assert "Todo" not in texts
+    assert texts == []
+    assert "Kitchen reno" not in texts
+    assert "Parch MVP" not in texts
+    assert "Taxes 2026" not in texts
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 10)]
@@ -265,9 +265,9 @@ def test_projects_index_chips_print_names_and_link():
     rules = [
         op
         for op in plotter.ops
-        if op[0] == "line" and abs(op[4] - op[2]) > well.w * 0.5
+        if op[0] == "line" and abs(op[3] - op[1]) > well.w * 0.4
     ]
-    assert rules == []
+    assert len(rules) == 9
 
 
 def test_project_page_g_card_and_index_chip():
@@ -278,7 +278,7 @@ def test_project_page_g_card_and_index_chip():
     ink = RecordingPlotter()
     paint_project(ink, well, card)
     texts = [op[2] for op in ink.ops if op[0] == "text"]
-    assert "Kitchen reno" in texts
+    assert "Kitchen reno" not in texts
     assert texts.count("P") == 1
     assert "Todo" in texts
     assert "In Progress" in texts
@@ -302,7 +302,8 @@ def test_project_page_g_card_and_index_chip():
     chrome.begin_page()
     PlannerLayout().paint(page, chrome, NOMAD)
     labels = [op[2] for op in chrome.ops if op[0] == "text"]
-    assert "Kitchen reno" in labels
+    assert "Project" in labels
+    assert "Kitchen reno" not in labels
     assert "Index" in labels
     assert "Proj" in labels
     chip_links = [op[2] for op in chrome.ops if op[0] == "link" and op[2] == "projects-index-2026"]
@@ -326,6 +327,6 @@ def test_projects_index_rows_knob():
     plotter = RecordingPlotter()
     paint_projects_index_chips(plotter, Rect(4, 20, 110, 90), roster)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Kitchen reno" in texts
-    assert "Bike overhaul" in texts
-    assert "Studio move" not in texts
+    assert texts == []
+    rules = [op for op in plotter.ops if op[0] == "line"]
+    assert len(rules) == 8

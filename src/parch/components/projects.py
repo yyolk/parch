@@ -1,19 +1,19 @@
-"""Projects board, named-chip index, and one-project page — data only."""
+"""Projects board, write-in chip index, and one-project page — data only."""
 
 from dataclasses import dataclass
 
-# Printed sample titles — index chips, not write-in underlines.
-SAMPLE_PROJECTS: tuple[tuple[str, str], ...] = (
-    ("Kitchen reno", "todo"),
-    ("Parch MVP", "doing"),
-    ("Taxes 2026", "todo"),
-    ("Garden beds", "done"),
-    ("Cabin trip", "todo"),
-    ("Piano lessons", "doing"),
-    ("Visa renewal", "todo"),
-    ("Bike overhaul", "done"),
-    ("Studio move", "todo"),
-    ("Roof patch", "doing"),
+# Status glyphs only — names are write-in, not printed.
+SAMPLE_STATUSES: tuple[str, ...] = (
+    "todo",
+    "doing",
+    "todo",
+    "done",
+    "todo",
+    "doing",
+    "todo",
+    "done",
+    "todo",
+    "doing",
 )
 
 
@@ -26,16 +26,15 @@ class ProjectsBoard:
 
 @dataclass(frozen=True, slots=True)
 class ProjectChip:
-    """One named index pill. ``status`` is a tiny glyph, not a write-in."""
+    """One write-in index pill. ``status`` is a tiny glyph; name is blank."""
 
-    title: str
     dest: str
     status: str
 
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
-    """Thesis F — vertical stack of named chips. Each chip links to a leaf."""
+    """Thesis F — vertical stack of write-in chips. Each chip links to a leaf."""
 
     year: int
     dest: str
@@ -48,7 +47,6 @@ class ProjectPage:
 
     year: int
     slot: int
-    title: str
     dest: str
     index_dest: str
     tasks: int
