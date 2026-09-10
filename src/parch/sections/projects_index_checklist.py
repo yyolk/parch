@@ -1,4 +1,4 @@
-"""Thesis O — named checklist index + one G-craft leaf per name. Not in YearPlanner."""
+"""Thesis O — write-in checklist index + one G-craft leaf per row. Not in YearPlanner."""
 
 from parch.calendar import month_touching_weeks
 from parch.components import (
@@ -11,33 +11,15 @@ from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
 
-# Printed names — the index is a book, not an empty form.
-CHECKLIST_NAMES: tuple[str, ...] = (
-    "Atlas",
-    "Beacon",
-    "Compass",
-    "Harbor",
-    "Kernel",
-    "Ledger",
-    "Meadow",
-    "Mosaic",
-    "Nomad",
-    "Parch",
-    "Spine",
-    "Well",
-)
-
 
 def checklist_items(spec: Spec) -> tuple[ProjectIndexItem, ...]:
-    """Named rows with dests and two-digit dest/page numbers."""
-    names = CHECKLIST_NAMES[: spec.project_index_rows]
+    """Write-in rows with dests and two-digit dest/page numbers."""
     return tuple(
         ProjectIndexItem(
-            name=name,
             dest=spec.dest_for_project(number),
             page=f"{number:02d}",
         )
-        for number, name in enumerate(names, start=1)
+        for number in range(1, spec.project_index_rows + 1)
     )
 
 
@@ -71,12 +53,11 @@ class ProjectsIndexChecklistSection:
                 Page(
                     dest=item.dest,
                     kind="project",
-                    title=item.name,
+                    title=f"Project {item.page}",
                     nav=nav,
                     components=(
                         ProjectLeaf(
                             year=spec.year,
-                            name=item.name,
                             dest=item.dest,
                             index_dest=index_dest,
                             page=item.page,

@@ -12,16 +12,15 @@ class ProjectsBoard:
 
 @dataclass(frozen=True, slots=True)
 class ProjectIndexItem:
-    """One named checklist row: printed name + dest/page number."""
+    """One checklist row: write-in name rule + dest/page number."""
 
-    name: str
     dest: str
     page: str
 
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndexChecklist:
-    """Named checklist index — names are printed, not write-in rules."""
+    """Write-in checklist index — empty name underlines, dest/page numbers."""
 
     year: int
     items: tuple[ProjectIndexItem, ...]
@@ -29,10 +28,9 @@ class ProjectsIndexChecklist:
 
 @dataclass(frozen=True, slots=True)
 class ProjectLeaf:
-    """One project page linked from the checklist name."""
+    """One project page linked from the checklist name rule."""
 
     year: int
-    name: str
     dest: str
     index_dest: str
     page: str

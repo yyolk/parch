@@ -281,53 +281,41 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
 
 INDEX_CHECKLIST_GAP = 1.8
 INDEX_CHECKLIST_PAGE_W = 9.0
-INDEX_CHECKLIST_NAME_W = 38.0
 INDEX_CHECKLIST_TICK_GAP = 1.6
-INDEX_CHECKLIST_NAME_SIZE = 9.0
 INDEX_CHECKLIST_PAGE_SIZE = 7.4
 
 
 def projects_index_checklist(well: Rect, n: int) -> tuple[Rect, ...]:
-    """Equal row tracks for the named checklist index."""
+    """Equal row tracks for the write-in checklist index."""
     return rows(well, n, gap=INDEX_CHECKLIST_GAP)
 
 
-def projects_index_checklist_row(row: Rect) -> tuple[Rect, Rect, Rect, Rect]:
-    """Tick column, printed name, leader, dest/page number."""
+def projects_index_checklist_row(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Tick column, write-in name rule, dest/page number."""
     tick_col, rest = row.split_left(TICK + INDEX_CHECKLIST_TICK_GAP)
-    body, page = rest.split_left(rest.w - INDEX_CHECKLIST_PAGE_W)
-    name, leaders = body.split_left(INDEX_CHECKLIST_NAME_W)
-    return tick_col, name, leaders, page
+    name, page = rest.split_left(rest.w - INDEX_CHECKLIST_PAGE_W)
+    return tick_col, name, page
 
 
 def paint_projects_index_checklist(
     plotter: Plotter, box: Rect, board: ProjectsIndexChecklist
 ) -> None:
-    """Thesis O — printed names + dest/page numbers. Names link to leaves."""
+    """Thesis O — write-in name underlines + dest/page numbers. Rules link to leaves."""
     seats = projects_index_checklist(box, len(board.items))
     for seat, item in zip(seats, board.items, strict=True):
         _paint_index_checklist_row(plotter, seat, item)
 
 
 def _paint_index_checklist_row(plotter: Plotter, box: Rect, item: ProjectIndexItem) -> None:
-    tick_col, name, leaders, page = projects_index_checklist_row(box)
+    tick_col, name, page = projects_index_checklist_row(box)
     tick_y = box.y + (box.h - TICK) / 2
     tick = Rect(tick_col.x, tick_y, TICK, TICK)
     plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(
-        name,
-        item.name,
-        size=INDEX_CHECKLIST_NAME_SIZE,
-        face="serif",
-        gray=INK,
-        align="left",
-    )
-    rule_y = tick.bottom
     plotter.line(
-        leaders.x + 0.6,
-        rule_y,
-        leaders.right - 0.6,
-        rule_y,
+        tick.right + 1.4,
+        tick.bottom,
+        name.right - 0.6,
+        tick.bottom,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )

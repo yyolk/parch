@@ -3,7 +3,7 @@
 QUAR is provisional — may come out of the strip later.
 
 PROJ is exploratory — only emitted when ``proj_dest`` is set (Thesis O checklist).
-PROJ dest: index page → self; project leaf → the named checklist.
+PROJ dest: index page → self; project leaf → the write-in checklist.
 
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
