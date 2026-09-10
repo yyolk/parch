@@ -979,7 +979,6 @@ TASK_INDEX_INSET_Y = 1.4
 TASK_INDEX_HEAD_H = 4.2
 TASK_INDEX_HEAD_GAP = 0.8
 TASK_INDEX_ROW_GAP = 1.0
-TASK_INDEX_LINE_H = 5.4
 TASK_INDEX_WEEK_W = 12.0
 TASK_INDEX_RANGE_W = 26.0
 TASK_INDEX_WRITE_GAP = 2.8
@@ -993,37 +992,16 @@ def tasks_index_bands(well: Rect, week_counts: tuple[int, ...]) -> tuple[Rect, .
 
 
 def tasks_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
-    """Month header, then packed content-height week rows. Leftover stays empty below."""
+    """Month header over linked week rows, after a quiet inset."""
     inner = band.inset(TASK_INDEX_INSET_X, TASK_INDEX_INSET_Y)
     head, rest = inner.split_top(TASK_INDEX_HEAD_H)
     body = Rect(rest.x, rest.y + TASK_INDEX_HEAD_GAP, rest.w, rest.h - TASK_INDEX_HEAD_GAP)
-    return head, tasks_index_packed_rows(body, n)
-
-
-def tasks_index_packed_rows(body: Rect, n: int) -> tuple[Rect, ...]:
-    """Fixed LINE_H rows from the top. Does not stretch to fill ``body``."""
-    packed: list[Rect] = []
-    y = body.y
-    for _ in range(n):
-        packed.append(Rect(body.x, y, body.w, TASK_INDEX_LINE_H))
-        y += TASK_INDEX_LINE_H + TASK_INDEX_ROW_GAP
-    return tuple(packed)
-
-
-def tasks_index_week_line(row: Rect) -> Rect:
-    """Content-height text line at the top of ``row`` — not the stretched floor."""
-    return Rect(row.x, row.y, row.w, TASK_INDEX_LINE_H)
-
-
-def tasks_index_rule_y(row: Rect) -> float:
-    """Shared baseline for Wnn, date range, and write-in. Meeting A write-in spirit."""
-    return tasks_index_week_line(row).bottom
+    return head, rows(body, n, gap=TASK_INDEX_ROW_GAP)
 
 
 def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
-    """Wnn stub | printed range | write-in leftover on the content line."""
-    line = tasks_index_week_line(row)
-    stub, rest = line.split_left(TASK_INDEX_WEEK_W)
+    """Wnn stub | printed range | write-in leftover. Gap before the hline."""
+    stub, rest = row.split_left(TASK_INDEX_WEEK_W)
     dated, after = rest.split_left(TASK_INDEX_RANGE_W)
     write = Rect(
         after.x + TASK_INDEX_WRITE_GAP,
@@ -1065,7 +1043,6 @@ def paint_tasks_index_months(plotter: Plotter, box: Rect, index: TasksIndex) -> 
 
 def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None:
     stub, dated, write = tasks_index_week_parts(row)
-    rule_y = tasks_index_rule_y(row)
     plotter.text(
         stub,
         f"W{week.iso_week:02d}",
@@ -1086,9 +1063,9 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
     )
     plotter.line(
         write.x,
-        rule_y,
+        write.bottom,
         write.right,
-        rule_y,
+        write.bottom,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )
