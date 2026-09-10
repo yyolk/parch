@@ -8,7 +8,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectTicket,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -20,6 +22,11 @@ from parch.spec import Spec
 def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
     dests = ["cover", spec.year_dest, spec.projects_dest]
+    dests.extend(
+        spec.dest_for_projects_index(page)
+        for page in range(1, spec.project_index_pages + 1)
+    )
+    dests.extend(spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1))
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     for month in spec.months:
         dests.append(spec.dest_for_month(month))
@@ -44,7 +51,9 @@ def test_components_do_not_draw():
         MonthGrid,
         Notes,
         Priorities,
+        ProjectTicket,
         ProjectsBoard,
+        ProjectsIndex,
         QuarterGrid,
         Schedule,
         WeekStrip,
@@ -69,6 +78,12 @@ def test_book_records_year_dests_and_links():
     assert "month-2026-02" in links
     assert "month-2026-03" in links
     assert "month-2026-07-habits" in links
+    assert "projects-index-2026-01" in dests
+    assert "projects-index-2026-01" in links
+    assert "projects-2026-01" in dests
+    assert "projects-2026-01" in links
+    assert "projects-2026-08" in dests
+    assert "projects-2026-08" in links
     assert "month-2026-01-habits" in dests
     assert "week-2026-W01" in links
     assert "week-2026-W14" in links

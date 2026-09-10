@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -21,6 +21,11 @@ HABITS dest (``spec.dest_for_habits(month)``; strip label **Habit**):
 
 Mirror Mon: Habits dest = ``spec.dest_for_habits(landing.month)``, or the
 explicit ``month`` when on a month / habits page.
+
+PROJ dest (strip label **Proj**):
+- index page → self
+- G projects dest → the index page that lists that row (header chip is the same dest)
+- everywhere else → index page 1 (``spec.projects_index_dest``)
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
@@ -51,6 +56,7 @@ def planner_nav(
     week_dest: str,
     day: date | None = None,
     month: int | None = None,
+    proj_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
@@ -60,6 +66,7 @@ def planner_nav(
         NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
         NavItem("Mon", mon),
         NavItem("Habit", spec.dest_for_habits(habit_month)),
+        NavItem("Proj", proj_dest or spec.projects_index_dest),
         NavItem("Week", week_dest),
         NavItem("Day", spec.dest_for_day(landing)),
     ]
