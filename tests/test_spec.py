@@ -31,8 +31,6 @@ def test_dest_names_from_tstrings():
     assert spec.project_tickets == 8
     assert spec.dest_for_project(1) == "project-2026-01"
     assert spec.dest_for_project(8) == "project-2026-08"
-    assert spec.title_for_project(1) == "Atlas"
-    assert spec.title_for_project(8) == "Harbor"
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"

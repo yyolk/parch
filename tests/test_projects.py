@@ -27,7 +27,7 @@ from parch.layouts.planner.painters import (
     strip_items,
 )
 from parch.plotter import RecordingPlotter
-from parch.spec import PROJECT_TITLES, Spec
+from parch.spec import Spec
 
 
 _PROJ_STRIP = (
@@ -106,8 +106,7 @@ def test_projects_paint_cards_ticks_and_status():
     assert "PROJECT" not in texts
     assert "Focus" not in texts
     assert "Notes" not in texts
-    for name in PROJECT_TITLES[:3]:
-        assert name not in texts
+    assert "Atlas" not in texts
 
     ticks = [
         op
@@ -186,7 +185,6 @@ def test_projects_index_tickets_and_proj_nav():
     assert roster.year == 2026
     assert roster.dest == "projects-index-2026"
     assert len(roster.tickets) == 8
-    assert [ticket.title for ticket in roster.tickets] == list(PROJECT_TITLES[:8])
     assert [ticket.dest for ticket in roster.tickets] == [
         f"project-2026-{slot:02d}" for slot in range(1, 9)
     ]
@@ -194,12 +192,11 @@ def test_projects_index_tickets_and_proj_nav():
 
     leaf = next(page for page in pages if page.dest == "project-2026-03")
     assert leaf.kind == "project"
-    assert leaf.title == "Compass"
+    assert leaf.title == "Project"
     assert strip_active(leaf.kind) == "Proj"
     assert ("Proj", "projects-index-2026") in strip_items(leaf)
     card = next(item for item in leaf.components if isinstance(item, ProjectPage))
     assert card.number == 3
-    assert card.title == "Compass"
     assert card.dest == "project-2026-03"
     assert card.index_dest == "projects-index-2026"
     assert card.tasks == 4
@@ -224,7 +221,7 @@ def test_project_ticket_seats():
     assert stub.w == pytest.approx(TICKET_STUB_W)
 
 
-def test_projects_index_paint_printed_titles_and_links():
+def test_projects_index_paint_write_in_underlines_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -233,10 +230,11 @@ def test_projects_index_paint_printed_titles_and_links():
     paint_projects_index_tickets(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    for slot, name in enumerate(PROJECT_TITLES[:8], start=1):
+    for slot in range(1, 9):
         assert f"{slot:02d}" in texts
-        assert name in texts
     assert "P" not in texts
+    assert "Atlas" not in texts
+    assert "Harbor" not in texts
     assert texts.count("Todo") == 0
 
     stubs = [
@@ -245,6 +243,18 @@ def test_projects_index_paint_printed_titles_and_links():
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICKET_MARK)
     ]
     assert len(stubs) == 8
+
+    seats = project_ticket_seats(well, 8)
+    rules = [
+        op
+        for op in plotter.ops
+        if op[0] == "line" and op[5] == pytest.approx(0.12)
+    ]
+    assert len(rules) == 8
+    for seat, rule in zip(seats, rules, strict=True):
+        _, body = project_ticket_parts(seat)
+        assert rule[1] == pytest.approx(body.x)
+        assert rule[3] == pytest.approx(body.right)
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
@@ -257,11 +267,11 @@ def test_projects_index_paint_printed_titles_and_links():
     chrome_texts = [op[2] for op in chrome.ops if op[0] == "text"]
     assert "Projects" in chrome_texts
     assert "Proj" in chrome_texts
-    assert "Atlas" in chrome_texts
-    assert "Harbor" in chrome_texts
+    assert "Atlas" not in chrome_texts
+    assert "Harbor" not in chrome_texts
 
 
-def test_project_page_printed_name_and_index_chip():
+def test_project_page_write_in_name_and_index_chip():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "project-2026-01")
     card = next(item for item in page.components if isinstance(item, ProjectPage))
@@ -270,7 +280,7 @@ def test_project_page_printed_name_and_index_chip():
     paint_project(ink, well, card)
     texts = [op[2] for op in ink.ops if op[0] == "text"]
     assert texts.count("P") == 1
-    assert "Atlas" in texts
+    assert "Atlas" not in texts
     assert texts.count("Todo") == 1
     ticks = [
         op
@@ -283,7 +293,8 @@ def test_project_page_printed_name_and_index_chip():
     chrome.begin_page()
     PlannerLayout().paint(page, chrome, NOMAD)
     labels = [op[2] for op in chrome.ops if op[0] == "text"]
-    assert "Atlas" in labels
+    assert "Project" in labels
+    assert "Atlas" not in labels
     assert "Index" in labels
     assert "Proj" in labels
     chip_links = [op[2] for op in chrome.ops if op[0] == "link" and op[2] == "projects-index-2026"]
@@ -301,14 +312,13 @@ def test_projects_tickets_knob():
         if isinstance(item, ProjectsIndex)
     )
     assert len(roster.tickets) == 6
-    assert [ticket.title for ticket in roster.tickets] == list(PROJECT_TITLES[:6])
     dests = [page.dest for page in pages]
     assert "project-2026-06" in dests
     assert "project-2026-07" not in dests
     plotter = RecordingPlotter()
     paint_projects_index_tickets(plotter, Rect(4, 20, 110, 90), roster)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Field" in texts
+    assert "Field" not in texts
     assert "Grove" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
         f"project-2026-{slot:02d}" for slot in range(1, 7)

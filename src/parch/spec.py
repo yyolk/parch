@@ -12,20 +12,6 @@ from parch.calendar import quarter_of
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
-# Printed roster for the ticket index + leaves. Slots 1–10; press uses the first N.
-PROJECT_TITLES = (
-    "Atlas",
-    "Beacon",
-    "Compass",
-    "Drift",
-    "Ember",
-    "Field",
-    "Grove",
-    "Harbor",
-    "Inlet",
-    "Jetty",
-)
-
 type TomlTable = dict[str, object]
 
 
@@ -163,12 +149,6 @@ class Spec:
         if not 1 <= slot <= self.project_tickets:
             raise ConfigError(f"project slot out of range: {slot}")
         return _dest(t"project-{self.year:04d}-{slot:02d}")
-
-    def title_for_project(self, slot: int) -> str:
-        """Printed ticket / leaf title — never a blank fill-in."""
-        if not 1 <= slot <= self.project_tickets:
-            raise ConfigError(f"project slot out of range: {slot}")
-        return PROJECT_TITLES[slot - 1]
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:

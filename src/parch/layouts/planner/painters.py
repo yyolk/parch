@@ -225,34 +225,25 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
 
 
 def paint_project(plotter: Plotter, box: Rect, page: ProjectPage) -> None:
-    """One G-craft card filling the well — printed title, not a blank rule."""
-    _paint_project_card(plotter, box, page.tasks, title=page.title)
+    """One G-craft card filling the well — write-in name rule, not a printed sample."""
+    _paint_project_card(plotter, box, page.tasks)
 
 
-def _paint_project_card(plotter: Plotter, card: Rect, tasks: int, title: str = "") -> None:
+def _paint_project_card(plotter: Plotter, card: Rect, tasks: int) -> None:
     plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     left, right = project_card_columns(card)
     header, task_box, status = project_card_left_seats(left)
-    rule_y = _paint_project_name(plotter, header, title)
+    rule_y = _paint_project_name(plotter, header)
     _paint_project_tasks(plotter, task_box, tasks)
     _paint_project_status(plotter, status)
     _paint_project_notes(plotter, right, first_y=rule_y)
 
 
-def _paint_project_name(plotter: Plotter, header: Rect, title: str = "") -> float:
+def _paint_project_name(plotter: Plotter, header: Rect) -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
-    if title:
-        name = Rect(
-            mark.right + 1.4,
-            header.y,
-            max(header.right - mark.right - 1.4, 1),
-            header.h,
-        )
-        plotter.text(name, title, size=9.2, bold=True, face="serif", gray=INK, align="left")
-        return mark.bottom
     rule_y = mark.bottom
     plotter.line(
         mark.right + 1.4,
@@ -286,7 +277,7 @@ def project_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
 
 
 def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis L — stacked tickets: stub number, printed title, perforation, whole-row link."""
+    """Thesis L — stacked tickets: stub number, write-in underline, perforation, whole-row link."""
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
         _paint_project_ticket(plotter, seat, ticket)
         plotter.link(seat, ticket.dest)
@@ -309,7 +300,7 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     )
     perf_x = stub.right + 0.55
     _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
-    plotter.text(body, ticket.title, size=10.4, bold=True, face="serif", gray=INK, align="left")
+    plotter.line(body.x, mark.bottom, body.right, mark.bottom, stroke_width=RULE, stroke_gray=RULE_C)
     _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
 
 

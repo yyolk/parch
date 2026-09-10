@@ -12,10 +12,9 @@ class ProjectsBoard:
 
 @dataclass(frozen=True, slots=True)
 class ProjectTicket:
-    """One stacked ticket on the index — printed title + leaf dest."""
+    """One stacked ticket on the index — stub number + leaf dest. Title is a write-in."""
 
     number: int
-    title: str
     dest: str
 
 
@@ -34,7 +33,6 @@ class ProjectPage:
 
     year: int
     number: int
-    title: str
     dest: str
     index_dest: str
     tasks: int
