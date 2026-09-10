@@ -61,4 +61,6 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) (Sans + Serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Inter](https://github.com/rsms/inter) 4.1 (Sans) and [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) 2.1.5 are SIL OFL 1.1 — see `src/parch/fonts/LICENSE-Inter` and `src/parch/fonts/LICENSE`.
+
+Inter SANS exploration (draft, do not merge): [`artifacts/mvp/exp-font-inter.pdf`](artifacts/mvp/exp-font-inter.pdf) and `exp-font-inter-*.png` (cover, year, projects/meeting/tasks/review indexes, quarter, month, week, daily).
