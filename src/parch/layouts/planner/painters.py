@@ -307,8 +307,8 @@ CLONE_P_SIZE = 5.2
 CLONE_NAME_GAP = 1.4
 CLONE_TASK_TOP = 0.4
 CLONE_TASK_CLEAR = 0.55
-CLONE_DOT_PITCH = 4.15
-CLONE_DOT = 0.36
+CLONE_DOT_PITCH = 2.8
+CLONE_DOT = 0.32
 
 
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
@@ -375,7 +375,7 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
 def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """projects_clone_a — kanban information architecture in Nomad #207 craft.
 
-    Dot-grid notes (daily-notes pitch), not graph: light hairline dots.
+    Dot-grid notes (2.8 mm pitch), not graph: light hairline dots.
     Status nodes are open squares — ``Plotter`` has no circle primitive.
     Spine is a narrow ink bar; rotated PROJECT / chevrons stay off.
     """
