@@ -49,6 +49,8 @@ Thesis C (in the year walk, after Meetings): month-banded Tasks index + weekly T
 
 Thesis B index + Thesis E dest (in the year walk, after Tasks): multi-column Review week-chip grid + weekly dest (Mon–Sun mini-write strip over unlabeled week narrative). Month headers sit on the left; hairlines span the well so months read across. **Rev** tab → year index; dest header chip is the ISO week and returns to the index. Dest `review-index-{year}` / `review-{iso_year}-W{nn}`. Proof: [`artifacts/mvp/exp-review-index-b.png`](artifacts/mvp/exp-review-index-b.png) and [`artifacts/mvp/exp-review-dest-e.png`](artifacts/mvp/exp-review-dest-e.png).
 
+Martian Grotesk SANS specimen (same page kinds as the Nomad MVP samples): [`artifacts/mvp/exp-font-martian-grotesk.pdf`](artifacts/mvp/exp-font-martian-grotesk.pdf) and `artifacts/mvp/exp-font-martian-grotesk-*.png`.
+
 ```shell
 uv run pytest
 ```
@@ -61,4 +63,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) (Sans + Serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) Serif (headers that use `face="serif"`) and specimen [Martian Grotesk](https://github.com/evilmartians/grotesk) (SANS) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE` and `src/parch/fonts/martian-grotesk/LICENSE`. This branch is a typeface specimen, not a product lock.

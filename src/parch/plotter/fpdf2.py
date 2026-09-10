@@ -1,4 +1,4 @@
-"""Single fpdf2-backed plotter. Liberation Serif/Sans, fake small-caps."""
+"""Single fpdf2-backed plotter. Martian Grotesk + Liberation Serif, fake small-caps."""
 
 from pathlib import Path
 from typing import override
@@ -32,8 +32,9 @@ class Fpdf2Plotter(Plotter):
         self.pdf.set_margins(0, 0, 0)
         self.pdf.set_compression(True)
         root = font_dir()
-        self.pdf.add_font(SANS, "", str(root / "LiberationSans-Regular.ttf"))
-        self.pdf.add_font(SANS, "B", str(root / "LiberationSans-Bold.ttf"))
+        sans = root / "martian-grotesk"
+        self.pdf.add_font(SANS, "", str(sans / "MartianGrotesk-Regular.ttf"))
+        self.pdf.add_font(SANS, "B", str(sans / "MartianGrotesk-Bold.ttf"))
         self.pdf.add_font(SERIF, "", str(root / "LiberationSerif-Regular.ttf"))
         self.pdf.add_font(SERIF, "B", str(root / "LiberationSerif-Bold.ttf"))
         self.pdf.set_font(SANS, size=10)
