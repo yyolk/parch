@@ -305,11 +305,11 @@ def _split_right(box: Rect, width: float) -> tuple[Rect, Rect]:
 
 
 def paint_projects_index_table(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis G — printed names, not underlines. Row links to that project leaf."""
+    """Thesis G — write-in name underline. Status / Open stay; row links to the leaf."""
     head, seats = projects_index_table(box, len(index.entries))
     _paint_project_table_header(plotter, head)
     for seat, entry in zip(seats, index.entries, strict=True):
-        _paint_project_table_row(plotter, seat, entry.name, entry.status)
+        _paint_project_table_row(plotter, seat, entry.status)
         plotter.link(seat, entry.dest)
 
 
@@ -332,15 +332,16 @@ def _paint_project_table_header(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_project_table_row(plotter: Plotter, box: Rect, name: str, status: str) -> None:
+def _paint_project_table_row(plotter: Plotter, box: Rect, status: str) -> None:
     name_col, status_col, open_col = _project_table_columns(box)
-    plotter.text(
-        name_col,
-        name,
-        size=8.4,
-        face="serif",
-        gray=INK,
-        align="left",
+    rule_y = box.y + box.h * 0.58
+    plotter.line(
+        name_col.x,
+        rule_y,
+        name_col.right - 1.6,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
     )
     plotter.text(
         status_col,
@@ -453,20 +454,20 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
 
 
 def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
-    """G clone+fit leaf — printed name in the name field, not an empty underline."""
+    """G clone+fit leaf — empty name field for handwriting, not a printed sample."""
     cards, rails = projects_clone_a_seats(box, 1)
     card, rail = cards[0], rails[0]
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
     spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(card)
     plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
     _paint_clone_priority(plotter, name_h)
-    plotter.text(
-        name_field,
-        leaf.name,
-        size=8.2,
-        face="serif",
-        gray=INK,
-        align="left",
+    plotter.line(
+        name_field.x,
+        name_field.bottom,
+        name_field.right,
+        name_field.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
     )
     _paint_clone_tasks(plotter, tasks, leaf.tasks)
     _paint_clone_dot_grid(plotter, notes)

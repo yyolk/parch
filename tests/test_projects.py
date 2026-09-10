@@ -5,8 +5,8 @@ from parch.components import (
     ProjectLeaf,
     ProjectsBoard,
     ProjectsIndex,
-    SAMPLE_PROJECTS,
-    sample_projects,
+    SAMPLE_STATUSES,
+    sample_statuses,
 )
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
@@ -18,7 +18,9 @@ from parch.layouts.planner.painters import (
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     PROJECT_TABLE_HEAD_H,
+    RULE_C,
     TICK,
+    _project_table_columns,
     paint_project,
     paint_projects,
     paint_projects_index_table,
@@ -59,10 +61,8 @@ def test_projects_page_after_annual():
     index = next(item for item in page.components if isinstance(item, ProjectsIndex))
     assert index.year == 2026
     assert len(index.entries) == 10
-    assert index.entries[0].name == "Kitchen renovation"
     assert index.entries[0].status == "Doing"
     assert index.entries[0].dest == "project-1"
-    assert all(entry.name for entry in index.entries)
     assert [entry.dest for entry in index.entries] == [f"project-{n}" for n in range(1, 11)]
 
     assert strip_active(page.kind) == "Proj"
@@ -184,7 +184,7 @@ def test_projects_index_table_tracks():
         assert later.y >= earlier.bottom - 1e-6
 
 
-def test_paint_projects_index_table_prints_names_and_links():
+def test_paint_projects_index_table_writein_names_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
     index = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -196,9 +196,8 @@ def test_paint_projects_index_table_prints_names_and_links():
     assert "Project" in texts
     assert "Status" in texts
     assert "Open →" in texts
-    assert "Kitchen renovation" in texts
-    assert "JLPT N3 study" in texts
-    assert "Studio desk build" in texts
+    assert "Kitchen renovation" not in texts
+    assert "JLPT N3 study" not in texts
     assert texts.count("Doing") >= 1
     assert texts.count("Todo") >= 1
     assert texts.count("Done") >= 1
@@ -211,6 +210,15 @@ def test_paint_projects_index_table_prints_names_and_links():
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
     assert ticks == []
+
+    _, seats = projects_index_table(well, 10)
+    name_col, _status, _open = _project_table_columns(seats[0])
+    rules = [
+        op
+        for op in plotter.ops
+        if op[0] == "line" and op[6] == RULE_C and op[1] == pytest.approx(name_col.x)
+    ]
+    assert len(rules) == 10
 
     links = plotter.links()
     assert links == [f"project-{n}" for n in range(1, 11)]
@@ -229,24 +237,23 @@ def test_projects_index_header_and_proj_tab_active():
     assert "Projects" in texts
     assert "2026" in texts
     assert "Proj" in texts
-    assert "Kitchen renovation" in texts
+    assert "Kitchen renovation" not in texts
     assert plotter.links().count("project-1") == 1
     assert "projects-2026" in plotter.links()
 
 
-def test_project_leaf_prints_name_and_links_back_to_index():
+def test_project_leaf_writein_name_and_links_back_to_index():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     leaf_page = next(p for p in pages if p.dest == "project-1")
     assert leaf_page.kind == "project"
-    assert leaf_page.title == "Kitchen renovation"
+    assert leaf_page.title == "Project 01"
     assert strip_active(leaf_page.kind) == "Proj"
     assert strip_items(leaf_page) == NAV8
 
     leaf = next(item for item in leaf_page.components if isinstance(item, ProjectLeaf))
     assert leaf.year == 2026
     assert leaf.number == 1
-    assert leaf.name == "Kitchen renovation"
     assert leaf.status == "Doing"
     assert leaf.tasks == 4
     assert leaf.index_dest == "projects-2026"
@@ -255,7 +262,8 @@ def test_project_leaf_prints_name_and_links_back_to_index():
     plotter.begin_page()
     PlannerLayout().paint(leaf_page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Kitchen renovation" in texts
+    assert "Project 01" in texts
+    assert "Kitchen renovation" not in texts
     assert "Index" in texts
     assert "2026" in texts
     assert "P" in texts
@@ -264,7 +272,7 @@ def test_project_leaf_prints_name_and_links_back_to_index():
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
     paint_project(ink, well, leaf)
-    assert "Kitchen renovation" in [op[2] for op in ink.ops if op[0] == "text"]
+    assert "Kitchen renovation" not in [op[2] for op in ink.ops if op[0] == "text"]
     assert "In Progress" in [op[2] for op in ink.ops if op[0] == "text"]
 
 
@@ -277,4 +285,4 @@ def test_project_index_rows_knob():
     dests = [p.dest for p in pages]
     assert dests.count("project-8") == 1
     assert "project-9" not in dests
-    assert sample_projects(8) == SAMPLE_PROJECTS[:8]
+    assert sample_statuses(8) == SAMPLE_STATUSES[:8]

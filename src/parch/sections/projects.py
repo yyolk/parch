@@ -1,5 +1,5 @@
 from parch.calendar import month_touching_weeks
-from parch.components import ProjectEntry, ProjectLeaf, ProjectsIndex, sample_projects
+from parch.components import ProjectEntry, ProjectLeaf, ProjectsIndex, sample_statuses
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -13,10 +13,10 @@ class ProjectsSection:
         spec = self.spec
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         nav = planner_nav(spec, week_dest=spec.dest_for_week(first[0]))
-        catalog = sample_projects(spec.project_index_rows)
+        catalog = sample_statuses(spec.project_index_rows)
         entries = tuple(
-            ProjectEntry(name=name, status=status, dest=spec.dest_for_project(number))
-            for number, (name, status) in enumerate(catalog, start=1)
+            ProjectEntry(status=status, dest=spec.dest_for_project(number))
+            for number, status in enumerate(catalog, start=1)
         )
         built = [
             Page(
@@ -32,13 +32,12 @@ class ProjectsSection:
                 Page(
                     dest=entry.dest,
                     kind="project",
-                    title=entry.name,
+                    title=f"Project {number:02d}",
                     nav=nav,
                     components=(
                         ProjectLeaf(
                             year=spec.year,
                             number=number,
-                            name=entry.name,
                             status=entry.status,
                             tasks=spec.project_tasks,
                             index_dest=spec.projects_dest,

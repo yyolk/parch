@@ -9,8 +9,8 @@ from parch.components.projects import (
     ProjectLeaf,
     ProjectsBoard,
     ProjectsIndex,
-    SAMPLE_PROJECTS,
-    sample_projects,
+    SAMPLE_STATUSES,
+    sample_statuses,
 )
 from parch.components.quarter import QuarterGrid
 from parch.components.schedule import Schedule
@@ -48,9 +48,9 @@ __all__ = [
     "ProjectLeaf",
     "ProjectsBoard",
     "ProjectsIndex",
-    "SAMPLE_PROJECTS",
+    "SAMPLE_STATUSES",
     "QuarterGrid",
-    "sample_projects",
+    "sample_statuses",
     "Schedule",
     "WeekDay",
     "WeekStrip",
