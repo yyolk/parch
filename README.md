@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) (Sans + Serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Urbanist](https://github.com/coreyhu/Urbanist) (sans) and [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) are SIL OFL 1.1 — see `src/parch/fonts/`.
