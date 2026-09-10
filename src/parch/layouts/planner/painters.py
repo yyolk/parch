@@ -263,6 +263,10 @@ TICKET_INSET_Y = 1.1
 TICKET_MARK = 5.6
 TICKET_PERF_DASH = 0.52
 TICKET_PERF_GAP = 0.40
+TICKET_NAME_WEIGHTS = (2.0, 1.0)
+TICKET_BODY_GAP = 1.8
+TICKET_PREVIEW_GAP = 0.55
+TICKET_PREVIEW_INSET = 0.35
 
 
 def project_ticket_seats(well: Rect, n: int) -> tuple[Rect, ...]:
@@ -276,8 +280,19 @@ def project_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
     return inner.split_left(TICKET_STUB_W)
 
 
+def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
+    """Write-in name (~2/3) | three-card preview (~1/3)."""
+    return columns(body, 2, gap=TICKET_BODY_GAP, weights=TICKET_NAME_WEIGHTS)
+
+
+def project_ticket_preview_cards(preview: Rect) -> tuple[Rect, ...]:
+    """G's three stacked cards, thumbnail — hairline open frames."""
+    pocket = preview.inset(TICKET_PREVIEW_INSET, TICKET_PREVIEW_INSET)
+    return rows(pocket, 3, gap=TICKET_PREVIEW_GAP)
+
+
 def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis L — stacked tickets: stub number, write-in underline, perforation, whole-row link."""
+    """Thesis L — stub number, short write-in, 3-card preview, perforation, whole-row link."""
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
         _paint_project_ticket(plotter, seat, ticket)
         plotter.link(seat, ticket.dest)
@@ -286,6 +301,7 @@ def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsInd
 def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     stub, body = project_ticket_parts(box)
+    name, preview = project_ticket_body_seats(body)
     mark_y = stub.y + (stub.h - TICKET_MARK) / 2
     mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
@@ -300,7 +316,9 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     )
     perf_x = stub.right + 0.55
     _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
-    plotter.line(body.x, mark.bottom, body.right, mark.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(name.x, mark.bottom, name.right, mark.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    for card in project_ticket_preview_cards(preview):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
 
 

@@ -12,8 +12,10 @@ from parch.layouts.planner.painters import (
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
+    TICKET_BODY_GAP,
     TICKET_GAP,
     TICKET_MARK,
+    TICKET_NAME_WEIGHTS,
     TICKET_STUB_W,
     paint_project,
     paint_projects,
@@ -21,7 +23,9 @@ from parch.layouts.planner.painters import (
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
+    project_ticket_body_seats,
     project_ticket_parts,
+    project_ticket_preview_cards,
     project_ticket_seats,
     strip_active,
     strip_items,
@@ -220,6 +224,24 @@ def test_project_ticket_seats():
     assert stub.right == pytest.approx(body.x)
     assert stub.w == pytest.approx(TICKET_STUB_W)
 
+    name, preview = project_ticket_body_seats(body)
+    assert name.x == pytest.approx(body.x)
+    assert preview.right == pytest.approx(body.right)
+    assert name.right < preview.x
+    share = name.w + preview.w
+    assert name.w / share == pytest.approx(TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS))
+    leftover = body.w - TICKET_BODY_GAP
+    assert name.w == pytest.approx(leftover * 2 / 3)
+    assert preview.w == pytest.approx(leftover / 3)
+
+    cards = project_ticket_preview_cards(preview)
+    assert len(cards) == 3
+    assert cards[0].y > preview.y
+    assert cards[-1].bottom < preview.bottom
+    assert cards[1].y > cards[0].bottom
+    assert cards[0].x > preview.x
+    assert cards[0].right < preview.right
+
 
 def test_projects_index_paint_write_in_underlines_and_links():
     spec = Spec(notes_pages=1)
@@ -253,8 +275,21 @@ def test_projects_index_paint_write_in_underlines_and_links():
     assert len(rules) == 8
     for seat, rule in zip(seats, rules, strict=True):
         _, body = project_ticket_parts(seat)
-        assert rule[1] == pytest.approx(body.x)
-        assert rule[3] == pytest.approx(body.right)
+        name, preview = project_ticket_body_seats(body)
+        assert rule[1] == pytest.approx(name.x)
+        assert rule[3] == pytest.approx(name.right)
+        assert rule[3] < preview.x
+
+    previews = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w < TICKET_STUB_W * 3
+        and op[1].h < TICKET_MARK
+    ]
+    assert len(previews) == 8 * 3
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
