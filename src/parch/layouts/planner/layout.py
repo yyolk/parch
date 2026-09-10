@@ -9,7 +9,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectLeaf,
     ProjectsBoard,
+    ProjectsIndexSpines,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -28,7 +30,9 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_priorities,
+    paint_project,
     paint_projects,
+    paint_projects_index_spines,
     paint_quarter,
     paint_schedule,
     paint_week,
@@ -75,6 +79,10 @@ class PlannerLayout:
                 paint_annual(plotter, well, _one(page, AnnualGrid))
             case "projects":
                 paint_projects(plotter, well, _one(page, ProjectsBoard))
+            case "projects_index_spines":
+                paint_projects_index_spines(plotter, well, _one(page, ProjectsIndexSpines))
+            case "project":
+                paint_project(plotter, well, _one(page, ProjectsBoard))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -128,6 +136,10 @@ def _header_meta(page: Page) -> str:
             return "Q1–Q4"
         case "projects":
             return str(_one(page, ProjectsBoard).year)
+        case "projects_index_spines":
+            return "Shelf"
+        case "project":
+            return _one(page, ProjectLeaf).hint
         case "quarter":
             return ""
         case "month":
@@ -166,6 +178,8 @@ def _header_chip(page: Page) -> str:
             return "Habits"
         case "habits":
             return "Month"
+        case "project":
+            return "Index"
         case _:
             return ""
 
@@ -176,6 +190,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, MonthGrid).habits_dest
         case "habits":
             return _one(page, HabitGrid).month_dest
+        case "project":
+            return _one(page, ProjectLeaf).index_dest
         case _:
             return None
 

@@ -1,6 +1,9 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
+from parch import ConfigError
 from parch.spec import Spec
 
 
@@ -25,8 +28,11 @@ def test_dest_names_from_tstrings():
     assert spec.habit_columns == 10
     assert spec.priority_rows == 6
     assert spec.projects_dest == "projects-2026"
+    assert spec.projects_index_spines_dest == "projects-index-spines-2026"
+    assert spec.dest_for_project("atlas") == "project-2026-atlas"
     assert spec.project_cards == 3
     assert spec.project_tasks == 4
+    assert spec.project_index_spines == 12
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
@@ -44,11 +50,20 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_path(Path("examples/mvp.toml")).habit_columns == 10
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_cards == 2
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_tasks == 5
+    assert Spec.from_mapping({"projects": {"index_spines": 8}}).project_index_spines == 8
     mvp = Spec.from_path(Path("examples/mvp.toml"))
     assert mvp.project_cards == 3
     assert mvp.project_tasks == 4
+    assert mvp.project_index_spines == 12
 
 
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
+
+
+def test_project_index_spines_range_and_slug():
+    with pytest.raises(ConfigError, match="project_index_spines"):
+        Spec(project_index_spines=7)
+    with pytest.raises(ConfigError, match="project slug"):
+        Spec().dest_for_project("")
