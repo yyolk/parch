@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Meet · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -26,6 +26,10 @@ PROJ dest (strip label **Proj**):
 - index page → self
 - G projects dest → the index page that lists that row (header chip is the same dest)
 - everywhere else → index page 1 (``spec.projects_index_dest``)
+
+MEET dest (strip label **Meet**), when ``meet_dest`` is passed (meeting index + dests):
+- index page → self
+- meeting dest → the owning week-banded index (header chip is the same dest)
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
@@ -57,6 +61,7 @@ def planner_nav(
     day: date | None = None,
     month: int | None = None,
     proj_dest: str | None = None,
+    meet_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
@@ -67,9 +72,11 @@ def planner_nav(
         NavItem("Mon", mon),
         NavItem("Habit", spec.dest_for_habits(habit_month)),
         NavItem("Proj", proj_dest or spec.projects_index_dest),
-        NavItem("Week", week_dest),
-        NavItem("Day", spec.dest_for_day(landing)),
     ]
+    if meet_dest:
+        items.append(NavItem("Meet", meet_dest))
+    items.append(NavItem("Week", week_dest))
+    items.append(NavItem("Day", spec.dest_for_day(landing)))
     if spec.notes_pages > 0:
         items.append(NavItem("Notes", spec.dest_for_notes(landing, 1)))
     return tuple(items)
