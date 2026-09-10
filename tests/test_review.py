@@ -22,6 +22,7 @@ from parch.layouts.planner.painters import (
     review_day_cues,
     review_day_link_hits,
     review_day_parts,
+    review_day_rule_y,
     review_seats,
     reviews_index_link_hits,
     reviews_index_rows,
@@ -156,10 +157,14 @@ def test_review_dest_seats_use_tracks():
     label, write = review_day_parts(cues[0])
     assert label.y > cues[0].y
     assert write.bottom < cues[0].bottom
-    assert write.y > label.bottom
+    assert write.y == pytest.approx(label.bottom)
     hits = review_day_link_hits(cues[0])
     assert hits == (label,)
     assert not any(_rects_overlap(hit, write) for hit in hits)
+    rule_y = review_day_rule_y(cues[0])
+    assert rule_y > write.y
+    assert rule_y < write.bottom
+    assert rule_y < cues[0].bottom
 
 
 def test_reviews_index_seats():
@@ -229,10 +234,11 @@ def test_review_paint_day_cues_and_unlabeled_narrative():
     ]
     for cue in cues:
         _label, write = review_day_parts(cue)
+        rule_y = review_day_rule_y(cue)
         assert any(
             op[1] == pytest.approx(write.x)
             and op[3] == pytest.approx(write.right)
-            and op[2] == pytest.approx(write.bottom)
+            and op[2] == pytest.approx(rule_y)
             for op in rules
         )
 

@@ -1155,6 +1155,12 @@ def review_day_link_hits(cue: Rect) -> tuple[Rect, ...]:
     return (label,)
 
 
+def review_day_rule_y(cue: Rect) -> float:
+    """One-line prompt baseline — mid write pocket, not the hairline box floor."""
+    _label, write = review_day_parts(cue)
+    return write.y + min(4.15, write.h * 0.55)
+
+
 def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
     """Thesis E — seven day cues, then unlabeled week narrative. Chrome names the page."""
     strip, notes = review_seats(box)
@@ -1191,11 +1197,12 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
         gray=ink,
         align="center",
     )
+    rule_y = review_day_rule_y(cue)
     plotter.line(
         write.x,
-        write.bottom,
+        rule_y,
         write.right,
-        write.bottom,
+        rule_y,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )
