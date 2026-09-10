@@ -255,6 +255,16 @@ class Spec:
         iso = day.isocalendar()
         return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
 
+    @property
+    def review_index_dest(self) -> str:
+        """Rev landing — one-page week-grid index for the pressed months."""
+        return _dest(t"review-index-{self.year:04d}")
+
+    def dest_for_review(self, day: date) -> str:
+        """Weekly Review dest, e.g. ``review-2026-W01`` — not the planner week page."""
+        iso = day.isocalendar()
+        return _dest(t"review-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
