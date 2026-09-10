@@ -11,8 +11,8 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    MeetingAgenda,
     ProjectsBoard,
-    ProjectsMeeting,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -278,91 +278,87 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
-MEETING_GAP = 2.6
-MEETING_HEAD_INSET_X = 1.8
-MEETING_HEAD_INSET_Y = 1.6
-MEETING_TITLE_H = 8.2
-MEETING_DATE_H = 5.8
-MEETING_HEAD_LINE_GAP = 1.4
-MEETING_LABEL_W = 16.0
-MEETING_ROW_GAP = 2.2
-MEETING_ROW_INSET_X = 1.6
-MEETING_ROW_INSET_Y = 1.2
-MEETING_NAME_H = 6.2
-MEETING_TASK_GAP = 0.9
-MEETING_TASK_COL_GAP = 2.8
+MEET_GAP = 2.6
+MEET_COL_GAP = 2.6
+MEET_HEAD_INSET_X = 1.8
+MEET_HEAD_INSET_Y = 1.4
+MEET_TITLE_H = 7.6
+MEET_DATE_H = 5.6
+MEET_HEAD_LINE_GAP = 1.2
+MEET_LABEL_W = 14.0
+MEET_LINE_PITCH = 4.15
 
 
 def meeting_head_height() -> float:
-    """Content-height meeting title + date — not a fraction of the well."""
+    """Content-height title + date write-ins — not a fraction of the well."""
+    return MEET_HEAD_INSET_Y * 2 + MEET_TITLE_H + MEET_HEAD_LINE_GAP + MEET_DATE_H
+
+
+def meeting_attendees_height(lines: int) -> float:
+    """Outlined Attendees well tall enough for ``lines`` write-ins."""
     return (
-        MEETING_HEAD_INSET_Y * 2 + MEETING_TITLE_H + MEETING_HEAD_LINE_GAP + MEETING_DATE_H
+        FOCUS_PAD_TOP
+        + FOCUS_LABEL_H
+        + FOCUS_PAD_MID
+        + max(1, lines) * MEET_LINE_PITCH
+        + FOCUS_PAD_BOT
     )
 
 
-def meeting_row_height() -> float:
-    """Compact capture row: P + name over an inline tick strip."""
-    return MEETING_ROW_INSET_Y * 2 + MEETING_NAME_H + MEETING_TASK_GAP + TICK
+def _below(box: Rect, gap: float) -> Rect:
+    return Rect(box.x, box.y + gap, box.w, box.h - gap)
 
 
-def meeting_roster_height(cards: int) -> float:
-    n = max(1, cards)
-    return n * meeting_row_height() + (n - 1) * MEETING_ROW_GAP
-
-
-def projects_meeting_seats(well: Rect, cards: int) -> tuple[Rect, Rect, Rect]:
-    """Meeting write-in, content-height project rows, leftover decisions well."""
+def meeting_seats(
+    well: Rect, attendees: int, agenda: int, actions: int
+) -> tuple[Rect, Rect, Rect, Rect, Rect]:
+    """Title/date, attendees, agenda | actions, leftover notes. Notes flex."""
     head, rest = well.split_top(meeting_head_height())
-    leftover = Rect(rest.x, rest.y + MEETING_GAP, rest.w, rest.h - MEETING_GAP)
-    roster_h = meeting_roster_height(cards)
-    notes_h = max(leftover.h - roster_h - MEETING_GAP, 1)
-    roster, notes = rows(leftover, 2, gap=MEETING_GAP, weights=(roster_h, notes_h))
-    return head, roster, notes
-
-
-def projects_meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
-    """Meeting / context underline over a quieter date line."""
-    inner = head.inset(MEETING_HEAD_INSET_X, MEETING_HEAD_INSET_Y)
-    meeting, dated = rows(
-        inner, 2, gap=MEETING_HEAD_LINE_GAP, weights=(MEETING_TITLE_H, MEETING_DATE_H)
+    leftover = _below(rest, MEET_GAP)
+    att_h = meeting_attendees_height(attendees)
+    attendees_box, rest = leftover.split_top(att_h)
+    leftover = _below(rest, MEET_GAP)
+    pair_h = max(checklist_content_height(agenda), checklist_content_height(actions))
+    pair, notes = rows(
+        leftover,
+        2,
+        gap=MEET_GAP,
+        weights=(pair_h, max(leftover.h - pair_h - MEET_GAP, 1)),
     )
-    return meeting, dated
+    left, right = columns(pair, 2, gap=MEET_COL_GAP)
+    agenda_box = Rect(left.x, left.y, left.w, checklist_content_height(agenda))
+    actions_box = Rect(right.x, right.y, right.w, checklist_content_height(actions))
+    return head, attendees_box, agenda_box, notes, actions_box
 
 
-def projects_meeting_rows(roster: Rect, cards: int) -> tuple[Rect, ...]:
-    """Stacked 'brought up in this meeting' rows — not side-by-side cards."""
-    return rows(roster, max(1, cards), gap=MEETING_ROW_GAP)
+def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title underline over a quieter date line."""
+    inner = head.inset(MEET_HEAD_INSET_X, MEET_HEAD_INSET_Y)
+    title, dated = rows(inner, 2, gap=MEET_HEAD_LINE_GAP, weights=(MEET_TITLE_H, MEET_DATE_H))
+    return title, dated
 
 
-def projects_meeting_row_seats(row: Rect) -> tuple[Rect, Rect]:
-    """Optional P + name, then 2–3 Focus ticks in one inline row."""
-    inner = row.inset(MEETING_ROW_INSET_X, MEETING_ROW_INSET_Y)
-    name, rest = inner.split_top(MEETING_NAME_H)
-    tasks = Rect(rest.x, rest.y + MEETING_TASK_GAP, rest.w, TICK)
-    return name, tasks
-
-
-def paint_projects_meeting(plotter: Plotter, box: Rect, board: ProjectsMeeting) -> None:
-    """Thesis L — capture projects from a conversation. Not a board or horizon."""
-    head, roster, notes = projects_meeting_seats(box, board.cards)
+def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
+    """Exploratory Meeting well — title, people, agenda, notes, actions."""
+    head, attendees, agenda_box, notes, actions = meeting_seats(
+        box, agenda.attendees, agenda.agenda, agenda.actions
+    )
     _paint_meeting_head(plotter, head)
-    for row in projects_meeting_rows(roster, board.cards):
-        plotter.rect(row, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        name, tasks = projects_meeting_row_seats(row)
-        _paint_project_name(plotter, name)
-        _paint_meeting_tasks(plotter, tasks, board.tasks)
-    _paint_note_box(plotter, notes, label="Decisions")
+    _paint_meeting_attendees(plotter, attendees, agenda.attendees)
+    _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
+    _paint_note_box(plotter, notes, label="Notes")
+    _paint_checklist_box(plotter, actions, label="Actions", rows=agenda.actions)
 
 
 def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
     plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    meeting, dated = projects_meeting_head_seats(head)
-    _paint_meeting_writein(plotter, meeting, "Meeting")
+    title, dated = meeting_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Title")
     _paint_meeting_writein(plotter, dated, "Date")
 
 
 def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
-    tag, write = box.split_left(MEETING_LABEL_W)
+    tag, write = box.split_left(MEET_LABEL_W)
     plotter.text(
         tag,
         label,
@@ -376,10 +372,23 @@ def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
     plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
 
 
-def _paint_meeting_tasks(plotter: Plotter, box: Rect, n: int) -> None:
-    """Next-action ticks in one inline row — not a vertical Focus stack."""
-    for slot in columns(box, max(1, n), gap=MEETING_TASK_COL_GAP):
-        _paint_focus_row(plotter, slot.x, slot.y, slot.right)
+def _paint_meeting_attendees(plotter: Plotter, box: Rect, lines: int) -> None:
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    plotter.text(
+        Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
+        "Attendees",
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    x = box.x + 1.6
+    right = box.right - 1.6
+    y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID + MEET_LINE_PITCH
+    for _ in range(max(1, lines)):
+        plotter.line(x, y, right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += MEET_LINE_PITCH
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -1045,7 +1054,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects" | "projects_meeting":
+        case "projects" | "meeting":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -1074,7 +1083,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects" | "projects_meeting":
+        case "projects" | "meeting":
             return ""
         case _:
             return "Year"

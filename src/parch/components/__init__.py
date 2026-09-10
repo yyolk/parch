@@ -1,11 +1,11 @@
 from parch.components.annual import AnnualGrid, AnnualMonth
 from parch.components.cover import CoverTitle
 from parch.components.habit import HabitGrid
+from parch.components.meeting import MeetingAgenda
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
 from parch.components.notes import Notes
 from parch.components.priorities import Priorities
 from parch.components.projects import ProjectsBoard
-from parch.components.projects_meeting import ProjectsMeeting
 from parch.components.quarter import QuarterGrid
 from parch.components.schedule import Schedule
 from parch.components.week import WeekDay, WeekStrip
@@ -15,11 +15,11 @@ type Component = (
     | AnnualMonth
     | CoverTitle
     | HabitGrid
+    | MeetingAgenda
     | MonthGrid
     | Notes
     | Priorities
     | ProjectsBoard
-    | ProjectsMeeting
     | QuarterGrid
     | Schedule
     | WeekStrip
@@ -31,13 +31,13 @@ __all__ = [
     "Component",
     "CoverTitle",
     "HabitGrid",
+    "MeetingAgenda",
     "MonthCell",
     "MonthGrid",
     "MonthWeek",
     "Notes",
     "Priorities",
     "ProjectsBoard",
-    "ProjectsMeeting",
     "QuarterGrid",
     "Schedule",
     "WeekDay",

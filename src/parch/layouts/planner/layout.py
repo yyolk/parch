@@ -6,11 +6,11 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     HabitGrid,
+    MeetingAgenda,
     MonthGrid,
     Notes,
     Priorities,
     ProjectsBoard,
-    ProjectsMeeting,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -29,8 +29,8 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_priorities,
+    paint_meeting,
     paint_projects,
-    paint_projects_meeting,
     paint_quarter,
     paint_schedule,
     paint_week,
@@ -77,8 +77,8 @@ class PlannerLayout:
                 paint_annual(plotter, well, _one(page, AnnualGrid))
             case "projects":
                 paint_projects(plotter, well, _one(page, ProjectsBoard))
-            case "projects_meeting":
-                paint_projects_meeting(plotter, well, _one(page, ProjectsMeeting))
+            case "meeting":
+                paint_meeting(plotter, well, _one(page, MeetingAgenda))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -132,8 +132,8 @@ def _header_meta(page: Page) -> str:
             return "Q1–Q4"
         case "projects":
             return str(_one(page, ProjectsBoard).year)
-        case "projects_meeting":
-            return str(_one(page, ProjectsMeeting).year)
+        case "meeting":
+            return str(_one(page, MeetingAgenda).year)
         case "quarter":
             return ""
         case "month":

@@ -139,8 +139,8 @@ class Spec:
         return _dest(t"projects-{self.year:04d}")
 
     @property
-    def projects_meeting_dest(self) -> str:
-        return _dest(t"projects-meeting-{self.year:04d}")
+    def meeting_dest(self) -> str:
+        return _dest(t"meeting-{self.year:04d}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
