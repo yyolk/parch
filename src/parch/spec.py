@@ -50,6 +50,7 @@ class Spec:
     schedule_from: int = 7
     schedule_to: int = 16
     notes_pages: int = 2
+    habit_rows: int = 12
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -70,6 +71,8 @@ class Spec:
             raise ConfigError("schedule hours must be 0–23 and from ≤ to")
         if self.notes_pages < 0:
             raise ConfigError("notes_pages must be >= 0")
+        if not 4 <= self.habit_rows <= 16:
+            raise ConfigError("habit_rows must be 4–16")
 
     @property
     def weekday_start(self) -> int:
@@ -105,6 +108,9 @@ class Spec:
 
     def dest_for_month(self, month: int) -> str:
         return _dest(t"month-{self.year:04d}-{month:02d}")
+
+    def dest_for_habits(self, month: int) -> str:
+        return _dest(t"month-{self.year:04d}-{month:02d}-habits")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -157,6 +163,8 @@ class Spec:
             "notes_pages",
             data.get("notes_pages", notes_table.get("pages", 2)),
         )
+        habits = data.get("habits")
+        habits_table = habits if isinstance(habits, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -167,6 +175,7 @@ class Spec:
             schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),
             schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),
             notes_pages=int(notes_pages),
+            habit_rows=int(habits_table.get("rows", data.get("habit_rows", 12))),
         )
 
     @classmethod

@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → quarters → months → weeks → days."""
+"""Year planner book — cover → annual → quarters → months+habits → weeks → days."""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
@@ -9,6 +9,7 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    HabitSection,
     MonthSection,
     Page,
     QuarterSection,
@@ -22,12 +23,16 @@ class YearPlanner:
         daily = DailySection(spec)
         notes = DailyNotesSection(spec)
         weekly = WeeklySection(spec)
+        month = MonthSection(spec)
+        habits = HabitSection(spec)
         built = [
             *CoverSection(spec).pages(),
             *AnnualSection(spec).pages(),
             *QuarterSection(spec).pages(),
-            *MonthSection(spec).pages(),
         ]
+        for number in spec.months:
+            built.extend(month.pages_for(number))
+            built.extend(habits.pages_for(number))
         for week in months_touching_weeks(spec.year, spec.months, spec.weekday_start):
             built.extend(weekly.pages_for(week))
             for day in week:

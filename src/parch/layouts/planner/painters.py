@@ -7,6 +7,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    HabitGrid,
     MonthGrid,
     Notes,
     QuarterGrid,
@@ -43,13 +44,26 @@ def paint_header(
     title: str,
     meta: str,
     meta_dest: str | None = None,
+    *,
+    chip: str = "",
+    chip_dest: str | None = None,
 ) -> None:
     slab = Rect(0.0, device.content_top, device.page_width, HEADER_H)
     plotter.rect(slab, stroke=False, fill=True, fill_gray=INK)
     gutter = device.writing_clearance
-    meta_w = 28.0
-    title_box = Rect(gutter, slab.y, device.page_width - 2 * gutter - meta_w - 1.5, slab.h)
+    meta_w = 18.0
+    chip_w = 16.0 if chip else 0.0
+    title_box = Rect(
+        gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
+    )
     plotter.text(title_box, title, size=11, bold=True, face="serif", gray=PAPER, align="left")
+    if chip:
+        chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
+        plotter.text(
+            chip_box, chip, size=7.4, face="sans", gray=SOFT, align="right", small_caps=True
+        )
+        if chip_dest:
+            plotter.link(chip_box, chip_dest)
     if meta:
         meta_box = Rect(device.page_width - gutter - meta_w, slab.y, meta_w, slab.h)
         plotter.text(
@@ -382,6 +396,54 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
                 plotter.link(num, cell.dest)
 
 
+HABIT_LABEL_W = 28.0
+HABIT_HEAD_H = 4.2
+
+
+def paint_habit_grid(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
+    """Day × habit matrix. Left name slots; hairline check cells. No streak math."""
+    label, rest = box.split_left(HABIT_LABEL_W)
+    matrix = Rect(rest.x + 1.6, rest.y, rest.w - 1.6, rest.h)
+    head = Rect(box.x, box.y, box.w, HABIT_HEAD_H)
+    plotter.text(
+        Rect(label.x, head.y, label.w, head.h),
+        "Habit",
+        size=5.8,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    day_heads = columns(Rect(matrix.x, head.y, matrix.w, head.h), grid.days)
+    for i, col in enumerate(day_heads):
+        plotter.text(
+            col,
+            str(i + 1),
+            size=3.8,
+            face="sans",
+            gray=MUTED,
+            align="center",
+        )
+        if i < len(grid.day_dests) and grid.day_dests[i]:
+            plotter.link(col, grid.day_dests[i])
+    plotter.line(box.x, head.bottom, box.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+    body = Rect(box.x, head.bottom + 0.5, box.w, box.h - HABIT_HEAD_H - 0.5)
+    bands = rows(body, max(1, grid.rows))
+    day_tracks = columns(Rect(matrix.x, body.y, matrix.w, body.h), grid.days)
+    for band in bands:
+        plotter.line(
+            label.x,
+            band.bottom - 0.55,
+            label.right - 0.6,
+            band.bottom - 0.55,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+        for col in day_tracks:
+            cell = Rect(col.x, band.y, col.w, band.h).inset(0.16, 0.4)
+            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+
+
 def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     gutter = 8.0
     day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
@@ -555,7 +617,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Year"] = item.dest
         elif item.dest.startswith("quarter-"):
             dests["Quar"] = item.dest
-        elif item.dest.startswith("month-"):
+        elif item.dest.startswith("month-") and not item.dest.endswith("-habits"):
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
@@ -595,5 +657,7 @@ def strip_active(kind: str) -> str:
             return "Day"
         case "daily_notes":
             return "Notes"
+        case "habits":
+            return ""
         case _:
             return "Year"

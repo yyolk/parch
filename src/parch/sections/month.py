@@ -44,6 +44,7 @@ class MonthSection:
                         weeks=tuple(weeks),
                         week_dests=tuple(week_dests),
                         quarter_dest=spec.dest_for_quarter_of(month),
+                        habits_dest=spec.dest_for_habits(month),
                     ),
                 ),
             )

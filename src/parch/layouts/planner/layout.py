@@ -1,13 +1,23 @@
 """Planner layout: device chrome + seat, then painters."""
 
 from parch.calendar import quarter_of, short_date_range
-from parch.components import AnnualGrid, CoverTitle, MonthGrid, Notes, QuarterGrid, Schedule, WeekStrip
+from parch.components import (
+    AnnualGrid,
+    CoverTitle,
+    HabitGrid,
+    MonthGrid,
+    Notes,
+    QuarterGrid,
+    Schedule,
+    WeekStrip,
+)
 from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.tracks import columns
 from parch.layouts.planner.painters import (
     paint_annual,
     paint_cover,
+    paint_habit_grid,
     paint_header,
     paint_month_grid,
     paint_nav,
@@ -36,7 +46,13 @@ class PlannerLayout:
                 paint_cover(plotter, device, _one(page, CoverTitle))
             case _:
                 paint_header(
-                    plotter, device, page.title, _header_meta(page), _header_meta_dest(page)
+                    plotter,
+                    device,
+                    page.title,
+                    _header_meta(page),
+                    _header_meta_dest(page),
+                    chip=_header_chip(page),
+                    chip_dest=_header_chip_dest(page),
                 )
                 paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
                 well = well_rect(device)
@@ -50,6 +66,8 @@ class PlannerLayout:
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
                 paint_month_grid(plotter, well, _one(page, MonthGrid))
+            case "habits":
+                paint_habit_grid(plotter, well, _one(page, HabitGrid))
             case "weekly":
                 paint_week(plotter, well, _one(page, WeekStrip))
             case "daily":
@@ -73,6 +91,9 @@ def _header_meta(page: Page) -> str:
         case "month":
             month = _one(page, MonthGrid).month
             return f"Q{quarter_of(month)}"
+        case "habits":
+            month = _one(page, HabitGrid).month
+            return f"Q{quarter_of(month)}"
         case "weekly":
             week = _one(page, WeekStrip)
             return short_date_range(week.monday, week.sunday)
@@ -91,6 +112,28 @@ def _header_meta_dest(page: Page) -> str | None:
             return _one(page, AnnualGrid).quarter_dest
         case "month":
             return _one(page, MonthGrid).quarter_dest
+        case "habits":
+            return _one(page, HabitGrid).quarter_dest
+        case _:
+            return None
+
+
+def _header_chip(page: Page) -> str:
+    match page.kind:
+        case "month":
+            return "Habits"
+        case "habits":
+            return "Month"
+        case _:
+            return ""
+
+
+def _header_chip_dest(page: Page) -> str | None:
+    match page.kind:
+        case "month":
+            return _one(page, MonthGrid).habits_dest
+        case "habits":
+            return _one(page, HabitGrid).month_dest
         case _:
             return None
 

@@ -21,3 +21,4 @@ class MonthGrid:
     weeks: tuple[MonthWeek, ...]
     week_dests: tuple[str, ...]
     quarter_dest: str | None = None
+    habits_dest: str | None = None

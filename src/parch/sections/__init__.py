@@ -2,6 +2,7 @@ from parch.sections.annual import AnnualSection
 from parch.sections.cover import CoverSection
 from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
+from parch.sections.habit import HabitSection
 from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
 from parch.sections.quarter import QuarterSection
@@ -12,6 +13,7 @@ __all__ = [
     "CoverSection",
     "DailyNotesSection",
     "DailySection",
+    "HabitSection",
     "MonthSection",
     "NavItem",
     "Page",

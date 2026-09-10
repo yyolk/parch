@@ -5,7 +5,9 @@ from typing import Literal
 
 from parch.components import Component
 
-type PageKind = Literal["cover", "annual", "quarter", "month", "weekly", "daily", "daily_notes"]
+type PageKind = Literal[
+    "cover", "annual", "quarter", "month", "habits", "weekly", "daily", "daily_notes"
+]
 
 
 @dataclass(frozen=True, slots=True)

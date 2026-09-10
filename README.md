@@ -41,9 +41,9 @@ uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
 uv run python -m parch press supernote-nomad -o parch.pdf
 ```
 
-Default spec is year 2026, Monday week start, **full year** (Jan–Dec). Press walks cover → annual → Q1–Q4 quarters → each month → each ISO week that touches the year (once) → that week’s pressed days + `notes_pages` wells. The quarter page is **A″**: short year-density three minis, then content-height Focus over flex Notes. Bottom nav is Year · Quar · Mon · Week · Day · Notes (QUAR is provisional). DAY/NOTES land on the current day (daily/notes), the first pressed day of a week, the 1st of a month, or Jan 1 from the year page — not a press-time “today”. All twelve months’ days and headers are linked. `examples/mvp.toml` uses `notes_pages = 1` to keep the artifact smaller; `2` still works.
+Default spec is year 2026, Monday week start, **full year** (Jan–Dec). Press walks cover → annual → Q1–Q4 quarters → each month **plus its habit tracker** → each ISO week that touches the year (once) → that week’s pressed days + `notes_pages` wells. The quarter page is **A″**: short year-density three minis, then content-height Focus over flex Notes. Bottom nav is Year · Quar · Mon · Week · Day · Notes (QUAR is provisional; no Habits tab). A month header **Habits** chip opens that month’s fill-in tracker. DAY/NOTES land on the current day (daily/notes), the first pressed day of a week, the 1st of a month, or Jan 1 from the year page — not a press-time “today”. All twelve months’ days and headers are linked. `examples/mvp.toml` uses `notes_pages = 1` to keep the artifact smaller; `2` still works. Optional `[habits] rows = 12`.
 
-Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (2026) and sample PNG previews (annual, Q1/Q3 quarters, July month, week, daily, notes).
+Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (2026) and sample PNG previews (annual, quarters, July month, July habits, week, daily, notes).
 
 ```shell
 uv run pytest
