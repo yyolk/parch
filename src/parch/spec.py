@@ -68,6 +68,7 @@ class Spec:
     project_cards: int = 3
     project_tasks: int = 4
     project_tickets: int = 8
+    project_index_pages: int = 1
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -98,6 +99,8 @@ class Spec:
             raise ConfigError("project_tasks must be 3–6")
         if not 6 <= self.project_tickets <= 10:
             raise ConfigError("project_tickets must be 6–10")
+        if not 1 <= self.project_index_pages <= 6:
+            raise ConfigError("project_index_pages must be 1–6")
 
     @property
     def weekday_start(self) -> int:
@@ -142,11 +145,29 @@ class Spec:
         return _dest(t"projects-{self.year:04d}")
 
     @property
+    def project_count(self) -> int:
+        """G dest pages: ``index_pages × tickets`` (one row → one projects page)."""
+        return self.project_index_pages * self.project_tickets
+
+    def dest_for_projects_index(self, page: int) -> str:
+        if not 1 <= page <= self.project_index_pages:
+            raise ConfigError(f"projects index page out of range: {page}")
+        return _dest(t"projects-index-{self.year:04d}-{page:02d}")
+
+    @property
     def projects_index_dest(self) -> str:
-        return _dest(t"projects-index-{self.year:04d}")
+        """Proj landing — index page 1."""
+        return self.dest_for_projects_index(1)
+
+    def dest_for_projects_index_of(self, slot: int) -> str:
+        """Index page that lists ``slot`` (1-based global row)."""
+        if not 1 <= slot <= self.project_count:
+            raise ConfigError(f"project slot out of range: {slot}")
+        page = (slot - 1) // self.project_tickets + 1
+        return self.dest_for_projects_index(page)
 
     def dest_for_project(self, slot: int) -> str:
-        if not 1 <= slot <= self.project_tickets:
+        if not 1 <= slot <= self.project_count:
             raise ConfigError(f"project slot out of range: {slot}")
         return _dest(t"projects-{self.year:04d}-{slot:02d}")
 
@@ -220,7 +241,13 @@ class Spec:
             project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
             project_tickets=int(
-                projects_table.get("tickets", data.get("project_tickets", 8))
+                projects_table.get(
+                    "tickets_per_page",
+                    projects_table.get("tickets", data.get("project_tickets", 8)),
+                )
+            ),
+            project_index_pages=int(
+                projects_table.get("index_pages", data.get("project_index_pages", 1))
             ),
         )
 

@@ -65,7 +65,7 @@ _PROJ_STRIP = (
     ("Quar", "quarter-2026-Q1"),
     ("Mon", "month-2026-01"),
     ("Habit", "month-2026-01-habits"),
-    ("Proj", "projects-index-2026"),
+    ("Proj", "projects-index-2026-01"),
     ("Week", "week-2026-W01"),
     ("Day", "2026-01-01"),
     ("Notes", "2026-01-01-notes-1"),
@@ -80,7 +80,7 @@ def test_projects_page_after_annual():
     assert page.dest == "projects-2026"
     assert page.kind == "projects"
     assert page.title == "Projects"
-    assert pages[3].dest == "projects-index-2026"
+    assert pages[3].dest == "projects-index-2026-01"
     assert pages[12].dest == "quarter-2026-Q1"
 
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
@@ -201,7 +201,7 @@ def test_projects_index_tickets_and_proj_nav():
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
     assert dests[2] == "projects-2026"
-    assert dests[3] == "projects-index-2026"
+    assert dests[3] == "projects-index-2026-01"
     assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
     assert dests[12] == "quarter-2026-Q1"
 
@@ -213,7 +213,7 @@ def test_projects_index_tickets_and_proj_nav():
 
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
     assert roster.year == 2026
-    assert roster.dest == "projects-index-2026"
+    assert roster.dest == "projects-index-2026-01"
     assert len(roster.tickets) == 8
     assert [ticket.dest for ticket in roster.tickets] == [
         f"projects-2026-{slot:02d}" for slot in range(1, 9)
@@ -224,11 +224,11 @@ def test_projects_index_tickets_and_proj_nav():
     assert leaf.kind == "project"
     assert leaf.title == "Projects"
     assert strip_active(leaf.kind) == "Proj"
-    assert ("Proj", "projects-index-2026") in strip_items(leaf)
+    assert ("Proj", "projects-index-2026-01") in strip_items(leaf)
     board = next(item for item in leaf.components if isinstance(item, ProjectsBoard))
     assert board.cards == 3
     assert board.number == 3
-    assert board.index_dest == "projects-index-2026"
+    assert board.index_dest == "projects-index-2026-01"
     assert board.tasks == 4
 
 
@@ -525,7 +525,7 @@ def test_project_page_g_clone_and_index_chip():
     assert "In Progress" in labels
     assert strip_active(page.kind) == "Proj"
     assert dict(strip_items(page))["Proj"] == spec.projects_index_dest
-    assert spec.projects_index_dest == "projects-index-2026"
+    assert spec.projects_index_dest == "projects-index-2026-01"
     leaf_links = [op[2] for op in chrome.ops if op[0] == "link"]
     chip_links = [dest for dest in leaf_links if dest == spec.projects_index_dest]
     assert len(chip_links) >= 2
@@ -554,3 +554,59 @@ def test_projects_tickets_knob():
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
         dest for slot in range(1, 7) for dest in (f"projects-2026-{slot:02d}",) * 4
     ]
+
+
+def test_projects_index_pages_knob():
+    spec = Spec(notes_pages=1, project_index_pages=3)
+    assert spec.project_count == 24
+    pages = YearPlanner().pages(spec)
+    dests = [page.dest for page in pages]
+    assert dests[3:6] == [
+        "projects-index-2026-01",
+        "projects-index-2026-02",
+        "projects-index-2026-03",
+    ]
+    assert dests[6:30] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
+    assert dests[30] == "quarter-2026-Q1"
+
+    indexes = [page for page in pages if page.kind == "projects_index"]
+    assert len(indexes) == 3
+    slices = [
+        [
+            ticket.number
+            for ticket in next(
+                item for item in page.components if isinstance(item, ProjectsIndex)
+            ).tickets
+        ]
+        for page in indexes
+    ]
+    assert slices == [list(range(1, 9)), list(range(9, 17)), list(range(17, 25))]
+
+    page_two = next(item for item in indexes[1].components if isinstance(item, ProjectsIndex))
+    plotter = RecordingPlotter()
+    paint_projects_index_tickets(plotter, well_rect(NOMAD), page_two)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "09" in texts
+    assert "16" in texts
+    assert "01" not in texts
+    assert [op[2] for op in plotter.ops if op[0] == "link"] == [
+        dest for slot in range(9, 17) for dest in (f"projects-2026-{slot:02d}",) * 4
+    ]
+
+    leaf = next(page for page in pages if page.dest == "projects-2026-10")
+    board = next(item for item in leaf.components if isinstance(item, ProjectsBoard))
+    assert board.number == 10
+    assert board.index_dest == "projects-index-2026-02"
+    assert dict(strip_items(leaf))["Proj"] == "projects-index-2026-02"
+    chrome = RecordingPlotter()
+    chrome.begin_page()
+    PlannerLayout().paint(leaf, chrome, NOMAD)
+    labels = [op[2] for op in chrome.ops if op[0] == "text"]
+    assert "10" in labels
+    assert "Index" not in labels
+    assert "projects-index-2026-02" in [op[2] for op in chrome.ops if op[0] == "link"]
+    assert "projects-index-2026-01" not in [op[2] for op in chrome.ops if op[0] == "link"]
+
+    year = next(page for page in pages if page.kind == "annual")
+    assert dict(strip_items(year))["Proj"] == spec.projects_index_dest
+    assert spec.projects_index_dest == "projects-index-2026-01"
