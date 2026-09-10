@@ -382,14 +382,33 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
                 continue
             col = tracks[c]
             num = Rect(col.x, band.y, col.w, band.h)
+            here = (
+                month.highlight_day is not None
+                and cell.in_month
+                and cell.day == month.highlight_day
+            )
+            if here:
+                mark = num.inset(0.12, 0.18)
+                plotter.rect(mark, stroke=False, fill=True, fill_gray=INK)
+                plotter.text(
+                    num,
+                    str(cell.day),
+                    size=5.3,
+                    bold=True,
+                    face="sans",
+                    gray=PAPER,
+                    align="center",
+                )
+                continue
             linked = cell.dest is not None
+            ink = MUTED if not cell.in_month else (INK if linked else MUTED)
             plotter.text(
                 num,
                 str(cell.day),
                 size=5.3,
-                bold=linked,
+                bold=linked and cell.in_month,
                 face="sans",
-                gray=INK if linked else MUTED,
+                gray=ink,
                 align="center",
             )
             if linked:

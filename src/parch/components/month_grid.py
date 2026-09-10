@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class MonthCell:
     day: int | None
     dest: str | None = None
+    in_month: bool = True
 
 
 type MonthWeek = tuple[MonthCell, ...]

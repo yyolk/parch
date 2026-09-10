@@ -2,6 +2,7 @@ from parch.books import YearPlanner
 from parch.calendar import month_days, months_touching_weeks
 from parch.components import (
     AnnualGrid,
+    AnnualMonth,
     CoverTitle,
     HabitGrid,
     MonthGrid,
@@ -35,6 +36,7 @@ def _year_dests(*, notes_pages: int) -> list[str]:
 def test_components_do_not_draw():
     for cls in (
         AnnualGrid,
+        AnnualMonth,
         CoverTitle,
         HabitGrid,
         MonthGrid,

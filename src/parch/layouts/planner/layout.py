@@ -3,6 +3,7 @@
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
+    AnnualMonth,
     CoverTitle,
     HabitGrid,
     MonthGrid,
@@ -13,8 +14,9 @@ from parch.components import (
 )
 from parch.devices.nomad import Device
 from parch.geom import Rect
-from parch.tracks import columns
+from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
+    _paint_mini_month,
     paint_annual,
     paint_cover,
     paint_habit_grid,
@@ -34,6 +36,9 @@ from parch.plotter.protocol import Plotter
 from parch.sections.page import Page
 
 COL_GAP = 3.0
+DAILY_MINI_H = 34.0
+DAILY_MINI_GAP = 2.2
+DAILY_COL_WEIGHTS = (0.34, 0.66)
 
 
 class PlannerLayout:
@@ -73,13 +78,26 @@ class PlannerLayout:
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
-                left, right = columns(well, 2, gap=COL_GAP, weights=(0.34, 0.66))
-                paint_schedule(plotter, left, schedule)
+                mini = _one(page, AnnualMonth)
+                left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
+                sched_box, mini_box = daily_left_seats(left)
+                paint_schedule(plotter, sched_box, schedule)
+                _paint_mini_month(plotter, mini_box, mini)
                 paint_notes(plotter, right, notes)
             case "daily_notes":
                 paint_notes(plotter, well, _one(page, Notes))
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
+
+
+def daily_left_seats(left: Rect) -> tuple[Rect, Rect]:
+    """Schedule flex over a compact year-density mini-month."""
+    return rows(
+        left,
+        2,
+        gap=DAILY_MINI_GAP,
+        weights=(left.h - DAILY_MINI_H - DAILY_MINI_GAP, DAILY_MINI_H),
+    )
 
 
 def _header_meta(page: Page) -> str:

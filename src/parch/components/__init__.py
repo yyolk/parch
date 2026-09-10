@@ -8,7 +8,15 @@ from parch.components.schedule import Schedule
 from parch.components.week import WeekDay, WeekStrip
 
 type Component = (
-    AnnualGrid | CoverTitle | HabitGrid | MonthGrid | Notes | QuarterGrid | Schedule | WeekStrip
+    AnnualGrid
+    | AnnualMonth
+    | CoverTitle
+    | HabitGrid
+    | MonthGrid
+    | Notes
+    | QuarterGrid
+    | Schedule
+    | WeekStrip
 )
 
 __all__ = [

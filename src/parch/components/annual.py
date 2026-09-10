@@ -12,6 +12,7 @@ class AnnualMonth:
     dest: str | None
     weekday_labels: tuple[str, ...]
     weeks: tuple[MonthWeek, ...]
+    highlight_day: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

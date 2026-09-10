@@ -1,3 +1,5 @@
+from datetime import date
+
 from parch.calendar import month_name, month_touching_weeks, month_weeks, weekday_labels
 from parch.components import AnnualGrid, AnnualMonth, MonthCell
 from parch.sections.nav import planner_nav
@@ -25,6 +27,31 @@ def build_annual_month(spec: Spec, month: int) -> AnnualMonth:
         dest=spec.dest_for_month(month) if pressed else None,
         weekday_labels=labels,
         weeks=tuple(weeks),
+    )
+
+
+def build_month_mini(spec: Spec, day: date) -> AnnualMonth:
+    """Daily mini: in-month + touching days. Highlight has no dest (already here)."""
+    labels = weekday_labels(spec.weekday_start)
+    weeks = []
+    for week in month_touching_weeks(spec.year, day.month, spec.weekday_start):
+        cells = []
+        for other in week:
+            here = other.month == day.month and other.day == day.day
+            dest = None
+            if not here and spec.presses_day(other):
+                dest = spec.dest_for_day(other)
+            cells.append(
+                MonthCell(day=other.day, dest=dest, in_month=other.month == day.month)
+            )
+        weeks.append(tuple(cells))
+    return AnnualMonth(
+        month=day.month,
+        name=month_name(day.month),
+        dest=spec.dest_for_month(day.month) if spec.presses(day.month) else None,
+        weekday_labels=labels,
+        weeks=tuple(weeks),
+        highlight_day=day.day,
     )
 
 
