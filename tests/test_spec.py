@@ -54,6 +54,12 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_tasks_index_of(date(2026, 1, 1)) == "tasks-index-2026-Q1"
     assert spec.dest_for_tasks_index_of(date(2026, 7, 15)) == "tasks-index-2026-Q3"
     assert spec.task_rows == 6
+    assert spec.reviews_index_dest == "reviews-index-2026-Q1"
+    assert spec.dest_for_reviews_index(3) == "reviews-index-2026-Q3"
+    assert spec.dest_for_review(date(2026, 1, 1)) == "review-2026-W01"
+    assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
+    assert spec.dest_for_reviews_index_of(date(2026, 1, 1)) == "reviews-index-2026-Q1"
+    assert spec.dest_for_reviews_index_of(date(2026, 7, 15)) == "reviews-index-2026-Q3"
     assert spec.notes_dest(1) == "2026-01-05-notes-1"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
 

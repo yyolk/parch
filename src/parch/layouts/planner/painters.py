@@ -18,6 +18,9 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewWeek,
+    ReviewsIndex,
+    ReviewWeekPage,
     Schedule,
     TaskWeek,
     TasksIndex,
@@ -1112,6 +1115,98 @@ def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
     _paint_note_box(plotter, notes, label="Notes")
 
 
+REVIEW_GAP = 2.6
+REVIEW_NEXT_ROWS = 4
+REVIEW_NOTES_LINES = 3
+REVIEW_NOTE_PITCH = 4.15
+REVIEW_NOTES_LABEL_TOP = 4.8
+REVIEW_NOTES_PAD_BOT = 1.35
+REVIEW_INDEX_GAP = 1.0
+REVIEW_INDEX_WEEK_W = 12.0
+REVIEW_INDEX_LINE_H = 5.4
+
+
+def review_notes_height(lines: int = REVIEW_NOTES_LINES) -> float:
+    """Thin leftover Notes — label + a few write-in rules, not a second Lessons band."""
+    return REVIEW_NOTES_LABEL_TOP + REVIEW_NOTE_PITCH * lines + REVIEW_NOTES_PAD_BOT
+
+
+def review_seats(
+    well: Rect, next_rows: int = REVIEW_NEXT_ROWS
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Wins, Lessons, Next week (content-height), thin Notes leftover. ``tracks.rows``."""
+    next_h = checklist_content_height(next_rows)
+    notes_h = review_notes_height()
+    gaps = REVIEW_GAP * 3
+    body = max(well.h - next_h - notes_h - gaps, 2)
+    wins_h = body / 2
+    lessons_h = body - wins_h
+    return rows(well, 4, gap=REVIEW_GAP, weights=(wins_h, lessons_h, next_h, notes_h))
+
+
+def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
+    """Thesis A — stacked Wins / Lessons write-ins, short Next week, leftover Notes."""
+    _ = page
+    wins, lessons, nxt, notes = review_seats(box)
+    _paint_note_box(plotter, wins, label="Wins")
+    _paint_note_box(plotter, lessons, label="Lessons")
+    _paint_checklist_box(plotter, nxt, label="Next week", rows=REVIEW_NEXT_ROWS)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def reviews_index_rows(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal stacked week stubs filling the well."""
+    return rows(well, n, gap=REVIEW_INDEX_GAP)
+
+
+def reviews_index_week_strip(row: Rect) -> Rect:
+    """Content-height Wnn+range strip, vertically centered in the stretched row."""
+    h = min(REVIEW_INDEX_LINE_H, row.h)
+    return Rect(row.x, row.y + (row.h - h) / 2, row.w, h)
+
+
+def reviews_index_week_parts(row: Rect) -> tuple[Rect, Rect]:
+    """Wnn stub | printed range — ``tracks.columns``."""
+    strip = reviews_index_week_strip(row)
+    stub_w = REVIEW_INDEX_WEEK_W
+    return columns(strip, 2, gap=0, weights=(stub_w, max(strip.w - stub_w, 1)))
+
+
+def reviews_index_link_hits(row: Rect) -> tuple[Rect, ...]:
+    """Stub + week range open the dest."""
+    return reviews_index_week_parts(row)
+
+
+def paint_reviews_index(plotter: Plotter, box: Rect, index: ReviewsIndex) -> None:
+    """Minimal quarter stub — Wnn + range rows. Dest craft is Thesis A."""
+    for row, week in zip(reviews_index_rows(box, len(index.weeks)), index.weeks, strict=True):
+        _paint_reviews_index_week(plotter, row, week)
+        for hit in reviews_index_link_hits(row):
+            plotter.link(hit, week.dest)
+
+
+def _paint_reviews_index_week(plotter: Plotter, row: Rect, week: ReviewWeek) -> None:
+    stub, dated = reviews_index_week_parts(row)
+    plotter.text(
+        stub,
+        f"W{week.iso_week:02d}",
+        size=7.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    plotter.text(
+        dated,
+        short_date_range(week.monday, week.sunday),
+        size=6.2,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1773,6 +1868,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = item.dest
         elif item.dest.startswith("tasks-index-"):
             dests["Task"] = item.dest
+        elif item.dest.startswith("reviews-index-"):
+            dests["Rev"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1800,6 +1897,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Task"] = page.dest
         case "task":
             pass
+        case "reviews_index":
+            dests["Rev"] = page.dest
+        case "review":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1807,7 +1908,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1833,6 +1934,8 @@ def strip_active(kind: str) -> str:
             return "Meet"
         case "tasks_index" | "task":
             return "Task"
+        case "reviews_index" | "review":
+            return "Rev"
         case "projects":
             return ""
         case _:
