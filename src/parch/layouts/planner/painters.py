@@ -291,6 +291,7 @@ CLONE_INSET_Y = 1.4
 CLONE_COL_GAP = 3.4
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
+CLONE_RAIL_SLOT_GAP = 1.8
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
@@ -548,7 +549,7 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
     track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
     inset = track.inset(1.4, 0.6)
     marks: list[Rect] = []
-    for slot, label in zip(rows(inset, 3, gap=1.8), CLONE_STATUS_LABELS, strict=True):
+    for slot, label in zip(rows(inset, 3, gap=CLONE_RAIL_SLOT_GAP), CLONE_STATUS_LABELS, strict=True):
         mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
         mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
         plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)

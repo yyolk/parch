@@ -178,7 +178,8 @@ def _header_chip(page: Page) -> str:
         case "habits":
             return "Month"
         case "project":
-            return "Index"
+            number = _one(page, ProjectsBoard).number
+            return f"{number:02d}" if number else ""
         case _:
             return ""
 

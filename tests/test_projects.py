@@ -12,9 +12,11 @@ from parch.layouts.planner.painters import (
     CLONE_ICONS,
     CLONE_P_PAD,
     CLONE_P_SIZE,
+    CLONE_RAIL_SLOT_GAP,
     CLONE_SPINE_W,
     CLONE_STATUS_LABELS,
     CLONE_STRIP_H,
+    CLONE_TRACK_H,
     MUTED,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
@@ -51,6 +53,7 @@ from parch.layouts.planner.painters import (
 )
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
+from parch.tracks import rows
 
 
 def _rects_overlap(a: Rect, b: Rect) -> bool:
@@ -224,6 +227,7 @@ def test_projects_index_tickets_and_proj_nav():
     assert ("Proj", "projects-index-2026") in strip_items(leaf)
     board = next(item for item in leaf.components if isinstance(item, ProjectsBoard))
     assert board.cards == 3
+    assert board.number == 3
     assert board.index_dest == "projects-index-2026"
     assert board.tasks == 4
 
@@ -428,11 +432,35 @@ def test_projects_clone_a_tracks():
     assert notes.bottom == pytest.approx(strip.bottom)
     assert notes.right < cards[0].right
 
+    nomad = well_rect(NOMAD)
+    _, nrails = projects_clone_a_seats(nomad, 3)
+    nrail = nrails[0]
+    track_h = min(CLONE_TRACK_H, nrail.h - 2.0)
+    track = Rect(nrail.x, nrail.y + (nrail.h - track_h) / 2, nrail.w, track_h)
+    inset = track.inset(1.4, 0.6)
+    slots = rows(inset, 3, gap=CLONE_RAIL_SLOT_GAP)
+    marks = [
+        Rect(
+            slot.x,
+            slot.y + (slot.h - PROJECT_STATUS_MARK) / 2,
+            PROJECT_STATUS_MARK,
+            PROJECT_STATUS_MARK,
+        )
+        for slot in slots
+    ]
+    assert CLONE_STATUS_LABELS == ("Todo", "In Progress", "Done")
+    assert marks[1].y - marks[0].bottom == pytest.approx(
+        slots[0].h + CLONE_RAIL_SLOT_GAP - PROJECT_STATUS_MARK
+    )
+    assert marks[1].y - marks[0].bottom > 5.0
+    assert marks[2].y - marks[1].bottom > 5.0
+
 
 def test_project_page_g_clone_and_index_chip():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "projects-2026-01")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    assert board.number == 1
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
     paint_projects_clone_faithful(ink, well, board)
@@ -489,7 +517,8 @@ def test_project_page_g_clone_and_index_chip():
     labels = [op[2] for op in chrome.ops if op[0] == "text"]
     assert "Projects" in labels
     assert "Atlas" not in labels
-    assert "Index" in labels
+    assert "01" in labels
+    assert "Index" not in labels
     assert "Proj" in labels
     assert "In Progress" in labels
     assert strip_active(page.kind) == "Proj"

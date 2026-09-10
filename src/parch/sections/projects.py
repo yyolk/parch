@@ -57,6 +57,7 @@ class ProjectsSection:
                         cards=spec.project_cards,
                         tasks=spec.project_tasks,
                         index_dest=spec.projects_index_dest,
+                        number=ticket.number,
                     ),
                 ),
             )

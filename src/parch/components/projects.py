@@ -5,12 +5,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class ProjectsBoard:
-    """G three-card well. ``index_dest`` is set on ticket destinations (Index chip)."""
+    """G three-card well. Ticket dests set ``index_dest`` and ``number`` (header chip)."""
 
     year: int
     cards: int
     tasks: int
     index_dest: str = ""
+    number: int = 0
 
 
 @dataclass(frozen=True, slots=True)
