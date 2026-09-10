@@ -15,7 +15,9 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
     WeekStrip,
+    WeeklyTasks,
 )
 from parch.devices.nomad import Device
 from parch.geom import Rect
@@ -38,7 +40,9 @@ from parch.layouts.planner.painters import (
     paint_projects_index_tickets,
     paint_quarter,
     paint_schedule,
+    paint_tasks_index_covers,
     paint_week,
+    paint_weekly_tasks,
     paint_toolbar,
     strip_active,
     strip_items,
@@ -90,6 +94,10 @@ class PlannerLayout:
                 paint_meetings_index_roster(plotter, well, _one(page, MeetingIndex))
             case "meeting":
                 paint_meeting(plotter, well, _one(page, MeetingAgenda))
+            case "tasks_index":
+                paint_tasks_index_covers(plotter, well, _one(page, TasksIndex))
+            case "weekly_tasks":
+                paint_weekly_tasks(plotter, well, _one(page, WeeklyTasks))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -151,6 +159,10 @@ def _header_meta(page: Page) -> str:
             return str(_one(page, MeetingIndex).year)
         case "meeting":
             return str(_one(page, MeetingAgenda).year)
+        case "tasks_index":
+            return str(_one(page, TasksIndex).year)
+        case "weekly_tasks":
+            return str(_one(page, WeeklyTasks).year)
         case "quarter":
             return ""
         case "month":
@@ -195,6 +207,9 @@ def _header_chip(page: Page) -> str:
         case "meeting":
             number = _one(page, MeetingAgenda).number
             return f"{number:02d}" if number else ""
+        case "weekly_tasks":
+            number = _one(page, WeeklyTasks).number
+            return f"W{number:02d}" if number else ""
         case _:
             return ""
 
@@ -209,6 +224,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, ProjectsBoard).index_dest or None
         case "meeting":
             return _one(page, MeetingAgenda).index_dest or None
+        case "weekly_tasks":
+            return _one(page, WeeklyTasks).index_dest or None
         case _:
             return None
 

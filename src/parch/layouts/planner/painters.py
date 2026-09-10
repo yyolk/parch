@@ -19,7 +19,9 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
     WeekStrip,
+    WeeklyTasks,
 )
 from parch.devices.nomad import Device
 from parch.geom import Rect
@@ -970,6 +972,85 @@ def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
 
 
+TASK_GAP = 2.6
+TASK_COVER_GAP = 2.6
+TASK_COVER_INSET_X = 1.6
+TASK_COVER_INSET_Y = 1.4
+TASK_COVER_LABEL_H = 4.2
+TASK_COVER_TICKS = 3
+TASK_COVER_TICK_PITCH = 4.2
+
+
+def task_cover_cols(n: int) -> int:
+    """2×3 when n ≤ 6; 3×4 (or 3×3) when n > 6."""
+    if n < 1:
+        raise ValueError(f"n must be >= 1, not {n}")
+    return 3 if n > 6 else 2
+
+
+def tasks_index_covers(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Mini cover grid filling the well — week thumbnails, not a roster."""
+    cols = task_cover_cols(n)
+    row_n = math.ceil(n / cols)
+    seats: list[Rect] = []
+    for band in rows(well, row_n, gap=TASK_COVER_GAP):
+        seats.extend(columns(band, cols, gap=TASK_COVER_GAP))
+    return tuple(seats[:n])
+
+
+def task_cover_label(cover: Rect) -> Rect:
+    """Week label band inside the cover, after a quiet inset."""
+    inner = cover.inset(TASK_COVER_INSET_X, TASK_COVER_INSET_Y)
+    label, _body = inner.split_top(TASK_COVER_LABEL_H)
+    return label
+
+
+def weekly_tasks_seats(well: Rect, task_rows: int) -> tuple[Rect, Rect]:
+    """Content-height Tasks checklist over flex Notes."""
+    tasks_h = checklist_content_height(task_rows)
+    notes_h = max(well.h - tasks_h - TASK_GAP, 1)
+    return rows(well, 2, gap=TASK_GAP, weights=(tasks_h, notes_h))
+
+
+def paint_weekly_tasks(plotter: Plotter, box: Rect, tasks: WeeklyTasks) -> None:
+    """Locked weekly Tasks dest — checklist, then flex lined notes."""
+    checklist, notes = weekly_tasks_seats(box, tasks.rows)
+    _paint_checklist_box(plotter, checklist, label="Tasks", rows=tasks.rows)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def paint_tasks_index_covers(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+    """Thesis D — week-thumbnail mini covers; whole cover links to the dest."""
+    for seat, cover in zip(tasks_index_covers(box, len(index.covers)), index.covers, strict=True):
+        _paint_task_cover(plotter, seat, cover.number)
+        plotter.link(seat, cover.dest)
+
+
+def _paint_task_cover(plotter: Plotter, cover: Rect, number: int) -> None:
+    """Light frame, week label, a few checklist ticks — a thumbnail of the dest."""
+    plotter.rect(cover, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    label = task_cover_label(cover)
+    plotter.text(
+        label,
+        f"W{number:02d}",
+        size=6.4,
+        bold=True,
+        face="serif",
+        gray=INK,
+        small_caps=True,
+        align="left",
+    )
+    inner = cover.inset(TASK_COVER_INSET_X, TASK_COVER_INSET_Y)
+    x = inner.x
+    right = inner.right
+    y = label.bottom + 1.1
+    for _ in range(TASK_COVER_TICKS):
+        if y + TICK > inner.bottom:
+            break
+        _paint_focus_row(plotter, x, y, right)
+        y += TASK_COVER_TICK_PITCH
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1622,6 +1703,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
             dests["Meet"] = item.dest
+        elif item.dest.startswith("tasks-index-"):
+            dests["Task"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1645,6 +1728,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = page.dest
         case "meeting":
             pass
+        case "tasks_index":
+            dests["Task"] = page.dest
+        case "weekly_tasks":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1652,7 +1739,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1676,6 +1763,8 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "meetings_index" | "meeting":
             return "Meet"
+        case "tasks_index" | "weekly_tasks":
+            return "Task"
         case "projects":
             return ""
         case _:

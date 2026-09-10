@@ -18,7 +18,7 @@ def test_annual_page_and_year_nav():
         f"projects-2026-{slot:02d}" for slot in range(1, 9)
     ]
     assert [page.dest for page in pages[12:13]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[29:34]] == [
+    assert [page.dest for page in pages[42:47]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -38,6 +38,7 @@ def test_annual_page_and_year_nav():
         ("Habit", "month-2026-01-habits"),
         ("Proj", "projects-index-2026-01"),
         ("Meet", "meetings-index-2026"),
+        ("Task", "tasks-index-2026-01"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
@@ -70,7 +71,8 @@ def test_annual_paint_links_all_months():
     assert dests[3] == "projects-index-2026-01"
     assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
     assert dests[12] == "meetings-index-2026"
-    assert dests[29:33] == [
+    assert dests[29] == "tasks-index-2026-01"
+    assert dests[42:46] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",

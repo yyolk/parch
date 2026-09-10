@@ -22,7 +22,7 @@ def test_habit_pages_follow_each_month():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[33:37] == [
+    assert dests[46:50] == [
         "month-2026-01",
         "month-2026-01-habits",
         "month-2026-02",
@@ -39,7 +39,7 @@ def test_habit_pages_follow_each_month():
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)
     labels = [label for label, _ in strip_items(july)]
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes"]
+    assert labels == ["Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes"]
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31

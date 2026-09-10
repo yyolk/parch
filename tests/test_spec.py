@@ -41,6 +41,14 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_meeting(1) == "meeting-2026-01"
     assert spec.dest_for_meeting(16) == "meeting-2026-16"
     assert spec.dest_for_meetings_index_of(16) == "meetings-index-2026"
+    assert spec.tasks_index_dest == "tasks-index-2026-01"
+    assert spec.dest_for_tasks_index(1) == "tasks-index-2026-01"
+    assert spec.task_covers == 12
+    assert spec.task_index_pages == 1
+    assert spec.task_count == 12
+    assert spec.dest_for_tasks(1) == "tasks-2026-01"
+    assert spec.dest_for_tasks(12) == "tasks-2026-12"
+    assert spec.dest_for_tasks_index_of(12) == "tasks-index-2026-01"
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
@@ -67,6 +75,13 @@ def test_habit_columns_from_toml_keys():
     assert triple.dest_for_project(9) == "projects-2026-09"
     assert triple.dest_for_projects_index_of(9) == "projects-index-2026-02"
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
+    assert Spec.from_mapping({"tasks": {"covers": 6}}).task_covers == 6
+    double = Spec.from_mapping({"tasks": {"index_pages": 2, "covers": 12}})
+    assert double.task_index_pages == 2
+    assert double.task_count == 24
+    assert double.dest_for_tasks_index(2) == "tasks-index-2026-02"
+    assert double.dest_for_tasks(13) == "tasks-2026-13"
+    assert double.dest_for_tasks_index_of(13) == "tasks-index-2026-02"
     mvp = Spec.from_path(Path("examples/mvp.toml"))
     assert mvp.project_cards == 3
     assert mvp.project_tasks == 4
@@ -75,6 +90,9 @@ def test_habit_columns_from_toml_keys():
     assert mvp.project_count == 24
     assert mvp.meeting_index_rows == 16
     assert mvp.meeting_count == 16
+    assert mvp.task_covers == 12
+    assert mvp.task_index_pages == 2
+    assert mvp.task_count == 24
 
 
 def test_value_bags_are_slotted():

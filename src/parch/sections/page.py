@@ -13,6 +13,8 @@ type PageKind = Literal[
     "project",
     "meetings_index",
     "meeting",
+    "tasks_index",
+    "weekly_tasks",
     "quarter",
     "month",
     "habits",
