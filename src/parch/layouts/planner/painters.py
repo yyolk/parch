@@ -280,12 +280,12 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
 
 MEET_GAP = 2.6
 MEET_HEAD_INSET_X = 1.8
-MEET_HEAD_INSET_Y = 1.4
-MEET_HEAD_LINE_H = 7.6
+MEET_HEAD_INSET_Y = 1.2
+MEET_HEAD_LINE_H = 5.4
 MEET_HEAD_COL_GAP = 2.8
 MEET_HEAD_WEIGHTS = (0.64, 0.36)
-MEET_LABEL_W = 14.0
-MEET_LINE_PITCH = 4.15
+MEET_LABEL_W = 12.0
+MEET_WRITE_LABEL_H = 3.8
 
 
 def meeting_head_height() -> float:
@@ -293,29 +293,15 @@ def meeting_head_height() -> float:
     return MEET_HEAD_INSET_Y * 2 + MEET_HEAD_LINE_H
 
 
-def meeting_attendees_height(lines: int) -> float:
-    """Outlined Attendees well tall enough for ``lines`` write-ins."""
-    return (
-        FOCUS_PAD_TOP
-        + FOCUS_LABEL_H
-        + FOCUS_PAD_MID
-        + max(1, lines) * MEET_LINE_PITCH
-        + FOCUS_PAD_BOT
-    )
-
-
 def _below(box: Rect, gap: float) -> Rect:
     return Rect(box.x, box.y + gap, box.w, box.h - gap)
 
 
 def meeting_seats(
-    well: Rect, attendees: int, agenda: int, action_items: int
-) -> tuple[Rect, Rect, Rect, Rect, Rect]:
-    """Head, attendees, agenda, leftover notes, action items. Notes flex."""
+    well: Rect, agenda: int, action_items: int
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Head, agenda, leftover notes, action items. Notes flex."""
     head, rest = well.split_top(meeting_head_height())
-    leftover = _below(rest, MEET_GAP)
-    att_h = meeting_attendees_height(attendees)
-    attendees_box, rest = leftover.split_top(att_h)
     leftover = _below(rest, MEET_GAP)
     agenda_h = checklist_content_height(agenda)
     agenda_box, rest = leftover.split_top(agenda_h)
@@ -323,7 +309,7 @@ def meeting_seats(
     action_h = checklist_content_height(action_items)
     notes_h = max(leftover.h - action_h - MEET_GAP, 1)
     notes, action_box = rows(leftover, 2, gap=MEET_GAP, weights=(notes_h, action_h))
-    return head, attendees_box, agenda_box, notes, action_box
+    return head, agenda_box, notes, action_box
 
 
 def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
@@ -333,12 +319,11 @@ def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
 
 
 def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
-    """Exploratory Meeting well — title|date, people, agenda, notes, action items."""
-    head, attendees, agenda_box, notes, action_items = meeting_seats(
-        box, agenda.attendees, agenda.agenda, agenda.action_items
+    """Exploratory Meeting well — title|date, agenda, notes, action items."""
+    head, agenda_box, notes, action_items = meeting_seats(
+        box, agenda.agenda, agenda.action_items
     )
     _paint_meeting_head(plotter, head)
-    _paint_meeting_attendees(plotter, attendees, agenda.attendees)
     _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
     _paint_note_box(plotter, notes, label="Notes")
     _paint_checklist_box(plotter, action_items, label="Action items", rows=agenda.action_items)
@@ -352,9 +337,12 @@ def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
 
 
 def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    """Label and underline share a baseline — rule sits just under the scaps."""
     tag, write = box.split_left(MEET_LABEL_W)
+    rule_y = box.bottom
+    label_box = Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H)
     plotter.text(
-        tag,
+        label_box,
         label,
         size=6.4,
         face="sans",
@@ -362,27 +350,7 @@ def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
         small_caps=True,
         align="left",
     )
-    rule_y = tag.y + tag.h * 0.72
     plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
-
-
-def _paint_meeting_attendees(plotter: Plotter, box: Rect, lines: int) -> None:
-    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    plotter.text(
-        Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
-        "Attendees",
-        size=6.4,
-        face="sans",
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
-    x = box.x + 1.6
-    right = box.right - 1.6
-    y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID + MEET_LINE_PITCH
-    for _ in range(max(1, lines)):
-        plotter.line(x, y, right, y, stroke_width=RULE, stroke_gray=RULE_C)
-        y += MEET_LINE_PITCH
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:

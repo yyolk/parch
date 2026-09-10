@@ -4,8 +4,7 @@ from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
 
-MEET_ATTENDEES = 3
-MEET_AGENDA = 5
+MEET_AGENDA = 4
 MEET_ACTION_ITEMS = 3
 
 
@@ -27,7 +26,6 @@ class MeetingSection:
                 components=(
                     MeetingAgenda(
                         year=spec.year,
-                        attendees=MEET_ATTENDEES,
                         agenda=MEET_AGENDA,
                         action_items=MEET_ACTION_ITEMS,
                     ),
