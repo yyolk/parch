@@ -14,14 +14,16 @@ from parch.layouts.planner.painters import (
     REVIEW_INDEX_CHIP_GAP,
     REVIEW_INDEX_CHIP_H,
     REVIEW_INDEX_COL_GAP,
-    REVIEW_INDEX_CHIP_INSET_Y,
     REVIEW_INDEX_HEAD_H,
     REVIEW_INDEX_INSET_X,
+    REVIEW_INDEX_INSET_Y,
     SOFT,
     TICK,
     paint_review,
     paint_reviews_index_months,
+    reviews_index_chip_frame,
     reviews_index_chip_parts,
+    reviews_index_chip_strip,
     reviews_index_columns,
     reviews_index_link_hits,
     reviews_index_month_seats,
@@ -139,25 +141,35 @@ def test_reviews_index_seats_month_columns():
     assert cols[1].x == pytest.approx(cols[0].right + REVIEW_INDEX_COL_GAP)
     assert cols == columns(well, 3, gap=REVIEW_INDEX_COL_GAP)
 
-    head, chips = reviews_index_month_seats(cols[0], 5)
+    head, chips = reviews_index_month_seats(cols[0], 5, stack=5)
     assert head.h == pytest.approx(REVIEW_INDEX_HEAD_H)
     assert head.x > cols[0].x
     assert head.x == pytest.approx(cols[0].x + REVIEW_INDEX_INSET_X)
     assert len(chips) == 5
     assert chips[0].y > head.bottom
     assert chips[-1].bottom < cols[0].bottom
-    assert chips[0].h == pytest.approx(REVIEW_INDEX_CHIP_H)
+    assert chips[0].h > REVIEW_INDEX_CHIP_H
     assert chips[1].y == pytest.approx(chips[0].bottom + REVIEW_INDEX_CHIP_GAP)
     assert chips[0].w == pytest.approx(cols[0].w - 2 * REVIEW_INDEX_INSET_X)
+    assert chips[-1].bottom == pytest.approx(
+        cols[0].bottom - REVIEW_INDEX_INSET_Y, abs=0.05
+    )
     stub, dated = reviews_index_chip_parts(chips[0])
-    assert stub.y == pytest.approx(chips[0].y + REVIEW_INDEX_CHIP_INSET_Y)
+    strip = reviews_index_chip_strip(chips[0])
+    assert strip.h == pytest.approx(REVIEW_INDEX_CHIP_H)
+    assert strip.y == pytest.approx(chips[0].y + (chips[0].h - strip.h) / 2, abs=0.05)
+    assert stub.y == pytest.approx(strip.y)
     assert dated.y > stub.bottom
     assert dated.bottom <= chips[0].bottom
-    assert reviews_index_link_hits(chips[0]) == (chips[0],)
+    frame = reviews_index_chip_frame(chips[0])
+    assert frame.h < chips[0].h
+    assert frame.y > chips[0].y
+    assert frame.bottom < chips[0].bottom
+    assert reviews_index_link_hits(chips[0]) == (frame,)
 
-    shorter = reviews_index_month_seats(cols[1], 4)[1]
+    shorter = reviews_index_month_seats(cols[1], 4, stack=5)[1]
     assert len(shorter) == 4
-    assert shorter[0].h == pytest.approx(REVIEW_INDEX_CHIP_H)
+    assert shorter[0].h == pytest.approx(chips[0].h)
     assert shorter[-1].bottom < chips[-1].bottom
 
 
@@ -201,19 +213,20 @@ def test_reviews_index_paint_month_headers_and_week_links():
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"review-2026-W{week:02d}" for week in range(1, 15)]
+    stack = max(len(column.weeks) for column in index.columns)
     seats = [
         chip
         for col_box, column in zip(
             reviews_index_columns(well, len(index.columns)), index.columns, strict=True
         )
-        for chip in reviews_index_month_seats(col_box, len(column.weeks))[1]
+        for chip in reviews_index_month_seats(col_box, len(column.weeks), stack=stack)[1]
     ]
     expected_hits: list[tuple[Rect, str]] = []
     for seat, dest in zip(
         seats, [f"review-2026-W{week:02d}" for week in range(1, 15)], strict=True
     ):
         hits = reviews_index_link_hits(seat)
-        assert hits == (seat,)
+        assert hits == (reviews_index_chip_frame(seat),)
         expected_hits.extend((hit, dest) for hit in hits)
     assert [(op[1], op[2]) for op in plotter.ops if op[0] == "link"] == expected_hits
 
@@ -223,8 +236,9 @@ def test_reviews_index_paint_month_headers_and_week_links():
         if op[0] == "rect" and op[2] and not op[3] and op[4] == pytest.approx(HAIR)
     ]
     cols = reviews_index_columns(well, 3)
+    chip_frames = [reviews_index_chip_frame(seat) for seat in seats]
     assert [op[1] for op in frames if op[1].h == pytest.approx(well.h)] == list(cols)
-    assert [op[1] for op in frames if op[1].h == pytest.approx(REVIEW_INDEX_CHIP_H)] == seats
+    assert [op[1] for op in frames if op[1] in chip_frames] == chip_frames
     assert all(op[6] == pytest.approx(SOFT) for op in frames)
 
 

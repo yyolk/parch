@@ -1120,7 +1120,7 @@ REVIEW_INDEX_INSET_X = 1.2
 REVIEW_INDEX_INSET_Y = 1.4
 REVIEW_INDEX_HEAD_H = 4.2
 REVIEW_INDEX_HEAD_GAP = 1.0
-REVIEW_INDEX_CHIP_H = 11.0
+REVIEW_INDEX_CHIP_H = 9.4
 REVIEW_INDEX_CHIP_GAP = 1.6
 REVIEW_INDEX_CHIP_INSET_X = 1.0
 REVIEW_INDEX_CHIP_INSET_Y = 0.8
@@ -1132,35 +1132,55 @@ def reviews_index_columns(well: Rect, n: int) -> tuple[Rect, ...]:
     return columns(well, n, gap=REVIEW_INDEX_COL_GAP)
 
 
-def reviews_index_month_seats(column: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
-    """Month header over a packed stack of week chips (not stretched to the floor)."""
+def reviews_index_month_seats(
+    column: Rect, n: int, *, stack: int | None = None
+) -> tuple[Rect, tuple[Rect, ...]]:
+    """Month header over week chips. ``stack`` is the page-tallest month so chips share height."""
     inner = column.inset(REVIEW_INDEX_INSET_X, REVIEW_INDEX_INSET_Y)
     head, rest = inner.split_top(REVIEW_INDEX_HEAD_H)
     body = Rect(rest.x, rest.y + REVIEW_INDEX_HEAD_GAP, rest.w, rest.h - REVIEW_INDEX_HEAD_GAP)
     if n < 1:
         return head, ()
-    stack_h = REVIEW_INDEX_CHIP_H * n + REVIEW_INDEX_CHIP_GAP * (n - 1)
-    stack = Rect(body.x, body.y, body.w, min(stack_h, body.h))
-    return head, rows(stack, n, gap=REVIEW_INDEX_CHIP_GAP)
+    slots = max(n, stack or n)
+    return head, rows(body, slots, gap=REVIEW_INDEX_CHIP_GAP)[:n]
+
+
+def reviews_index_chip_strip(chip: Rect) -> Rect:
+    """Content-height Wnn + range, vertically centered in the chip seat."""
+    inner = chip.inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
+    h = min(REVIEW_INDEX_CHIP_H, inner.h)
+    return Rect(inner.x, inner.y + (inner.h - h) / 2, inner.w, h)
 
 
 def reviews_index_chip_parts(chip: Rect) -> tuple[Rect, Rect]:
-    """Wnn over short range — two tracks inside the chip."""
-    inner = chip.inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
-    return rows(inner, 2, gap=REVIEW_INDEX_LINE_GAP)
+    """Wnn over short range — two tracks inside the centered strip."""
+    return rows(reviews_index_chip_strip(chip), 2, gap=REVIEW_INDEX_LINE_GAP)
+
+
+def reviews_index_chip_frame(chip: Rect) -> Rect:
+    """Stroked chip hugs the centered Wnn + range, not the stretched seat."""
+    strip = reviews_index_chip_strip(chip)
+    pad = 1.5
+    return Rect(
+        chip.x + REVIEW_INDEX_CHIP_INSET_X,
+        strip.y - pad,
+        chip.w - 2 * REVIEW_INDEX_CHIP_INSET_X,
+        strip.h + 2 * pad,
+    )
 
 
 def reviews_index_link_hits(chip: Rect) -> tuple[Rect, ...]:
-    """Whole chip opens the weekly Review dest."""
-    return (chip,)
+    """Compact chip opens the weekly Review dest."""
+    return (reviews_index_chip_frame(chip),)
 
 
 def paint_reviews_index_months(plotter: Plotter, box: Rect, index: ReviewsIndex) -> None:
     """Thesis A — month columns of week chips. Not bands, not a status board."""
     seats = reviews_index_columns(box, len(index.columns))
+    stack = max(len(column.weeks) for column in index.columns)
     for col_box, column in zip(seats, index.columns, strict=True):
         plotter.rect(col_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        head, chips = reviews_index_month_seats(col_box, len(column.weeks))
+        head, chips = reviews_index_month_seats(col_box, len(column.weeks), stack=stack)
         plotter.text(
             head,
             column.name,
@@ -1179,7 +1199,13 @@ def paint_reviews_index_months(plotter: Plotter, box: Rect, index: ReviewsIndex)
 
 
 def _paint_reviews_index_chip(plotter: Plotter, chip: Rect, week: ReviewWeek) -> None:
-    plotter.rect(chip, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    plotter.rect(
+        reviews_index_chip_frame(chip),
+        stroke=True,
+        fill=False,
+        stroke_width=HAIR,
+        stroke_gray=SOFT,
+    )
     stub, dated = reviews_index_chip_parts(chip)
     plotter.text(
         stub,
