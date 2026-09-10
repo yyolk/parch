@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsMeeting,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,110 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+MEETING_GAP = 2.6
+MEETING_HEAD_INSET_X = 1.8
+MEETING_HEAD_INSET_Y = 1.6
+MEETING_TITLE_H = 8.2
+MEETING_DATE_H = 5.8
+MEETING_HEAD_LINE_GAP = 1.4
+MEETING_LABEL_W = 16.0
+MEETING_ROW_GAP = 2.2
+MEETING_ROW_INSET_X = 1.6
+MEETING_ROW_INSET_Y = 1.2
+MEETING_NAME_H = 6.2
+MEETING_TASK_GAP = 0.9
+MEETING_TASK_COL_GAP = 2.8
+
+
+def meeting_head_height() -> float:
+    """Content-height meeting title + date — not a fraction of the well."""
+    return (
+        MEETING_HEAD_INSET_Y * 2 + MEETING_TITLE_H + MEETING_HEAD_LINE_GAP + MEETING_DATE_H
+    )
+
+
+def meeting_row_height() -> float:
+    """Compact capture row: P + name over an inline tick strip."""
+    return MEETING_ROW_INSET_Y * 2 + MEETING_NAME_H + MEETING_TASK_GAP + TICK
+
+
+def meeting_roster_height(cards: int) -> float:
+    n = max(1, cards)
+    return n * meeting_row_height() + (n - 1) * MEETING_ROW_GAP
+
+
+def projects_meeting_seats(well: Rect, cards: int) -> tuple[Rect, Rect, Rect]:
+    """Meeting write-in, content-height project rows, leftover decisions well."""
+    head, rest = well.split_top(meeting_head_height())
+    leftover = Rect(rest.x, rest.y + MEETING_GAP, rest.w, rest.h - MEETING_GAP)
+    roster_h = meeting_roster_height(cards)
+    notes_h = max(leftover.h - roster_h - MEETING_GAP, 1)
+    roster, notes = rows(leftover, 2, gap=MEETING_GAP, weights=(roster_h, notes_h))
+    return head, roster, notes
+
+
+def projects_meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Meeting / context underline over a quieter date line."""
+    inner = head.inset(MEETING_HEAD_INSET_X, MEETING_HEAD_INSET_Y)
+    meeting, dated = rows(
+        inner, 2, gap=MEETING_HEAD_LINE_GAP, weights=(MEETING_TITLE_H, MEETING_DATE_H)
+    )
+    return meeting, dated
+
+
+def projects_meeting_rows(roster: Rect, cards: int) -> tuple[Rect, ...]:
+    """Stacked 'brought up in this meeting' rows — not side-by-side cards."""
+    return rows(roster, max(1, cards), gap=MEETING_ROW_GAP)
+
+
+def projects_meeting_row_seats(row: Rect) -> tuple[Rect, Rect]:
+    """Optional P + name, then 2–3 Focus ticks in one inline row."""
+    inner = row.inset(MEETING_ROW_INSET_X, MEETING_ROW_INSET_Y)
+    name, rest = inner.split_top(MEETING_NAME_H)
+    tasks = Rect(rest.x, rest.y + MEETING_TASK_GAP, rest.w, TICK)
+    return name, tasks
+
+
+def paint_projects_meeting(plotter: Plotter, box: Rect, board: ProjectsMeeting) -> None:
+    """Thesis L — capture projects from a conversation. Not a board or horizon."""
+    head, roster, notes = projects_meeting_seats(box, board.cards)
+    _paint_meeting_head(plotter, head)
+    for row in projects_meeting_rows(roster, board.cards):
+        plotter.rect(row, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        name, tasks = projects_meeting_row_seats(row)
+        _paint_project_name(plotter, name)
+        _paint_meeting_tasks(plotter, tasks, board.tasks)
+    _paint_note_box(plotter, notes, label="Decisions")
+
+
+def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    meeting, dated = projects_meeting_head_seats(head)
+    _paint_meeting_writein(plotter, meeting, "Meeting")
+    _paint_meeting_writein(plotter, dated, "Date")
+
+
+def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    tag, write = box.split_left(MEETING_LABEL_W)
+    plotter.text(
+        tag,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    rule_y = tag.y + tag.h * 0.72
+    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def _paint_meeting_tasks(plotter: Plotter, box: Rect, n: int) -> None:
+    """Next-action ticks in one inline row — not a vertical Focus stack."""
+    for slot in columns(box, max(1, n), gap=MEETING_TASK_COL_GAP):
+        _paint_focus_row(plotter, slot.x, slot.y, slot.right)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1045,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_meeting":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1074,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_meeting":
             return ""
         case _:
             return "Year"
