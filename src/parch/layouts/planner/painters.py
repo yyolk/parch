@@ -982,7 +982,7 @@ TASK_INDEX_ROW_GAP = 1.0
 TASK_INDEX_LINE_H = 5.4
 TASK_INDEX_WEEK_W = 12.0
 TASK_INDEX_RANGE_W = 26.0
-TASK_INDEX_WRITE_GAP = 3.9
+TASK_INDEX_WRITE_GAP = 1.06
 TASK_GAP = 2.6
 
 
@@ -1012,16 +1012,13 @@ def tasks_index_rule_y(row: Rect) -> float:
 
 
 def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
-    """Wnn stub | printed range | write-in leftover on the centered content strip."""
+    """Wnn stub | printed range | write-in — ``tracks.columns``; gap only date→hline."""
     strip = tasks_index_week_strip(row)
-    stub, rest = strip.split_left(TASK_INDEX_WEEK_W)
-    dated, after = rest.split_left(TASK_INDEX_RANGE_W)
-    write = Rect(
-        after.x + TASK_INDEX_WRITE_GAP,
-        after.y,
-        max(after.w - TASK_INDEX_WRITE_GAP, 1),
-        after.h,
-    )
+    stub_w = TASK_INDEX_WEEK_W
+    stub, rest = columns(strip, 2, gap=0, weights=(stub_w, max(strip.w - stub_w, 1)))
+    range_w = TASK_INDEX_RANGE_W
+    write_w = max(rest.w - TASK_INDEX_WRITE_GAP - range_w, 1)
+    dated, write = columns(rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(range_w, write_w))
     return stub, dated, write
 
 

@@ -36,6 +36,7 @@ from parch.layouts.planner.painters import (
 from parch.plotter import RecordingPlotter
 from parch.sections.tasks import TasksSection
 from parch.spec import Spec
+from parch.tracks import columns
 
 
 def _rects_overlap(a: Rect, b: Rect) -> bool:
@@ -158,6 +159,14 @@ def test_tasks_index_seats_weighted_by_weeks():
     assert dated.x == pytest.approx(stub.right)
     assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
     assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
+    assert TASK_INDEX_WRITE_GAP == pytest.approx(1.06)
+    via_cols = columns(strip, 2, gap=0, weights=(TASK_INDEX_WEEK_W, max(strip.w - TASK_INDEX_WEEK_W, 1)))
+    rest = via_cols[1]
+    write_w = max(rest.w - TASK_INDEX_WRITE_GAP - TASK_INDEX_RANGE_W, 1)
+    assert (stub, dated, write) == (
+        via_cols[0],
+        *columns(rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(TASK_INDEX_RANGE_W, write_w)),
+    )
     assert write.right == pytest.approx(week_rows[0].right)
     assert write.h == pytest.approx(TASK_INDEX_LINE_H)
     assert write.bottom < week_rows[0].bottom
