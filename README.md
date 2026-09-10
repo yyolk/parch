@@ -45,6 +45,8 @@ Default spec is year 2026, Monday week start, **full year** (Jan–Dec). Press w
 
 Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (2026) and sample PNG previews (annual, projects, index, quarters, July month, July habits, week, daily, notes). Thesis L index p1: [`artifacts/mvp/exp-projects-index-l-tickets.png`](artifacts/mvp/exp-projects-index-l-tickets.png). Index p2: [`artifacts/mvp/exp-projects-index-l-tickets-p2.png`](artifacts/mvp/exp-projects-index-l-tickets-p2.png). Dest: [`artifacts/mvp/exp-projects-index-l-leaf.png`](artifacts/mvp/exp-projects-index-l-leaf.png).
 
+Thesis C (parallel, **not** in the year walk): month-banded Tasks index + weekly Tasks dest. **Task** tab → index; dest header chip is the ISO week and returns to the owning quarter index. Proof: [`artifacts/mvp/exp-tasks-index-c-months.png`](artifacts/mvp/exp-tasks-index-c-months.png) and [`artifacts/mvp/exp-tasks-index-c-dest.png`](artifacts/mvp/exp-tasks-index-c-dest.png).
+
 ```shell
 uv run pytest
 ```

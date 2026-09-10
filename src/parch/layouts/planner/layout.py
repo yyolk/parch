@@ -15,6 +15,8 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
+    TasksWeekPage,
     WeekStrip,
 )
 from parch.devices.nomad import Device
@@ -38,6 +40,8 @@ from parch.layouts.planner.painters import (
     paint_projects_index_tickets,
     paint_quarter,
     paint_schedule,
+    paint_task,
+    paint_tasks_index_months,
     paint_week,
     paint_toolbar,
     strip_active,
@@ -90,6 +94,10 @@ class PlannerLayout:
                 paint_meetings_index_roster(plotter, well, _one(page, MeetingIndex))
             case "meeting":
                 paint_meeting(plotter, well, _one(page, MeetingAgenda))
+            case "tasks_index":
+                paint_tasks_index_months(plotter, well, _one(page, TasksIndex))
+            case "task":
+                paint_task(plotter, well, _one(page, TasksWeekPage))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -151,6 +159,10 @@ def _header_meta(page: Page) -> str:
             return str(_one(page, MeetingIndex).year)
         case "meeting":
             return str(_one(page, MeetingAgenda).year)
+        case "tasks_index":
+            return f"Q{_one(page, TasksIndex).quarter}"
+        case "task":
+            return str(_one(page, TasksWeekPage).year)
         case "quarter":
             return ""
         case "month":
@@ -195,6 +207,9 @@ def _header_chip(page: Page) -> str:
         case "meeting":
             number = _one(page, MeetingAgenda).number
             return f"{number:02d}" if number else ""
+        case "task":
+            week = _one(page, TasksWeekPage)
+            return f"W{week.iso_week:02d}"
         case _:
             return ""
 
@@ -209,6 +224,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, ProjectsBoard).index_dest or None
         case "meeting":
             return _one(page, MeetingAgenda).index_dest or None
+        case "task":
+            return _one(page, TasksWeekPage).index_dest or None
         case _:
             return None
 
