@@ -13,12 +13,14 @@ from parch.layouts.planner.painters import (
     REVIEW_INDEX_BAND_GAP,
     REVIEW_INDEX_CHIP_GAP,
     REVIEW_INDEX_CHIP_H,
+    REVIEW_INDEX_CHIP_W,
     REVIEW_INDEX_HEAD_H,
     paint_review,
     paint_reviews_index_months,
     review_chip_range,
     review_index_band_seats,
     review_index_bands,
+    review_index_chip_row,
     review_index_chip_strip,
     review_index_link_hits,
     strip_active,
@@ -139,16 +141,21 @@ def test_reviews_index_seats_equal_month_bands_and_week_columns():
     assert len(chips) == 5
     assert chips[0].y == pytest.approx(chips[-1].y)
     assert chips[0].h == pytest.approx(REVIEW_INDEX_CHIP_H)
+    assert chips[0].w == pytest.approx(REVIEW_INDEX_CHIP_W)
     assert chips[0].y > head.bottom
-    assert chips[-1].right == pytest.approx(review_index_chip_strip(bands[0]).right)
     assert chips[1].x > chips[0].right
     strip = review_index_chip_strip(bands[0])
-    assert chips == columns(strip, 5, gap=REVIEW_INDEX_CHIP_GAP)
+    assert chips == review_index_chip_row(strip, 5)
+    packed_w = 5 * REVIEW_INDEX_CHIP_W + 4 * REVIEW_INDEX_CHIP_GAP
+    packed = Rect(strip.x + (strip.w - packed_w) / 2, strip.y, packed_w, strip.h)
+    assert chips == columns(packed, 5, gap=REVIEW_INDEX_CHIP_GAP)
+    assert chips[0].x > strip.x
+    assert chips[-1].right < strip.right
     assert review_index_link_hits(chips[0]) == (chips[0],)
     feb_head, feb_chips = review_index_band_seats(bands[1], 4)
     assert feb_head.h == pytest.approx(REVIEW_INDEX_HEAD_H)
     assert len(feb_chips) == 4
-    assert feb_chips[0].w > chips[0].w
+    assert feb_chips[0].w == pytest.approx(chips[0].w)
 
 
 def test_review_chip_range_splits_cross_month_weeks():

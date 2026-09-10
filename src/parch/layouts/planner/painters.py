@@ -1121,10 +1121,13 @@ REVIEW_INDEX_INSET_Y = 1.6
 REVIEW_INDEX_HEAD_H = 5.2
 REVIEW_INDEX_HEAD_GAP = 1.6
 REVIEW_INDEX_CHIP_GAP = 2.2
-REVIEW_INDEX_CHIP_H = 18.0
-REVIEW_INDEX_CHIP_INSET_X = 0.6
-REVIEW_INDEX_CHIP_INSET_Y = 0.7
-REVIEW_INDEX_CHIP_LINE_GAP = 0.3
+REVIEW_INDEX_CHIP_W = 17.8
+REVIEW_INDEX_CHIP_H = 13.0
+REVIEW_INDEX_CHIP_INSET_X = 0.5
+REVIEW_INDEX_CHIP_INSET_Y = 0.55
+REVIEW_INDEX_CHIP_LINE_GAP = 0.2
+REVIEW_INDEX_CHIP_WEEK_H = 4.6
+REVIEW_INDEX_CHIP_DATE_H = 2.8
 
 
 def review_index_bands(well: Rect, n: int) -> tuple[Rect, ...]:
@@ -1141,11 +1144,20 @@ def review_index_chip_strip(band: Rect) -> Rect:
     return Rect(body.x, body.y + (body.h - h) / 2, body.w, h)
 
 
+def review_index_chip_row(strip: Rect, n: int) -> tuple[Rect, ...]:
+    """Fixed-width week chips, centered (`tracks.columns` on the packed span)."""
+    packed_w = n * REVIEW_INDEX_CHIP_W + (n - 1) * REVIEW_INDEX_CHIP_GAP
+    if packed_w >= strip.w:
+        return columns(strip, n, gap=REVIEW_INDEX_CHIP_GAP)
+    packed = Rect(strip.x + (strip.w - packed_w) / 2, strip.y, packed_w, strip.h)
+    return columns(packed, n, gap=REVIEW_INDEX_CHIP_GAP)
+
+
 def review_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
     """Month header over a row of week chips (`tracks.columns`)."""
     inner = band.inset(REVIEW_INDEX_INSET_X, REVIEW_INDEX_INSET_Y)
     head, _rest = inner.split_top(REVIEW_INDEX_HEAD_H)
-    return head, columns(review_index_chip_strip(band), n, gap=REVIEW_INDEX_CHIP_GAP)
+    return head, review_index_chip_row(review_index_chip_strip(band), n)
 
 
 def review_index_link_hits(chip: Rect) -> tuple[Rect, ...]:
@@ -1184,24 +1196,35 @@ def paint_reviews_index_months(plotter: Plotter, box: Rect, index: ReviewIndex) 
                 plotter.link(hit, week.dest)
 
 
+def review_index_chip_label_strip(chip: Rect, line_count: int) -> Rect:
+    """Content-height Wnn + date lines, vertically centered in the chip."""
+    dates = max(1, line_count - 1)
+    h = (
+        REVIEW_INDEX_CHIP_WEEK_H
+        + dates * (REVIEW_INDEX_CHIP_LINE_GAP + REVIEW_INDEX_CHIP_DATE_H)
+    )
+    h = min(h, chip.h - 2 * REVIEW_INDEX_CHIP_INSET_Y)
+    return Rect(chip.x + REVIEW_INDEX_CHIP_INSET_X, chip.y + (chip.h - h) / 2, chip.w - 2 * REVIEW_INDEX_CHIP_INSET_X, h)
+
+
 def _paint_review_index_chip(plotter: Plotter, chip: Rect, week: ReviewWeek) -> None:
     plotter.rect(chip, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    inner = chip.inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
-    lines = (f"W{week.iso_week:02d}", *review_chip_range(week.monday, week.sunday))
-    week_w = 1.4
-    rest_w = 1.0
-    weights = (week_w, *tuple(rest_w for _ in lines[1:]))
-    seats = rows(inner, len(lines), gap=REVIEW_INDEX_CHIP_LINE_GAP, weights=weights)
+    dates = review_chip_range(week.monday, week.sunday)
+    strip = review_index_chip_label_strip(chip, 1 + len(dates))
+    week_w = REVIEW_INDEX_CHIP_WEEK_H
+    date_w = REVIEW_INDEX_CHIP_DATE_H
+    weights = (week_w, *tuple(date_w for _ in dates))
+    seats = rows(strip, 1 + len(dates), gap=REVIEW_INDEX_CHIP_LINE_GAP, weights=weights)
     plotter.text(
         seats[0],
-        lines[0],
+        f"W{week.iso_week:02d}",
         size=8.2,
         bold=True,
         face="serif",
         gray=INK,
         align="center",
     )
-    for seat, label in zip(seats[1:], lines[1:], strict=True):
+    for seat, label in zip(seats[1:], dates, strict=True):
         plotter.text(
             seat,
             label,
