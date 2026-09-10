@@ -174,7 +174,13 @@ def test_paint_projects_index_covers_writein_and_links():
         ul, ur, ll, lr = projects_index_cover_quads(cover)
         assert ul.right < ur.x
         assert ul.bottom < ll.y
-        cover_lines = [op for op in lines if ul.x <= op[1] < ul.right]
+        cover_lines = [
+            op
+            for op in lines
+            if ul.x <= op[1] <= ul.right
+            and ul.x <= op[3] <= ul.right
+            and ul.y <= op[2] <= ul.bottom
+        ]
         assert len(cover_lines) == _writein_line_count(ul)
         for line in cover_lines:
             assert line[1] == pytest.approx(ul.x + COVER_RULE_INSET)
