@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Martian Grotesk](https://github.com/evilmartians/grotesk) (UI sans, Regular + Bold) and [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) (`face="serif"` headers) are SIL OFL 1.1 — see `src/parch/fonts/README.md`.
+Vendored [Martian Grotesk](https://github.com/evilmartians/grotesk) (UI sans, Regular + Bold) and [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) (`face="serif"` headers) are SIL OFL 1.1 — see `src/parch/fonts/README.md`. Exploratory January specimen: [`artifacts/mvp/exp-font-martian-grotesk.pdf`](artifacts/mvp/exp-font-martian-grotesk.pdf) and `artifacts/mvp/exp-font-martian-grotesk-*.png`.
