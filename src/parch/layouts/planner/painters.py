@@ -1,5 +1,6 @@
 """Painters take ``plotter: Plotter``. Components never draw themselves."""
 
+import math
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
@@ -11,7 +12,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectLeaf,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +278,494 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+PROJECT_TABLE_HEAD_H = 5.8
+PROJECT_TABLE_STATUS_W = 22.0
+PROJECT_TABLE_OPEN_W = 16.0
+PROJECT_TABLE_GAP = 0.0
+
+
+def projects_index_table(box: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Header band plus ``n`` equal row tracks for the name / status table."""
+    head, body = box.split_top(PROJECT_TABLE_HEAD_H)
+    return head, rows(body, n, gap=PROJECT_TABLE_GAP)
+
+
+def _project_table_columns(band: Rect) -> tuple[Rect, Rect, Rect]:
+    """Project | Status | Open →"""
+    open_col, rest = _split_right(band, PROJECT_TABLE_OPEN_W)
+    status, name = _split_right(rest, PROJECT_TABLE_STATUS_W)
+    return name, status, open_col
+
+
+def _split_right(box: Rect, width: float) -> tuple[Rect, Rect]:
+    left, right = box.split_left(max(box.w - width, 1))
+    return right, left
+
+
+def paint_projects_index_table(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis G — printed names, not underlines. Row links to that project leaf."""
+    head, seats = projects_index_table(box, len(index.entries))
+    _paint_project_table_header(plotter, head)
+    for seat, entry in zip(seats, index.entries, strict=True):
+        _paint_project_table_row(plotter, seat, entry.name, entry.status)
+        plotter.link(seat, entry.dest)
+
+
+def _paint_project_table_header(plotter: Plotter, box: Rect) -> None:
+    name, status, open_col = _project_table_columns(box)
+    for cell, label, align in (
+        (name, "Project", "left"),
+        (status, "Status", "left"),
+        (open_col, "Open →", "right"),
+    ):
+        plotter.text(
+            cell,
+            label,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align=align,
+        )
+    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_project_table_row(plotter: Plotter, box: Rect, name: str, status: str) -> None:
+    name_col, status_col, open_col = _project_table_columns(box)
+    plotter.text(
+        name_col,
+        name,
+        size=8.4,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    plotter.text(
+        status_col,
+        status,
+        size=6.6,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.text(
+        open_col,
+        "→",
+        size=8.4,
+        face="sans",
+        gray=MUTED,
+        align="right",
+    )
+    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=SOFT)
+
+
+CLONE_SPINE_W = 1.4
+CLONE_RAIL_GAP = 2.6
+CLONE_RAIL_WEIGHTS = (0.76, 0.24)
+CLONE_CARD_WEIGHTS = (0.50, 0.50)
+CLONE_INSET_X = 1.6
+CLONE_INSET_Y = 1.4
+CLONE_COL_GAP = 3.4
+CLONE_ICON = 2.1
+CLONE_ICON_GAP = 0.85
+CLONE_STRIP_H = 2.8
+CLONE_STAR = 2.0
+CLONE_TRACK_H = 26.0
+CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
+CLONE_ICONS = (
+    "triangle",
+    "cross",
+    "hexagon",
+    "square",
+    "crescent",
+    "diamond",
+    "circle",
+    "plus",
+    "star",
+)
+CLONE_P_PAD = 0.40
+CLONE_P_CORNER = (2.15, 1.85)
+CLONE_P_SIZE = 5.2
+CLONE_NAME_GAP = 1.4
+CLONE_TASK_TOP = 0.4
+CLONE_TASK_CLEAR = 0.55
+CLONE_DOT_PITCH = 2.8
+CLONE_DOT = 0.32
+
+
+def clone_task_count(box: Rect) -> int:
+    """Focus rows that fill ``box``, with clearance above the symbol strip."""
+    usable = box.h - CLONE_TASK_TOP - CLONE_TASK_CLEAR
+    if usable < TICK:
+        return 1
+    return max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+
+
+def projects_clone_a_name_field(header: Rect) -> tuple[Rect, Rect]:
+    """P square and the name field beside it."""
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    field = Rect(
+        mark.right + CLONE_NAME_GAP,
+        y,
+        max(header.right - mark.right - CLONE_NAME_GAP, 1),
+        PROJECT_P,
+    )
+    return mark, field
+
+
+def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
+    """Board column | status rail — kanban’s right-hand track, Nomad-narrow."""
+    return columns(well, 2, gap=CLONE_RAIL_GAP, weights=CLONE_RAIL_WEIGHTS)
+
+
+def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tuple[Rect, ...]]:
+    """Stacked project cards and the matching three-stage rail seats."""
+    board, rail = projects_clone_a_well(well)
+    return project_card_seats(board, cards), rows(rail, cards, gap=PROJECT_CARD_GAP)
+
+
+def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
+    """spine, header, name field, tasks, notes (full right), icon strip (left)."""
+    spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
+    body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
+        CLONE_INSET_X, CLONE_INSET_Y
+    )
+    left, notes = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    name_h, left_rest = left.split_top(PROJECT_HEADER_H)
+    _, name_field = projects_clone_a_name_field(name_h)
+    mid = Rect(
+        left_rest.x,
+        left_rest.y + PROJECT_LEFT_GAP,
+        left_rest.w,
+        left_rest.h - PROJECT_LEFT_GAP,
+    )
+    tasks, strip = rows(
+        mid,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(mid.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
+    )
+    return spine, name_h, name_field, tasks, notes, strip
+
+
+def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
+    """G clone+fit leaf — printed name in the name field, not an empty underline."""
+    cards, rails = projects_clone_a_seats(box, 1)
+    card, rail = cards[0], rails[0]
+    _wash(plotter, projects_clone_a_well(box)[1], WASH)
+    spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(card)
+    plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
+    _paint_clone_priority(plotter, name_h)
+    plotter.text(
+        name_field,
+        leaf.name,
+        size=8.2,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    _paint_clone_tasks(plotter, tasks, leaf.tasks)
+    _paint_clone_dot_grid(plotter, notes)
+    _paint_clone_icon_strip(plotter, strip)
+    _paint_clone_status_track(plotter, rail, current=leaf.status)
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    nx = max(2, int(inset.w / CLONE_DOT_PITCH))
+    ny = max(2, int(inset.h / CLONE_DOT_PITCH))
+    for band in rows(inset, ny):
+        for cell in columns(band, nx):
+            plotter.rect(
+                Rect(
+                    cell.x + (cell.w - CLONE_DOT) / 2,
+                    cell.y + (cell.h - CLONE_DOT) / 2,
+                    CLONE_DOT,
+                    CLONE_DOT,
+                ),
+                stroke=False,
+                fill=True,
+                fill_gray=RULE_C,
+            )
+
+
+def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
+    """P-box: muted corner-fraction label. Clone only."""
+    mark, _field = projects_clone_a_name_field(header)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    cw, ch = CLONE_P_CORNER
+    plotter.text(
+        Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
+        "P",
+        size=CLONE_P_SIZE,
+        face="sans",
+        gray=MUTED,
+        align="left",
+        small_caps=True,
+    )
+    return mark.bottom
+
+
+def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> None:
+    count = clone_task_count(box) if n is None else max(1, n)
+    y = box.y + CLONE_TASK_TOP
+    star_right = box.right - CLONE_STAR - 1.0
+    for _ in range(count):
+        _paint_focus_row(plotter, box.x, y, star_right)
+        star = Rect(
+            box.right - CLONE_STAR,
+            y + (TICK - CLONE_STAR) / 2,
+            CLONE_STAR,
+            CLONE_STAR,
+        )
+        _paint_diamond(plotter, star)
+        y += FOCUS_PITCH
+
+
+def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
+    """Filled icons, even spread on tracks.columns across the strip seat."""
+    slots = columns(box, len(CLONE_ICONS), gap=1.05)
+    for slot, kind in zip(slots, CLONE_ICONS, strict=True):
+        s = min(CLONE_ICON, slot.h - 0.2, slot.w)
+        icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
+        _paint_clone_icon(plotter, icon, kind)
+
+
+def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
+    match kind:
+        case "square":
+            plotter.rect(box, stroke=False, fill=True, fill_gray=INK)
+        case "plus":
+            arm = 0.30
+            plotter.rect(
+                Rect(box.x + box.w * (1 - arm) / 2, box.y, box.w * arm, box.h),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
+            plotter.rect(
+                Rect(box.x, box.y + box.h * (1 - arm) / 2, box.w, box.h * arm),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
+        case "circle":
+            _fill_circle(plotter, box)
+        case "diamond":
+            _fill_diamond(plotter, box)
+        case "triangle":
+            _fill_triangle(plotter, box)
+        case "crescent":
+            _fill_crescent(plotter, box)
+        case "hexagon":
+            _fill_hexagon(plotter, box)
+        case "cross":
+            _fill_cross(plotter, box)
+        case "star":
+            _fill_star(plotter, box)
+        case _:
+            raise ValueError(f"unknown clone icon {kind!r}")
+
+
+def _scan_box(box: Rect, *, n: int = 11) -> tuple[list[float], float]:
+    dy = box.h / n
+    return [box.y + (i + 0.5) * dy for i in range(n)], dy
+
+
+def _fill_circle(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - cy) / ry
+        if abs(t) >= 1:
+            continue
+        half = rx * math.sqrt(max(0.0, 1.0 - t * t))
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_diamond(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = abs((y - cy) / ry)
+        if t >= 1:
+            continue
+        half = rx * (1.0 - t)
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_triangle(plotter: Plotter, box: Rect) -> None:
+    """Point-up triangle inscribed in ``box``."""
+    ys, dy = _scan_box(box)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - box.y) / box.h
+        half = (box.w / 2) * t
+        cx = box.x + box.w / 2
+        spans.append((y - dy / 2, cx - half, cx + half))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_poly(plotter: Plotter, box: Rect, pts: list[tuple[float, float]], *, n: int = 12) -> None:
+    ys, dy = _scan_box(box, n=n)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        xs = _poly_xs_at(pts, y)
+        xs.sort()
+        for i in range(0, len(xs) - 1, 2):
+            spans.append((y - dy / 2, xs[i], xs[i + 1]))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_crescent(plotter: Plotter, box: Rect) -> None:
+    """Waxing crescent — outer disc minus an offset disc. Distinct from circle."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    ox = cx + rx * 0.36
+    r2x = rx * 0.78
+    r2y = ry * 0.78
+    ys, dy = _scan_box(box, n=13)
+    spans: list[tuple[float, float, float]] = []
+    for y in ys:
+        t = (y - cy) / ry
+        if abs(t) >= 1:
+            continue
+        half = rx * math.sqrt(max(0.0, 1.0 - t * t))
+        left, right = cx - half, cx + half
+        t2 = (y - cy) / r2y
+        if abs(t2) < 1:
+            cut = r2x * math.sqrt(max(0.0, 1.0 - t2 * t2))
+            cut_l, cut_r = ox - cut, ox + cut
+            if cut_l <= left < cut_r < right:
+                left = cut_r
+            elif left < cut_l < right <= cut_r:
+                right = cut_l
+            elif cut_l <= left and right <= cut_r:
+                continue
+        if right - left > 0.08:
+            spans.append((y - dy / 2, left, right))
+    _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_hexagon(plotter: Plotter, box: Rect) -> None:
+    """Pointy-top hexagon — distinct from square and diamond."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    r = min(box.w, box.h) / 2
+    pts = [
+        (cx + r * math.cos(math.radians(-90 + i * 60)), cy + r * math.sin(math.radians(-90 + i * 60)))
+        for i in range(6)
+    ]
+    _fill_poly(plotter, box, pts)
+
+
+def _fill_cross(plotter: Plotter, box: Rect) -> None:
+    """X — two thick diagonals. Distinct from plus and from the 5-point star."""
+    t = min(box.w, box.h) * 0.22
+    x0, y0, x1, y1 = box.x, box.y, box.right, box.bottom
+    _fill_poly(plotter, box, [(x0 + t, y0), (x1, y1 - t), (x1 - t, y1), (x0, y0 + t)])
+    _fill_poly(plotter, box, [(x1 - t, y0), (x1, y0 + t), (x0 + t, y1), (x0, y1 - t)])
+
+
+def _fill_star(plotter: Plotter, box: Rect) -> None:
+    """Five-point star — restored; kept off the other spiky/heavy marks."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    r = min(box.w, box.h) / 2
+    _fill_poly(plotter, box, _star_poly(cx, cy, r), n=13)
+
+
+def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
+    r_in = r * 0.38
+    pts: list[tuple[float, float]] = []
+    for i in range(10):
+        ang = math.radians(-90 + i * 36)
+        rad = r if i % 2 == 0 else r_in
+        pts.append((cx + rad * math.cos(ang), cy + rad * math.sin(ang)))
+    return pts
+
+
+def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:
+    xs: list[float] = []
+    n = len(pts)
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        if (y0 <= y < y1) or (y1 <= y < y0):
+            if y1 != y0:
+                xs.append(x0 + (x1 - x0) * (y - y0) / (y1 - y0))
+    return xs
+
+
+def _fill_span_rows(plotter: Plotter, spans: list[tuple[float, float, float]], dy: float) -> None:
+    for y, x0, x1 in spans:
+        if x1 - x0 > 0.08:
+            plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=INK)
+
+
+def _paint_clone_status_track(plotter: Plotter, box: Rect, *, current: str = "") -> None:
+    """Vertical Todo → In Progress → Done. Squares stand in for circles."""
+    track_h = min(CLONE_TRACK_H, box.h - 2.0)
+    track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
+    inset = track.inset(1.4, 0.6)
+    marks: list[Rect] = []
+    wanted = current.casefold()
+    for slot, label in zip(rows(inset, 3, gap=1.8), CLONE_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        on = label.casefold() == wanted or (
+            wanted == "doing" and label.casefold() == "in progress"
+        )
+        plotter.rect(
+            mark,
+            stroke=True,
+            fill=on,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+            fill_gray=INK,
+        )
+        plotter.text(
+            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=INK if on else MUTED,
+            small_caps=True,
+            align="left",
+        )
+        marks.append(mark)
+    cx = marks[0].x + marks[0].w / 2
+    for above, below in zip(marks, marks[1:]):
+        plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_diamond(plotter: Plotter, box: Rect) -> None:
+    """Hairline rhombus — favorite/tag stand-in where ★ is missing."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    plotter.line(cx, box.y, box.right, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -927,6 +1418,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -941,6 +1434,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "habits":
             dests["Habit"] = page.dest
         case "projects":
+            dests["Proj"] = page.dest
+        case "project":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -949,7 +1444,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes", "Proj")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -970,6 +1465,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
-            return ""
+            return "Proj"
+        case "project":
+            return "Proj"
         case _:
             return "Year"

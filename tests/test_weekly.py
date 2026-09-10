@@ -42,11 +42,11 @@ def test_week_dests_and_nav_strip():
         "cover",
         "year-2026",
         "projects-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
+        "project-1",
+        "project-2",
+        "project-3",
+        "project-4",
+        "project-5",
     ]
     assert dests.index("week-2026-W02") < dests.index("2026-01-05")
     assert dests.index("week-2026-W05") < dests.index("2026-01-26")
@@ -64,6 +64,7 @@ def test_week_dests_and_nav_strip():
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
+        ("Proj", "projects-2026"),
     )
     assert strip_active(month.kind) == "Mon"
 

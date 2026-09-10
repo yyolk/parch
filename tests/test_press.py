@@ -37,8 +37,8 @@ def test_press_year_pdf(tmp_path: Path):
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    # cover + annual + projects + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
-    assert len(reader.pages) == 814
+    # cover + annual + projects index + 10 leaves + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
+    assert len(reader.pages) == 824
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)

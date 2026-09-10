@@ -12,11 +12,11 @@ def test_annual_page_and_year_nav():
         "cover",
         "year-2026",
         "projects-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
+        "project-1",
+        "project-2",
+        "project-3",
+        "project-4",
+        "project-5",
     ]
     cover = pages[0]
     assert cover.components[0].cta_dest == "year-2026"
@@ -32,6 +32,7 @@ def test_annual_page_and_year_nav():
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
+        ("Proj", "projects-2026"),
     )
     assert all(label != "Cover" for label, _ in strip_items(annual))
 
@@ -58,7 +59,8 @@ def test_annual_paint_links_all_months():
     links = plotter.links()
     assert dests[1] == "year-2026"
     assert dests[2] == "projects-2026"
-    assert dests[3:7] == [
+    assert dests[3:13] == [f"project-{n}" for n in range(1, 11)]
+    assert dests[13:17] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",

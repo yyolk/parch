@@ -31,11 +31,11 @@ def test_quarter_page_and_provisional_nav():
         "cover",
         "year-2026",
         "projects-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
+        "project-1",
+        "project-2",
+        "project-3",
+        "project-4",
+        "project-5",
     ]
     assert [page.dest for page in pages if page.dest.startswith("quarter-")] == [
         "quarter-2026-Q1",
@@ -44,7 +44,7 @@ def test_quarter_page_and_provisional_nav():
         "quarter-2026-Q4",
     ]
 
-    quarter = pages[3]
+    quarter = next(page for page in pages if page.dest == "quarter-2026-Q1")
     assert quarter.kind == "quarter"
     assert quarter.title == "Q1 2026"
     assert strip_active(quarter.kind) == "Quar"
@@ -56,6 +56,7 @@ def test_quarter_page_and_provisional_nav():
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
+        ("Proj", "projects-2026"),
     )
 
     grid = next(item for item in quarter.components if isinstance(item, QuarterGrid))
