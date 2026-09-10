@@ -981,9 +981,10 @@ TASK_INDEX_HEAD_GAP = 0.8
 TASK_INDEX_ROW_GAP = 1.0
 TASK_INDEX_LINE_H = 5.4
 TASK_INDEX_WEEK_W = 12.0
-# Longest 6.2 smcp ``short_date_range`` (e.g. ``30 Nov–6 Dec``) is ≈14.29 mm.
-TASK_INDEX_RANGE_W = 14.8
-TASK_INDEX_WRITE_GAP = 1.41
+# Midpoint of original fat column (26) and hug (14.8).
+TASK_INDEX_RANGE_W = 20.4
+# Midpoint of original WRITE_GAP (2.8) and 4pt (1.41).
+TASK_INDEX_WRITE_GAP = 2.105
 TASK_GAP = 2.6
 
 
