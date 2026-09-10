@@ -6,6 +6,8 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     HabitGrid,
+    MeetingAgenda,
+    MeetingsIndex,
     MonthGrid,
     Notes,
     Priorities,
@@ -25,6 +27,8 @@ from parch.layouts.planner.painters import (
     paint_cover,
     paint_habit_grid,
     paint_header,
+    paint_meeting,
+    paint_meetings_index_covers,
     paint_month_grid,
     paint_nav,
     paint_notes,
@@ -82,6 +86,10 @@ class PlannerLayout:
                 paint_projects_index_tickets(plotter, well, _one(page, ProjectsIndex))
             case "project":
                 paint_projects_clone_faithful(plotter, well, _one(page, ProjectsBoard))
+            case "meetings_index":
+                paint_meetings_index_covers(plotter, well, _one(page, MeetingsIndex))
+            case "meeting":
+                paint_meeting(plotter, well, _one(page, MeetingAgenda))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -139,6 +147,10 @@ def _header_meta(page: Page) -> str:
             return str(_one(page, ProjectsIndex).year)
         case "project":
             return str(_one(page, ProjectsBoard).year)
+        case "meetings_index":
+            return str(_one(page, MeetingsIndex).year)
+        case "meeting":
+            return str(_one(page, MeetingAgenda).year)
         case "quarter":
             return ""
         case "month":
@@ -180,6 +192,9 @@ def _header_chip(page: Page) -> str:
         case "project":
             number = _one(page, ProjectsBoard).number
             return f"{number:02d}" if number else ""
+        case "meeting":
+            number = _one(page, MeetingAgenda).number
+            return f"{number:02d}" if number else ""
         case _:
             return ""
 
@@ -192,6 +207,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, HabitGrid).month_dest
         case "project":
             return _one(page, ProjectsBoard).index_dest or None
+        case "meeting":
+            return _one(page, MeetingAgenda).index_dest or None
         case _:
             return None
 

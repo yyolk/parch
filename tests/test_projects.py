@@ -66,6 +66,7 @@ _PROJ_STRIP = (
     ("Mon", "month-2026-01"),
     ("Habit", "month-2026-01-habits"),
     ("Proj", "projects-index-2026-01"),
+    ("Meet", "meetings-index-2026-01"),
     ("Week", "week-2026-W01"),
     ("Day", "2026-01-01"),
     ("Notes", "2026-01-01-notes-1"),
@@ -81,7 +82,8 @@ def test_projects_page_after_annual():
     assert page.kind == "projects"
     assert page.title == "Projects"
     assert pages[3].dest == "projects-index-2026-01"
-    assert pages[12].dest == "quarter-2026-Q1"
+    assert pages[12].dest == "meetings-index-2026-01"
+    assert pages[19].dest == "quarter-2026-Q1"
 
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     assert board.year == 2026
@@ -192,7 +194,7 @@ def test_projects_header_year_and_eight_tabs():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Projects" in texts
     assert "2026" in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes"):
+    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes"):
         assert label in texts
 
 
@@ -203,7 +205,8 @@ def test_projects_index_tickets_and_proj_nav():
     assert dests[2] == "projects-2026"
     assert dests[3] == "projects-index-2026-01"
     assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
-    assert dests[12] == "quarter-2026-Q1"
+    assert dests[12] == "meetings-index-2026-01"
+    assert dests[19] == "quarter-2026-Q1"
 
     index = pages[3]
     assert index.kind == "projects_index"
@@ -567,7 +570,8 @@ def test_projects_index_pages_knob():
         "projects-index-2026-03",
     ]
     assert dests[6:30] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
-    assert dests[30] == "quarter-2026-Q1"
+    assert dests[30] == "meetings-index-2026-01"
+    assert dests[37] == "quarter-2026-Q1"
 
     indexes = [page for page in pages if page.kind == "projects_index"]
     assert len(indexes) == 3

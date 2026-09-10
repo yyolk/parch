@@ -35,6 +35,14 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_project(1) == "projects-2026-01"
     assert spec.dest_for_project(8) == "projects-2026-08"
     assert spec.dest_for_projects_index_of(8) == "projects-index-2026-01"
+    assert spec.meetings_index_dest == "meetings-index-2026-01"
+    assert spec.dest_for_meetings_index(1) == "meetings-index-2026-01"
+    assert spec.meeting_covers == 6
+    assert spec.meeting_index_pages == 1
+    assert spec.meeting_count == 6
+    assert spec.dest_for_meeting(1) == "meeting-2026-01"
+    assert spec.dest_for_meeting(6) == "meeting-2026-06"
+    assert spec.dest_for_meetings_index_of(6) == "meetings-index-2026-01"
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
@@ -66,6 +74,29 @@ def test_habit_columns_from_toml_keys():
     assert mvp.project_tickets == 8
     assert mvp.project_index_pages == 3
     assert mvp.project_count == 24
+    assert Spec.from_mapping({"meetings": {"covers": 4}}).meeting_covers == 4
+    assert Spec.from_mapping({"meetings": {"covers_per_page": 8}}).meeting_covers == 8
+    pair = Spec.from_mapping({"meetings": {"index_pages": 2, "covers": 6}})
+    assert pair.meeting_index_pages == 2
+    assert pair.meeting_count == 12
+    assert pair.dest_for_meetings_index(2) == "meetings-index-2026-02"
+    assert pair.dest_for_meeting(7) == "meeting-2026-07"
+    assert pair.dest_for_meetings_index_of(7) == "meetings-index-2026-02"
+    assert mvp.meeting_covers == 6
+    assert mvp.meeting_index_pages == 2
+    assert mvp.meeting_count == 12
+    assert Spec.from_mapping({"meetings": {"covers": 4}}).meeting_covers == 4
+    assert Spec.from_mapping({"meetings": {"covers_per_page": 8}}).meeting_covers == 8
+    pair = Spec.from_mapping({"meetings": {"index_pages": 2, "covers": 6}})
+    assert pair.meeting_index_pages == 2
+    assert pair.meeting_count == 12
+    assert pair.dest_for_meetings_index(2) == "meetings-index-2026-02"
+    assert pair.dest_for_meeting(7) == "meeting-2026-07"
+    assert pair.dest_for_meetings_index_of(7) == "meetings-index-2026-02"
+    mvp = Spec.from_path(Path("examples/mvp.toml"))
+    assert mvp.meeting_covers == 6
+    assert mvp.meeting_index_pages == 2
+    assert mvp.meeting_count == 12
 
 
 def test_value_bags_are_slotted():

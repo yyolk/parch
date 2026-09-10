@@ -9,6 +9,8 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     HabitGrid,
+    MeetingAgenda,
+    MeetingsIndex,
     MonthGrid,
     Notes,
     Priorities,
@@ -804,6 +806,126 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+MEET_GAP = 2.6
+MEET_HEAD_INSET_X = 1.8
+MEET_HEAD_INSET_Y = 1.2
+MEET_HEAD_LINE_H = 5.4
+MEET_HEAD_COL_GAP = 2.8
+MEET_HEAD_WEIGHTS = (0.64, 0.36)
+MEET_LABEL_W = 12.0
+MEET_WRITE_LABEL_H = 3.8
+
+COVER_GAP = 2.6
+COVER_COLS = 2
+COVER_INSET_X = 1.6
+COVER_INSET_Y = 1.5
+COVER_HEAD_H = 7.8
+COVER_DATE_WEIGHTS = (0.62, 0.38)
+
+
+def meeting_head_height() -> float:
+    """One-line title|date band — not two stacked write-ins."""
+    return MEET_HEAD_INSET_Y * 2 + MEET_HEAD_LINE_H
+
+
+def _below(box: Rect, gap: float) -> Rect:
+    return Rect(box.x, box.y + gap, box.w, box.h - gap)
+
+
+def meeting_seats(
+    well: Rect, agenda: int, action_items: int
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Head, agenda, leftover notes, action items. Notes flex."""
+    head, rest = well.split_top(meeting_head_height())
+    leftover = _below(rest, MEET_GAP)
+    agenda_h = checklist_content_height(agenda)
+    agenda_box, rest = leftover.split_top(agenda_h)
+    leftover = _below(rest, MEET_GAP)
+    action_h = checklist_content_height(action_items)
+    notes_h = max(leftover.h - action_h - MEET_GAP, 1)
+    notes, action_box = rows(leftover, 2, gap=MEET_GAP, weights=(notes_h, action_h))
+    return head, agenda_box, notes, action_box
+
+
+def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title write-in | Date write-in on one horizontal row."""
+    inner = head.inset(MEET_HEAD_INSET_X, MEET_HEAD_INSET_Y)
+    return columns(inner, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
+
+
+def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
+    """Locked Meeting dest (#221) — title|date, agenda, notes, action items."""
+    head, agenda_box, notes, action_items = meeting_seats(
+        box, agenda.agenda, agenda.action_items
+    )
+    _paint_meeting_head(plotter, head)
+    _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
+    _paint_note_box(plotter, notes, label="Notes")
+    _paint_checklist_box(plotter, action_items, label="Action items", rows=agenda.action_items)
+
+
+def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    title, dated = meeting_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Title")
+    _paint_meeting_writein(plotter, dated, "Date")
+
+
+def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    """Label and underline share a baseline — rule sits just under the scaps."""
+    tag, write = box.split_left(MEET_LABEL_W)
+    rule_y = box.bottom
+    label_box = Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H)
+    plotter.text(
+        label_box,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def meeting_index_covers(well: Rect, n: int) -> tuple[Rect, ...]:
+    """2-column card grid filling the well — cover reading, not a roster or ticket stack."""
+    if n < 1:
+        raise ValueError(f"n must be >= 1, not {n}")
+    row_n = math.ceil(n / COVER_COLS)
+    seats: list[Rect] = []
+    for band in rows(well, row_n, gap=COVER_GAP):
+        seats.extend(columns(band, COVER_COLS, gap=COVER_GAP))
+    return tuple(seats[:n])
+
+
+def meeting_cover_head(cover: Rect) -> Rect:
+    """Title|date band inside the cover, after a quiet inset."""
+    inner = cover.inset(COVER_INSET_X, COVER_INSET_Y)
+    head, _body = inner.split_top(COVER_HEAD_H)
+    return head
+
+
+def meeting_cover_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title write-in | shorter Date cue — mini dest head."""
+    return columns(head, 2, gap=MEET_HEAD_COL_GAP, weights=COVER_DATE_WEIGHTS)
+
+
+def paint_meetings_index_covers(plotter: Plotter, box: Rect, index: MeetingsIndex) -> None:
+    """Thesis D — light-framed mini covers; whole cover links to the dest."""
+    for seat, cover in zip(meeting_index_covers(box, len(index.covers)), index.covers, strict=True):
+        _paint_meeting_cover(plotter, seat)
+        plotter.link(seat, cover.dest)
+
+
+def _paint_meeting_cover(plotter: Plotter, cover: Rect) -> None:
+    plotter.rect(cover, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    head = meeting_cover_head(cover)
+    title, dated = meeting_cover_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Title")
+    _paint_meeting_writein(plotter, dated, "Date")
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1454,6 +1576,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("projects-index-"):
             dests["Proj"] = item.dest
+        elif item.dest.startswith("meetings-index-"):
+            dests["Meet"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1473,6 +1597,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = page.dest
         case "projects" | "project":
             pass
+        case "meetings_index":
+            dests["Meet"] = page.dest
+        case "meeting":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1480,7 +1608,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1504,5 +1632,7 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "projects":
             return ""
+        case "meetings_index" | "meeting":
+            return "Meet"
         case _:
             return "Year"
