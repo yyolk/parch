@@ -13,8 +13,8 @@ from parch.layouts.planner.painters import (
     HAIR,
     REVIEW_INDEX_BAND_GAP,
     REVIEW_INDEX_CHIP_GAP,
+    REVIEW_INDEX_CHIP_H,
     REVIEW_INDEX_CHIP_INSET_X,
-    REVIEW_INDEX_CHIP_INSET_Y,
     REVIEW_INDEX_LABEL_GAP,
     REVIEW_INDEX_MONTH_W,
     RULE,
@@ -175,9 +175,12 @@ def test_review_index_seats_equal_month_rows_and_chip_columns():
     assert feb_stub.w == pytest.approx(stub.w)
 
     chip = review_index_chip(chips[0])
-    assert chip == chips[0].inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
-    assert chip.x > chips[0].x
+    assert chip.h == pytest.approx(REVIEW_INDEX_CHIP_H)
+    assert chip.x == pytest.approx(chips[0].x + REVIEW_INDEX_CHIP_INSET_X)
+    assert chip.w == pytest.approx(chips[0].w - 2 * REVIEW_INDEX_CHIP_INSET_X)
+    assert chip.y == pytest.approx(chips[0].y + (chips[0].h - REVIEW_INDEX_CHIP_H) / 2)
     assert chip.bottom < chips[0].bottom
+    assert chip.y > chips[0].y
     assert review_index_link_hits(chips[0]) == (chip,)
     assert review_index_rule_y(bands[0]) == pytest.approx(bands[0].bottom)
 

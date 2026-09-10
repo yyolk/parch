@@ -1116,11 +1116,11 @@ def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
 
 
 REVIEW_INDEX_BAND_GAP = 1.6
-REVIEW_INDEX_MONTH_W = 16.0
+REVIEW_INDEX_MONTH_W = 20.0
 REVIEW_INDEX_LABEL_GAP = 1.6
 REVIEW_INDEX_CHIP_GAP = 1.2
 REVIEW_INDEX_CHIP_INSET_X = 0.35
-REVIEW_INDEX_CHIP_INSET_Y = 0.55
+REVIEW_INDEX_CHIP_H = 6.8
 
 
 def review_index_cols(week_counts: tuple[int, ...]) -> int:
@@ -1145,8 +1145,14 @@ def review_index_row_parts(
 
 
 def review_index_chip(cell: Rect) -> Rect:
-    """Inset chip inside a column cell so hairlines stay outside the hit."""
-    return cell.inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
+    """Content-height chip, vertically centered — dense cell, not a stretched box."""
+    h = min(REVIEW_INDEX_CHIP_H, cell.h)
+    return Rect(
+        cell.x + REVIEW_INDEX_CHIP_INSET_X,
+        cell.y + (cell.h - h) / 2,
+        max(cell.w - 2 * REVIEW_INDEX_CHIP_INSET_X, 1),
+        h,
+    )
 
 
 def review_index_link_hits(cell: Rect) -> tuple[Rect, ...]:
