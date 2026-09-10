@@ -28,6 +28,16 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
     return 10
 
 
+def _project_slots(data: TomlTable, projects_table: TomlTable) -> int:
+    raw = projects_table.get("slots", data.get("project_slots"))
+    if raw is not None:
+        return int(raw)
+    names = projects_table.get("names", data.get("project_names"))
+    if isinstance(names, (list, tuple)) and names:
+        return len(names)
+    return 12
+
+
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
     raw = data.get("months")
     if isinstance(raw, list) and raw:
@@ -65,7 +75,7 @@ class Spec:
     notes_pages: int = 2
     habit_columns: int = 10
     priority_rows: int = 6
-    project_cards: int = 3
+    project_slots: int = 12
     project_tasks: int = 4
 
     def __post_init__(self) -> None:
@@ -91,8 +101,8 @@ class Spec:
             raise ConfigError("habit_columns must be 4–16")
         if not 4 <= self.priority_rows <= 8:
             raise ConfigError("priority_rows must be 4–8")
-        if not 2 <= self.project_cards <= 4:
-            raise ConfigError("project_cards must be 2–4")
+        if not 10 <= self.project_slots <= 14:
+            raise ConfigError("project_slots must be 10–14")
         if not 3 <= self.project_tasks <= 6:
             raise ConfigError("project_tasks must be 3–6")
 
@@ -137,6 +147,12 @@ class Spec:
     @property
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
+
+    def dest_for_project(self, index: int) -> str:
+        """1-based leaf dest, e.g. ``project-2026-01``."""
+        if not 1 <= index <= self.project_slots:
+            raise ConfigError(f"project dest index must be 1–{self.project_slots}, not {index}")
+        return _dest(t"project-{self.year:04d}-{index:02d}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -205,7 +221,7 @@ class Spec:
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
-            project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
+            project_slots=_project_slots(data, projects_table),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
         )
 

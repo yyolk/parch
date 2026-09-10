@@ -46,7 +46,7 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         "notes_pages": spec.notes_pages,
         "habit_columns": spec.habit_columns,
         "priority_rows": spec.priority_rows,
-        "project_cards": spec.project_cards,
+        "project_slots": spec.project_slots,
         "project_tasks": spec.project_tasks,
     }
     if year is not None:

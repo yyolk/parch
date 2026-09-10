@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectsBoard,
+    ProjectEntry,
+    ProjectLeaf,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -215,32 +217,92 @@ def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
     return header, tasks, status
 
 
-def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
-    """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
-    for card in project_card_seats(box, board.cards):
-        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        left, right = project_card_columns(card)
-        header, tasks, status = project_card_left_seats(left)
-        rule_y = _paint_project_name(plotter, header)
-        _paint_project_tasks(plotter, tasks, board.tasks)
-        _paint_project_status(plotter, status)
-        _paint_project_notes(plotter, right, first_y=rule_y)
+TOC_NAME_W = 38.0
+TOC_NUM_SIZE = 8.4
+TOC_NUM_W = 9.0
+TOC_DOT = 0.38
+TOC_DOT_PITCH = 1.55
+TOC_ROW_INSET = 0.6
 
 
-def _paint_project_name(plotter: Plotter, header: Rect) -> float:
+def paint_projects(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis I — book TOC: write-in name underlines, leader dots, dest numbers."""
+    tracks = rows(box, len(index.entries))
+    for track, entry in zip(tracks, index.entries, strict=True):
+        _paint_toc_row(plotter, track, entry)
+
+
+def _paint_toc_row(plotter: Plotter, row: Rect, entry: ProjectEntry) -> None:
+    inset = row.inset(0.0, TOC_ROW_INSET)
+    num = Rect(inset.right - TOC_NUM_W, inset.y, TOC_NUM_W, inset.h)
+    name_w = min(TOC_NAME_W, inset.w - TOC_NUM_W - 8.0)
+    name = Rect(inset.x, inset.y, name_w, inset.h)
+    rule_y = inset.y + inset.h * 0.72
+    plotter.line(name.x, rule_y, name.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_toc_leaders(plotter, name.right + 0.8, num.x - 1.0, inset.y + inset.h * 0.58)
+    plotter.text(
+        num,
+        entry.number,
+        size=TOC_NUM_SIZE,
+        face="sans",
+        gray=INK,
+        align="right",
+    )
+    plotter.link(inset, entry.dest)
+
+
+def _paint_toc_leaders(plotter: Plotter, x0: float, x1: float, y: float) -> None:
+    x = x0
+    while x + TOC_DOT <= x1:
+        plotter.rect(
+            Rect(x, y - TOC_DOT / 2, TOC_DOT, TOC_DOT),
+            stroke=False,
+            fill=True,
+            fill_gray=MUTED,
+        )
+        x += TOC_DOT_PITCH
+
+
+def paint_project_leaf(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
+    """G-craft leaf — one card, write-in name, packed tasks/status, lined notes."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    left, right = project_card_columns(box)
+    header, rest = left.split_top(PROJECT_HEADER_H)
+    tasks_h = 0.4 + max(1, leaf.tasks) * FOCUS_PITCH
+    tasks = Rect(rest.x, rest.y + PROJECT_LEFT_GAP, rest.w, tasks_h)
+    status = Rect(rest.x, tasks.bottom + PROJECT_LEFT_GAP, rest.w, PROJECT_STATUS_H)
+    rule_y = _paint_project_name(plotter, header)
+    _paint_project_tasks(plotter, tasks, leaf.tasks)
+    _paint_project_status(plotter, status)
+    _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+def _paint_project_name(plotter: Plotter, header: Rect, title: str = "") -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
     rule_y = mark.bottom
-    plotter.line(
-        mark.right + 1.4,
-        rule_y,
-        header.right,
-        rule_y,
-        stroke_width=RULE,
-        stroke_gray=RULE_C,
-    )
+    name = Rect(mark.right + 1.4, header.y, max(header.right - mark.right - 1.4, 1), header.h)
+    if title:
+        plotter.text(
+            name,
+            title,
+            size=8.2,
+            bold=True,
+            face="serif",
+            gray=INK,
+            align="left",
+        )
+    else:
+        plotter.line(
+            name.x,
+            rule_y,
+            name.right,
+            rule_y,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
     return rule_y
 
 
@@ -919,6 +981,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     for item in page.nav:
         if item.dest.startswith("year-"):
             dests["Year"] = item.dest
+        elif item.dest.startswith("projects-"):
+            dests["Proj"] = item.dest
         elif item.dest.startswith("quarter-"):
             dests["Quar"] = item.dest
         elif item.dest.endswith("-habits"):
@@ -941,6 +1005,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "habits":
             dests["Habit"] = page.dest
         case "projects":
+            dests["Proj"] = page.dest
+        case "project":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -949,7 +1015,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Proj", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -969,7 +1035,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
-            return ""
+        case "projects" | "project":
+            return "Proj"
         case _:
             return "Year"

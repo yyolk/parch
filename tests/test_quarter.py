@@ -27,15 +27,9 @@ from parch.tracks import rows
 def test_quarter_page_and_provisional_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:8]] == [
-        "cover",
-        "year-2026",
-        "projects-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
+    assert pages[2].dest == "projects-2026"
+    assert [page.dest for page in pages if page.kind == "project"] == [
+        f"project-2026-{n:02d}" for n in range(1, 13)
     ]
     assert [page.dest for page in pages if page.dest.startswith("quarter-")] == [
         "quarter-2026-Q1",
@@ -44,12 +38,13 @@ def test_quarter_page_and_provisional_nav():
         "quarter-2026-Q4",
     ]
 
-    quarter = pages[3]
+    quarter = next(page for page in pages if page.dest == "quarter-2026-Q1")
     assert quarter.kind == "quarter"
     assert quarter.title == "Q1 2026"
     assert strip_active(quarter.kind) == "Quar"
     assert strip_items(quarter) == (
         ("Year", "year-2026"),
+        ("Proj", "projects-2026"),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),

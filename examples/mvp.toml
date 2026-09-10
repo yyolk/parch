@@ -1,4 +1,4 @@
-# Greenfield Nomad MVP — cover → annual → projects → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
+# Greenfield Nomad MVP — cover → annual → projects TOC + leaves → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
 # notes_pages = 1 keeps the year artifact smaller; 2 still works.
 year = 2026
 device = "supernote-nomad"
@@ -16,5 +16,6 @@ priority_rows = 6
 columns = 10
 
 [projects]
-cards = 3
+# Thesis I — write-in name underlines (10–14 slots). Each TOC line links to a G-craft leaf.
+slots = 12
 tasks = 4

@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Proj · Quar · Mon · Habit · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -57,6 +57,7 @@ def planner_nav(
     habit_month = month if month is not None else landing.month
     items = [
         NavItem("Year", spec.year_dest),
+        NavItem("Proj", spec.projects_dest),
         NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
         NavItem("Mon", mon),
         NavItem("Habit", spec.dest_for_habits(habit_month)),

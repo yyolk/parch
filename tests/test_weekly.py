@@ -38,16 +38,14 @@ def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[0:8] == [
+    assert dests[0:5] == [
         "cover",
         "year-2026",
         "projects-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
+        "project-2026-01",
+        "project-2026-02",
     ]
+    assert dests.index("quarter-2026-Q1") == dests.index("project-2026-12") + 1
     assert dests.index("week-2026-W02") < dests.index("2026-01-05")
     assert dests.index("week-2026-W05") < dests.index("2026-01-26")
     assert dests.index("month-2026-07") < dests.index("week-2026-W01")
@@ -58,6 +56,7 @@ def test_week_dests_and_nav_strip():
     month = next(page for page in pages if page.dest == "month-2026-01")
     assert strip_items(month) == (
         ("Year", "year-2026"),
+        ("Proj", "projects-2026"),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
