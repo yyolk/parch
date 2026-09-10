@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 
-from parch.calendar import MONTH_NAMES
+from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -398,6 +398,18 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
 
 HABIT_LABEL_W = 28.0
 HABIT_HEAD_H = 4.2
+HABIT_TRANSPOSED_COLS = 10
+HABIT_DAY_W = 13.0
+HABIT_DOW_W = 5.2
+HABIT_NAME_H = 16.0
+HABIT_BODY_GAP = 0.5
+HABIT_WASH = 247 / 255
+HABIT_WASH_CROSS = 238 / 255
+
+
+def habit_dow_letter(year: int, month: int, day: int) -> str:
+    """Monday-start calendar letter: M T W T F S S."""
+    return WEEKDAY_LABELS[date(year, month, day).weekday()][0]
 
 
 def paint_habit_grid(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
@@ -441,6 +453,94 @@ def paint_habit_grid(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
         )
         for col in day_tracks:
             cell = Rect(col.x, band.y, col.w, band.h).inset(0.16, 0.4)
+            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+
+
+def habit_seats_transposed(
+    box: Rect, days: int, habits: int = HABIT_TRANSPOSED_COLS
+) -> tuple[Rect, tuple[Rect, ...], tuple[Rect, ...]]:
+    """Comparison seat: day labels left, habit name slots across the top."""
+    day_col, rest = box.split_left(HABIT_DAY_W)
+    name_band, below = rest.split_top(HABIT_NAME_H)
+    body = Rect(below.x, below.y + HABIT_BODY_GAP, below.w, below.h - HABIT_BODY_GAP)
+    names = columns(name_band, habits, gap=0.4)
+    bands = rows(body, max(1, days), gap=0.15)
+    return day_col, names, bands
+
+
+def _wash(plotter: Plotter, box: Rect, gray: float) -> None:
+    plotter.rect(box, stroke=False, fill=True, fill_gray=gray)
+
+
+def _stripe_span(tracks: tuple[Rect, ...], index: int, *, axis: str, end: float) -> tuple[float, float]:
+    """Continuous zebra span covering a track plus half the neighboring gaps."""
+    track = tracks[index]
+    if axis == "y":
+        start = (tracks[index - 1].bottom + track.y) / 2 if index else track.y
+        stop = (track.bottom + tracks[index + 1].y) / 2 if index + 1 < len(tracks) else end
+        return start, stop
+    start = (tracks[index - 1].right + track.x) / 2 if index else track.x
+    stop = (track.right + tracks[index + 1].x) / 2 if index + 1 < len(tracks) else end
+    return start, stop
+
+
+def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
+    """Habits across the top, days down the left. Comparison only — not the default."""
+    habits = HABIT_TRANSPOSED_COLS
+    day_col, names, bands = habit_seats_transposed(box, grid.days, habits)
+    matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
+    day_tracks = columns(matrix, habits, gap=0.4)
+    for i, _band in enumerate(bands):
+        if i % 2 == 0:
+            continue
+        y0, y1 = _stripe_span(bands, i, axis="y", end=box.bottom)
+        _wash(plotter, Rect(day_col.x, y0, box.right - day_col.x, y1 - y0), HABIT_WASH)
+    for j, _col in enumerate(day_tracks):
+        if j % 2 == 0:
+            continue
+        x0, x1 = _stripe_span(day_tracks, j, axis="x", end=day_tracks[-1].right)
+        _wash(plotter, Rect(x0, names[0].y, x1 - x0, box.bottom - names[0].y), HABIT_WASH)
+    for i, band in enumerate(bands):
+        if i % 2 == 0:
+            continue
+        for j, col in enumerate(day_tracks):
+            if j % 2 == 0:
+                continue
+            _wash(plotter, Rect(col.x, band.y, col.w, band.h), HABIT_WASH_CROSS)
+    for col in names:
+        plotter.line(
+            col.x + 0.3,
+            col.bottom - 1.1,
+            col.right - 0.3,
+            col.bottom - 1.1,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+    plotter.line(box.x, names[0].bottom, box.right, names[0].bottom, stroke_width=HAIR, stroke_gray=SOFT)
+    letter_w = HABIT_DOW_W
+    num_w = day_col.w - letter_w
+    for i, band in enumerate(bands):
+        day_n = i + 1
+        plotter.text(
+            Rect(day_col.x, band.y, num_w - 0.6, band.h),
+            str(day_n),
+            size=4.4,
+            face="sans",
+            gray=MUTED,
+            align="right",
+        )
+        plotter.text(
+            Rect(day_col.x + num_w, band.y, letter_w - 0.3, band.h),
+            habit_dow_letter(grid.year, grid.month, day_n),
+            size=4.4,
+            face="sans",
+            gray=MUTED,
+            align="left",
+        )
+        if i < len(grid.day_dests) and grid.day_dests[i]:
+            plotter.link(Rect(day_col.x, band.y, day_col.w, band.h), grid.day_dests[i])
+        for col in day_tracks:
+            cell = Rect(col.x, band.y, col.w, band.h).inset(0.2, 0.12)
             plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 

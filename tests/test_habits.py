@@ -1,7 +1,19 @@
+import pytest
+
 from parch.books import YearPlanner
 from parch.components import HabitGrid
 from parch.geom import Rect
-from parch.layouts.planner.painters import paint_habit_grid, strip_active, strip_items
+from parch.layouts.planner.painters import (
+    HABIT_TRANSPOSED_COLS,
+    HABIT_WASH,
+    HABIT_WASH_CROSS,
+    habit_dow_letter,
+    habit_seats_transposed,
+    paint_habit_grid,
+    paint_habit_grid_transposed,
+    strip_active,
+    strip_items,
+)
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -59,6 +71,41 @@ def test_habit_paint_smoke_and_month_chip_link():
     paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(cells) == 12 * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3]]
+    assert fills == []
     labels = [op[2] for op in ink.ops if op[0] == "text"]
     assert "1" in labels and "31" in labels
     assert "Habit" in labels
+
+
+def test_habit_transposed_seat_and_paint():
+    box = Rect(4, 20, 110, 120)
+    day_col, names, bands = habit_seats_transposed(box, 31, HABIT_TRANSPOSED_COLS)
+    assert len(names) == 10
+    assert len(bands) == 31
+    assert day_col.x == pytest.approx(box.x)
+    assert names[0].y == pytest.approx(box.y)
+    assert bands[0].y > names[0].bottom
+    assert bands[-1].bottom == pytest.approx(box.bottom)
+
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    ink = RecordingPlotter()
+    paint_habit_grid_transposed(ink, box, grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == 10 * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
+    grays = {op[5] for op in fills}
+    assert grays == {HABIT_WASH, HABIT_WASH_CROSS}
+    assert HABIT_WASH_CROSS > 0.9
+    odd_rows, odd_cols = 31 // 2, HABIT_TRANSPOSED_COLS // 2
+    assert len(fills) == odd_rows + odd_cols + odd_rows * odd_cols
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "1" in labels and "31" in labels
+    assert habit_dow_letter(2026, 7, 1) == "W"
+    assert habit_dow_letter(2026, 7, 6) == "M"
+    assert habit_dow_letter(2026, 7, 31) == "F"
+    assert labels.count("W") >= 1
+    assert "F" in labels and "M" in labels
+    assert all("·" not in label for label in labels)
