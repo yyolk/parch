@@ -23,3 +23,6 @@ index_pages = 3
 
 [meetings]
 index_rows = 16
+
+[tasks]
+rows = 6

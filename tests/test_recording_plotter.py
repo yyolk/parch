@@ -16,6 +16,10 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TaskWeek,
+    TasksIndex,
+    TasksMonthBand,
+    TasksWeekPage,
     WeekStrip,
 )
 from parch.plotter import RecordingPlotter
@@ -64,6 +68,10 @@ def test_components_do_not_draw():
         ProjectsIndex,
         QuarterGrid,
         Schedule,
+        TaskWeek,
+        TasksIndex,
+        TasksMonthBand,
+        TasksWeekPage,
         WeekStrip,
     ):
         assert "draw" not in cls.__dict__

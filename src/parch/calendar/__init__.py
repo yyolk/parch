@@ -65,16 +65,26 @@ def months_touching_weeks(
     year: int, months: tuple[int, ...], weekday_start: int = 0
 ) -> list[list[date]]:
     """ISO/Monday weeks that touch any of ``months``, each week once (first seen)."""
+    return [week for _month, weeks in month_week_bands(year, months, weekday_start) for week in weeks]
+
+
+def month_week_bands(
+    year: int, months: tuple[int, ...], weekday_start: int = 0
+) -> list[tuple[int, list[list[date]]]]:
+    """Month → unique touching weeks (first seen). Horizon bands, not status partitions."""
     seen: set[tuple[int, int]] = set()
-    out: list[list[date]] = []
+    out: list[tuple[int, list[list[date]]]] = []
     for month in months:
+        weeks: list[list[date]] = []
         for week in month_touching_weeks(year, month, weekday_start):
             monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
             key = (monday.isocalendar().year, monday.isocalendar().week)
             if key in seen:
                 continue
             seen.add(key)
-            out.append(week)
+            weeks.append(week)
+        if weeks:
+            out.append((month, weeks))
     return out
 
 
