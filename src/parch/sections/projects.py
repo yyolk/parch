@@ -1,5 +1,5 @@
 from parch.calendar import month_touching_weeks
-from parch.components import ProjectPage, ProjectTicket, ProjectsBoard, ProjectsIndex
+from parch.components import ProjectTicket, ProjectsBoard, ProjectsIndex
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -49,15 +49,14 @@ class ProjectsSection:
             Page(
                 dest=ticket.dest,
                 kind="project",
-                title="Project",
+                title="Projects",
                 nav=nav,
                 components=(
-                    ProjectPage(
+                    ProjectsBoard(
                         year=spec.year,
-                        number=ticket.number,
-                        dest=ticket.dest,
-                        index_dest=spec.projects_index_dest,
+                        cards=spec.project_cards,
                         tasks=spec.project_tasks,
+                        index_dest=spec.projects_index_dest,
                     ),
                 ),
             )

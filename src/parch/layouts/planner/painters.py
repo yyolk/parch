@@ -12,7 +12,6 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectPage,
     ProjectTicket,
     ProjectsBoard,
     ProjectsIndex,
@@ -223,11 +222,6 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
     for card in project_card_seats(box, board.cards):
         _paint_project_card(plotter, card, board.tasks)
-
-
-def paint_project(plotter: Plotter, box: Rect, page: ProjectPage) -> None:
-    """One G-craft card filling the well — write-in name rule, not a printed sample."""
-    _paint_project_card(plotter, box, page.tasks)
 
 
 def _paint_project_card(plotter: Plotter, card: Rect, tasks: int) -> None:

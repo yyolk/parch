@@ -8,7 +8,6 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectPage,
     ProjectTicket,
     ProjectsBoard,
     ProjectsIndex,
@@ -48,7 +47,6 @@ def test_components_do_not_draw():
         MonthGrid,
         Notes,
         Priorities,
-        ProjectPage,
         ProjectTicket,
         ProjectsBoard,
         ProjectsIndex,
@@ -78,10 +76,10 @@ def test_book_records_year_dests_and_links():
     assert "month-2026-07-habits" in links
     assert "projects-index-2026" in dests
     assert "projects-index-2026" in links
-    assert "project-2026-01" in dests
-    assert "project-2026-01" in links
-    assert "project-2026-08" in dests
-    assert "project-2026-08" in links
+    assert "projects-2026-01" in dests
+    assert "projects-2026-01" in links
+    assert "projects-2026-08" in dests
+    assert "projects-2026-08" in links
     assert "month-2026-01-habits" in dests
     assert "week-2026-W01" in links
     assert "week-2026-W14" in links

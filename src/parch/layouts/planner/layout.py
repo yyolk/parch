@@ -9,7 +9,6 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectPage,
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
@@ -30,7 +29,6 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_priorities,
-    paint_project,
     paint_projects,
     paint_projects_index_tickets,
     paint_quarter,
@@ -82,7 +80,7 @@ class PlannerLayout:
             case "projects_index":
                 paint_projects_index_tickets(plotter, well, _one(page, ProjectsIndex))
             case "project":
-                paint_project(plotter, well, _one(page, ProjectPage))
+                paint_projects(plotter, well, _one(page, ProjectsBoard))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -139,7 +137,7 @@ def _header_meta(page: Page) -> str:
         case "projects_index":
             return str(_one(page, ProjectsIndex).year)
         case "project":
-            return str(_one(page, ProjectPage).year)
+            return str(_one(page, ProjectsBoard).year)
         case "quarter":
             return ""
         case "month":
@@ -191,7 +189,7 @@ def _header_chip_dest(page: Page) -> str | None:
         case "habits":
             return _one(page, HabitGrid).month_dest
         case "project":
-            return _one(page, ProjectPage).index_dest
+            return _one(page, ProjectsBoard).index_dest or None
         case _:
             return None
 

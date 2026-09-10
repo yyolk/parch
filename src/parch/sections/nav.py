@@ -24,7 +24,7 @@ explicit ``month`` when on a month / habits page.
 
 PROJ dest (``spec.projects_index_dest``; strip label **Proj**):
 - index page → self
-- individual project page → index (header **Index** chip is the same dest)
+- per-ticket three-card projects page → index (header **Index** chip is the same dest)
 - everywhere else → the year ticket index
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter

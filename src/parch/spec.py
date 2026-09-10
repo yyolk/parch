@@ -148,7 +148,7 @@ class Spec:
     def dest_for_project(self, slot: int) -> str:
         if not 1 <= slot <= self.project_tickets:
             raise ConfigError(f"project slot out of range: {slot}")
-        return _dest(t"project-{self.year:04d}-{slot:02d}")
+        return _dest(t"projects-{self.year:04d}-{slot:02d}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:

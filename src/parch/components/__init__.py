@@ -4,7 +4,7 @@ from parch.components.habit import HabitGrid
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
 from parch.components.notes import Notes
 from parch.components.priorities import Priorities
-from parch.components.projects import ProjectPage, ProjectTicket, ProjectsBoard, ProjectsIndex
+from parch.components.projects import ProjectTicket, ProjectsBoard, ProjectsIndex
 from parch.components.quarter import QuarterGrid
 from parch.components.schedule import Schedule
 from parch.components.week import WeekDay, WeekStrip
@@ -17,7 +17,6 @@ type Component = (
     | MonthGrid
     | Notes
     | Priorities
-    | ProjectPage
     | ProjectTicket
     | ProjectsBoard
     | ProjectsIndex
@@ -37,7 +36,6 @@ __all__ = [
     "MonthWeek",
     "Notes",
     "Priorities",
-    "ProjectPage",
     "ProjectTicket",
     "ProjectsBoard",
     "ProjectsIndex",

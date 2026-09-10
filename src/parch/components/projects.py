@@ -1,18 +1,21 @@
-"""Projects board, ticket index, and one-project leaf — data only."""
+"""Projects board, ticket index, and per-ticket three-card pages — data only."""
 
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
 class ProjectsBoard:
+    """G three-card well. ``index_dest`` is set on ticket destinations (Index chip)."""
+
     year: int
     cards: int
     tasks: int
+    index_dest: str = ""
 
 
 @dataclass(frozen=True, slots=True)
 class ProjectTicket:
-    """One stacked ticket on the index — stub number + leaf dest. Title is a write-in."""
+    """One stacked ticket on the index — stub number + three-card projects dest."""
 
     number: int
     dest: str
@@ -25,14 +28,3 @@ class ProjectsIndex:
     year: int
     dest: str
     tickets: tuple[ProjectTicket, ...]
-
-
-@dataclass(frozen=True, slots=True)
-class ProjectPage:
-    """One G-craft card. ``index_dest`` is the Index chip back-link."""
-
-    year: int
-    number: int
-    dest: str
-    index_dest: str
-    tasks: int

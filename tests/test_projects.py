@@ -1,7 +1,7 @@
 import pytest
 
 from parch.books import YearPlanner
-from parch.components import ProjectPage, ProjectsBoard, ProjectsIndex
+from parch.components import ProjectsBoard, ProjectsIndex
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
@@ -24,7 +24,6 @@ from parch.layouts.planner.painters import (
     TICKET_STRIP_LEFT,
     TICKET_STRIP_PAD,
     TICKET_STUB_W,
-    paint_project,
     paint_projects,
     paint_projects_index_tickets,
     project_card_columns,
@@ -189,7 +188,7 @@ def test_projects_index_tickets_and_proj_nav():
     dests = [page.dest for page in pages]
     assert dests[2] == "projects-2026"
     assert dests[3] == "projects-index-2026"
-    assert dests[4:12] == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
+    assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
     assert dests[12] == "quarter-2026-Q1"
 
     index = pages[3]
@@ -203,20 +202,19 @@ def test_projects_index_tickets_and_proj_nav():
     assert roster.dest == "projects-index-2026"
     assert len(roster.tickets) == 8
     assert [ticket.dest for ticket in roster.tickets] == [
-        f"project-2026-{slot:02d}" for slot in range(1, 9)
+        f"projects-2026-{slot:02d}" for slot in range(1, 9)
     ]
     assert [ticket.number for ticket in roster.tickets] == list(range(1, 9))
 
-    leaf = next(page for page in pages if page.dest == "project-2026-03")
+    leaf = next(page for page in pages if page.dest == "projects-2026-03")
     assert leaf.kind == "project"
-    assert leaf.title == "Project"
+    assert leaf.title == "Projects"
     assert strip_active(leaf.kind) == "Proj"
     assert ("Proj", "projects-index-2026") in strip_items(leaf)
-    card = next(item for item in leaf.components if isinstance(item, ProjectPage))
-    assert card.number == 3
-    assert card.dest == "project-2026-03"
-    assert card.index_dest == "projects-index-2026"
-    assert card.tasks == 4
+    board = next(item for item in leaf.components if isinstance(item, ProjectsBoard))
+    assert board.cards == 3
+    assert board.index_dest == "projects-index-2026"
+    assert board.tasks == 4
 
 
 def test_project_ticket_seats():
@@ -366,7 +364,7 @@ def test_projects_index_paint_write_in_underlines_and_links():
         expected_hits.extend((hit, ticket.dest) for hit in hits)
     assert [(op[1], op[2]) for op in link_ops] == expected_hits
     assert [dest for _, dest in expected_hits] == [
-        dest for slot in range(1, 9) for dest in (f"project-2026-{slot:02d}",) * 4
+        dest for slot in range(1, 9) for dest in (f"projects-2026-{slot:02d}",) * 4
     ]
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert len(fills) >= 8 * len(CLONE_ICONS)
@@ -383,29 +381,29 @@ def test_projects_index_paint_write_in_underlines_and_links():
     assert "Harbor" not in chrome_texts
 
 
-def test_project_page_write_in_name_and_index_chip():
+def test_project_page_three_card_board_and_index_chip():
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.dest == "project-2026-01")
-    card = next(item for item in page.components if isinstance(item, ProjectPage))
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "projects-2026-01")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
-    paint_project(ink, well, card)
+    paint_projects(ink, well, board)
     texts = [op[2] for op in ink.ops if op[0] == "text"]
-    assert texts.count("P") == 1
+    assert texts.count("P") == 3
     assert "Atlas" not in texts
-    assert texts.count("Todo") == 1
+    assert texts.count("Todo") == 3
     ticks = [
         op
         for op in ink.ops
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
-    assert len(ticks) == 4
+    assert len(ticks) == 3 * 4
 
     chrome = RecordingPlotter()
     chrome.begin_page()
     PlannerLayout().paint(page, chrome, NOMAD)
     labels = [op[2] for op in chrome.ops if op[0] == "text"]
-    assert "Project" in labels
+    assert "Projects" in labels
     assert "Atlas" not in labels
     assert "Index" in labels
     assert "Proj" in labels
@@ -430,13 +428,13 @@ def test_projects_tickets_knob():
     )
     assert len(roster.tickets) == 6
     dests = [page.dest for page in pages]
-    assert "project-2026-06" in dests
-    assert "project-2026-07" not in dests
+    assert "projects-2026-06" in dests
+    assert "projects-2026-07" not in dests
     plotter = RecordingPlotter()
     paint_projects_index_tickets(plotter, Rect(4, 20, 110, 90), roster)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Field" not in texts
     assert "Grove" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
-        dest for slot in range(1, 7) for dest in (f"project-2026-{slot:02d}",) * 4
+        dest for slot in range(1, 7) for dest in (f"projects-2026-{slot:02d}",) * 4
     ]

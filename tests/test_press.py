@@ -49,8 +49,8 @@ def test_press_year_pdf(tmp_path: Path):
     assert "year-2026" in dests
     assert "projects-2026" in dests
     assert "projects-index-2026" in dests
-    assert "project-2026-01" in dests
-    assert "project-2026-08" in dests
+    assert "projects-2026-01" in dests
+    assert "projects-2026-08" in dests
     assert "quarter-2026-Q1" in dests
     assert "quarter-2026-Q4" in dests
     assert "month-2026-01" in dests

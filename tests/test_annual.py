@@ -15,7 +15,7 @@ def test_annual_page_and_year_nav():
         "projects-index-2026",
     ]
     assert [page.dest for page in pages[4:12]] == [
-        f"project-2026-{slot:02d}" for slot in range(1, 9)
+        f"projects-2026-{slot:02d}" for slot in range(1, 9)
     ]
     assert [page.dest for page in pages[12:17]] == [
         "quarter-2026-Q1",
@@ -66,7 +66,7 @@ def test_annual_paint_links_all_months():
     assert dests[1] == "year-2026"
     assert dests[2] == "projects-2026"
     assert dests[3] == "projects-index-2026"
-    assert dests[4:12] == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
+    assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
     assert dests[12:16] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
