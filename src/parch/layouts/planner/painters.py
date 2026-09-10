@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectPage,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -218,13 +220,96 @@ def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
 def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
     for card in project_card_seats(box, board.cards):
-        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        left, right = project_card_columns(card)
-        header, tasks, status = project_card_left_seats(left)
-        rule_y = _paint_project_name(plotter, header)
-        _paint_project_tasks(plotter, tasks, board.tasks)
-        _paint_project_status(plotter, status)
-        _paint_project_notes(plotter, right, first_y=rule_y)
+        _paint_project_card(plotter, card, board.tasks)
+
+
+def paint_project(plotter: Plotter, box: Rect, page: ProjectPage) -> None:
+    """One G-craft card filling the well."""
+    _paint_project_card(plotter, box, page.tasks)
+
+
+def _paint_project_card(plotter: Plotter, card: Rect, tasks: int) -> None:
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    left, right = project_card_columns(card)
+    header, task_box, status = project_card_left_seats(left)
+    rule_y = _paint_project_name(plotter, header)
+    _paint_project_tasks(plotter, task_box, tasks)
+    _paint_project_status(plotter, status)
+    _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+INDEX_FOCUS_GAP = 2.6
+INDEX_FOCUS_WEIGHTS = (1.0, 3.0)
+INDEX_ROW_GAP = 0.7
+INDEX_INSET_X = 1.8
+INDEX_INSET_Y = 1.5
+INDEX_LIST_P = 3.6
+INDEX_LIST_MARK = 2.4
+INDEX_STATUS_COL_W = 42.0
+INDEX_LIST_MARK_COL_W = 18.0
+INDEX_STATUS_GAP = 1.2
+INDEX_LIST_MARK_GAP = 1.0
+
+
+def projects_index_focus_seats(well: Rect, rows_n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Featured strip over a compact linked roster. Weights after the gap."""
+    focus, listing = rows(well, 2, gap=INDEX_FOCUS_GAP, weights=INDEX_FOCUS_WEIGHTS)
+    return focus, rows(listing, max(1, rows_n), gap=INDEX_ROW_GAP)
+
+
+def projects_index_focus_strip(focus: Rect) -> tuple[Rect, Rect]:
+    """P+name | Todo/Doing/Done cluster inside the featured inset."""
+    inner = focus.inset(INDEX_INSET_X, INDEX_INSET_Y)
+    name = Rect(inner.x, inner.y, inner.w - INDEX_STATUS_COL_W - INDEX_STATUS_GAP, inner.h)
+    status = Rect(name.right + INDEX_STATUS_GAP, inner.y, INDEX_STATUS_COL_W, inner.h)
+    return name, status
+
+
+def projects_index_list_row(row: Rect) -> tuple[Rect, Rect]:
+    """Compact P+name | three open marks."""
+    inner = Rect(row.x + INDEX_INSET_X, row.y, row.w - 2 * INDEX_INSET_X, row.h)
+    name = Rect(inner.x, inner.y, inner.w - INDEX_LIST_MARK_COL_W - INDEX_LIST_MARK_GAP, inner.h)
+    marks = Rect(name.right + INDEX_LIST_MARK_GAP, inner.y, INDEX_LIST_MARK_COL_W, inner.h)
+    return name, marks
+
+
+def paint_projects_index_focus(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis E — one featured strip, then a compact linked list of the rest."""
+    focus, listing = projects_index_focus_seats(box, len(index.entries))
+    _paint_projects_index_focus_strip(plotter, focus)
+    plotter.link(focus, index.featured)
+    for row, dest in zip(listing, index.entries, strict=True):
+        _paint_projects_index_list_row(plotter, row)
+        plotter.link(row, dest)
+
+
+def _paint_projects_index_focus_strip(plotter: Plotter, focus: Rect) -> None:
+    plotter.rect(focus, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    name, status = projects_index_focus_strip(focus)
+    _paint_project_name(plotter, name)
+    _paint_project_status(plotter, status)
+
+
+def _paint_projects_index_list_row(plotter: Plotter, row: Rect) -> None:
+    name, marks = projects_index_list_row(row)
+    y = name.y + (name.h - INDEX_LIST_P) / 2
+    mark = Rect(name.x, y, INDEX_LIST_P, INDEX_LIST_P)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(mark, "P", size=6.4, bold=True, face="serif", gray=INK, align="center")
+    rule_y = mark.bottom
+    plotter.line(
+        mark.right + 1.4,
+        rule_y,
+        name.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    for slot in columns(marks, 3, gap=1.0):
+        mark_y = slot.y + (slot.h - INDEX_LIST_MARK) / 2
+        square = Rect(slot.x + (slot.w - INDEX_LIST_MARK) / 2, mark_y, INDEX_LIST_MARK, INDEX_LIST_MARK)
+        plotter.rect(square, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(row.x, row.bottom, row.right, row.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
@@ -925,6 +1010,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = item.dest
         elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
+        elif item.dest.startswith("projects-index-"):
+            dests["Proj"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -940,7 +1027,9 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects_index":
+            dests["Proj"] = page.dest
+        case "projects" | "project":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -949,7 +1038,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -969,6 +1058,8 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
+        case "projects_index" | "project":
+            return "Proj"
         case "projects":
             return ""
         case _:
