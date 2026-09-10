@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectSheet,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -225,6 +227,55 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_tasks(plotter, tasks, board.tasks)
         _paint_project_status(plotter, status)
         _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+PROJECT_INDEX_COLS = 2
+PROJECT_INDEX_GAP = 2.6
+COVER_INSET = 1.8
+COVER_TITLE_SIZE = 10.0
+
+
+def projects_index_covers(well: Rect, slots: int) -> tuple[Rect, ...]:
+    """2×3 (6) or 2×4 (8) mini-cover seats. Columns first, then down the rows."""
+    if slots not in (6, 8):
+        raise ValueError(f"slots must be 6 or 8, not {slots}")
+    row_n = slots // PROJECT_INDEX_COLS
+    seats: list[Rect] = []
+    for band in rows(well, row_n, gap=PROJECT_INDEX_GAP):
+        seats.extend(columns(band, PROJECT_INDEX_COLS, gap=PROJECT_INDEX_GAP))
+    return tuple(seats)
+
+
+def paint_projects_index_covers(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis K — titled mini covers. Printed name, whole cover links to the leaf."""
+    for cover, dest, title in zip(
+        projects_index_covers(box, len(index.dests)),
+        index.dests,
+        index.titles,
+        strict=True,
+    ):
+        plotter.rect(cover, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        inner = cover.inset(COVER_INSET)
+        plotter.rect(inner, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            inner,
+            title,
+            size=COVER_TITLE_SIZE,
+            bold=True,
+            face="serif",
+            gray=INK,
+            align="center",
+        )
+        plotter.link(cover, dest)
+
+
+def paint_project_sheet(plotter: Plotter, box: Rect, sheet: ProjectSheet) -> None:
+    """One G-craft card filling the well — the page a titled cover opens."""
+    paint_projects(
+        plotter,
+        box,
+        ProjectsBoard(year=sheet.year, cards=1, tasks=sheet.tasks),
+    )
 
 
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
@@ -927,6 +978,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-index-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -942,6 +995,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1006,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1028,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index" | "project":
+            return "Proj"
         case _:
             return "Year"

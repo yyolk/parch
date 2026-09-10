@@ -8,7 +8,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectSheet,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -19,7 +21,8 @@ from parch.spec import Spec
 
 def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
-    dests = ["cover", spec.year_dest, spec.projects_dest]
+    dests = ["cover", spec.year_dest, spec.projects_dest, spec.projects_index_dest]
+    dests.extend(spec.dest_for_project(n) for n in range(1, spec.project_index_slots + 1))
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     for month in spec.months:
         dests.append(spec.dest_for_month(month))
@@ -44,7 +47,9 @@ def test_components_do_not_draw():
         MonthGrid,
         Notes,
         Priorities,
+        ProjectSheet,
         ProjectsBoard,
+        ProjectsIndex,
         QuarterGrid,
         Schedule,
         WeekStrip,

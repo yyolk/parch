@@ -28,6 +28,15 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
     return 10
 
 
+def _project_titles(projects_table: TomlTable, data: TomlTable) -> tuple[str, ...]:
+    raw = projects_table.get("titles", data.get("project_titles"))
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise ConfigError("project titles must be a list of printed names")
+    return tuple(str(title) for title in raw)
+
+
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
     raw = data.get("months")
     if isinstance(raw, list) and raw:
@@ -67,6 +76,8 @@ class Spec:
     priority_rows: int = 6
     project_cards: int = 3
     project_tasks: int = 4
+    project_index_slots: int = 6
+    project_titles: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -95,6 +106,18 @@ class Spec:
             raise ConfigError("project_cards must be 2–4")
         if not 3 <= self.project_tasks <= 6:
             raise ConfigError("project_tasks must be 3–6")
+        if self.project_index_slots not in (6, 8):
+            raise ConfigError("project_index_slots must be 6 (2×3) or 8 (2×4)")
+        titles = self.project_titles or tuple(
+            f"Project {n:02d}" for n in range(1, self.project_index_slots + 1)
+        )
+        if len(titles) != self.project_index_slots:
+            raise ConfigError(
+                f"project titles must have {self.project_index_slots} names, not {len(titles)}"
+            )
+        if any(not title.strip() for title in titles):
+            raise ConfigError("project titles must be printed names, not blank")
+        object.__setattr__(self, "project_titles", titles)
 
     @property
     def weekday_start(self) -> int:
@@ -137,6 +160,15 @@ class Spec:
     @property
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
+
+    @property
+    def projects_index_dest(self) -> str:
+        return _dest(t"projects-index-{self.year:04d}")
+
+    def dest_for_project(self, number: int) -> str:
+        if not 1 <= number <= self.project_index_slots:
+            raise ConfigError(f"project number out of range: {number}")
+        return _dest(t"projects-{self.year:04d}-{number:02d}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -207,6 +239,10 @@ class Spec:
             priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
             project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
+            project_index_slots=int(
+                projects_table.get("index_slots", data.get("project_index_slots", 6))
+            ),
+            project_titles=_project_titles(projects_table, data),
         )
 
     @classmethod
