@@ -980,6 +980,8 @@ TASK_INDEX_HEAD_H = 4.2
 TASK_INDEX_HEAD_GAP = 0.8
 TASK_INDEX_ROW_GAP = 1.0
 TASK_INDEX_WEEK_W = 12.0
+TASK_INDEX_RANGE_W = 26.0
+TASK_INDEX_WRITE_GAP = 2.8
 TASK_GAP = 2.6
 
 
@@ -997,14 +999,23 @@ def tasks_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
     return head, rows(body, n, gap=TASK_INDEX_ROW_GAP)
 
 
-def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect]:
-    """Printed Wnn stub | date-range cue. Whole row is the dest hit."""
-    return row.split_left(TASK_INDEX_WEEK_W)
+def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Wnn stub | printed range | write-in leftover. Gap before the hline."""
+    stub, rest = row.split_left(TASK_INDEX_WEEK_W)
+    dated, after = rest.split_left(TASK_INDEX_RANGE_W)
+    write = Rect(
+        after.x + TASK_INDEX_WRITE_GAP,
+        after.y,
+        max(after.w - TASK_INDEX_WRITE_GAP, 1),
+        after.h,
+    )
+    return stub, dated, write
 
 
 def tasks_index_link_hits(row: Rect) -> tuple[Rect, ...]:
-    """Whole week row. No unlinkable write-in — the horizon is printed."""
-    return (row,)
+    """Stub + week range. Write-in hline stays unlinkable (Meeting A / Projects L)."""
+    stub, dated, _write = tasks_index_week_parts(row)
+    return (stub, dated)
 
 
 def paint_tasks_index_months(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
@@ -1031,11 +1042,10 @@ def paint_tasks_index_months(plotter: Plotter, box: Rect, index: TasksIndex) -> 
 
 
 def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None:
-    stub, dated = tasks_index_week_parts(row)
-    iso_week = week.iso_week
+    stub, dated, write = tasks_index_week_parts(row)
     plotter.text(
         stub,
-        f"W{iso_week:02d}",
+        f"W{week.iso_week:02d}",
         size=7.2,
         bold=True,
         face="serif",
@@ -1050,6 +1060,14 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
         gray=MUTED,
         small_caps=True,
         align="left",
+    )
+    plotter.line(
+        write.x,
+        write.bottom,
+        write.right,
+        write.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
     )
 
 

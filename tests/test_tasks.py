@@ -10,10 +10,14 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    RULE,
+    RULE_C,
     TASK_GAP,
     TASK_INDEX_BAND_GAP,
     TASK_INDEX_HEAD_H,
+    TASK_INDEX_RANGE_W,
     TASK_INDEX_WEEK_W,
+    TASK_INDEX_WRITE_GAP,
     TICK,
     checklist_content_height,
     paint_task,
@@ -141,10 +145,15 @@ def test_tasks_index_seats_weighted_by_weeks():
     assert len(rows) == 5
     assert rows[0].y > head.bottom
     assert rows[-1].bottom < bands[0].bottom
-    stub, dated = tasks_index_week_parts(rows[0])
+    stub, dated, write = tasks_index_week_parts(rows[0])
     assert stub.w == pytest.approx(TASK_INDEX_WEEK_W)
     assert dated.x == pytest.approx(stub.right)
-    assert tasks_index_link_hits(rows[0]) == (rows[0],)
+    assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
+    assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
+    assert write.right == pytest.approx(rows[0].right)
+    assert write.w > dated.w
+    assert tasks_index_link_hits(rows[0]) == (stub, dated)
+    assert not any(_rects_overlap(hit, write) for hit in tasks_index_link_hits(rows[0]))
 
 
 def test_task_dest_seats():
@@ -198,14 +207,38 @@ def test_tasks_index_paint_month_headers_and_week_links():
     assert ticks == []
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
-    assert links == [f"tasks-2026-W{week:02d}" for week in range(1, 15)]
+    assert links == [dest for week in range(1, 15) for dest in (f"tasks-2026-W{week:02d}",) * 2]
     counts = tuple(len(band.weeks) for band in index.bands)
     seats = [
         row
         for band_box, band in zip(tasks_index_bands(well, counts), index.bands, strict=True)
         for row in tasks_index_band_seats(band_box, len(band.weeks))[1]
     ]
-    assert [op[1] for op in plotter.ops if op[0] == "link"] == seats
+    expected_hits: list[tuple[Rect, str]] = []
+    for seat, dest in zip(
+        seats, [f"tasks-2026-W{week:02d}" for week in range(1, 15)], strict=True
+    ):
+        stub, dated, write = tasks_index_week_parts(seat)
+        hits = tasks_index_link_hits(seat)
+        assert hits == (stub, dated)
+        assert not any(_rects_overlap(hit, write) for hit in hits)
+        expected_hits.extend((hit, dest) for hit in hits)
+    assert [(op[1], op[2]) for op in plotter.ops if op[0] == "link"] == expected_hits
+    for seat in seats:
+        assert all(op[1] != seat for op in plotter.ops if op[0] == "link")
+
+    hlines = [
+        op
+        for op in plotter.ops
+        if op[0] == "line" and op[5] == pytest.approx(RULE) and op[6] == pytest.approx(RULE_C)
+    ]
+    assert len(hlines) == 14
+    for seat, line in zip(seats, hlines, strict=True):
+        _stub, _dated, write = tasks_index_week_parts(seat)
+        assert line[1] == pytest.approx(write.x)
+        assert line[3] == pytest.approx(write.right)
+        assert line[2] == pytest.approx(write.bottom)
+        assert line[4] == pytest.approx(write.bottom)
 
 
 def test_task_paint_checklist_and_notes():
