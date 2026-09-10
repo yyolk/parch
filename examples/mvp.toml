@@ -1,4 +1,4 @@
-# Greenfield Nomad MVP — cover → annual → projects → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
+# Greenfield Nomad MVP — cover → annual → projects board → index + sheets → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
 # notes_pages = 1 keeps the year artifact smaller; 2 still works.
 year = 2026
 device = "supernote-nomad"
@@ -18,3 +18,4 @@ columns = 10
 [projects]
 cards = 3
 tasks = 4
+index_slots = 6

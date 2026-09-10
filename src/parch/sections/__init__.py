@@ -6,6 +6,7 @@ from parch.sections.habit import HabitSection
 from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
 from parch.sections.projects import ProjectsSection
+from parch.sections.projects_index import ProjectsIndexSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.weekly import WeeklySection
 
@@ -16,6 +17,7 @@ __all__ = [
     "DailySection",
     "HabitSection",
     "MonthSection",
+    "ProjectsIndexSection",
     "ProjectsSection",
     "NavItem",
     "Page",

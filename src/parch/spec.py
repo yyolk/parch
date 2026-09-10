@@ -67,6 +67,7 @@ class Spec:
     priority_rows: int = 6
     project_cards: int = 3
     project_tasks: int = 4
+    project_index_slots: int = 6
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -95,6 +96,8 @@ class Spec:
             raise ConfigError("project_cards must be 2–4")
         if not 3 <= self.project_tasks <= 6:
             raise ConfigError("project_tasks must be 3–6")
+        if self.project_index_slots not in (6, 8):
+            raise ConfigError("project_index_slots must be 6 (2×3) or 8 (2×4)")
 
     @property
     def weekday_start(self) -> int:
@@ -137,6 +140,15 @@ class Spec:
     @property
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
+
+    @property
+    def projects_index_dest(self) -> str:
+        return _dest(t"projects-index-{self.year:04d}")
+
+    def dest_for_project(self, number: int) -> str:
+        if not 1 <= number <= self.project_index_slots:
+            raise ConfigError(f"project number out of range: {number}")
+        return _dest(t"projects-{self.year:04d}-{number:02d}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -207,6 +219,9 @@ class Spec:
             priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
             project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
+            project_index_slots=int(
+                projects_table.get("index_slots", data.get("project_index_slots", 6))
+            ),
         )
 
     @classmethod

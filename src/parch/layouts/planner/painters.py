@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectSheet,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -225,6 +227,96 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_tasks(plotter, tasks, board.tasks)
         _paint_project_status(plotter, status)
         _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+PROJECT_INDEX_COLS = 2
+PROJECT_INDEX_GAP = 2.6
+INDEX_P = 4.2
+INDEX_STATUS_H = 5.8
+INDEX_STATUS_MARK = 2.4
+INDEX_INSET_X = 1.6
+INDEX_INSET_Y = 1.4
+INDEX_CARD_GAP = 1.2
+INDEX_NOTE_PITCH = 4.6
+
+
+def projects_index_grid(well: Rect, slots: int) -> tuple[Rect, ...]:
+    """2×3 (6) or 2×4 (8) mini-card seats. Columns first, then down the rows."""
+    if slots not in (6, 8):
+        raise ValueError(f"slots must be 6 or 8, not {slots}")
+    row_n = slots // PROJECT_INDEX_COLS
+    seats: list[Rect] = []
+    for band in rows(well, row_n, gap=PROJECT_INDEX_GAP):
+        seats.extend(columns(band, PROJECT_INDEX_COLS, gap=PROJECT_INDEX_GAP))
+    return tuple(seats)
+
+
+def projects_index_card_seats(card: Rect) -> tuple[Rect, Rect]:
+    """P + name underline over tiny Todo/Doing/Done."""
+    inset = card.inset(INDEX_INSET_X, INDEX_INSET_Y)
+    name, status = rows(
+        inset,
+        2,
+        gap=INDEX_CARD_GAP,
+        weights=(inset.h - INDEX_STATUS_H - INDEX_CARD_GAP, INDEX_STATUS_H),
+    )
+    return name, status
+
+
+def paint_projects_index_grid(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis B — mini-card grid. Each card links to a full project sheet."""
+    for card, dest in zip(projects_index_grid(box, len(index.dests)), index.dests, strict=True):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        header, status = projects_index_card_seats(card)
+        _paint_index_name(plotter, header)
+        _paint_index_status(plotter, status)
+        plotter.link(card, dest)
+
+
+def paint_project_sheet(plotter: Plotter, box: Rect, sheet: ProjectSheet) -> None:
+    """One G-craft card filling the well — the page an index mini card opens."""
+    paint_projects(
+        plotter,
+        box,
+        ProjectsBoard(year=sheet.year, cards=1, tasks=sheet.tasks),
+    )
+
+
+def _paint_index_name(plotter: Plotter, header: Rect) -> None:
+    y = header.y + 0.4
+    mark = Rect(header.x, y, INDEX_P, INDEX_P)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(mark, "P", size=6.4, bold=True, face="serif", gray=INK, align="center")
+    rule_y = mark.bottom
+    plotter.line(
+        mark.right + 1.2,
+        rule_y,
+        header.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    y = rule_y + INDEX_NOTE_PITCH
+    while y < header.bottom - 0.3:
+        plotter.line(header.x, y, header.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += INDEX_NOTE_PITCH
+
+
+def _paint_index_status(plotter: Plotter, box: Rect) -> None:
+    """Tiny orthogonal Todo / Doing / Done — same marks as G, smaller."""
+    for slot, label in zip(columns(box, 3, gap=0.8), PROJECT_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - INDEX_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, INDEX_STATUS_MARK, INDEX_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.5, slot.y, max(slot.right - mark.right - 0.5, 1), slot.h),
+            label,
+            size=4.6,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
 
 
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
@@ -927,6 +1019,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-index-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -942,6 +1036,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1047,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1069,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index" | "project":
+            return "Proj"
         case _:
             return "Year"
