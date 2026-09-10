@@ -278,7 +278,7 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
-CLONE_SPINE_W = 2.0
+CLONE_SPINE_W = 1.4
 CLONE_RAIL_GAP = 2.6
 CLONE_RAIL_WEIGHTS = (0.76, 0.24)
 CLONE_CARD_WEIGHTS = (0.50, 0.50)
