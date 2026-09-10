@@ -337,9 +337,10 @@ def _paint_projects_index_row(plotter: Plotter, box: Rect) -> None:
 
 
 def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
-    """Simplified individual project page — one card, same marks as the board."""
+    """Simplified individual project page — one board-height card, not a stretched well."""
+    card = project_card_seats(box, 3)[0]
     board = ProjectsBoard(year=leaf.year, cards=1, tasks=leaf.tasks)
-    paint_projects(plotter, box, board)
+    paint_projects(plotter, card, board)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:

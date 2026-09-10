@@ -273,6 +273,13 @@ def test_project_leaf_links_back_to_index():
     ink = RecordingPlotter()
     paint_project(ink, well, leaf)
     assert [op[2] for op in ink.ops if op[0] == "text"].count("P") == 1
+    frames = [
+        op
+        for op in ink.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(well.w)
+    ]
+    assert frames
+    assert frames[0][1].h < well.h * 0.5
 
 
 def test_project_index_rows_knob():
