@@ -184,7 +184,7 @@ def test_projects_two_up_seat_taller_than_three_stack():
 
 
 def test_projects_two_up_sheet_seats():
-    well = Rect(4, 20, 110, 90)
+    well = well_rect(NOMAD)
     card = projects_two_up(well)[0]
     left, right = projects_two_up_columns(card)
     header, tasks, status = projects_two_up_left(left)
