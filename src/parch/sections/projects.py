@@ -1,5 +1,6 @@
 from parch.calendar import month_touching_weeks
-from parch.components import ProjectsBoard
+from parch.components import ProjectLeaf, ProjectsIndex
+from parch.components.projects import sample_titles
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -12,18 +13,35 @@ class ProjectsSection:
     def pages(self) -> list[Page]:
         spec = self.spec
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
-        return [
+        nav = planner_nav(spec, week_dest=spec.dest_for_week(first[0]))
+        names = sample_titles(spec.project_index_rows)
+        dests = tuple(spec.dest_for_project(n) for n in range(1, spec.project_index_rows + 1))
+        built = [
             Page(
                 dest=spec.projects_dest,
                 kind="projects",
                 title="Projects",
-                nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
-                components=(
-                    ProjectsBoard(
-                        year=spec.year,
-                        cards=spec.project_cards,
-                        tasks=spec.project_tasks,
-                    ),
-                ),
+                nav=nav,
+                components=(ProjectsIndex(year=spec.year, names=names, dests=dests),),
             )
         ]
+        for number, (name, dest) in enumerate(zip(names, dests, strict=True), start=1):
+            built.append(
+                Page(
+                    dest=dest,
+                    kind="project",
+                    title=name,
+                    nav=nav,
+                    components=(
+                        ProjectLeaf(
+                            year=spec.year,
+                            number=number,
+                            name=name,
+                            tasks=spec.project_tasks,
+                            dest=dest,
+                            index_dest=spec.projects_dest,
+                        ),
+                    ),
+                )
+            )
+        return built

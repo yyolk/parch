@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectLeaf,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -227,21 +229,24 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_notes(plotter, right, first_y=rule_y)
 
 
-def _paint_project_name(plotter: Plotter, header: Rect) -> float:
+def _paint_project_name(plotter: Plotter, header: Rect, name: str = "") -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
-    rule_y = mark.bottom
-    plotter.line(
-        mark.right + 1.4,
-        rule_y,
-        header.right,
-        rule_y,
-        stroke_width=RULE,
-        stroke_gray=RULE_C,
-    )
-    return rule_y
+    field = Rect(mark.right + 1.4, y, max(header.right - mark.right - 1.4, 1), PROJECT_P)
+    if name:
+        plotter.text(field, name, size=7.6, bold=True, face="serif", gray=INK, align="left")
+    else:
+        plotter.line(
+            field.x,
+            mark.bottom,
+            field.right,
+            mark.bottom,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+    return mark.bottom
 
 
 def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:
@@ -275,6 +280,167 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+DIRECTORY_COL_GAP = 5.2
+DIRECTORY_NAME_SIZE = 8.0
+LEAF_RAIL_GAP = 2.6
+LEAF_RAIL_WEIGHTS = (0.76, 0.24)
+LEAF_SPINE_W = 1.4
+LEAF_INSET_X = 1.6
+LEAF_INSET_Y = 1.4
+LEAF_COL_GAP = 3.4
+LEAF_COL_WEIGHTS = (0.50, 0.50)
+LEAF_DOT_PITCH = 2.8
+LEAF_DOT = 0.32
+LEAF_STATUS_LABELS = ("Todo", "In Progress", "Done")
+LEAF_TRACK_H = 26.0
+
+
+def directory_column_counts(n: int) -> tuple[int, int]:
+    """Split ``n`` names across two phone-book columns (left gets the extra)."""
+    if n < 1:
+        raise ValueError(f"n must be >= 1, not {n}")
+    left = (n + 1) // 2
+    return left, n - left
+
+
+def projects_directory_columns(box: Rect) -> tuple[Rect, Rect]:
+    """Equal phone-book columns with a quiet gutter."""
+    return columns(box, 2, gap=DIRECTORY_COL_GAP)
+
+
+def projects_directory_rows(col: Rect, n: int) -> tuple[Rect, ...]:
+    """One name row per track. Hairlines sit on the row bottoms."""
+    return rows(col, n, gap=0)
+
+
+def paint_projects_index_directory(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis J — two columns of printed names, quiet hairlines, each name a leaf dest."""
+    left_n, right_n = directory_column_counts(len(index.names))
+    left_col, right_col = projects_directory_columns(box)
+    gutter_x = (left_col.right + right_col.x) / 2
+    plotter.line(
+        gutter_x,
+        box.y + 1.2,
+        gutter_x,
+        box.bottom - 1.2,
+        stroke_width=HAIR,
+        stroke_gray=SOFT,
+    )
+    _paint_directory_column(
+        plotter, left_col, index.names[:left_n], index.dests[:left_n]
+    )
+    if right_n:
+        _paint_directory_column(
+            plotter, right_col, index.names[left_n:], index.dests[left_n:]
+        )
+
+
+def _paint_directory_column(
+    plotter: Plotter, col: Rect, names: tuple[str, ...], dests: tuple[str, ...]
+) -> None:
+    for seat, name, dest in zip(
+        projects_directory_rows(col, len(names)), names, dests, strict=True
+    ):
+        plotter.text(
+            Rect(seat.x, seat.y, seat.w, seat.h),
+            name,
+            size=DIRECTORY_NAME_SIZE,
+            face="serif",
+            gray=INK,
+            align="left",
+        )
+        plotter.line(
+            seat.x,
+            seat.bottom,
+            seat.right,
+            seat.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+        plotter.link(seat, dest)
+
+
+def project_leaf_seats(box: Rect) -> tuple[Rect, Rect]:
+    """G-craft board | status rail."""
+    return columns(box, 2, gap=LEAF_RAIL_GAP, weights=LEAF_RAIL_WEIGHTS)
+
+
+def project_leaf_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect]:
+    """spine, header, tasks, notes — G clone+fit seats, one leaf."""
+    spine = Rect(card.x, card.y, LEAF_SPINE_W, card.h)
+    body = Rect(card.x + LEAF_SPINE_W, card.y, card.w - LEAF_SPINE_W, card.h).inset(
+        LEAF_INSET_X, LEAF_INSET_Y
+    )
+    left, notes = columns(body, 2, gap=LEAF_COL_GAP, weights=LEAF_COL_WEIGHTS)
+    header, tasks = left.split_top(PROJECT_HEADER_H)
+    tasks = Rect(
+        tasks.x,
+        tasks.y + PROJECT_LEFT_GAP,
+        tasks.w,
+        tasks.h - PROJECT_LEFT_GAP,
+    )
+    return spine, header, tasks, notes, card
+
+
+def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
+    """G-craft leaf — printed name, tasks, dot-grid notes, vertical status rail."""
+    board, rail = project_leaf_seats(box)
+    _wash(plotter, rail, WASH)
+    spine, header, tasks, notes, card = project_leaf_card(board)
+    plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    _paint_project_name(plotter, header, leaf.name)
+    _paint_project_tasks(plotter, tasks, leaf.tasks)
+    _paint_leaf_dot_grid(plotter, notes)
+    _paint_leaf_status_rail(plotter, rail)
+
+
+def _paint_leaf_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """G notes pocket — light dots on a 2.8 mm pitch, not graph paper."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    nx = max(2, int(inset.w / LEAF_DOT_PITCH))
+    ny = max(2, int(inset.h / LEAF_DOT_PITCH))
+    for band in rows(inset, ny):
+        for cell in columns(band, nx):
+            plotter.rect(
+                Rect(
+                    cell.x + (cell.w - LEAF_DOT) / 2,
+                    cell.y + (cell.h - LEAF_DOT) / 2,
+                    LEAF_DOT,
+                    LEAF_DOT,
+                ),
+                stroke=False,
+                fill=True,
+                fill_gray=RULE_C,
+            )
+
+
+def _paint_leaf_status_rail(plotter: Plotter, box: Rect) -> None:
+    """Vertical Todo → In Progress → Done. Open squares, connected."""
+    track_h = min(LEAF_TRACK_H, box.h - 2.0)
+    track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
+    inset = track.inset(1.4, 0.6)
+    marks: list[Rect] = []
+    for slot, label in zip(rows(inset, 3, gap=1.8), LEAF_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        marks.append(mark)
+    cx = marks[0].x + marks[0].w / 2
+    for above, below in zip(marks, marks[1:]):
+        plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -927,6 +1093,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -941,6 +1109,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "habits":
             dests["Habit"] = page.dest
         case "projects":
+            dests["Proj"] = page.dest
+        case "project":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -949,7 +1119,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes", "Proj")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -970,6 +1140,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
-            return ""
+            return "Proj"
+        case "project":
+            return "Proj"
         case _:
             return "Year"

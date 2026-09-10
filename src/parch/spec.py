@@ -67,6 +67,7 @@ class Spec:
     priority_rows: int = 6
     project_cards: int = 3
     project_tasks: int = 4
+    project_index_rows: int = 12
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -95,6 +96,8 @@ class Spec:
             raise ConfigError("project_cards must be 2–4")
         if not 3 <= self.project_tasks <= 6:
             raise ConfigError("project_tasks must be 3–6")
+        if not 10 <= self.project_index_rows <= 16:
+            raise ConfigError("project_index_rows must be 10–16")
 
     @property
     def weekday_start(self) -> int:
@@ -137,6 +140,12 @@ class Spec:
     @property
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
+
+    def dest_for_project(self, number: int) -> str:
+        """1-based individual project dest, e.g. ``project-1``."""
+        if number < 1:
+            raise ConfigError(f"project dest number must be >= 1, not {number}")
+        return _dest(t"project-{number}")
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -207,6 +216,9 @@ class Spec:
             priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
             project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
+            project_index_rows=int(
+                projects_table.get("index_rows", data.get("project_index_rows", 12))
+            ),
         )
 
     @classmethod
