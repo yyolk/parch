@@ -269,6 +269,7 @@ TICKET_BODY_GAP = 1.8
 TICKET_PREVIEW_GAP = 1.4
 TICKET_PREVIEW_INSET = 0.35
 TICKET_STRIP_PAD = 0.40
+TICKET_STRIP_LEFT = 0.30
 TICKET_STRIP_GRAY = RULE_C
 
 # G (#215) symbol strip — same marks, size, and strip height.
@@ -316,15 +317,28 @@ def project_ticket_name_seats(name: Rect) -> tuple[Rect, Rect]:
     block = CLONE_STRIP_H + TICKET_STRIP_PAD
     write_h = max(name.h - block, 1)
     write = Rect(name.x, name.y, name.w, write_h)
-    strip = Rect(name.x, write.bottom + TICKET_STRIP_PAD, name.w, CLONE_STRIP_H)
+    strip = Rect(
+        name.x + TICKET_STRIP_LEFT,
+        write.bottom + TICKET_STRIP_PAD,
+        name.w - TICKET_STRIP_LEFT,
+        CLONE_STRIP_H,
+    )
     return write, strip
 
 
+def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
+    """Stub column + each preview card. Write-in and symbol strip stay unlinkable."""
+    stub, body = project_ticket_parts(ticket)
+    _, preview = project_ticket_body_seats(body)
+    return (stub, *project_ticket_preview_cards(preview))
+
+
 def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis L — stub, raised write-in, G symbol strip, 3-card preview, whole-row link."""
+    """Thesis L — stub, raised write-in, G symbol strip, 3-card preview; stub + preview links."""
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
         _paint_project_ticket(plotter, seat, ticket)
-        plotter.link(seat, ticket.dest)
+        for hit in project_ticket_link_hits(seat):
+            plotter.link(hit, ticket.dest)
 
 
 def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) -> None:

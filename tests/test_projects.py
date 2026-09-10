@@ -21,6 +21,7 @@ from parch.layouts.planner.painters import (
     TICKET_NAME_WEIGHTS,
     TICKET_PREVIEW_GAP,
     TICKET_STRIP_GRAY,
+    TICKET_STRIP_LEFT,
     TICKET_STRIP_PAD,
     TICKET_STUB_W,
     paint_project,
@@ -30,6 +31,7 @@ from parch.layouts.planner.painters import (
     project_card_left_seats,
     project_card_seats,
     project_ticket_body_seats,
+    project_ticket_link_hits,
     project_ticket_name_seats,
     project_ticket_parts,
     project_ticket_preview_cards,
@@ -39,6 +41,10 @@ from parch.layouts.planner.painters import (
 )
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
+
+
+def _rects_overlap(a: Rect, b: Rect) -> bool:
+    return a.x < b.right and b.x < a.right and a.y < b.bottom and b.y < a.bottom
 
 
 _PROJ_STRIP = (
@@ -259,8 +265,9 @@ def test_project_ticket_seats():
     write, strip = project_ticket_name_seats(name)
     assert strip.h == pytest.approx(CLONE_STRIP_H)
     assert write.bottom + TICKET_STRIP_PAD == pytest.approx(strip.y)
-    assert strip.x == pytest.approx(name.x)
-    assert strip.w == pytest.approx(name.w)
+    assert strip.x == pytest.approx(name.x + TICKET_STRIP_LEFT)
+    assert strip.w == pytest.approx(name.w - TICKET_STRIP_LEFT)
+    assert TICKET_STRIP_LEFT == pytest.approx(0.30)
     assert write.right == pytest.approx(name.right)
     assert write.right < preview.x
     assert CLONE_ICON == pytest.approx(2.1)
@@ -342,8 +349,25 @@ def test_projects_index_paint_write_in_underlines_and_links():
             for box in painted
         )
 
-    links = [op[2] for op in plotter.ops if op[0] == "link"]
-    assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
+    link_ops = [op for op in plotter.ops if op[0] == "link"]
+    expected_hits: list[tuple[Rect, str]] = []
+    for seat, ticket in zip(seats, roster.tickets, strict=True):
+        hits = project_ticket_link_hits(seat)
+        assert len(hits) == 4
+        stub, body = project_ticket_parts(seat)
+        name, preview = project_ticket_body_seats(body)
+        write, strip = project_ticket_name_seats(name)
+        cards = project_ticket_preview_cards(preview)
+        assert hits[0] == stub
+        assert hits[1:] == cards
+        for hit in hits:
+            assert not _rects_overlap(hit, write)
+            assert not _rects_overlap(hit, strip)
+        expected_hits.extend((hit, ticket.dest) for hit in hits)
+    assert [(op[1], op[2]) for op in link_ops] == expected_hits
+    assert [dest for _, dest in expected_hits] == [
+        dest for slot in range(1, 9) for dest in (f"project-2026-{slot:02d}",) * 4
+    ]
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert len(fills) >= 8 * len(CLONE_ICONS)
     assert all(op[5] == pytest.approx(TICKET_STRIP_GRAY) for op in fills)
@@ -385,8 +409,13 @@ def test_project_page_write_in_name_and_index_chip():
     assert "Atlas" not in labels
     assert "Index" in labels
     assert "Proj" in labels
-    chip_links = [op[2] for op in chrome.ops if op[0] == "link" and op[2] == "projects-index-2026"]
-    assert chip_links
+    assert strip_active(page.kind) == "Proj"
+    assert dict(strip_items(page))["Proj"] == spec.projects_index_dest
+    assert spec.projects_index_dest == "projects-index-2026"
+    leaf_links = [op[2] for op in chrome.ops if op[0] == "link"]
+    chip_links = [dest for dest in leaf_links if dest == spec.projects_index_dest]
+    assert len(chip_links) >= 2
+    assert spec.projects_dest not in leaf_links
 
 
 def test_projects_tickets_knob():
@@ -409,5 +438,5 @@ def test_projects_tickets_knob():
     assert "Field" not in texts
     assert "Grove" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
-        f"project-2026-{slot:02d}" for slot in range(1, 7)
+        dest for slot in range(1, 7) for dest in (f"project-2026-{slot:02d}",) * 4
     ]

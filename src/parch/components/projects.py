@@ -20,7 +20,7 @@ class ProjectTicket:
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
-    """Thesis L — stacked tickets. Each row is a whole-ticket link."""
+    """Thesis L — stacked tickets. Stub and preview cards link; write-in stays unlinkable."""
 
     year: int
     dest: str
