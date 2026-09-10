@@ -158,7 +158,7 @@ def test_projects_log_paint_dates_lines_and_status():
         for op in plotter.ops
         if op[0] == "line" and op[5] == pytest.approx(HAIR) and op[3] - op[1] == pytest.approx(well.w)
     ]
-    assert len(seps) == 6
+    assert seps == []
 
     card_outlines = [
         op

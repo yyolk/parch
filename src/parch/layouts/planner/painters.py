@@ -327,14 +327,6 @@ def paint_projects_log(plotter: Plotter, box: Rect, journal: ProjectsLog) -> Non
         date, lines = projects_log_entry_seats(entry)
         _paint_log_date(plotter, date)
         _paint_log_lines(plotter, lines)
-        plotter.line(
-            entry.x,
-            entry.bottom,
-            entry.right,
-            entry.bottom,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
-        )
 
 
 def _paint_log_date(plotter: Plotter, box: Rect) -> None:
@@ -345,7 +337,7 @@ def _paint_log_date(plotter: Plotter, box: Rect) -> None:
 
 def _paint_log_lines(plotter: Plotter, box: Rect) -> None:
     """2–3 lined rules for what moved. Not Focus ticks."""
-    y = box.y + LOG_LINE_PITCH
+    y = box.y + 1.2
     drawn = 0
     while y < box.bottom - 0.15 and drawn < LOG_LINE_COUNT:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
