@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsIndexDetail,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,112 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+INDEX_DETAIL_GAP = 2.6
+INDEX_DETAIL_WEIGHTS = (1.0, 2.0)
+INDEX_INSET_X = 1.8
+INDEX_INSET_Y = 1.2
+INDEX_HEAD_H = 3.4
+INDEX_MARK_COL_W = 22.0
+INDEX_MARK_GAP = 1.6
+INDEX_STATUS_MARK = 2.0
+INDEX_ROW_GAP = 0.6
+INDEX_WELL_GAP = 1.2
+INDEX_TASK_TOP = 0.4
+INDEX_TASK_BOT = 1.0
+
+
+def projects_index_detail_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Top third index over bottom two-thirds active-project well. Weights after gap."""
+    return rows(well, 2, gap=INDEX_DETAIL_GAP, weights=INDEX_DETAIL_WEIGHTS)
+
+
+def projects_index_row_seats(index: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Whisper status labels, then compact name rows inside the index outline."""
+    inner = index.inset(INDEX_INSET_X, INDEX_INSET_Y)
+    head, body = inner.split_top(INDEX_HEAD_H)
+    return head, rows(body, n, gap=INDEX_ROW_GAP)
+
+
+def projects_index_name_and_marks(row: Rect) -> tuple[Rect, Rect]:
+    """Name rule on the left; tiny Todo/Doing/Done marks on the right."""
+    name, rest = row.split_left(row.w - INDEX_MARK_COL_W - INDEX_MARK_GAP)
+    marks = Rect(rest.x + INDEX_MARK_GAP, rest.y, INDEX_MARK_COL_W, rest.h)
+    return name, marks
+
+
+def index_task_band_height(tasks: int) -> float:
+    """Content-height task band — ticks only, no Focus label."""
+    n = max(1, tasks)
+    return INDEX_TASK_TOP + TICK + (n - 1) * FOCUS_PITCH + INDEX_TASK_BOT
+
+
+def projects_index_detail_well_seats(detail: Rect, tasks: int) -> tuple[Rect, Rect, Rect]:
+    """P+name, content-height ticks, leftover lined notes — one working slot."""
+    inner = detail.inset(PROJECT_INSET_X, PROJECT_INSET_Y)
+    header, rest = inner.split_top(PROJECT_HEADER_H)
+    task_h = index_task_band_height(tasks)
+    leftover = Rect(
+        rest.x,
+        rest.y + INDEX_WELL_GAP,
+        rest.w,
+        rest.h - INDEX_WELL_GAP,
+    )
+    notes_h = max(leftover.h - task_h - INDEX_WELL_GAP, 1)
+    tasks_box, notes = rows(leftover, 2, gap=INDEX_WELL_GAP, weights=(task_h, notes_h))
+    return header, tasks_box, notes
+
+
+def paint_projects_index_detail(plotter: Plotter, box: Rect, board: ProjectsIndexDetail) -> None:
+    """Thesis F — roster index + one blank working-project well. No kanban chrome."""
+    index, detail = projects_index_detail_seats(box)
+    _paint_projects_index(plotter, index, board.index_rows)
+    _paint_projects_index_detail_well(plotter, detail, board.tasks)
+
+
+def _paint_projects_index(plotter: Plotter, index: Rect, n: int) -> None:
+    plotter.rect(index, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    head, lines = projects_index_row_seats(index, n)
+    _, mark_head = projects_index_name_and_marks(head)
+    for slot, label in zip(columns(mark_head, 3, gap=1.0), PROJECT_STATUS_LABELS, strict=True):
+        plotter.text(
+            slot,
+            label,
+            size=4.6,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="center",
+        )
+    for line in lines:
+        name, marks = projects_index_name_and_marks(line)
+        rule_y = name.y + (name.h + INDEX_STATUS_MARK) / 2
+        plotter.line(
+            name.x,
+            rule_y,
+            name.right,
+            rule_y,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+        for slot in columns(marks, 3, gap=1.0):
+            mark_y = slot.y + (slot.h - INDEX_STATUS_MARK) / 2
+            mark = Rect(
+                slot.x + (slot.w - INDEX_STATUS_MARK) / 2,
+                mark_y,
+                INDEX_STATUS_MARK,
+                INDEX_STATUS_MARK,
+            )
+            plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_projects_index_detail_well(plotter: Plotter, detail: Rect, tasks: int) -> None:
+    plotter.rect(detail, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    header, tasks_box, notes = projects_index_detail_well_seats(detail, tasks)
+    _paint_project_name(plotter, header)
+    _paint_project_tasks(plotter, tasks_box, tasks)
+    _paint_project_notes(plotter, notes, first_y=notes.y + PROJECT_NOTE_PITCH)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -942,6 +1049,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index_detail":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -970,6 +1079,8 @@ def strip_active(kind: str) -> str:
         case "habits":
             return "Habit"
         case "projects":
+            return ""
+        case "projects_index_detail":
             return ""
         case _:
             return "Year"
