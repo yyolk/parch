@@ -8,7 +8,7 @@ from parch.spec import Spec
 
 
 class TasksSection:
-    """Exploratory Tasks index C + weekly dests. Month bands; not in YearPlanner."""
+    """Tasks index C + weekly dests. Month bands; after Meetings in YearPlanner."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

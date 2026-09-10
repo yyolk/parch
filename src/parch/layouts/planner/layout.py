@@ -37,7 +37,6 @@ from parch.layouts.planner.painters import (
     paint_nav,
     paint_notes,
     paint_priorities,
-    paint_projects,
     paint_projects_clone_faithful,
     paint_projects_index_tickets,
     paint_quarter,
@@ -88,8 +87,6 @@ class PlannerLayout:
         match page.kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid))
-            case "projects":
-                paint_projects(plotter, well, _one(page, ProjectsBoard))
             case "projects_index":
                 paint_projects_index_tickets(plotter, well, _one(page, ProjectsIndex))
             case "project":
@@ -157,8 +154,6 @@ def _header_meta(page: Page) -> str:
     match page.kind:
         case "annual":
             return "Q1–Q4"
-        case "projects":
-            return str(_one(page, ProjectsBoard).year)
         case "projects_index":
             return str(_one(page, ProjectsIndex).year)
         case "project":

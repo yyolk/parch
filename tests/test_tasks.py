@@ -56,22 +56,31 @@ _TASK_STRIP = (
     ("Proj", "projects-index-2026-01"),
     ("Meet", "meetings-index-2026"),
     ("Task", "tasks-index-2026-Q1"),
+    ("Rev", "review-index-2026"),
     ("Week", "week-2026-W01"),
     ("Day", "2026-01-01"),
     ("Notes", "2026-01-01-notes-1"),
 )
 
 
-def test_tasks_not_in_year_planner():
+def test_tasks_in_year_planner_after_meetings():
     spec = Spec(notes_pages=1)
-    dests = [page.dest for page in YearPlanner().pages(spec)]
-    assert dests[12] == "meetings-index-2026"
-    assert dests[29] == "quarter-2026-Q1"
-    assert not any(dest.startswith("tasks-") for dest in dests)
-    year = next(page for page in YearPlanner().pages(spec) if page.kind == "annual")
+    pages = YearPlanner().pages(spec)
+    dests = [page.dest for page in pages]
+    kinds = [page.kind for page in pages]
+    assert dests[11] == "meetings-index-2026"
+    assert dests[28] == "tasks-index-2026-Q1"
+    assert dests[29] == "tasks-2026-W01"
+    assert dests[85] == "review-index-2026"
+    assert dests[139] == "quarter-2026-Q1"
+    assert kinds.count("tasks_index") == 4
+    assert kinds.count("task") == 53
+    assert "tasks-index-2026-Q4" in dests
+    assert "tasks-2026-W53" in dests
+    year = next(page for page in pages if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]
-    assert "Task" not in labels
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes"]
+    assert labels == ["Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"]
+    assert dict(strip_items(year))["Task"] == spec.tasks_index_dest
 
 
 def test_tasks_index_page():
@@ -322,7 +331,7 @@ def test_task_header_week_chip_and_task_tab():
     assert "W01" in texts
     assert "2026" in texts
     assert "29 Dec–4 Jan" not in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes"):
+    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"):
         assert label in texts
     assert strip_active(page.kind) == "Task"
     links = [op[2] for op in plotter.ops if op[0] == "link"]

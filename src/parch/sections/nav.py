@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Meet · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Meet · Task · Rev · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -33,14 +33,14 @@ MEET dest (strip label **Meet**):
 - everywhere else → ``spec.meetings_index_dest``
 
 TASK dest (strip label **Task**):
-- present only when ``task_dest`` is passed (experiment pages)
 - index page → self
 - weekly Tasks dest → the index that lists that week (header chip is the same dest)
+- everywhere else → first pressed quarter’s index (``spec.tasks_index_dest``)
 
 REV dest (strip label **Rev**):
-- present only when ``rev_dest`` is passed (experiment pages)
 - index page → self
-- weekly Review dest → the index that lists that week (header chip is the same dest)
+- weekly Review dest → the index (header chip is the same dest)
+- everywhere else → ``spec.review_index_dest``
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
@@ -86,11 +86,9 @@ def planner_nav(
         NavItem("Habit", spec.dest_for_habits(habit_month)),
         NavItem("Proj", proj_dest or spec.projects_index_dest),
         NavItem("Meet", meet_dest or spec.meetings_index_dest),
+        NavItem("Task", task_dest or spec.tasks_index_dest),
+        NavItem("Rev", rev_dest or spec.review_index_dest),
     ]
-    if task_dest is not None:
-        items.append(NavItem("Task", task_dest))
-    if rev_dest is not None:
-        items.append(NavItem("Rev", rev_dest))
     items.extend(
         [
             NavItem("Week", week_dest),

@@ -8,7 +8,7 @@ from parch.spec import Spec
 
 
 class ReviewSection:
-    """Review index B + weekly dest E. Week-chip grid; not in YearPlanner."""
+    """Review index B + weekly dest E. Week-chip grid; after Tasks in YearPlanner."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

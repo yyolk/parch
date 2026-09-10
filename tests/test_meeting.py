@@ -48,6 +48,8 @@ _MEET_STRIP = (
     ("Habit", "month-2026-01-habits"),
     ("Proj", "projects-index-2026-01"),
     ("Meet", "meetings-index-2026"),
+    ("Task", "tasks-index-2026-Q1"),
+    ("Rev", "review-index-2026"),
     ("Week", "week-2026-W01"),
     ("Day", "2026-01-01"),
     ("Notes", "2026-01-01-notes-1"),
@@ -58,11 +60,11 @@ def test_meeting_after_projects_in_year_book():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2] == "projects-2026"
-    assert dests[3] == "projects-index-2026-01"
-    assert dests[12] == "meetings-index-2026"
-    assert dests[13:29] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
-    assert dests[29] == "quarter-2026-Q1"
+    assert dests[2] == "projects-index-2026-01"
+    assert dests[11] == "meetings-index-2026"
+    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
+    assert dests[28] == "tasks-index-2026-Q1"
+    assert dests[139] == "quarter-2026-Q1"
     assert [page.kind for page in pages].count("meetings_index") == 1
     assert [page.kind for page in pages].count("meeting") == 16
 
@@ -205,7 +207,7 @@ def test_meeting_header_year_chip_and_meet_tab():
     assert "01" in texts
     assert "Projects" not in texts
     assert "Attendees" not in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes"):
+    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"):
         assert label in texts
     assert texts.count("Notes") == 2
     assert "Action items" in texts

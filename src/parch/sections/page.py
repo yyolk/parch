@@ -8,7 +8,6 @@ from parch.components import Component
 type PageKind = Literal[
     "cover",
     "annual",
-    "projects",
     "projects_index",
     "project",
     "meetings_index",

@@ -190,8 +190,6 @@ PROJECT_STATUS_H = 7.4
 PROJECT_LEFT_GAP = 1.0
 PROJECT_P = 5.0
 PROJECT_STATUS_MARK = 3.2
-PROJECT_NOTE_PITCH = 4.15
-PROJECT_STATUS_LABELS = ("Todo", "Doing", "Done")
 
 
 def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
@@ -225,39 +223,6 @@ def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
         weights=(mid.h - PROJECT_STATUS_H - PROJECT_LEFT_GAP, PROJECT_STATUS_H),
     )
     return header, tasks, status
-
-
-def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
-    """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
-    for card in project_card_seats(box, board.cards):
-        _paint_project_card(plotter, card, board.tasks)
-
-
-def _paint_project_card(plotter: Plotter, card: Rect, tasks: int) -> None:
-    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    left, right = project_card_columns(card)
-    header, task_box, status = project_card_left_seats(left)
-    rule_y = _paint_project_name(plotter, header)
-    _paint_project_tasks(plotter, task_box, tasks)
-    _paint_project_status(plotter, status)
-    _paint_project_notes(plotter, right, first_y=rule_y)
-
-
-def _paint_project_name(plotter: Plotter, header: Rect) -> float:
-    y = header.y + (header.h - PROJECT_P) / 2
-    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
-    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
-    rule_y = mark.bottom
-    plotter.line(
-        mark.right + 1.4,
-        rule_y,
-        header.right,
-        rule_y,
-        stroke_width=RULE,
-        stroke_gray=RULE_C,
-    )
-    return rule_y
 
 
 TICKET_GAP = 1.4
@@ -778,39 +743,6 @@ def _fill_span_rows(plotter: Plotter, spans: list[tuple[float, float, float]], d
     for y, x0, x1 in spans:
         if x1 - x0 > 0.08:
             plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=TICKET_STRIP_GRAY)
-
-
-def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:
-    y = box.y + 0.4
-    right = box.right
-    for _ in range(max(1, n)):
-        _paint_focus_row(plotter, box.x, y, right)
-        y += FOCUS_PITCH
-
-
-def _paint_project_status(plotter: Plotter, box: Rect) -> None:
-    """Orthogonal Todo / Doing / Done — open squares, tiny scaps. No arrows."""
-    for slot, label in zip(columns(box, 3, gap=1.2), PROJECT_STATUS_LABELS, strict=True):
-        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
-        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
-        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        plotter.text(
-            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
-            label,
-            size=5.4,
-            face="sans",
-            gray=MUTED,
-            small_caps=True,
-            align="left",
-        )
-
-
-def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None:
-    """Lined notes pocket — same rhythm as daily notes, no graph fill."""
-    y = first_y
-    while y < box.bottom - 0.15:
-        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
-        y += PROJECT_NOTE_PITCH
 
 
 MEET_GAP = 2.6
@@ -1978,7 +1910,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects_index":
             dests["Proj"] = page.dest
-        case "projects" | "project":
+        case "project":
             pass
         case "meetings_index":
             dests["Meet"] = page.dest
@@ -2039,7 +1971,5 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "projects":
-            return ""
         case _:
             return "Year"

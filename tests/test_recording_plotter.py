@@ -1,5 +1,7 @@
 from parch.books import YearPlanner
 from parch.calendar import month_days, months_touching_weeks
+from parch.sections.review import ReviewSection
+from parch.sections.tasks import TasksSection
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -33,7 +35,7 @@ from parch.spec import Spec
 
 def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
-    dests = ["cover", spec.year_dest, spec.projects_dest]
+    dests = ["cover", spec.year_dest]
     dests.extend(
         spec.dest_for_projects_index(page)
         for page in range(1, spec.project_index_pages + 1)
@@ -41,6 +43,8 @@ def _year_dests(*, notes_pages: int) -> list[str]:
     dests.extend(spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1))
     dests.append(spec.meetings_index_dest)
     dests.extend(spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1))
+    dests.extend(page.dest for page in TasksSection(spec).pages())
+    dests.extend(page.dest for page in ReviewSection(spec).pages())
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     for month in spec.months:
         dests.append(spec.dest_for_month(month))
@@ -116,6 +120,14 @@ def test_book_records_year_dests_and_links():
     assert "meeting-2026-01" in links
     assert "meeting-2026-16" in dests
     assert "meeting-2026-16" in links
+    assert "tasks-index-2026-Q1" in dests
+    assert "tasks-index-2026-Q1" in links
+    assert "tasks-2026-W01" in dests
+    assert "tasks-2026-W01" in links
+    assert "review-index-2026" in dests
+    assert "review-index-2026" in links
+    assert "review-2026-W01" in dests
+    assert "review-2026-W01" in links
     assert "month-2026-01-habits" in dests
     assert "week-2026-W01" in links
     assert "week-2026-W14" in links

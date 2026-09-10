@@ -147,10 +147,6 @@ class Spec:
         return _dest(t"month-{self.year:04d}-{month:02d}-habits")
 
     @property
-    def projects_dest(self) -> str:
-        return _dest(t"projects-{self.year:04d}")
-
-    @property
     def project_count(self) -> int:
         """G dest pages: ``index_pages × tickets`` (one row → one projects page)."""
         return self.project_index_pages * self.project_tickets

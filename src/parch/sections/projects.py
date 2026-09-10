@@ -19,21 +19,7 @@ class ProjectsSection:
             for slot in range(1, spec.project_count + 1)
         )
         per = spec.project_tickets
-        built = [
-            Page(
-                dest=spec.projects_dest,
-                kind="projects",
-                title="Projects",
-                nav=nav,
-                components=(
-                    ProjectsBoard(
-                        year=spec.year,
-                        cards=spec.project_cards,
-                        tasks=spec.project_tasks,
-                    ),
-                ),
-            )
-        ]
+        built: list[Page] = []
         for page_i in range(1, spec.project_index_pages + 1):
             start = (page_i - 1) * per
             slice_tickets = tickets[start : start + per]
