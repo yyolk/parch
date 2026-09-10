@@ -1,9 +1,19 @@
-# Liberation Fonts 2.1.5
+# Planner fonts
 
 Vendored TTF subset:
 
-- `LiberationSans-Regular.ttf` / `LiberationSans-Bold.ttf`
-- `LiberationSerif-Regular.ttf` / `LiberationSerif-Bold.ttf`
+- `Overpass-Regular.ttf` / `Overpass-Bold.ttf` — SANS (Highway Gothic–inspired)
+- `LiberationSerif-Regular.ttf` / `LiberationSerif-Bold.ttf` — SERIF
+
+## Overpass
+
+Upstream: https://github.com/RedHatOfficial/Overpass (`fonts/ttf`, commit `c580d28bfab7`)
+Homepage: http://overpassfont.org
+
+SIL Open Font License 1.1 — see `LICENSE.Overpass`.
+Designed by Delve Fonts; sponsored by Red Hat and Google Fonts.
+
+## Liberation Serif 2.1.5
 
 Upstream: https://github.com/liberationfonts/liberation-fonts/releases/tag/2.1.5
 

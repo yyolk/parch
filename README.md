@@ -49,6 +49,8 @@ Thesis C (in the year walk, after Meetings): month-banded Tasks index + weekly T
 
 Thesis B index + Thesis E dest (in the year walk, after Tasks): multi-column Review week-chip grid + weekly dest (Mon–Sun mini-write strip over unlabeled week narrative). Month headers sit on the left; hairlines span the well so months read across. **Rev** tab → year index; dest header chip is the ISO week and returns to the index. Dest `review-index-{year}` / `review-{iso_year}-W{nn}`. Proof: [`artifacts/mvp/exp-review-index-b.png`](artifacts/mvp/exp-review-index-b.png) and [`artifacts/mvp/exp-review-dest-e.png`](artifacts/mvp/exp-review-dest-e.png).
 
+Font exploration (Overpass sans, Liberation Serif unchanged, geometry held): cover / year / projects index / meeting index / tasks index / review index / quarter / month / week / daily under [`artifacts/mvp/exp-font-overpass-*.png`](artifacts/mvp/exp-font-overpass-cover.png). Combined: [`artifacts/mvp/exp-font-overpass.pdf`](artifacts/mvp/exp-font-overpass.pdf).
+
 ```shell
 uv run pytest
 ```
@@ -61,4 +63,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) (Sans + Serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Overpass](https://github.com/RedHatOfficial/Overpass) (sans; Highway Gothic–inspired) and [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE.Overpass` and `src/parch/fonts/LICENSE`.
