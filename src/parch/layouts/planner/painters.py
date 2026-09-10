@@ -18,6 +18,9 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewIndex,
+    ReviewWeek,
+    ReviewWeekPage,
     Schedule,
     TaskWeek,
     TasksIndex,
@@ -1112,6 +1115,122 @@ def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
     _paint_note_box(plotter, notes, label="Notes")
 
 
+REVIEW_GAP = 2.6
+REVIEW_SCORE_FRAC = 0.4
+REVIEW_INSET_X = 1.8
+REVIEW_INSET_Y = 1.6
+REVIEW_ROW_GAP = 1.8
+REVIEW_LABEL_W = 18.0
+REVIEW_LABEL_GAP = 2.2
+REVIEW_MARK_GAP = 1.6
+REVIEW_MARKS = 5
+
+
+def review_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Scorecard ≈⅖ of well (minus ``REVIEW_GAP``); Notes take the leftover."""
+    return rows(well, 2, gap=REVIEW_GAP, weights=(REVIEW_SCORE_FRAC, 1 - REVIEW_SCORE_FRAC))
+
+
+def review_score_rows(score: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal rated rows after a quiet inset — ``tracks.rows``."""
+    inner = score.inset(REVIEW_INSET_X, REVIEW_INSET_Y)
+    return rows(inner, n, gap=REVIEW_ROW_GAP)
+
+
+def review_score_parts(row: Rect) -> tuple[Rect, tuple[Rect, ...]]:
+    """Light label | 1–5 write marks. Marks hug the label; leftover stays open."""
+    label_w = min(REVIEW_LABEL_W, max(row.w * 0.28, 1))
+    label, rest = columns(row, 2, gap=REVIEW_LABEL_GAP, weights=(label_w, max(row.w - label_w, 1)))
+    mark_span = REVIEW_MARKS * TICK + (REVIEW_MARKS - 1) * REVIEW_MARK_GAP
+    marks_box = Rect(
+        rest.x,
+        rest.y + (rest.h - TICK) / 2,
+        min(mark_span, rest.w),
+        TICK,
+    )
+    marks = columns(marks_box, REVIEW_MARKS, gap=REVIEW_MARK_GAP)
+    return label, marks
+
+
+def paint_reviews_index_months(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
+    """Minimal week-horizon index. Same month-band seats as Tasks C; dests are Review."""
+    counts = tuple(len(band.weeks) for band in index.bands)
+    for band_box, band in zip(tasks_index_bands(box, counts), index.bands, strict=True):
+        plotter.rect(band_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        head, lines = tasks_index_band_seats(band_box, len(band.weeks))
+        plotter.text(
+            head,
+            band.name,
+            size=6.4,
+            bold=True,
+            face="sans",
+            gray=INK,
+            small_caps=True,
+            align="left",
+        )
+        plotter.line(head.x, head.bottom, head.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        for line, week in zip(lines, band.weeks, strict=True):
+            _paint_review_index_week(plotter, line, week)
+            for hit in tasks_index_link_hits(line):
+                plotter.link(hit, week.dest)
+
+
+def _paint_review_index_week(plotter: Plotter, row: Rect, week: ReviewWeek) -> None:
+    stub, dated, write = tasks_index_week_parts(row)
+    plotter.text(
+        stub,
+        f"W{week.iso_week:02d}",
+        size=7.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    plotter.text(
+        dated,
+        short_date_range(week.monday, week.sunday),
+        size=6.2,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    rule_y = tasks_index_rule_y(row)
+    plotter.line(
+        write.x,
+        rule_y,
+        write.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+
+
+def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
+    """Weekly Review dest — Thesis C scorecard (~⅖) + labeled Notes. Chip is the week."""
+    score, notes = review_seats(box)
+    _paint_scorecard(plotter, score, page.scores)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def _paint_scorecard(plotter: Plotter, box: Rect, scores: tuple[str, ...]) -> None:
+    """Outlined rated rows — light labels, 1–5 write marks. Not a checklist."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    for row, name in zip(review_score_rows(box, len(scores)), scores, strict=True):
+        label, marks = review_score_parts(row)
+        plotter.text(
+            label,
+            name,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        for mark in marks:
+            plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1773,6 +1892,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = item.dest
         elif item.dest.startswith("tasks-index-"):
             dests["Task"] = item.dest
+        elif item.dest.startswith("reviews-index-"):
+            dests["Rev"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1800,6 +1921,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Task"] = page.dest
         case "task":
             pass
+        case "reviews_index":
+            dests["Rev"] = page.dest
+        case "review":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1807,7 +1932,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1833,6 +1958,8 @@ def strip_active(kind: str) -> str:
             return "Meet"
         case "tasks_index" | "task":
             return "Task"
+        case "reviews_index" | "review":
+            return "Rev"
         case "projects":
             return ""
         case _:
