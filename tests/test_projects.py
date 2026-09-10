@@ -381,6 +381,8 @@ def test_projects_index_paint_write_in_underlines_and_links():
     assert [dest for _, dest in expected_hits] == [
         dest for slot in range(1, 9) for dest in (f"projects-2026-{slot:02d}",) * 4
     ]
+    for seat in seats:
+        assert all(op[1] != seat for op in link_ops)
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert len(fills) >= 8 * len(CLONE_ICONS)
     assert all(op[5] == pytest.approx(TICKET_STRIP_GRAY) for op in fills)
