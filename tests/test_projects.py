@@ -7,15 +7,25 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    CLONE_SPINE_W,
+    CLONE_STATUS_LABELS,
+    CLONE_TAG_H,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
+    paint_header,
+    paint_nav,
     paint_projects,
+    paint_projects_clone_faithful,
+    paint_toolbar,
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
+    projects_clone_a_card,
+    projects_clone_a_seats,
+    projects_clone_a_well,
     strip_active,
     strip_items,
 )
@@ -138,6 +148,112 @@ def test_projects_knobs_from_spec():
     ]
     assert len(ticks) == 2 * 5
     assert [op[2] for op in plotter.ops if op[0] == "text"].count("P") == 2
+
+
+def test_projects_clone_a_tracks():
+    well = Rect(4, 20, 110, 90)
+    cards, rails = projects_clone_a_seats(well, 3)
+    board, rail = projects_clone_a_well(well)
+    assert len(cards) == len(rails) == 3
+    assert cards[0].x == pytest.approx(board.x)
+    assert cards[0].w == pytest.approx(board.w)
+    assert cards[-1].bottom == pytest.approx(board.bottom)
+    assert rails[0].x == pytest.approx(rail.x)
+    assert rails[0].right == pytest.approx(rail.right)
+    assert rails[-1].bottom == pytest.approx(rail.bottom)
+    assert rail.x > board.right
+    assert rail.right == pytest.approx(well.right)
+    assert cards[0].y == pytest.approx(rails[0].y)
+    assert cards[-1].bottom == pytest.approx(rails[-1].bottom)
+
+    spine, name_h, secondary, tasks, notes, tags = projects_clone_a_card(cards[0])
+    assert spine.x == pytest.approx(cards[0].x)
+    assert spine.w == pytest.approx(CLONE_SPINE_W)
+    assert spine.h == pytest.approx(cards[0].h)
+    assert name_h.x > spine.right
+    assert secondary.x > name_h.right
+    assert name_h.y == pytest.approx(secondary.y)
+    assert tasks.x == pytest.approx(name_h.x)
+    assert tasks.y > name_h.bottom
+    assert notes.x == pytest.approx(secondary.x)
+    assert notes.y == pytest.approx(secondary.bottom)
+    assert tags.y > tasks.bottom
+    assert tags.bottom == pytest.approx(notes.bottom)
+    assert tags.h == pytest.approx(CLONE_TAG_H)
+    assert notes.right < cards[0].right
+
+
+def test_projects_clone_faithful_paint():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_projects_clone_faithful(plotter, well, board)
+
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("P") == 3
+    assert texts.count("Todo") == 3
+    assert texts.count("In Progress") == 3
+    assert texts.count("Done") == 3
+    assert texts.count("#") == 3
+    assert "Doing" not in texts
+    assert "PROJECT" not in texts
+    assert "Focus" not in texts
+    assert "Notes" not in texts
+
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert len(ticks) == 3 * 4
+
+    marks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(PROJECT_STATUS_MARK)
+    ]
+    assert len(marks) == 9
+
+    p_boxes = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+    ]
+    assert len(p_boxes) == 3
+
+    spines = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[3] and op[1].w == pytest.approx(CLONE_SPINE_W)
+    ]
+    assert len(spines) == 3
+
+    washes = [op for op in plotter.ops if op[0] == "rect" and op[3] and not op[2]]
+    assert len(washes) == 4  # rail + three spines
+    assert CLONE_STATUS_LABELS == ("Todo", "In Progress", "Done")
+
+
+def test_projects_clone_faithful_chrome():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    plotter = RecordingPlotter()
+    plotter.begin_page()
+    paint_toolbar(plotter, NOMAD)
+    paint_header(plotter, NOMAD, page.title, "2026")
+    paint_nav(plotter, NOMAD, strip_items(page), strip_active(page.kind))
+    paint_projects_clone_faithful(plotter, well_rect(NOMAD), board)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "Projects" in texts
+    assert "2026" in texts
+    assert "In Progress" in texts
+    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
+        assert label in texts
 
 
 def test_projects_header_year_and_seven_tabs():

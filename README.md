@@ -43,7 +43,7 @@ uv run python -m parch press supernote-nomad -o parch.pdf
 
 Default spec is year 2026, Monday week start, **full year** (Jan–Dec). Press walks cover → annual → **projects** → Q1–Q4 quarters → each month **plus its habit tracker** → each ISO week that touches the year (once) → that week’s pressed days + `notes_pages` wells. Projects is exploratory (dest `projects-{year}`): three stacked cards after the annual page, no new nav tab. Optional `[projects] cards` (2–4, default 3) and `tasks` (3–6, default 4). The quarter page is **A″**: short year-density three minis, then content-height Focus over flex Notes. Bottom nav is Year · Quar · Mon · Habit · Week · Day · Notes (QUAR is provisional). Habit lands on that context’s month tracker. A month header **Habits** chip is a shortcut to the same page. DAY/NOTES land on the current day (daily/notes), the first pressed day of a week, the 1st of a month, or Jan 1 from the year page — not a press-time “today”. All twelve months’ days and headers are linked. `examples/mvp.toml` uses `notes_pages = 1` to keep the artifact smaller; `2` still works. Optional `[habits] columns = 10`.
 
-Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (2026) and sample PNG previews (annual, projects, quarters, July month, July habits, week, daily, notes).
+Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) (2026) and sample PNG previews (annual, projects, quarters, July month, July habits, week, daily, notes). Exploratory kanban clone (not the default well): [`artifacts/mvp/exp-projects-g-clone-fit.png`](artifacts/mvp/exp-projects-g-clone-fit.png).
 
 ```shell
 uv run pytest

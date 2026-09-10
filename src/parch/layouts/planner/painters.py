@@ -277,6 +277,146 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+CLONE_SPINE_W = 2.0
+CLONE_RAIL_GAP = 2.6
+CLONE_RAIL_WEIGHTS = (0.76, 0.24)
+CLONE_CARD_WEIGHTS = (0.50, 0.50)
+CLONE_INSET_X = 1.6
+CLONE_INSET_Y = 1.4
+CLONE_COL_GAP = 3.4
+CLONE_TAG_H = 5.2
+CLONE_STAR = 2.0
+CLONE_TRACK_H = 26.0
+CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
+
+
+def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
+    """Board column | status rail — kanban’s right-hand track, Nomad-narrow."""
+    return columns(well, 2, gap=CLONE_RAIL_GAP, weights=CLONE_RAIL_WEIGHTS)
+
+
+def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tuple[Rect, ...]]:
+    """Stacked project cards and the matching three-stage rail seats."""
+    board, rail = projects_clone_a_well(well)
+    return project_card_seats(board, cards), rows(rail, cards, gap=PROJECT_CARD_GAP)
+
+
+def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
+    """spine, P+name, secondary field, tasks, notes, tags."""
+    spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
+    body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
+        CLONE_INSET_X, CLONE_INSET_Y
+    )
+    left, right = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    name_h, left_rest = left.split_top(PROJECT_HEADER_H)
+    secondary, notes = right.split_top(PROJECT_HEADER_H)
+    mid = Rect(
+        left_rest.x,
+        left_rest.y + PROJECT_LEFT_GAP,
+        left_rest.w,
+        left_rest.h - PROJECT_LEFT_GAP,
+    )
+    tasks, tags = rows(
+        mid,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(mid.h - CLONE_TAG_H - PROJECT_LEFT_GAP, CLONE_TAG_H),
+    )
+    return spine, name_h, secondary, tasks, notes, tags
+
+
+def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """projects_clone_a — kanban information architecture in Nomad #207 craft.
+
+    Lined notes (daily-notes pitch), not graph: graph fights e-ink at this size.
+    Status nodes are open squares — ``Plotter`` has no circle primitive.
+    Spine is a narrow ink bar; rotated PROJECT / chevrons stay off.
+    """
+    cards, rails = projects_clone_a_seats(box, board.cards)
+    _wash(plotter, projects_clone_a_well(box)[1], WASH)
+    for card, rail in zip(cards, rails, strict=True):
+        spine, name_h, secondary, tasks, notes, tags = projects_clone_a_card(card)
+        plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
+        _paint_project_name(plotter, name_h)
+        sec_y = secondary.y + (secondary.h - PROJECT_P) / 2
+        plotter.rect(
+            Rect(secondary.x, sec_y, secondary.w, PROJECT_P),
+            stroke=True,
+            fill=False,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+        _paint_clone_tasks(plotter, tasks, board.tasks)
+        _paint_note_box(plotter, notes)
+        _paint_clone_tags(plotter, tags)
+        _paint_clone_status_track(plotter, rail)
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
+    y = box.y + 0.4
+    star_right = box.right - CLONE_STAR - 1.0
+    for _ in range(max(1, n)):
+        _paint_focus_row(plotter, box.x, y, star_right)
+        star = Rect(
+            box.right - CLONE_STAR,
+            y + (TICK - CLONE_STAR) / 2,
+            CLONE_STAR,
+            CLONE_STAR,
+        )
+        _paint_diamond(plotter, star)
+        y += FOCUS_PITCH
+
+
+def _paint_clone_tags(plotter: Plotter, box: Rect) -> None:
+    """# and diamond association marks — Liberation has no ★ glyph."""
+    hash_slot, star_slot = columns(box, 2, gap=1.4)
+    mark_h = min(PROJECT_P, box.h - 0.4)
+    hash_y = hash_slot.y + (hash_slot.h - mark_h) / 2
+    hash_box = Rect(hash_slot.x, hash_y, mark_h, mark_h)
+    plotter.rect(hash_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(hash_box, "#", size=6.2, face="sans", gray=INK, align="center")
+    star_y = star_slot.y + (star_slot.h - mark_h) / 2
+    star_box = Rect(star_slot.x, star_y, mark_h, mark_h)
+    plotter.rect(star_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    _paint_diamond(plotter, star_box.inset(0.9, 0.9))
+
+
+def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
+    """Vertical Todo → In Progress → Done. Squares stand in for circles."""
+    track_h = min(CLONE_TRACK_H, box.h - 2.0)
+    track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
+    inset = track.inset(1.4, 0.6)
+    marks: list[Rect] = []
+    for slot, label in zip(rows(inset, 3, gap=1.8), CLONE_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        marks.append(mark)
+    cx = marks[0].x + marks[0].w / 2
+    for above, below in zip(marks, marks[1:]):
+        plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_diamond(plotter: Plotter, box: Rect) -> None:
+    """Hairline rhombus — favorite/tag stand-in where ★ is missing."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    plotter.line(cx, box.y, box.right, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
