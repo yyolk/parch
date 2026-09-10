@@ -52,6 +52,7 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         "project_index_pages": spec.project_index_pages,
         "meeting_index_rows": spec.meeting_index_rows,
         "task_rows": spec.task_rows,
+        "review_carry_rows": spec.review_carry_rows,
     }
     if year is not None:
         data["year"] = year

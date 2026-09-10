@@ -26,3 +26,6 @@ index_rows = 16
 
 [tasks]
 rows = 6
+
+[review]
+carry_rows = 5

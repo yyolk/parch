@@ -71,6 +71,7 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    review_carry_rows: int = 5  # shorter Carry forward checklist on dest D
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -107,6 +108,8 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if not 3 <= self.review_carry_rows <= 7:
+            raise ConfigError("review_carry_rows must be 3–7")
 
     @property
     def weekday_start(self) -> int:
@@ -255,6 +258,31 @@ class Spec:
         iso = day.isocalendar()
         return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
 
+    def dest_for_review_index(self, quarter: int) -> str:
+        if not 1 <= quarter <= 4:
+            raise ConfigError(f"review index quarter out of range: {quarter}")
+        return _dest(t"review-index-{self.year:04d}-Q{quarter}")
+
+    @property
+    def review_index_dest(self) -> str:
+        """Rev landing — first pressed quarter’s minimal week list."""
+        return self.dest_for_review_index(self.pressed_quarters()[0])
+
+    def dest_for_review_index_of(self, day: date) -> str:
+        """Index page whose week list first lists the ISO week of ``day``."""
+        key = day.isocalendar()[:2]
+        for month in self.months:
+            for week in month_touching_weeks(self.year, month, self.weekday_start):
+                monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+                if monday.isocalendar()[:2] == key:
+                    return self.dest_for_review_index(quarter_of(month))
+        return self.review_index_dest
+
+    def dest_for_review(self, day: date) -> str:
+        """Weekly Review dest, e.g. ``review-2026-W01`` — not Morning|Later Tasks."""
+        iso = day.isocalendar()
+        return _dest(t"review-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
@@ -282,6 +310,8 @@ class Spec:
         meetings_table = meetings if isinstance(meetings, dict) else {}
         tasks = data.get("tasks")
         tasks_table = tasks if isinstance(tasks, dict) else {}
+        review = data.get("review")
+        review_table = review if isinstance(review, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -309,6 +339,9 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            review_carry_rows=int(
+                review_table.get("carry_rows", data.get("review_carry_rows", 5))
+            ),
         )
 
     @classmethod
