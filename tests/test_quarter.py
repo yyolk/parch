@@ -27,9 +27,10 @@ from parch.tracks import rows
 def test_quarter_page_and_provisional_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:7]] == [
+    assert [page.dest for page in pages[:8]] == [
         "cover",
         "year-2026",
+        "projects-2026",
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -43,7 +44,7 @@ def test_quarter_page_and_provisional_nav():
         "quarter-2026-Q4",
     ]
 
-    quarter = pages[2]
+    quarter = pages[3]
     assert quarter.kind == "quarter"
     assert quarter.title == "Q1 2026"
     assert strip_active(quarter.kind) == "Quar"
@@ -146,7 +147,9 @@ def test_quarter_a_note_boxes_and_c_paint():
     spec = Spec(notes_pages=1)
     grid = next(
         item
-        for item in YearPlanner().pages(spec)[2].components
+        for item in next(
+            page for page in YearPlanner().pages(spec) if page.dest == "quarter-2026-Q1"
+        ).components
         if isinstance(item, QuarterGrid)
     )
     well = Rect(4, 20, 110, 120)
@@ -202,7 +205,9 @@ def test_quarter_a_and_c_focus_notes_paint():
     spec = Spec(notes_pages=1)
     grid = next(
         item
-        for item in YearPlanner().pages(spec)[2].components
+        for item in next(
+            page for page in YearPlanner().pages(spec) if page.dest == "quarter-2026-Q1"
+        ).components
         if isinstance(item, QuarterGrid)
     )
     well = Rect(4, 20, 110, 120)

@@ -6,7 +6,15 @@ from typing import Literal
 from parch.components import Component
 
 type PageKind = Literal[
-    "cover", "annual", "quarter", "month", "habits", "weekly", "daily", "daily_notes"
+    "cover",
+    "annual",
+    "projects",
+    "quarter",
+    "month",
+    "habits",
+    "weekly",
+    "daily",
+    "daily_notes",
 ]
 
 

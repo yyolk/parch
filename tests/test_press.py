@@ -37,8 +37,8 @@ def test_press_year_pdf(tmp_path: Path):
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    # cover + annual + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
-    assert len(reader.pages) == 813
+    # cover + annual + projects + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
+    assert len(reader.pages) == 814
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -47,6 +47,7 @@ def test_press_year_pdf(tmp_path: Path):
     dests = _named_dests(reader)
     assert "cover" in dests
     assert "year-2026" in dests
+    assert "projects-2026" in dests
     assert "quarter-2026-Q1" in dests
     assert "quarter-2026-Q4" in dests
     assert "month-2026-01" in dests

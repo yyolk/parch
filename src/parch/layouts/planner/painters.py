@@ -11,6 +11,7 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectsBoard,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -165,6 +166,115 @@ def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+
+
+PROJECT_CARD_GAP = 2.6
+PROJECT_COL_GAP = 2.8
+PROJECT_COL_WEIGHTS = (0.48, 0.52)
+PROJECT_INSET_X = 1.8
+PROJECT_INSET_Y = 1.5
+PROJECT_HEADER_H = 6.2
+PROJECT_STATUS_H = 7.4
+PROJECT_LEFT_GAP = 1.0
+PROJECT_P = 5.0
+PROJECT_STATUS_MARK = 3.2
+PROJECT_NOTE_PITCH = 4.15
+PROJECT_STATUS_LABELS = ("Todo", "Doing", "Done")
+
+
+def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
+    """One row track per project card."""
+    return rows(well, cards, gap=PROJECT_CARD_GAP)
+
+
+def project_card_columns(card: Rect) -> tuple[Rect, Rect]:
+    """Tasks | notes columns inside a card, after a quiet inset."""
+    return columns(
+        card.inset(PROJECT_INSET_X, PROJECT_INSET_Y),
+        2,
+        gap=PROJECT_COL_GAP,
+        weights=PROJECT_COL_WEIGHTS,
+    )
+
+
+def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
+    """P+name, task ticks, Todo/Doing/Done — stacked in the left column."""
+    header, rest = left.split_top(PROJECT_HEADER_H)
+    mid = Rect(
+        rest.x,
+        rest.y + PROJECT_LEFT_GAP,
+        rest.w,
+        rest.h - PROJECT_LEFT_GAP,
+    )
+    tasks, status = rows(
+        mid,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(mid.h - PROJECT_STATUS_H - PROJECT_LEFT_GAP, PROJECT_STATUS_H),
+    )
+    return header, tasks, status
+
+
+def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
+    for card in project_card_seats(box, board.cards):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        left, right = project_card_columns(card)
+        header, tasks, status = project_card_left_seats(left)
+        rule_y = _paint_project_name(plotter, header)
+        _paint_project_tasks(plotter, tasks, board.tasks)
+        _paint_project_status(plotter, status)
+        _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+def _paint_project_name(plotter: Plotter, header: Rect) -> float:
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
+    rule_y = mark.bottom
+    plotter.line(
+        mark.right + 1.4,
+        rule_y,
+        header.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    return rule_y
+
+
+def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:
+    y = box.y + 0.4
+    right = box.right
+    for _ in range(max(1, n)):
+        _paint_focus_row(plotter, box.x, y, right)
+        y += FOCUS_PITCH
+
+
+def _paint_project_status(plotter: Plotter, box: Rect) -> None:
+    """Orthogonal Todo / Doing / Done — open squares, tiny scaps. No arrows."""
+    for slot, label in zip(columns(box, 3, gap=1.2), PROJECT_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+
+
+def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None:
+    """Lined notes pocket — same rhythm as daily notes, no graph fill."""
+    y = first_y
+    while y < box.bottom - 0.15:
+        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += PROJECT_NOTE_PITCH
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -830,6 +940,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
+        case "projects":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -857,5 +969,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
+        case "projects":
+            return ""
         case _:
             return "Year"
