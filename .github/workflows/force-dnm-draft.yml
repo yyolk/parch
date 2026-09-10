@@ -33,12 +33,25 @@ jobs:
 
           MARKER='<!-- dnm-forced-draft -->'
 
+          has_dnm() {
+            TEXT="$1" python3 -c '
+          import os, re, sys, unicodedata
+          chars = []
+          for c in os.environ.get("TEXT", ""):
+              if unicodedata.category(c) == "Zs" or c in "\u200b\u200c\u200d\u2060\ufeff":
+                  chars.append(" ")
+              else:
+                  chars.append(c)
+          sys.exit(0 if re.search(r"do[\\s_-]*not[\\s_-]*merge", "".join(chars), re.I) else 1)
+          '
+          }
+
           title_hit=false
           label_hit=false
-          if echo "$TITLE" | grep -qiE 'do[[:space:]_-]*not[[:space:]_-]*merge'; then
+          if has_dnm "$TITLE"; then
             title_hit=true
           fi
-          if echo "$LABELS" | grep -qiE '(^|,)[[:space:]]*(do[[:space:]_-]*not[[:space:]_-]*merge)[[:space:]]*(,|$)'; then
+          if has_dnm "$LABELS"; then
             label_hit=true
           fi
 
