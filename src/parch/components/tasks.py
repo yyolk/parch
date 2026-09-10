@@ -36,7 +36,7 @@ class TasksIndex:
 
 @dataclass(frozen=True, slots=True)
 class TasksWeekPage:
-    """Weekly Tasks dest — checklist over flex notes. Chip is Wnn → owning index."""
+    """Weekly Tasks dest — unlabeled ⅔ checklist over leftover notes. Chip is Wnn → index."""
 
     year: int
     iso_year: int
