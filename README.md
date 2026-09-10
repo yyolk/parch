@@ -49,6 +49,8 @@ Committed proof: [`artifacts/mvp/nomad-2026.pdf`](artifacts/mvp/nomad-2026.pdf) 
 uv run pytest
 ```
 
+Exploratory **Tasks C×F hybrid** (`TasksSection`, not in the year walk): quarter-paged month bands packing two-column ISO week chips; dests are F’s Morning|Later + leftover Notes. Proof: [`artifacts/mvp/exp-tasks-index-cxf-bands.png`](artifacts/mvp/exp-tasks-index-cxf-bands.png) and [`artifacts/mvp/exp-tasks-index-cxf-dest.png`](artifacts/mvp/exp-tasks-index-cxf-dest.png). `[tasks] morning` / `later` (4–8, default 6). Task tab is experiment-only.
+
 ## License / Credits
 
 MIT — see [LICENSE](LICENSE).

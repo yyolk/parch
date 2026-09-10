@@ -8,7 +8,7 @@ from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
-from parch.calendar import quarter_of
+from parch.calendar import iso_monday, month_week_bands, quarter_of
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
@@ -70,6 +70,8 @@ class Spec:
     project_tickets: int = 8
     project_index_pages: int = 1
     meeting_index_rows: int = 16
+    task_morning: int = 6
+    task_later: int = 6
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -104,6 +106,10 @@ class Spec:
             raise ConfigError("project_index_pages must be 1–6")
         if not 12 <= self.meeting_index_rows <= 20:
             raise ConfigError("meeting_index_rows must be 12–20")
+        if not 4 <= self.task_morning <= 8:
+            raise ConfigError("task_morning must be 4–8")
+        if not 4 <= self.task_later <= 8:
+            raise ConfigError("task_later must be 4–8")
 
     @property
     def weekday_start(self) -> int:
@@ -227,6 +233,31 @@ class Spec:
         iso = day.isocalendar()
         return _dest(t"week-{iso.year:04d}-W{iso.week:02d}")
 
+    def dest_for_tasks_index(self, quarter: int) -> str:
+        if not 1 <= quarter <= 4:
+            raise ConfigError(f"tasks index quarter out of range: {quarter}")
+        return _dest(t"tasks-index-{self.year:04d}-Q{quarter}")
+
+    @property
+    def tasks_index_dest(self) -> str:
+        """Task landing — first pressed quarter’s C×F banded-chip index."""
+        return self.dest_for_tasks_index(self.pressed_quarters()[0])
+
+    def dest_for_tasks_index_of(self, day: date) -> str:
+        """Index page whose month band first lists the ISO week of ``day``."""
+        key = day.isocalendar()[:2]
+        for month, weeks in month_week_bands(self.year, self.months, self.weekday_start):
+            for week in weeks:
+                monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+                if monday.isocalendar()[:2] == key:
+                    return self.dest_for_tasks_index(quarter_of(month))
+        return self.tasks_index_dest
+
+    def dest_for_task(self, day: date) -> str:
+        """Weekly Tasks dest, e.g. ``tasks-2026-W01`` — not the planner week page."""
+        iso = day.isocalendar()
+        return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
@@ -252,6 +283,9 @@ class Spec:
         projects_table = projects if isinstance(projects, dict) else {}
         meetings = data.get("meetings")
         meetings_table = meetings if isinstance(meetings, dict) else {}
+        tasks = data.get("tasks")
+        tasks_table = tasks if isinstance(tasks, dict) else {}
+        shared_rows = tasks_table.get("rows")
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -277,6 +311,18 @@ class Spec:
             ),
             meeting_index_rows=int(
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
+            ),
+            task_morning=int(
+                tasks_table.get(
+                    "morning",
+                    data.get("task_morning", shared_rows if shared_rows is not None else 6),
+                )
+            ),
+            task_later=int(
+                tasks_table.get(
+                    "later",
+                    data.get("task_later", shared_rows if shared_rows is not None else 6),
+                )
             ),
         )
 
