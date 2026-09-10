@@ -7,6 +7,7 @@ from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
 type TextFace = Literal["sans", "serif"]
+type TextWeight = Literal["book", "medium", "bold", "heavy"]
 
 
 class Plotter(Protocol):
@@ -54,8 +55,13 @@ class Plotter(Protocol):
         face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
+        weight: TextWeight | None = None,
     ) -> None:
-        """Draw a single line of text inside ``box`` (pt size)."""
+        """Draw a single line of text inside ``box`` (pt size).
+
+        ``weight`` selects a vendored Jost cut. When omitted, ``face`` + ``bold``
+        resolve to Book / Bold (sans) or Medium (serif).
+        """
 
     def link(self, box: Rect, dest: str) -> None:
         """Invisible hit target to a named destination."""

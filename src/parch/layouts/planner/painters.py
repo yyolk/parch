@@ -155,7 +155,13 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
     )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
     plotter.text(
-        year_box, str(cover.year), size=42, bold=True, face="serif", gray=INK, align="center"
+        year_box,
+        str(cover.year),
+        size=42,
+        face="serif",
+        weight="heavy",
+        gray=INK,
+        align="center",
     )
     tap_w = 48.0
     plotter.link(
