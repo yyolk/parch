@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsMilestones,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,109 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+MILESTONE_HEAD_H = 8.0
+MILESTONE_STATUS_W = 50.0
+MILESTONE_HEAD_GAP = 2.4
+MILESTONE_BODY_GAP = 2.6
+MILESTONE_NOTES_GAP = 2.6
+MILESTONE_NOTES_H = 32.0
+MILESTONE_RUNG_GAP = 2.2
+MILESTONE_NAME_H = 5.4
+MILESTONE_DATE_W = 24.0
+MILESTONE_DATE_H = 3.6
+MILESTONE_NAME_DATE_GAP = 1.0
+MILESTONE_TICK_GAP = 1.4
+
+
+def projects_milestones_seats(
+    well: Rect, rungs: int
+) -> tuple[Rect, tuple[Rect, ...], Rect]:
+    """Name+status head, stacked milestone rungs, compact next-notes."""
+    head, rest = well.split_top(MILESTONE_HEAD_H)
+    leftover = Rect(rest.x, rest.y + MILESTONE_BODY_GAP, rest.w, rest.h - MILESTONE_BODY_GAP)
+    body_h = leftover.h - MILESTONE_NOTES_GAP - MILESTONE_NOTES_H
+    body = Rect(leftover.x, leftover.y, leftover.w, body_h)
+    notes = Rect(leftover.x, leftover.bottom - MILESTONE_NOTES_H, leftover.w, MILESTONE_NOTES_H)
+    return head, rows(body, max(1, rungs), gap=MILESTONE_RUNG_GAP), notes
+
+
+def projects_milestones_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """P+name underline | Todo / Doing / Done for the project as a whole."""
+    name, _status = head.split_left(head.w - MILESTONE_STATUS_W)
+    name = Rect(name.x, name.y, max(name.w - MILESTONE_HEAD_GAP, 1), name.h)
+    status = Rect(name.right + MILESTONE_HEAD_GAP, head.y, head.right - name.right - MILESTONE_HEAD_GAP, head.h)
+    return name, status
+
+
+def projects_milestones_rung_seats(rung: Rect) -> tuple[Rect, Rect, Rect]:
+    """Tick + name underline over a thin optional date underline."""
+    tick_y = rung.y + (MILESTONE_NAME_H - TICK) / 2
+    tick = Rect(rung.x, tick_y, TICK, TICK)
+    name = Rect(
+        tick.right + MILESTONE_TICK_GAP,
+        rung.y,
+        max(rung.right - tick.right - MILESTONE_TICK_GAP, 1),
+        MILESTONE_NAME_H,
+    )
+    date = Rect(
+        name.x,
+        name.bottom + MILESTONE_NAME_DATE_GAP,
+        MILESTONE_DATE_W,
+        MILESTONE_DATE_H,
+    )
+    return tick, name, date
+
+
+def paint_projects_milestones(plotter: Plotter, box: Rect, ladder: ProjectsMilestones) -> None:
+    """Thesis O — milestone ladder toward done. Not a kanban or meeting dump."""
+    head, rungs, notes = projects_milestones_seats(box, ladder.rungs)
+    name, status = projects_milestones_head_seats(head)
+    _paint_project_name(plotter, name)
+    _paint_project_status(plotter, status)
+    _paint_milestone_spine(plotter, rungs)
+    for rung in rungs:
+        tick, name_box, date = projects_milestones_rung_seats(rung)
+        _paint_milestone_rung(plotter, tick, name_box, date)
+    _paint_note_box(plotter, notes, label="Next")
+
+
+def _paint_milestone_spine(plotter: Plotter, rungs: tuple[Rect, ...]) -> None:
+    """Quiet hairline through tick centers — the ladder, not a kanban rail."""
+    if len(rungs) < 2:
+        return
+    first, _, _ = projects_milestones_rung_seats(rungs[0])
+    last, _, _ = projects_milestones_rung_seats(rungs[-1])
+    x = first.x + first.w / 2
+    plotter.line(
+        x,
+        first.y + first.h / 2,
+        x,
+        last.y + last.h / 2,
+        stroke_width=HAIR,
+        stroke_gray=SOFT,
+    )
+
+
+def _paint_milestone_rung(plotter: Plotter, tick: Rect, name: Rect, date: Rect) -> None:
+    plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(
+        name.x,
+        tick.bottom,
+        name.right,
+        tick.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    plotter.line(
+        date.x,
+        date.bottom,
+        date.right,
+        date.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1044,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_milestones":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1073,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_milestones":
             return ""
         case _:
             return "Year"
