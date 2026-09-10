@@ -2,7 +2,7 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import ProjectLeaf, ProjectsBoard, ProjectsIndex
-from parch.components.projects import timeline_nodes
+from parch.components.projects import timeline_months
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
@@ -16,6 +16,7 @@ from parch.layouts.planner.painters import (
     TICK,
     paint_project,
     paint_projects,
+    RULE,
     paint_projects_index_timeline,
     project_card_columns,
     project_card_left_seats,
@@ -39,7 +40,8 @@ NAV8 = (
     ("Proj", "projects-index-2026"),
 )
 
-PRINTED = (
+MONTHS = ("Feb", "Mar", "Apr", "Jun", "Aug", "Sep", "Dec")
+SAMPLES = (
     "New desk",
     "Cabin reno",
     "Garden beds",
@@ -47,6 +49,7 @@ PRINTED = (
     "Studio move",
     "Book draft",
     "Year review",
+    "Family reunion",
 )
 
 
@@ -116,7 +119,7 @@ def test_projects_paint_cards_ticks_and_status():
     assert "PROJECT" not in texts
     assert "Focus" not in texts
     assert "Notes" not in texts
-    for name in PRINTED:
+    for name in SAMPLES:
         assert name not in texts
 
     ticks = [
@@ -205,23 +208,14 @@ def test_projects_index_after_board_and_nav_lands_there():
 
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
     assert roster.year == 2026
-    assert [node.name for node in roster.nodes] == list(PRINTED)
-    assert [node.when for node in roster.nodes] == [
-        "Feb",
-        "Mar",
-        "Apr",
-        "Jun",
-        "Aug",
-        "Sep",
-        "Dec",
-    ]
+    assert [node.when for node in roster.nodes] == list(MONTHS)
     assert [node.dest for node in roster.nodes] == [f"project-2026-{n:02d}" for n in range(1, 8)]
 
     annual = next(p for p in pages if p.kind == "annual")
     assert ("Proj", "projects-index-2026") in strip_items(annual)
 
 
-def test_paint_projects_index_timeline_names_dates_and_links():
+def test_paint_projects_index_timeline_rules_dates_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -230,9 +224,9 @@ def test_paint_projects_index_timeline_names_dates_and_links():
     paint_projects_index_timeline(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    for name in PRINTED:
-        assert name in texts
-    for when in ("Feb", "Mar", "Apr", "Jun", "Aug", "Sep", "Dec"):
+    for name in SAMPLES:
+        assert name not in texts
+    for when in MONTHS:
         assert when in texts
     assert "Todo" not in texts
     assert "Doing" not in texts
@@ -259,6 +253,13 @@ def test_paint_projects_index_timeline_names_dates_and_links():
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert fills == []
 
+    rules = [
+        op
+        for op in plotter.ops
+        if op[0] == "line" and op[5] == pytest.approx(RULE) and op[2] == pytest.approx(op[4])
+    ]
+    assert len(rules) == 7
+
 
 def test_projects_index_header_and_proj_tab_active():
     spec = Spec(notes_pages=1)
@@ -270,26 +271,26 @@ def test_projects_index_header_and_proj_tab_active():
     assert "Projects" in texts
     assert "2026" in texts
     assert "Proj" in texts
-    for name in PRINTED:
-        assert name in texts
+    for name in SAMPLES:
+        assert name not in texts
+    for when in MONTHS:
+        assert when in texts
     assert plotter.links().count("project-2026-01") == 1
     assert "projects-index-2026" in plotter.links()
 
 
-def test_project_leaf_prints_name_and_links_back():
+def test_project_leaf_write_in_name_and_links_back():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     leaf_page = next(p for p in pages if p.dest == "project-2026-02")
     assert leaf_page.kind == "project"
-    assert leaf_page.title == "Cabin reno"
+    assert leaf_page.title == "Project 02"
     assert strip_active(leaf_page.kind) == "Proj"
     assert strip_items(leaf_page) == NAV8
 
     leaf = next(item for item in leaf_page.components if isinstance(item, ProjectLeaf))
     assert leaf.year == 2026
     assert leaf.number == 2
-    assert leaf.name == "Cabin reno"
-    assert leaf.when == "Mar"
     assert leaf.tasks == 4
     assert leaf.index_dest == "projects-index-2026"
 
@@ -297,11 +298,12 @@ def test_project_leaf_prints_name_and_links_back():
     plotter.begin_page()
     PlannerLayout().paint(leaf_page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Cabin reno" in texts
-    assert "Mar" in texts
+    assert "Project 02" in texts
     assert "Index" in texts
     assert "2026" in texts
     assert "P" in texts
+    for name in SAMPLES:
+        assert name not in texts
     assert plotter.links().count("projects-index-2026") >= 2
 
     well = well_rect(NOMAD)
@@ -309,8 +311,8 @@ def test_project_leaf_prints_name_and_links_back():
     paint_project(ink, well, leaf)
     names = [op[2] for op in ink.ops if op[0] == "text"]
     assert names.count("P") == 1
-    assert "Cabin reno" in names
-    assert "Mar" in names
+    for name in SAMPLES:
+        assert name not in names
     frames = [
         op
         for op in ink.ops
@@ -329,18 +331,9 @@ def test_project_index_rows_knob():
     dests = [p.dest for p in pages]
     assert dests.count("project-2026-06") == 1
     assert "project-2026-07" not in dests
-    assert [node.name for node in roster.nodes] == list(timeline_nodes(6)[i][0] for i in range(6))
+    assert [node.when for node in roster.nodes] == list(timeline_months(6))
 
     eight = Spec(notes_pages=1, project_index_rows=8)
     index8 = next(p for p in YearPlanner().pages(eight) if p.kind == "projects_index")
     roster8 = next(item for item in index8.components if isinstance(item, ProjectsIndex))
-    assert [node.name for node in roster8.nodes] == [
-        "New desk",
-        "Cabin reno",
-        "Garden beds",
-        "Summer trip",
-        "Studio move",
-        "Book draft",
-        "Family reunion",
-        "Year review",
-    ]
+    assert [node.when for node in roster8.nodes] == list(timeline_months(8))

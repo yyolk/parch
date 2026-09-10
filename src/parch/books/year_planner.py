@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → projects board → timeline index → leaves → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → projects board → write-in timeline index → leaves → quarters → months+habits → weeks → days."""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device

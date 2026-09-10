@@ -280,20 +280,20 @@ def _paint_project_name(
 
 
 def projects_index_timeline(box: Rect, n: int) -> tuple[Rect, ...]:
-    """Equal row tracks for named timeline nodes, inset from the well edge."""
+    """Equal row tracks for timeline nodes, inset from the well edge."""
     inner = Rect(box.x, box.y + INDEX_INSET_Y, box.w, box.h - 2 * INDEX_INSET_Y)
     return rows(inner, max(1, n))
 
 
 def projects_index_node_seats(row: Rect) -> tuple[Rect, Rect, Rect]:
-    """Date | spine | printed name — one milestone row."""
+    """Date | spine | write-in name — one milestone row."""
     date, rest = row.split_left(INDEX_DATE_W)
     spine, name = rest.split_left(INDEX_SPINE_W)
     return date, spine, name
 
 
 def paint_projects_index_timeline(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis M — vertical spine, printed titles beside nodes, each a leaf dest."""
+    """Thesis M — vertical spine, write-in name rules beside nodes, each a leaf dest."""
     seats = projects_index_timeline(box, len(index.nodes))
     first_spine = projects_index_node_seats(seats[0])[1]
     cx = first_spine.x + first_spine.w / 2
@@ -301,7 +301,7 @@ def paint_projects_index_timeline(plotter: Plotter, box: Rect, index: ProjectsIn
     y1 = seats[-1].y + seats[-1].h / 2
     plotter.line(cx, y0, cx, y1, stroke_width=HAIR, stroke_gray=INK)
     for seat, node in zip(seats, index.nodes, strict=True):
-        date, spine, name = projects_index_node_seats(seat)
+        date, _spine, name = projects_index_node_seats(seat)
         cy = seat.y + seat.h / 2
         mark = Rect(cx - INDEX_NODE / 2, cy - INDEX_NODE / 2, INDEX_NODE, INDEX_NODE)
         plotter.line(date.right, cy, mark.x, cy, stroke_width=HAIR, stroke_gray=SOFT)
@@ -315,21 +315,21 @@ def paint_projects_index_timeline(plotter: Plotter, box: Rect, index: ProjectsIn
             small_caps=True,
             align="right",
         )
-        plotter.text(
-            Rect(spine.right + INDEX_NAME_GAP, name.y, max(name.w - INDEX_NAME_GAP, 1), name.h),
-            node.name,
-            size=9.4,
-            face="serif",
-            gray=INK,
-            align="left",
+        plotter.line(
+            mark.right + INDEX_NAME_GAP,
+            mark.bottom,
+            name.right,
+            mark.bottom,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
         )
         plotter.link(seat, node.dest)
 
 
 def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
-    """G-adjacent leaf — one board-height card with the printed project name."""
+    """G-adjacent leaf — one board-height card with a write-in name rule."""
     card = project_card_seats(box, 3)[0]
-    _paint_project_card(plotter, card, tasks=leaf.tasks, name=leaf.name, when=leaf.when)
+    _paint_project_card(plotter, card, tasks=leaf.tasks)
 
 
 def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:

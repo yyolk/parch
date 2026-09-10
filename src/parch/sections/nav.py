@@ -1,6 +1,6 @@
 """Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Day · Notes · Proj.
 
-QUAR is provisional — may come out of the strip later. PROJ lands on the named timeline index.
+QUAR is provisional — may come out of the strip later. PROJ lands on the write-in timeline index.
 
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
