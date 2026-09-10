@@ -1,16 +1,9 @@
-AUTHORS
+IBM Plex
+Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"
 
-Current Contributors (sorted alphabetically):
-  
-  - Vishal Vijayraghavan  <vishalvvr at fedoraproject dot org>
-      Project Owner/ Maintainer (Current)
-      Red Hat, Inc.
+Designed by Mike Abbink (IBM) with Bold Monday
+(Paul van der Laan and Pieter van Rosmalen).
 
-Previous Contributors
-  - Pravin Satpute  <psatpute at redhat dot com>
-      Project Owner/ Maintainer 
-      Red Hat, Inc.
-      
-  - Steve Matteson
-      Original Designer
-      Ascender, Inc.
+Upstream: https://github.com/IBM/plex
+- IBM Plex Sans @ibm/plex-sans@1.1.0
+- IBM Plex Serif @ibm/plex-serif@2.0.0

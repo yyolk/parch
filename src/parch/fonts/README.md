@@ -1,11 +1,13 @@
-# Liberation Fonts 2.1.5
+# IBM Plex
 
-Vendored TTF subset:
+Vendored static TTF subset for `Fpdf2Plotter` (no variable fonts):
 
-- `LiberationSans-Regular.ttf` / `LiberationSans-Bold.ttf`
-- `LiberationSerif-Regular.ttf` / `LiberationSerif-Bold.ttf`
+- **sans** — `IBMPlexSans-Regular.ttf` / `IBMPlexSans-Bold.ttf` (`@ibm/plex-sans@1.1.0`)
+- **serif** — `IBMPlexSerif-Regular.ttf` / `IBMPlexSerif-Bold.ttf` (`@ibm/plex-serif@2.0.0`)
 
-Upstream: https://github.com/liberationfonts/liberation-fonts/releases/tag/2.1.5
+Taken from each package’s `fonts/complete/ttf/` tree. Mirrors the previous Liberation Sans/Serif Regular+Bold pairing.
+
+Upstream: https://github.com/IBM/plex
 
 SIL Open Font License 1.1 — see `LICENSE` and `AUTHORS`.
-Reserved Font Name: Liberation.
+Reserved Font Name: Plex.
