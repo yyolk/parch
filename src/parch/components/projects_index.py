@@ -1,4 +1,4 @@
-"""Projects index — data only. Painters seat the titled mini-cover grid."""
+"""Projects index — data only. Painters seat the write-in mini-cover grid."""
 
 from dataclasses import dataclass
 

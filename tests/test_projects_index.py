@@ -161,7 +161,6 @@ def test_index_slots_eight_is_two_by_four():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts == []
     assert "Project 08" not in texts
-    assert [op for op in plotter.ops if op[0] == "line"]
     assert len([op for op in plotter.ops if op[0] == "line"]) == 8
     assert plotter.links() == list(index.dests)
 
