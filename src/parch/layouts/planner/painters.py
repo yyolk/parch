@@ -269,6 +269,7 @@ TICKET_BODY_GAP = 1.8
 TICKET_PREVIEW_GAP = 1.4
 TICKET_PREVIEW_INSET = 0.35
 TICKET_STRIP_PAD = 0.40
+TICKET_STRIP_GRAY = RULE_C
 
 # G (#215) symbol strip — same marks, size, and strip height.
 CLONE_ICON = 2.1
@@ -401,20 +402,20 @@ def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
 def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
     match kind:
         case "square":
-            plotter.rect(box, stroke=False, fill=True, fill_gray=INK)
+            plotter.rect(box, stroke=False, fill=True, fill_gray=TICKET_STRIP_GRAY)
         case "plus":
             arm = 0.30
             plotter.rect(
                 Rect(box.x + box.w * (1 - arm) / 2, box.y, box.w * arm, box.h),
                 stroke=False,
                 fill=True,
-                fill_gray=INK,
+                fill_gray=TICKET_STRIP_GRAY,
             )
             plotter.rect(
                 Rect(box.x, box.y + box.h * (1 - arm) / 2, box.w, box.h * arm),
                 stroke=False,
                 fill=True,
-                fill_gray=INK,
+                fill_gray=TICKET_STRIP_GRAY,
             )
         case "circle":
             _fill_circle(plotter, box)
@@ -579,7 +580,7 @@ def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:
 def _fill_span_rows(plotter: Plotter, spans: list[tuple[float, float, float]], dy: float) -> None:
     for y, x0, x1 in spans:
         if x1 - x0 > 0.08:
-            plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=INK)
+            plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=TICKET_STRIP_GRAY)
 
 
 def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:

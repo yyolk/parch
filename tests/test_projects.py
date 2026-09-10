@@ -20,6 +20,7 @@ from parch.layouts.planner.painters import (
     TICKET_MARK,
     TICKET_NAME_WEIGHTS,
     TICKET_PREVIEW_GAP,
+    TICKET_STRIP_GRAY,
     TICKET_STRIP_PAD,
     TICKET_STUB_W,
     paint_project,
@@ -345,6 +346,8 @@ def test_projects_index_paint_write_in_underlines_and_links():
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert len(fills) >= 8 * len(CLONE_ICONS)
+    assert all(op[5] == pytest.approx(TICKET_STRIP_GRAY) for op in fills)
+    assert TICKET_STRIP_GRAY == pytest.approx(198 / 255)
 
     chrome = RecordingPlotter()
     chrome.begin_page()
