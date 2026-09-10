@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectIndexEntry,
     ProjectsBoard,
+    ProjectsIndexAlpha,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +277,162 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+INDEX_ALPHA_COL_GAP = 7.0
+INDEX_ALPHA_BAND_GAP = 2.4
+INDEX_ALPHA_LETTER_H = 4.6
+INDEX_ALPHA_ENTRY_H = 6.6
+INDEX_ALPHA_ROW_GAP = 0.6
+INDEX_ALPHA_HINT_W = 8.0
+INDEX_ALPHA_NAME_W = 28.0
+INDEX_ALPHA_LETTER_SIZE = 6.4
+INDEX_ALPHA_NAME_SIZE = 8.0
+INDEX_ALPHA_HINT_SIZE = 5.2
+
+
+def projects_index_alpha_groups(
+    entries: tuple[ProjectIndexEntry, ...],
+) -> tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...]:
+    """Run of letter → entries. Catalog is already A–Z."""
+    groups: list[tuple[str, list[ProjectIndexEntry]]] = []
+    for entry in entries:
+        if not groups or groups[-1][0] != entry.letter:
+            groups.append((entry.letter, [entry]))
+        else:
+            groups[-1][1].append(entry)
+    return tuple((letter, tuple(items)) for letter, items in groups)
+
+
+def projects_index_alpha_split(
+    groups: tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...],
+) -> tuple[
+    tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...],
+    tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...],
+]:
+    """Two columns, cut at half the header+entry weight."""
+    if not groups:
+        return (), ()
+    weights = [1 + len(items) for _, items in groups]
+    half = sum(weights) / 2
+    acc = 0
+    cut = 0
+    for i, weight in enumerate(weights):
+        if acc + weight > half and i:
+            break
+        acc += weight
+        cut = i + 1
+    return groups[:cut], groups[cut:]
+
+
+def projects_index_alpha_columns(well: Rect) -> tuple[Rect, Rect]:
+    """Guttered pair of index columns."""
+    left, right = columns(well, 2, gap=INDEX_ALPHA_COL_GAP)
+    return left, right
+
+
+def projects_index_alpha_band_height(n: int) -> float:
+    """Fixed letter cap + name rows. Index stacks from the top — no stretch."""
+    count = max(n, 1)
+    return INDEX_ALPHA_LETTER_H + count * INDEX_ALPHA_ENTRY_H + (count - 1) * INDEX_ALPHA_ROW_GAP
+
+
+def projects_index_alpha_bands(
+    col: Rect, groups: tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...]
+) -> tuple[Rect, ...]:
+    """One content-height band per letter, stacked from the top of the column."""
+    y = col.y
+    out: list[Rect] = []
+    for _, items in groups:
+        height = projects_index_alpha_band_height(len(items))
+        out.append(Rect(col.x, y, col.w, height))
+        y += height + INDEX_ALPHA_BAND_GAP
+    if out and out[-1].bottom > col.bottom + 0.05:
+        raise ValueError("alpha index bands exceed column height")
+    return tuple(out)
+
+
+def projects_index_alpha_letter_and_rows(
+    band: Rect, n: int
+) -> tuple[Rect, tuple[Rect, ...]]:
+    """Quiet letter cap over equal name rows."""
+    letter, body = band.split_top(INDEX_ALPHA_LETTER_H)
+    if n < 1:
+        return letter, ()
+    return letter, rows(body, n, gap=INDEX_ALPHA_ROW_GAP)
+
+
+def projects_index_alpha_entry_seats(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Printed name | leader underline | dest hint."""
+    name, rest = row.split_left(INDEX_ALPHA_NAME_W)
+    leaders, hint = rest.split_left(rest.w - INDEX_ALPHA_HINT_W)
+    return name, leaders, hint
+
+
+def paint_projects_index_alpha(
+    plotter: Plotter, box: Rect, board: ProjectsIndexAlpha
+) -> None:
+    """Thesis C — book index: letter small-caps, name underline, dest hint."""
+    groups = projects_index_alpha_groups(board.entries)
+    left_groups, right_groups = projects_index_alpha_split(groups)
+    left, right = projects_index_alpha_columns(box)
+    _paint_index_alpha_column(plotter, left, left_groups)
+    _paint_index_alpha_column(plotter, right, right_groups)
+
+
+def _paint_index_alpha_column(
+    plotter: Plotter,
+    col: Rect,
+    groups: tuple[tuple[str, tuple[ProjectIndexEntry, ...]], ...],
+) -> None:
+    for band, (letter, entries) in zip(
+        projects_index_alpha_bands(col, groups), groups, strict=True
+    ):
+        cap, rows_box = projects_index_alpha_letter_and_rows(band, len(entries))
+        plotter.text(
+            cap,
+            letter,
+            size=INDEX_ALPHA_LETTER_SIZE,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        for row, entry in zip(rows_box, entries, strict=True):
+            _paint_index_alpha_entry(plotter, row, entry)
+
+
+def _paint_index_alpha_entry(
+    plotter: Plotter, row: Rect, entry: ProjectIndexEntry
+) -> None:
+    name, leaders, hint = projects_index_alpha_entry_seats(row)
+    plotter.text(
+        name,
+        entry.name,
+        size=INDEX_ALPHA_NAME_SIZE,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    rule_y = name.y + name.h * 0.72
+    plotter.line(
+        leaders.x,
+        rule_y,
+        leaders.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    plotter.text(
+        hint,
+        entry.hint,
+        size=INDEX_ALPHA_HINT_SIZE,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="right",
+    )
+    plotter.link(row, entry.dest)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -931,6 +1089,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
+        elif item.label == "Proj":
+            dests["Proj"] = item.dest
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
@@ -942,6 +1102,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index_alpha":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1113,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Proj", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1135,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index_alpha" | "project":
+            return "Proj"
         case _:
             return "Year"

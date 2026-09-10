@@ -138,6 +138,16 @@ class Spec:
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
 
+    @property
+    def projects_index_alpha_dest(self) -> str:
+        return _dest(t"projects-index-alpha-{self.year:04d}")
+
+    def dest_for_project(self, slug: str) -> str:
+        """One-project leaf dest, e.g. ``project-2026-archive``."""
+        if not slug:
+            raise ConfigError("project slug must not be empty")
+        return _dest(t"project-{self.year:04d}-{slug}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")
