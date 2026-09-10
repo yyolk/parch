@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsParking,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,126 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+PARKING_COL_GAP = 3.0
+PARKING_COL_WEIGHTS = (0.40, 0.60)
+PARKING_LABEL_H = 3.4
+PARKING_LABEL_GAP = 1.8
+PARKING_ROW_GAP = 0.4
+PARKING_LINE_H = 8.0
+PARKING_LOT_INSET_X = 1.6
+PARKING_LOT_INSET_Y = 1.6
+PARKING_CARD_INSET_X = 1.8
+PARKING_CARD_INSET_Y = 1.5
+PARKING_TASK_TOP = 0.4
+PARKING_STACK_GAP = 1.2
+
+
+def parking_task_band_height(tasks: int) -> float:
+    """Content height of n Focus ticks, matching ``_paint_project_tasks``."""
+    n = max(1, tasks)
+    return PARKING_TASK_TOP + TICK + (n - 1) * FOCUS_PITCH
+
+
+def projects_parking_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Left parking lot (~40%) | right active card (~60%)."""
+    return columns(well, 2, gap=PARKING_COL_GAP, weights=PARKING_COL_WEIGHTS)
+
+
+def parking_lot_well_height(n: int) -> float:
+    """Content height of the parking inbox — compact rows, not a flex column."""
+    count = max(1, n)
+    inner_h = count * PARKING_LINE_H + (count - 1) * PARKING_ROW_GAP
+    return inner_h + 2 * PARKING_LOT_INSET_Y
+
+
+def projects_parking_lot_seats(lot: Rect, n: int) -> tuple[Rect, Rect, tuple[Rect, ...]]:
+    """Parking-lot scaps label, content-height inbox well, compact name underlines."""
+    label, rest = lot.split_top(PARKING_LABEL_H)
+    well = Rect(
+        rest.x,
+        rest.y + PARKING_LABEL_GAP,
+        rest.w,
+        parking_lot_well_height(n),
+    )
+    inner = well.inset(PARKING_LOT_INSET_X, PARKING_LOT_INSET_Y)
+    return label, well, rows(inner, n, gap=PARKING_ROW_GAP)
+
+
+def projects_parking_active_seats(active: Rect) -> tuple[Rect, Rect]:
+    """Active scaps label over one working-project card."""
+    label, rest = active.split_top(PARKING_LABEL_H)
+    card = Rect(rest.x, rest.y + PARKING_LABEL_GAP, rest.w, rest.h - PARKING_LABEL_GAP)
+    return label, card
+
+
+def projects_parking_card_seats(card: Rect, tasks: int) -> tuple[Rect, Rect, Rect, Rect]:
+    """P+name, content-height ticks, Todo/Doing/Done, leftover lined notes."""
+    inner = card.inset(PARKING_CARD_INSET_X, PARKING_CARD_INSET_Y)
+    header, rest = inner.split_top(PROJECT_HEADER_H)
+    body = Rect(
+        rest.x,
+        rest.y + PARKING_STACK_GAP,
+        rest.w,
+        rest.h - PARKING_STACK_GAP,
+    )
+    task_h = parking_task_band_height(tasks)
+    tasks_box = Rect(body.x, body.y, body.w, task_h)
+    status = Rect(
+        body.x,
+        tasks_box.bottom + PARKING_STACK_GAP,
+        body.w,
+        PROJECT_STATUS_H,
+    )
+    notes = Rect(
+        body.x,
+        status.bottom + PARKING_STACK_GAP,
+        body.w,
+        max(body.bottom - status.bottom - PARKING_STACK_GAP, 1),
+    )
+    return header, tasks_box, status, notes
+
+
+def paint_projects_parking(plotter: Plotter, box: Rect, board: ProjectsParking) -> None:
+    """Thesis M — parking-lot inbox + one active card. Not a board or matrix."""
+    lot, active = projects_parking_seats(box)
+    _paint_parking_lot(plotter, lot, board.lot_rows)
+    _paint_parking_active(plotter, active, board.tasks)
+
+
+def _paint_zone_label(plotter: Plotter, box: Rect, label: str) -> None:
+    plotter.text(
+        box,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+
+
+def _paint_parking_lot(plotter: Plotter, lot: Rect, n: int) -> None:
+    """Name underlines only — no ticks, no status, no P boxes."""
+    label, well, lines = projects_parking_lot_seats(lot, n)
+    _paint_zone_label(plotter, label, "Parking lot")
+    plotter.rect(well, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    for line in lines:
+        rule_y = line.y + line.h * 0.68
+        plotter.line(line.x, rule_y, line.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def _paint_parking_active(plotter: Plotter, active: Rect, tasks: int) -> None:
+    label, card = projects_parking_active_seats(active)
+    _paint_zone_label(plotter, label, "Active")
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    header, tasks_box, status, notes = projects_parking_card_seats(card, tasks)
+    _paint_project_name(plotter, header)
+    _paint_project_tasks(plotter, tasks_box, tasks)
+    _paint_project_status(plotter, status)
+    _paint_project_notes(plotter, notes, first_y=notes.y + PROJECT_NOTE_PITCH)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1061,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_parking":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1090,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_parking":
             return ""
         case _:
             return "Year"
