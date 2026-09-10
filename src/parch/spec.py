@@ -70,6 +70,9 @@ class Spec:
     project_tickets: int = 8
     project_index_pages: int = 1
     meeting_index_rows: int = 16
+    task_index_rows: int = 7
+    task_checklist: int = 8
+    task_preview: int = 3
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -104,6 +107,12 @@ class Spec:
             raise ConfigError("project_index_pages must be 1–6")
         if not 12 <= self.meeting_index_rows <= 20:
             raise ConfigError("meeting_index_rows must be 12–20")
+        if not 6 <= self.task_index_rows <= 8:
+            raise ConfigError("task_index_rows must be 6–8")
+        if not 6 <= self.task_checklist <= 10:
+            raise ConfigError("task_checklist must be 6–10")
+        if not 2 <= self.task_preview <= 3:
+            raise ConfigError("task_preview must be 2–3")
 
     @property
     def weekday_start(self) -> int:
@@ -195,6 +204,21 @@ class Spec:
             raise ConfigError(f"meeting slot out of range: {slot}")
         return _dest(t"meeting-{self.year:04d}-{slot:02d}")
 
+    @property
+    def task_count(self) -> int:
+        """Weekly Tasks dests: featured this-week + compact list rows."""
+        return 1 + self.task_index_rows
+
+    @property
+    def tasks_index_dest(self) -> str:
+        """Task landing — focus + list index."""
+        return _dest(t"tasks-index-{self.year:04d}")
+
+    def dest_for_tasks(self, day: date) -> str:
+        """ISO week Tasks dest, e.g. ``tasks-2026-W01``."""
+        iso = day.isocalendar()
+        return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")
@@ -252,6 +276,8 @@ class Spec:
         projects_table = projects if isinstance(projects, dict) else {}
         meetings = data.get("meetings")
         meetings_table = meetings if isinstance(meetings, dict) else {}
+        tasks = data.get("tasks")
+        tasks_table = tasks if isinstance(tasks, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -278,6 +304,13 @@ class Spec:
             meeting_index_rows=int(
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
+            task_index_rows=int(
+                tasks_table.get("index_rows", data.get("task_index_rows", 7))
+            ),
+            task_checklist=int(
+                tasks_table.get("checklist", data.get("task_checklist", 8))
+            ),
+            task_preview=int(tasks_table.get("preview", data.get("task_preview", 3))),
         )
 
     @classmethod

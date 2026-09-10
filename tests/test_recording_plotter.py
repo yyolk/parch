@@ -16,8 +16,12 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
+    TaskWeek,
     WeekStrip,
+    WeeklyTasks,
 )
+from parch.sections.tasks import planner_task_weeks
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -32,6 +36,8 @@ def _year_dests(*, notes_pages: int) -> list[str]:
     dests.extend(spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1))
     dests.append(spec.meetings_index_dest)
     dests.extend(spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1))
+    dests.append(spec.tasks_index_dest)
+    dests.extend(spec.dest_for_tasks(week[0]) for week in planner_task_weeks(spec))
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     for month in spec.months:
         dests.append(spec.dest_for_month(month))
@@ -64,6 +70,9 @@ def test_components_do_not_draw():
         ProjectsIndex,
         QuarterGrid,
         Schedule,
+        TasksIndex,
+        TaskWeek,
+        WeeklyTasks,
         WeekStrip,
     ):
         assert "draw" not in cls.__dict__
@@ -98,6 +107,12 @@ def test_book_records_year_dests_and_links():
     assert "meeting-2026-01" in links
     assert "meeting-2026-16" in dests
     assert "meeting-2026-16" in links
+    assert "tasks-index-2026" in dests
+    assert "tasks-index-2026" in links
+    assert "tasks-2026-W01" in dests
+    assert "tasks-2026-W01" in links
+    assert "tasks-2026-W08" in dests
+    assert "tasks-2026-W08" in links
     assert "month-2026-01-habits" in dests
     assert "week-2026-W01" in links
     assert "week-2026-W14" in links

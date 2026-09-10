@@ -41,6 +41,13 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_meeting(1) == "meeting-2026-01"
     assert spec.dest_for_meeting(16) == "meeting-2026-16"
     assert spec.dest_for_meetings_index_of(16) == "meetings-index-2026"
+    assert spec.tasks_index_dest == "tasks-index-2026"
+    assert spec.task_index_rows == 7
+    assert spec.task_count == 8
+    assert spec.task_checklist == 8
+    assert spec.task_preview == 3
+    assert spec.dest_for_tasks(date(2026, 1, 1)) == "tasks-2026-W01"
+    assert spec.dest_for_tasks(date(2026, 1, 5)) == "tasks-2026-W02"
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
@@ -67,6 +74,9 @@ def test_habit_columns_from_toml_keys():
     assert triple.dest_for_project(9) == "projects-2026-09"
     assert triple.dest_for_projects_index_of(9) == "projects-index-2026-02"
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
+    assert Spec.from_mapping({"tasks": {"index_rows": 6, "checklist": 6, "preview": 2}}).task_index_rows == 6
+    assert Spec.from_mapping({"tasks": {"index_rows": 6, "checklist": 6, "preview": 2}}).task_checklist == 6
+    assert Spec.from_mapping({"tasks": {"index_rows": 6, "checklist": 6, "preview": 2}}).task_preview == 2
     mvp = Spec.from_path(Path("examples/mvp.toml"))
     assert mvp.project_cards == 3
     assert mvp.project_tasks == 4
@@ -75,6 +85,10 @@ def test_habit_columns_from_toml_keys():
     assert mvp.project_count == 24
     assert mvp.meeting_index_rows == 16
     assert mvp.meeting_count == 16
+    assert mvp.task_index_rows == 7
+    assert mvp.task_count == 8
+    assert mvp.task_checklist == 8
+    assert mvp.task_preview == 3
 
 
 def test_value_bags_are_slotted():

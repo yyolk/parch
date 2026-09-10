@@ -3,7 +3,7 @@
 import math
 from datetime import date, timedelta
 
-from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
+from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -19,6 +19,9 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
+    TaskWeek,
+    WeeklyTasks,
     WeekStrip,
 )
 from parch.devices.nomad import Device
@@ -970,6 +973,130 @@ def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
 
 
+TASK_GAP = 2.6
+TASK_INDEX_FOCUS_GAP = 2.6
+TASK_INDEX_FOCUS_WEIGHTS = (1.0, 2.0)
+TASK_INDEX_ROW_GAP = 0.7
+TASK_INDEX_INSET_X = 1.8
+TASK_INDEX_INSET_Y = 1.5
+TASK_INDEX_STUB_W = 10.0
+TASK_INDEX_FOCUS_STUB_W = 12.0
+TASK_INDEX_MARK = 5.6
+TASK_INDEX_LIST_MARK = 3.6
+TASK_INDEX_PANEL_GAP = 1.4
+TASK_INDEX_RANGE_H = 5.4
+
+
+def task_seats(well: Rect, tasks: int) -> tuple[Rect, Rect]:
+    """Content-height Tasks checklist over flex Notes."""
+    tasks_h = checklist_content_height(tasks)
+    tasks_box, rest = well.split_top(tasks_h)
+    notes = _below(rest, TASK_GAP)
+    return tasks_box, notes
+
+
+def paint_weekly_tasks(plotter: Plotter, box: Rect, page: WeeklyTasks) -> None:
+    """Locked weekly Tasks dest — checklist, then leftover notes."""
+    tasks_box, notes = task_seats(box, page.tasks)
+    _paint_checklist_box(plotter, tasks_box, label="Tasks", rows=page.tasks)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def tasks_index_focus_seats(well: Rect, rows_n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Featured this-week panel over a compact linked roster. Weights after the gap."""
+    focus, listing = rows(well, 2, gap=TASK_INDEX_FOCUS_GAP, weights=TASK_INDEX_FOCUS_WEIGHTS)
+    return focus, rows(listing, max(1, rows_n), gap=TASK_INDEX_ROW_GAP)
+
+
+def tasks_index_focus_parts(focus: Rect) -> tuple[Rect, Rect, Rect]:
+    """Stub | This week + range | compact task-tick preview inside the featured inset."""
+    inner = focus.inset(TASK_INDEX_INSET_X, TASK_INDEX_INSET_Y)
+    stub, body = inner.split_left(TASK_INDEX_FOCUS_STUB_W)
+    head, rest = body.split_top(TASK_INDEX_RANGE_H)
+    leftover = _below(rest, TASK_INDEX_PANEL_GAP)
+    return stub, head, leftover
+
+
+def tasks_index_list_row(row: Rect) -> tuple[Rect, Rect]:
+    """Stub | date-range label."""
+    inner = Rect(row.x + TASK_INDEX_INSET_X, row.y, row.w - 2 * TASK_INDEX_INSET_X, row.h)
+    stub, rest = inner.split_left(TASK_INDEX_STUB_W)
+    return stub, rest
+
+
+def paint_tasks_index_focus(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+    """Thesis E — one featured this-week panel, then a compact linked list of the rest."""
+    focus, listing = tasks_index_focus_seats(box, len(index.entries))
+    _paint_tasks_index_focus_panel(plotter, focus, index.featured, index.preview)
+    plotter.link(focus, index.featured.dest)
+    for row, slot in zip(listing, index.entries, strict=True):
+        _paint_tasks_index_list_row(plotter, row, slot)
+        plotter.link(row, slot.dest)
+
+
+def _paint_tasks_index_focus_panel(
+    plotter: Plotter, focus: Rect, slot: TaskWeek, preview: int
+) -> None:
+    plotter.rect(focus, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    stub, head, ticks = tasks_index_focus_parts(focus)
+    mark_stub = Rect(stub.x, head.y, stub.w, head.h)
+    _paint_task_week_mark(plotter, mark_stub, slot.iso_week, size=TASK_INDEX_MARK, text_size=7.0)
+    tag, rng = columns(head, 2, gap=2.8, weights=(0.36, 0.64))
+    plotter.text(
+        tag,
+        "This week",
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.text(
+        rng,
+        short_date_range(slot.monday, slot.sunday),
+        size=6.4,
+        face="sans",
+        gray=INK,
+        align="right",
+    )
+    _paint_checklist_box(plotter, ticks, label="Tasks", rows=preview)
+
+
+def _paint_tasks_index_list_row(plotter: Plotter, row: Rect, slot: TaskWeek) -> None:
+    stub, body = tasks_index_list_row(row)
+    _paint_task_week_mark(plotter, stub, slot.iso_week, size=TASK_INDEX_LIST_MARK, text_size=6.2)
+    plotter.text(
+        body,
+        short_date_range(slot.monday, slot.sunday),
+        size=6.2,
+        face="sans",
+        gray=INK,
+        align="left",
+    )
+    plotter.line(row.x, row.bottom, row.right, row.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+
+
+def _paint_task_week_mark(
+    plotter: Plotter, stub: Rect, number: int, *, size: float, text_size: float
+) -> None:
+    mark = Rect(
+        stub.x + (stub.w - size) / 2,
+        stub.y + (stub.h - size) / 2,
+        size,
+        size,
+    )
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{number:02d}",
+        size=text_size,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1622,6 +1749,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
             dests["Meet"] = item.dest
+        elif item.dest.startswith("tasks-index-"):
+            dests["Task"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1645,6 +1774,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = page.dest
         case "meeting":
             pass
+        case "tasks_index":
+            dests["Task"] = page.dest
+        case "task":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1652,7 +1785,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1676,6 +1809,8 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "meetings_index" | "meeting":
             return "Meet"
+        case "tasks_index" | "task":
+            return "Task"
         case "projects":
             return ""
         case _:
