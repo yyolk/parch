@@ -263,7 +263,7 @@ TICKET_INSET_Y = 1.1
 TICKET_MARK = 5.6
 TICKET_PERF_DASH = 0.52
 TICKET_PERF_GAP = 0.40
-TICKET_NAME_WEIGHTS = (2.0, 1.0)
+TICKET_NAME_WEIGHTS = (0.55, 0.45)
 TICKET_BODY_GAP = 1.8
 TICKET_PREVIEW_GAP = 0.55
 TICKET_PREVIEW_INSET = 0.35
@@ -281,7 +281,7 @@ def project_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
 
 
 def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
-    """Write-in name (~2/3) | three-card preview (~1/3)."""
+    """Write-in name | three-card preview (~0.45 of the body so boxes read)."""
     return columns(body, 2, gap=TICKET_BODY_GAP, weights=TICKET_NAME_WEIGHTS)
 
 

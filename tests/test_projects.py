@@ -231,8 +231,9 @@ def test_project_ticket_seats():
     share = name.w + preview.w
     assert name.w / share == pytest.approx(TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS))
     leftover = body.w - TICKET_BODY_GAP
-    assert name.w == pytest.approx(leftover * 2 / 3)
-    assert preview.w == pytest.approx(leftover / 3)
+    assert name.w == pytest.approx(leftover * TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS))
+    assert preview.w == pytest.approx(leftover * TICKET_NAME_WEIGHTS[1] / sum(TICKET_NAME_WEIGHTS))
+    assert preview.w / leftover == pytest.approx(0.45)
 
     cards = project_ticket_preview_cards(preview)
     assert len(cards) == 3
@@ -283,16 +284,21 @@ def test_projects_index_paint_write_in_underlines_and_links():
         assert rule[3] == pytest.approx(name.right)
         assert rule[3] < preview.x
 
-    previews = [
-        op
-        for op in plotter.ops
-        if op[0] == "rect"
-        and op[2]
-        and not op[3]
-        and op[1].w < TICKET_STUB_W
-        and op[1].h > TICKET_MARK
-    ]
-    assert len(previews) == 8 * 3
+    painted = [op[1] for op in plotter.ops if op[0] == "rect" and op[2] and not op[3]]
+    expected: list[Rect] = []
+    for seat in seats:
+        _, body = project_ticket_parts(seat)
+        _, preview = project_ticket_body_seats(body)
+        expected.extend(project_ticket_preview_cards(preview))
+    assert len(expected) == 8 * 3
+    for card in expected:
+        assert any(
+            box.x == pytest.approx(card.x)
+            and box.y == pytest.approx(card.y)
+            and box.w == pytest.approx(card.w)
+            and box.h == pytest.approx(card.h)
+            for box in painted
+        )
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
