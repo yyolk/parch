@@ -8,7 +8,7 @@ from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
-from parch.calendar import quarter_of
+from parch.calendar import iso_monday, months_touching_weeks, quarter_of
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
@@ -70,6 +70,8 @@ class Spec:
     project_tickets: int = 8
     project_index_pages: int = 1
     meeting_index_rows: int = 16
+    task_index_rows: int = 16
+    task_rows: int = 7
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -104,6 +106,10 @@ class Spec:
             raise ConfigError("project_index_pages must be 1–6")
         if not 12 <= self.meeting_index_rows <= 20:
             raise ConfigError("meeting_index_rows must be 12–20")
+        if not 12 <= self.task_index_rows <= 20:
+            raise ConfigError("task_index_rows must be 12–20")
+        if not 5 <= self.task_rows <= 10:
+            raise ConfigError("task_rows must be 5–10")
 
     @property
     def weekday_start(self) -> int:
@@ -195,6 +201,55 @@ class Spec:
             raise ConfigError(f"meeting slot out of range: {slot}")
         return _dest(t"meeting-{self.year:04d}-{slot:02d}")
 
+    def task_week_mondays(self) -> tuple[date, ...]:
+        """Monday of each ISO week that touches a pressed month (book order)."""
+        mondays: list[date] = []
+        for week in months_touching_weeks(self.year, self.months, self.weekday_start):
+            monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+            mondays.append(monday)
+        return tuple(mondays)
+
+    @property
+    def task_week_count(self) -> int:
+        """Weekly Tasks dests: one roster row → one ``tasks-{iso_year}-W{nn}``."""
+        return len(self.task_week_mondays())
+
+    @property
+    def task_index_pages(self) -> int:
+        """Index sheets needed to seat ``task_week_count`` at ``task_index_rows``."""
+        n = self.task_week_count
+        if n <= 0:
+            return 1
+        return (n + self.task_index_rows - 1) // self.task_index_rows
+
+    @property
+    def tasks_index_dest(self) -> str:
+        """Task landing — dense week roster page 1."""
+        return self.dest_for_tasks_index(1)
+
+    def dest_for_tasks_index(self, page: int) -> str:
+        if not 1 <= page <= self.task_index_pages:
+            raise ConfigError(f"tasks index page out of range: {page}")
+        if page == 1:
+            return _dest(t"tasks-index-{self.year:04d}")
+        return _dest(t"tasks-index-{self.year:04d}-{page:02d}")
+
+    def dest_for_tasks_index_of(self, day: date) -> str:
+        """Index page that lists the ISO week containing ``day``."""
+        monday = iso_monday(day)
+        key = (monday.isocalendar().year, monday.isocalendar().week)
+        for i, week_monday in enumerate(self.task_week_mondays()):
+            iso = week_monday.isocalendar()
+            if (iso.year, iso.week) == key:
+                page = i // self.task_index_rows + 1
+                return self.dest_for_tasks_index(page)
+        raise ConfigError(f"week of {day} is not in the tasks roster")
+
+    def dest_for_task_week(self, day: date) -> str:
+        """Weekly Tasks dest, e.g. ``tasks-2026-W01``. Monday-start book weeks align with ISO."""
+        iso = day.isocalendar()
+        return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")
@@ -252,6 +307,8 @@ class Spec:
         projects_table = projects if isinstance(projects, dict) else {}
         meetings = data.get("meetings")
         meetings_table = meetings if isinstance(meetings, dict) else {}
+        tasks = data.get("tasks")
+        tasks_table = tasks if isinstance(tasks, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -278,6 +335,10 @@ class Spec:
             meeting_index_rows=int(
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
+            task_index_rows=int(
+                tasks_table.get("index_rows", data.get("task_index_rows", 16))
+            ),
+            task_rows=int(tasks_table.get("rows", data.get("task_rows", 7))),
         )
 
     @classmethod

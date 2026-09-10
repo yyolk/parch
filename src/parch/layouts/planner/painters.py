@@ -3,7 +3,7 @@
 import math
 from datetime import date, timedelta
 
-from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
+from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -19,7 +19,10 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
+    TaskWeek,
     WeekStrip,
+    WeekTasks,
 )
 from parch.devices.nomad import Device
 from parch.geom import Rect
@@ -970,6 +973,158 @@ def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
 
 
+TASK_GAP = 2.6
+TASK_HEAD_INSET_X = 1.8
+TASK_HEAD_INSET_Y = 1.2
+TASK_HEAD_LINE_H = 5.4
+TASK_HEAD_COL_GAP = 2.8
+TASK_HEAD_WEIGHTS = (0.22, 0.78)
+
+TASK_INDEX_GAP = 1.0
+TASK_INDEX_INSET_X = 1.2
+TASK_INDEX_INSET_Y = 0.7
+TASK_INDEX_STUB_W = 14.0
+TASK_INDEX_STUB_GAP = 1.6
+TASK_INDEX_MARK_W = 11.2
+TASK_INDEX_MARK_H = 5.0
+TASK_INDEX_COL_GAP = 2.8
+TASK_INDEX_WEIGHTS = (0.36, 0.64)
+
+
+def task_week_label(iso_week: int) -> str:
+    """Printed week chip — ``W01`` … ``W53``."""
+    return f"W{iso_week:02d}"
+
+
+def week_tasks_head_height() -> float:
+    """One-line week-label | range band."""
+    return TASK_HEAD_INSET_Y * 2 + TASK_HEAD_LINE_H
+
+
+def week_tasks_seats(well: Rect, tasks: int) -> tuple[Rect, Rect, Rect]:
+    """Head, content-height checklist, leftover notes. Notes flex."""
+    head, rest = well.split_top(week_tasks_head_height())
+    leftover = _below(rest, TASK_GAP)
+    tasks_h = checklist_content_height(tasks)
+    tasks_box, rest = leftover.split_top(tasks_h)
+    notes = _below(rest, TASK_GAP)
+    return head, tasks_box, notes
+
+
+def week_tasks_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Week label | printed date range on one horizontal row."""
+    inner = head.inset(TASK_HEAD_INSET_X, TASK_HEAD_INSET_Y)
+    return columns(inner, 2, gap=TASK_HEAD_COL_GAP, weights=TASK_HEAD_WEIGHTS)
+
+
+def paint_week_tasks(plotter: Plotter, box: Rect, page: WeekTasks) -> None:
+    """Weekly Tasks dest — printed week range, Focus ticks, lined leftover notes."""
+    head, tasks_box, notes = week_tasks_seats(box, page.tasks)
+    _paint_week_tasks_head(plotter, head, page)
+    _paint_checklist_box(plotter, tasks_box, label="Tasks", rows=page.tasks)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def _paint_week_tasks_head(plotter: Plotter, head: Rect, page: WeekTasks) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    label, dated = week_tasks_head_seats(head)
+    plotter.text(
+        label,
+        task_week_label(page.iso_week),
+        size=8.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    plotter.text(
+        dated,
+        short_date_range(page.monday, page.sunday),
+        size=7.2,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+
+
+def tasks_index_roster(box: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal stacked roster rows filling the well."""
+    return rows(box, n, gap=TASK_INDEX_GAP)
+
+
+def task_index_row_parts(row: Rect) -> tuple[Rect, Rect]:
+    """Week-label stub | range+title body, after a quiet inset and stub gap."""
+    inner = row.inset(TASK_INDEX_INSET_X, TASK_INDEX_INSET_Y)
+    stub, rest = inner.split_left(TASK_INDEX_STUB_W)
+    body = Rect(rest.x + TASK_INDEX_STUB_GAP, rest.y, rest.w - TASK_INDEX_STUB_GAP, rest.h)
+    return stub, body
+
+
+def task_index_row_seats(row: Rect) -> tuple[Rect, Rect]:
+    """Printed date-range cue | title write-in on the body. Stub is not a write-in."""
+    _, body = task_index_row_parts(row)
+    return columns(body, 2, gap=TASK_INDEX_COL_GAP, weights=TASK_INDEX_WEIGHTS)
+
+
+def task_index_link_hits(row: Rect) -> tuple[Rect, ...]:
+    """Stub column only. Range cue and title write-in stay unlinkable."""
+    stub, _body = task_index_row_parts(row)
+    return (stub,)
+
+
+def paint_tasks_index_roster(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+    """Thesis A — dense week roster. Stub is the dest hit; title write-in stays unlinkable."""
+    for seat, week in zip(tasks_index_roster(box, len(index.weeks)), index.weeks, strict=True):
+        _paint_task_index_row(plotter, seat, week)
+        for hit in task_index_link_hits(seat):
+            plotter.link(hit, week.dest)
+
+
+def _paint_task_index_row(plotter: Plotter, box: Rect, week: TaskWeek) -> None:
+    """Week-label stub + printed range cue + title write-in/rule on one baseline."""
+    stub, _body = task_index_row_parts(box)
+    _paint_task_index_stub(plotter, stub, week.iso_week)
+    dated, title = task_index_row_seats(box)
+    _paint_task_index_range_cue(plotter, dated, week)
+    _paint_task_index_title(plotter, title)
+
+
+def _paint_task_index_stub(plotter: Plotter, stub: Rect, iso_week: int) -> None:
+    """Hairline week mark — the visible tap target, Meeting A spirit."""
+    mark_w = min(TASK_INDEX_MARK_W, stub.w)
+    mark_y = stub.y + (stub.h - TASK_INDEX_MARK_H) / 2
+    mark = Rect(stub.x + (stub.w - mark_w) / 2, mark_y, mark_w, TASK_INDEX_MARK_H)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        task_week_label(iso_week),
+        size=6.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+
+
+def _paint_task_index_range_cue(plotter: Plotter, box: Rect, week: TaskWeek) -> None:
+    """Printed short range — the date cue, not a write-in."""
+    plotter.text(
+        Rect(box.x, box.bottom - MEET_WRITE_LABEL_H, box.w, MEET_WRITE_LABEL_H),
+        short_date_range(week.monday, week.sunday),
+        size=5.8,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+
+
+def _paint_task_index_title(plotter: Plotter, box: Rect) -> None:
+    """Title write-in rule on the same baseline as the printed range cue."""
+    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1622,6 +1777,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
             dests["Meet"] = item.dest
+        elif item.dest.startswith("tasks-index-"):
+            dests["Task"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1645,6 +1802,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = page.dest
         case "meeting":
             pass
+        case "tasks_index":
+            dests["Task"] = page.dest
+        case "task":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1652,7 +1813,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1676,6 +1837,8 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "meetings_index" | "meeting":
             return "Meet"
+        case "tasks_index" | "task":
+            return "Task"
         case "projects":
             return ""
         case _:
