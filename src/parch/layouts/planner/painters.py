@@ -11,7 +11,10 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectPage,
+    ProjectTicket,
     ProjectsBoard,
+    ProjectsIndex,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -218,20 +221,38 @@ def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
 def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """Exploratory Projects well — stacked cards, no spine/arrows/graph."""
     for card in project_card_seats(box, board.cards):
-        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-        left, right = project_card_columns(card)
-        header, tasks, status = project_card_left_seats(left)
-        rule_y = _paint_project_name(plotter, header)
-        _paint_project_tasks(plotter, tasks, board.tasks)
-        _paint_project_status(plotter, status)
-        _paint_project_notes(plotter, right, first_y=rule_y)
+        _paint_project_card(plotter, card, board.tasks)
 
 
-def _paint_project_name(plotter: Plotter, header: Rect) -> float:
+def paint_project(plotter: Plotter, box: Rect, page: ProjectPage) -> None:
+    """One G-craft card filling the well — printed title, not a blank rule."""
+    _paint_project_card(plotter, box, page.tasks, title=page.title)
+
+
+def _paint_project_card(plotter: Plotter, card: Rect, tasks: int, title: str = "") -> None:
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    left, right = project_card_columns(card)
+    header, task_box, status = project_card_left_seats(left)
+    rule_y = _paint_project_name(plotter, header, title)
+    _paint_project_tasks(plotter, task_box, tasks)
+    _paint_project_status(plotter, status)
+    _paint_project_notes(plotter, right, first_y=rule_y)
+
+
+def _paint_project_name(plotter: Plotter, header: Rect, title: str = "") -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.text(mark, "P", size=7.6, bold=True, face="serif", gray=INK, align="center")
+    if title:
+        name = Rect(
+            mark.right + 1.4,
+            header.y,
+            max(header.right - mark.right - 1.4, 1),
+            header.h,
+        )
+        plotter.text(name, title, size=9.2, bold=True, face="serif", gray=INK, align="left")
+        return mark.bottom
     rule_y = mark.bottom
     plotter.line(
         mark.right + 1.4,
@@ -242,6 +263,86 @@ def _paint_project_name(plotter: Plotter, header: Rect) -> float:
         stroke_gray=RULE_C,
     )
     return rule_y
+
+
+TICKET_GAP = 1.4
+TICKET_STUB_W = 12.0
+TICKET_INSET_X = 1.6
+TICKET_INSET_Y = 1.1
+TICKET_MARK = 5.6
+TICKET_PERF_DASH = 0.52
+TICKET_PERF_GAP = 0.40
+
+
+def project_ticket_seats(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal stacked ticket rows filling the well."""
+    return rows(well, n, gap=TICKET_GAP)
+
+
+def project_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
+    """Stub | title body, after a quiet inset."""
+    inner = ticket.inset(TICKET_INSET_X, TICKET_INSET_Y)
+    return inner.split_left(TICKET_STUB_W)
+
+
+def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+    """Thesis L — stacked tickets: stub number, printed title, perforation, whole-row link."""
+    for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
+        _paint_project_ticket(plotter, seat, ticket)
+        plotter.link(seat, ticket.dest)
+
+
+def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) -> None:
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    stub, body = project_ticket_parts(box)
+    mark_y = stub.y + (stub.h - TICKET_MARK) / 2
+    mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{ticket.number:02d}",
+        size=6.6,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+    perf_x = stub.right + 0.55
+    _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
+    plotter.text(body, ticket.title, size=10.4, bold=True, face="serif", gray=INK, align="left")
+    _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
+
+
+def _paint_perforation(
+    plotter: Plotter,
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    *,
+    dash: float = TICKET_PERF_DASH,
+    gap: float = TICKET_PERF_GAP,
+) -> None:
+    """Thin dashed hairline — ticket tear, not a solid rule."""
+    dx = x2 - x1
+    dy = y2 - y1
+    length = (dx * dx + dy * dy) ** 0.5
+    if length <= 0:
+        return
+    ux, uy = dx / length, dy / length
+    walked = 0.0
+    while walked < length:
+        start = walked
+        stop = min(walked + dash, length)
+        plotter.line(
+            x1 + ux * start,
+            y1 + uy * start,
+            x1 + ux * stop,
+            y1 + uy * stop,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+        walked = stop + gap
 
 
 def _paint_project_tasks(plotter: Plotter, box: Rect, n: int) -> None:
@@ -925,6 +1026,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = item.dest
         elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
+        elif item.dest.startswith("projects-index-"):
+            dests["Proj"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -940,7 +1043,9 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects_index":
+            dests["Proj"] = page.dest
+        case "projects" | "project":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -949,7 +1054,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -969,6 +1074,8 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
+        case "projects_index" | "project":
+            return "Proj"
         case "projects":
             return ""
         case _:

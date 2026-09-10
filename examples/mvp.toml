@@ -18,3 +18,4 @@ columns = 10
 [projects]
 cards = 3
 tasks = 4
+tickets = 8

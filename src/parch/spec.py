@@ -12,6 +12,20 @@ from parch.calendar import quarter_of
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 
+# Printed roster for the ticket index + leaves. Slots 1–10; press uses the first N.
+PROJECT_TITLES = (
+    "Atlas",
+    "Beacon",
+    "Compass",
+    "Drift",
+    "Ember",
+    "Field",
+    "Grove",
+    "Harbor",
+    "Inlet",
+    "Jetty",
+)
+
 type TomlTable = dict[str, object]
 
 
@@ -67,6 +81,7 @@ class Spec:
     priority_rows: int = 6
     project_cards: int = 3
     project_tasks: int = 4
+    project_tickets: int = 8
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -95,6 +110,8 @@ class Spec:
             raise ConfigError("project_cards must be 2–4")
         if not 3 <= self.project_tasks <= 6:
             raise ConfigError("project_tasks must be 3–6")
+        if not 6 <= self.project_tickets <= 10:
+            raise ConfigError("project_tickets must be 6–10")
 
     @property
     def weekday_start(self) -> int:
@@ -137,6 +154,21 @@ class Spec:
     @property
     def projects_dest(self) -> str:
         return _dest(t"projects-{self.year:04d}")
+
+    @property
+    def projects_index_dest(self) -> str:
+        return _dest(t"projects-index-{self.year:04d}")
+
+    def dest_for_project(self, slot: int) -> str:
+        if not 1 <= slot <= self.project_tickets:
+            raise ConfigError(f"project slot out of range: {slot}")
+        return _dest(t"project-{self.year:04d}-{slot:02d}")
+
+    def title_for_project(self, slot: int) -> str:
+        """Printed ticket / leaf title — never a blank fill-in."""
+        if not 1 <= slot <= self.project_tickets:
+            raise ConfigError(f"project slot out of range: {slot}")
+        return PROJECT_TITLES[slot - 1]
 
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
@@ -207,6 +239,9 @@ class Spec:
             priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
             project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
             project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
+            project_tickets=int(
+                projects_table.get("tickets", data.get("project_tickets", 8))
+            ),
         )
 
     @classmethod
