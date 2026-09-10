@@ -18,6 +18,10 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewDay,
+    ReviewIndex,
+    ReviewWeek,
+    ReviewWeekPage,
     Schedule,
     TaskWeek,
     TasksIndex,
@@ -1112,6 +1116,145 @@ def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
     _paint_note_box(plotter, notes, label="Notes")
 
 
+REVIEW_GAP = 2.6
+REVIEW_DAY_GAP = 1.0
+REVIEW_STRIP_H = 18.0
+REVIEW_DAY_INSET_X = 0.7
+REVIEW_DAY_INSET_Y = 0.55
+REVIEW_DOW_H = 3.6
+REVIEW_NUM_H = 5.4
+REVIEW_INDEX_GAP = 1.0
+REVIEW_INDEX_INSET_X = 1.2
+REVIEW_INDEX_INSET_Y = 0.6
+REVIEW_INDEX_LINE_H = 5.4
+REVIEW_INDEX_WEEK_W = 12.0
+
+
+def review_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Mon–Sun cue strip over leftover week narrative. Strip is content-height; notes flex."""
+    strip, rest = well.split_top(REVIEW_STRIP_H)
+    notes = Rect(rest.x, rest.y + REVIEW_GAP, rest.w, rest.h - REVIEW_GAP)
+    return strip, notes
+
+
+def review_day_cues(strip: Rect) -> tuple[Rect, ...]:
+    """Seven equal day columns — ``tracks.columns``. Horizon scan, not status slices."""
+    return columns(strip, 7, gap=REVIEW_DAY_GAP)
+
+
+def review_day_parts(cue: Rect) -> tuple[Rect, Rect]:
+    """Dow+date label | one-line write-in. ``tracks`` after a quiet inset."""
+    inner = cue.inset(REVIEW_DAY_INSET_X, REVIEW_DAY_INSET_Y)
+    label_h = REVIEW_DOW_H + REVIEW_NUM_H
+    return inner.split_top(label_h)
+
+
+def review_day_link_hits(cue: Rect) -> tuple[Rect, ...]:
+    """Label only. Write-in stays unlinkable (Meeting A / Tasks C)."""
+    label, _write = review_day_parts(cue)
+    return (label,)
+
+
+def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
+    """Thesis E — seven day cues, then unlabeled week narrative. Chrome names the page."""
+    strip, notes = review_seats(box)
+    for cue, day in zip(review_day_cues(strip), page.days, strict=True):
+        _paint_review_day_cue(plotter, cue, day)
+        if day.dest:
+            for hit in review_day_link_hits(cue):
+                plotter.link(hit, day.dest)
+    _paint_note_box(plotter, notes)
+
+
+def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
+    """Mini write: weekday + date over a one-line prompt. Hairline pocket."""
+    plotter.rect(cue, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    label, write = review_day_parts(cue)
+    ink = INK if day.dest else MUTED
+    dow = Rect(label.x, label.y, label.w, REVIEW_DOW_H)
+    num = Rect(label.x, dow.bottom, label.w, REVIEW_NUM_H)
+    plotter.text(
+        dow,
+        day.weekday_label,
+        size=5.6,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="center",
+    )
+    plotter.text(
+        num,
+        str(day.day.day),
+        size=9.2,
+        bold=True,
+        face="sans",
+        gray=ink,
+        align="center",
+    )
+    plotter.line(
+        write.x,
+        write.bottom,
+        write.right,
+        write.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+
+
+def reviews_index_rows(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal stacked week rows filling the well."""
+    return rows(well, n, gap=REVIEW_INDEX_GAP)
+
+
+def reviews_index_week_strip(row: Rect) -> Rect:
+    """Content-height stub+range strip, vertically centered in the stretched row."""
+    h = min(REVIEW_INDEX_LINE_H, row.h)
+    return Rect(row.x, row.y + (row.h - h) / 2, row.w, h)
+
+
+def reviews_index_week_parts(row: Rect) -> tuple[Rect, Rect]:
+    """Wnn stub | printed range — ``tracks.columns``, flush."""
+    strip = reviews_index_week_strip(row)
+    inner = strip.inset(REVIEW_INDEX_INSET_X, 0)
+    stub_w = REVIEW_INDEX_WEEK_W
+    return columns(inner, 2, gap=0, weights=(stub_w, max(inner.w - stub_w, 1)))
+
+
+def reviews_index_link_hits(row: Rect) -> tuple[Rect, ...]:
+    """Stub + week range. Whole printed horizon is the dest hit."""
+    return reviews_index_week_parts(row)
+
+
+def paint_reviews_index(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
+    """Thin week roster — nav/links only. Not a month-banded index thesis."""
+    for seat, week in zip(reviews_index_rows(box, len(index.weeks)), index.weeks, strict=True):
+        _paint_reviews_index_week(plotter, seat, week)
+        for hit in reviews_index_link_hits(seat):
+            plotter.link(hit, week.dest)
+
+
+def _paint_reviews_index_week(plotter: Plotter, row: Rect, week: ReviewWeek) -> None:
+    stub, dated = reviews_index_week_parts(row)
+    plotter.text(
+        stub,
+        f"W{week.iso_week:02d}",
+        size=7.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    plotter.text(
+        dated,
+        short_date_range(week.monday, week.sunday),
+        size=6.2,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1773,6 +1916,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = item.dest
         elif item.dest.startswith("tasks-index-"):
             dests["Task"] = item.dest
+        elif item.dest.startswith("reviews-index-"):
+            dests["Rev"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1800,6 +1945,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Task"] = page.dest
         case "task":
             pass
+        case "reviews_index":
+            dests["Rev"] = page.dest
+        case "review":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1807,7 +1956,19 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
+    order = (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Proj",
+        "Meet",
+        "Task",
+        "Rev",
+        "Week",
+        "Day",
+        "Notes",
+    )
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1833,6 +1994,8 @@ def strip_active(kind: str) -> str:
             return "Meet"
         case "tasks_index" | "task":
             return "Task"
+        case "reviews_index" | "review":
+            return "Rev"
         case "projects":
             return ""
         case _:
