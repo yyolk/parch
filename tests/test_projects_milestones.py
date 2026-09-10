@@ -8,12 +8,16 @@ from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     HAIR,
     MILESTONE_BODY_GAP,
+    MILESTONE_DATE_LABEL_W,
     MILESTONE_DATE_W,
     MILESTONE_HEAD_H,
     MILESTONE_NOTES_GAP,
-    MILESTONE_NOTES_H,
+    MILESTONE_P_PAD,
+    MILESTONE_P_SIZE,
     MILESTONE_RUNG_GAP,
+    MILESTONE_RUNG_H,
     MILESTONE_STATUS_W,
+    MUTED,
     PROJECT_NOTE_PITCH,
     PROJECT_P,
     PROJECT_STATUS_MARK,
@@ -21,6 +25,7 @@ from parch.layouts.planner.painters import (
     RULE_C,
     SOFT,
     TICK,
+    milestone_rungs_height,
     paint_projects_milestones,
     projects_milestones_head_seats,
     projects_milestones_rung_seats,
@@ -72,36 +77,43 @@ def test_projects_milestones_seats_ladder():
     assert head.w == pytest.approx(well.w)
     assert len(rungs) == 5
     assert rungs[0].y == pytest.approx(head.bottom + MILESTONE_BODY_GAP)
+    assert rungs[0].h == pytest.approx(MILESTONE_RUNG_H)
     assert rungs[1].y == pytest.approx(rungs[0].bottom + MILESTONE_RUNG_GAP)
-    assert rungs[-1].bottom == pytest.approx(notes.y - MILESTONE_NOTES_GAP)
-    assert notes.h == pytest.approx(MILESTONE_NOTES_H)
+    assert rungs[-1].bottom == pytest.approx(rungs[0].y + milestone_rungs_height(5))
+    assert notes.y == pytest.approx(rungs[-1].bottom + MILESTONE_NOTES_GAP)
     assert notes.bottom == pytest.approx(well.bottom)
     assert notes.x == pytest.approx(well.x)
     assert notes.w == pytest.approx(well.w)
     for rung in rungs:
         assert rung.x == pytest.approx(well.x)
         assert rung.w == pytest.approx(well.w)
-        assert rung.h == pytest.approx(rungs[0].h)
+        assert rung.h == pytest.approx(MILESTONE_RUNG_H)
     leftover = well.h - MILESTONE_HEAD_H - MILESTONE_BODY_GAP - MILESTONE_NOTES_GAP
-    assert notes.h / leftover < 0.35
-    assert rungs[0].h * 5 > notes.h
+    assert notes.h > milestone_rungs_height(5)
+    assert notes.h / leftover > 0.50
 
-    name, status = projects_milestones_head_seats(head)
-    assert name.x == pytest.approx(head.x)
+    mark, field, status = projects_milestones_head_seats(head)
+    assert mark.x == pytest.approx(head.x)
+    assert mark.w == pytest.approx(PROJECT_P)
+    assert mark.h == pytest.approx(PROJECT_P)
+    assert field.x > mark.right
+    assert field.h == pytest.approx(PROJECT_P)
+    assert field.w > mark.w
     assert status.right == pytest.approx(head.right)
-    assert name.right < status.x
+    assert field.right < status.x
     assert status.w == pytest.approx(MILESTONE_STATUS_W)
 
-    tick, name_box, date = projects_milestones_rung_seats(rungs[0])
+    tick, name_box, date_label, date = projects_milestones_rung_seats(rungs[0])
     assert tick.x == pytest.approx(rungs[0].x)
     assert tick.w == pytest.approx(TICK)
     assert tick.h == pytest.approx(TICK)
     assert name_box.x > tick.right
-    assert name_box.right == pytest.approx(rungs[0].right)
-    assert date.x == pytest.approx(name_box.x)
+    assert date_label.x > name_box.right
+    assert date_label.w == pytest.approx(MILESTONE_DATE_LABEL_W)
+    assert date.x > date_label.right
     assert date.w == pytest.approx(MILESTONE_DATE_W)
-    assert date.y > name_box.bottom
-    assert date.right < name_box.right
+    assert date.right == pytest.approx(rungs[0].right)
+    assert date.y == pytest.approx(name_box.y)
 
 
 def test_projects_milestones_paint_rungs_dates_and_status():
@@ -116,6 +128,7 @@ def test_projects_milestones_paint_rungs_dates_and_status():
     assert texts.count("Doing") == 1
     assert texts.count("Done") == 1
     assert texts.count("Next") == 1
+    assert texts.count("Date") == 5
     for rejected in (
         "PROJECT",
         "Focus",
@@ -129,6 +142,21 @@ def test_projects_milestones_paint_rungs_dates_and_status():
         "Active",
     ):
         assert rejected not in texts
+
+    p_text = next(op for op in plotter.ops if op[0] == "text" and op[2] == "P")
+    assert p_text[5] is False
+    assert p_text[6] == "sans"
+    assert p_text[7] == pytest.approx(MUTED)
+    assert p_text[8] is True
+    assert p_text[3] == pytest.approx(MILESTONE_P_SIZE)
+    assert p_text[1].x == pytest.approx(
+        next(
+            op[1].x
+            for op in plotter.ops
+            if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+        )
+        + MILESTONE_P_PAD
+    )
 
     ticks = [
         op
@@ -153,6 +181,18 @@ def test_projects_milestones_paint_rungs_dates_and_status():
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
     ]
     assert len(p_boxes) == 1
+
+    _, field, _ = projects_milestones_head_seats(projects_milestones_seats(well, 5)[0])
+    name_boxes = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(field.w)
+        and op[1].h == pytest.approx(PROJECT_P)
+    ]
+    assert len(name_boxes) == 1
 
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert fills == []
@@ -209,7 +249,7 @@ def test_projects_milestones_paint_rungs_dates_and_status():
         and op[6] == pytest.approx(RULE_C)
         and op[3] - op[1] == pytest.approx(note_inset_w)
     ]
-    assert len(note_rules) >= 4
+    assert len(note_rules) >= 12
     assert all(op[2] > notes.y for op in note_rules)
 
     card_outlines = [
@@ -226,8 +266,9 @@ def test_projects_milestones_knobs():
     ladder = next(item for item in page.components if isinstance(item, ProjectsMilestones))
     assert ladder.rungs == 4
     well = well_rect(NOMAD)
-    _, rungs, _ = projects_milestones_seats(well, ladder.rungs)
+    _, rungs, notes = projects_milestones_seats(well, ladder.rungs)
     assert len(rungs) == 4
+    assert notes.h > milestone_rungs_height(4)
     plotter = RecordingPlotter()
     paint_projects_milestones(plotter, well, ladder)
     ticks = [
@@ -245,7 +286,9 @@ def test_projects_milestones_knobs():
         and op[3] - op[1] == pytest.approx(MILESTONE_DATE_W)
     ]
     assert len(date_rules) == 4
-    assert [op[2] for op in plotter.ops if op[0] == "text"].count("P") == 1
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("P") == 1
+    assert texts.count("Date") == 4
 
 
 def test_projects_milestones_header_year_and_seven_tabs():

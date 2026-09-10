@@ -283,73 +283,123 @@ MILESTONE_STATUS_W = 50.0
 MILESTONE_HEAD_GAP = 2.4
 MILESTONE_BODY_GAP = 2.6
 MILESTONE_NOTES_GAP = 2.6
-MILESTONE_NOTES_H = 32.0
-MILESTONE_RUNG_GAP = 2.2
-MILESTONE_NAME_H = 5.4
-MILESTONE_DATE_W = 24.0
-MILESTONE_DATE_H = 3.6
-MILESTONE_NAME_DATE_GAP = 1.0
+MILESTONE_RUNG_H = 8.2
+MILESTONE_RUNG_GAP = 1.4
+MILESTONE_NAME_GAP = 1.4
 MILESTONE_TICK_GAP = 1.4
+MILESTONE_DATE_W = 22.0
+MILESTONE_DATE_LABEL_W = 9.0
+MILESTONE_DATE_GAP = 1.2
+MILESTONE_P_PAD = 0.40
+MILESTONE_P_CORNER = (2.15, 1.85)
+MILESTONE_P_SIZE = 5.2
+
+
+def milestone_rungs_height(rungs: int) -> float:
+    """Content-height ladder — leftover goes to Next, not dead air."""
+    n = max(1, rungs)
+    return n * MILESTONE_RUNG_H + (n - 1) * MILESTONE_RUNG_GAP
 
 
 def projects_milestones_seats(
     well: Rect, rungs: int
 ) -> tuple[Rect, tuple[Rect, ...], Rect]:
-    """Name+status head, stacked milestone rungs, compact next-notes."""
+    """Name+status head, content-height rungs, flex Next notes."""
     head, rest = well.split_top(MILESTONE_HEAD_H)
     leftover = Rect(rest.x, rest.y + MILESTONE_BODY_GAP, rest.w, rest.h - MILESTONE_BODY_GAP)
-    body_h = leftover.h - MILESTONE_NOTES_GAP - MILESTONE_NOTES_H
-    body = Rect(leftover.x, leftover.y, leftover.w, body_h)
-    notes = Rect(leftover.x, leftover.bottom - MILESTONE_NOTES_H, leftover.w, MILESTONE_NOTES_H)
+    body, after = leftover.split_top(milestone_rungs_height(rungs))
+    notes = Rect(after.x, after.y + MILESTONE_NOTES_GAP, after.w, after.h - MILESTONE_NOTES_GAP)
     return head, rows(body, max(1, rungs), gap=MILESTONE_RUNG_GAP), notes
 
 
-def projects_milestones_head_seats(head: Rect) -> tuple[Rect, Rect]:
-    """P+name underline | Todo / Doing / Done for the project as a whole."""
-    name, _status = head.split_left(head.w - MILESTONE_STATUS_W)
-    name = Rect(name.x, name.y, max(name.w - MILESTONE_HEAD_GAP, 1), name.h)
-    status = Rect(name.right + MILESTONE_HEAD_GAP, head.y, head.right - name.right - MILESTONE_HEAD_GAP, head.h)
-    return name, status
+def projects_milestones_head_seats(head: Rect) -> tuple[Rect, Rect, Rect]:
+    """P mark, bordered name field, Todo / Doing / Done."""
+    ident, _status = head.split_left(head.w - MILESTONE_STATUS_W)
+    ident = Rect(ident.x, ident.y, max(ident.w - MILESTONE_HEAD_GAP, 1), ident.h)
+    status = Rect(
+        ident.right + MILESTONE_HEAD_GAP,
+        head.y,
+        head.right - ident.right - MILESTONE_HEAD_GAP,
+        head.h,
+    )
+    mark, field = projects_milestones_name_field(ident)
+    return mark, field, status
 
 
-def projects_milestones_rung_seats(rung: Rect) -> tuple[Rect, Rect, Rect]:
-    """Tick + name underline over a thin optional date underline."""
-    tick_y = rung.y + (MILESTONE_NAME_H - TICK) / 2
+def projects_milestones_name_field(ident: Rect) -> tuple[Rect, Rect]:
+    """P square and the hairline name box beside it — G craft, O only."""
+    y = ident.y + (ident.h - PROJECT_P) / 2
+    mark = Rect(ident.x, y, PROJECT_P, PROJECT_P)
+    field = Rect(
+        mark.right + MILESTONE_NAME_GAP,
+        y,
+        max(ident.right - mark.right - MILESTONE_NAME_GAP, 1),
+        PROJECT_P,
+    )
+    return mark, field
+
+
+def projects_milestones_rung_seats(rung: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """Tick + name underline | Date label + short right-side date field."""
+    tick_y = rung.y + (rung.h - TICK) / 2
     tick = Rect(rung.x, tick_y, TICK, TICK)
-    name = Rect(
+    rest = Rect(
         tick.right + MILESTONE_TICK_GAP,
         rung.y,
         max(rung.right - tick.right - MILESTONE_TICK_GAP, 1),
-        MILESTONE_NAME_H,
+        rung.h,
     )
     date = Rect(
-        name.x,
-        name.bottom + MILESTONE_NAME_DATE_GAP,
+        rest.right - MILESTONE_DATE_W,
+        rest.y,
         MILESTONE_DATE_W,
-        MILESTONE_DATE_H,
+        rest.h,
     )
-    return tick, name, date
+    label = Rect(
+        date.x - MILESTONE_DATE_GAP - MILESTONE_DATE_LABEL_W,
+        rest.y,
+        MILESTONE_DATE_LABEL_W,
+        rest.h,
+    )
+    name = Rect(rest.x, rest.y, max(label.x - MILESTONE_DATE_GAP - rest.x, 1), rest.h)
+    return tick, name, label, date
 
 
 def paint_projects_milestones(plotter: Plotter, box: Rect, ladder: ProjectsMilestones) -> None:
     """Thesis O — milestone ladder toward done. Not a kanban or meeting dump."""
     head, rungs, notes = projects_milestones_seats(box, ladder.rungs)
-    name, status = projects_milestones_head_seats(head)
-    _paint_project_name(plotter, name)
+    mark, field, status = projects_milestones_head_seats(head)
+    _paint_milestone_priority(plotter, mark)
+    plotter.rect(field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _paint_project_status(plotter, status)
     _paint_milestone_spine(plotter, rungs)
     for rung in rungs:
-        tick, name_box, date = projects_milestones_rung_seats(rung)
-        _paint_milestone_rung(plotter, tick, name_box, date)
+        tick, name_box, date_label, date = projects_milestones_rung_seats(rung)
+        _paint_milestone_rung(plotter, tick, name_box, date_label, date)
     _paint_note_box(plotter, notes, label="Next")
+
+
+def _paint_milestone_priority(plotter: Plotter, mark: Rect) -> None:
+    """Soft P: muted scaps Sans, 0.40 mm pad — not the default serif slab."""
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    cw, ch = MILESTONE_P_CORNER
+    plotter.text(
+        Rect(mark.x + MILESTONE_P_PAD, mark.y + MILESTONE_P_PAD, cw, ch),
+        "P",
+        size=MILESTONE_P_SIZE,
+        face="sans",
+        gray=MUTED,
+        align="left",
+        small_caps=True,
+    )
 
 
 def _paint_milestone_spine(plotter: Plotter, rungs: tuple[Rect, ...]) -> None:
     """Quiet hairline through tick centers — the ladder, not a kanban rail."""
     if len(rungs) < 2:
         return
-    first, _, _ = projects_milestones_rung_seats(rungs[0])
-    last, _, _ = projects_milestones_rung_seats(rungs[-1])
+    first, *_ = projects_milestones_rung_seats(rungs[0])
+    last, *_ = projects_milestones_rung_seats(rungs[-1])
     x = first.x + first.w / 2
     plotter.line(
         x,
@@ -361,7 +411,9 @@ def _paint_milestone_spine(plotter: Plotter, rungs: tuple[Rect, ...]) -> None:
     )
 
 
-def _paint_milestone_rung(plotter: Plotter, tick: Rect, name: Rect, date: Rect) -> None:
+def _paint_milestone_rung(
+    plotter: Plotter, tick: Rect, name: Rect, date_label: Rect, date: Rect
+) -> None:
     plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     plotter.line(
         name.x,
@@ -371,11 +423,20 @@ def _paint_milestone_rung(plotter: Plotter, tick: Rect, name: Rect, date: Rect) 
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )
+    plotter.text(
+        date_label,
+        "Date",
+        size=5.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
     plotter.line(
         date.x,
-        date.bottom,
+        tick.bottom,
         date.right,
-        date.bottom,
+        tick.bottom,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )
