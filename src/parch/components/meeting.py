@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class MeetingSlot:
-    """One dense roster row — date cue + title write-in, linked to a Meeting dest."""
+    """One dense roster row — stub hits the Meeting dest; date/title write-ins stay unlinkable."""
 
     number: int
     dest: str
@@ -13,7 +13,7 @@ class MeetingSlot:
 
 @dataclass(frozen=True, slots=True)
 class MeetingIndex:
-    """Thesis A — dense dated roster. Each row is a dest to that Meeting page."""
+    """Thesis A — dense dated roster. Stub per row is the dest hit; write-ins stay unlinkable."""
 
     year: int
     dest: str

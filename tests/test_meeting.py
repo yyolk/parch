@@ -12,6 +12,9 @@ from parch.layouts.planner.painters import (
     MEET_INDEX_COL_GAP,
     MEET_INDEX_DATE_LABEL_W,
     MEET_INDEX_GAP,
+    MEET_INDEX_MARK,
+    MEET_INDEX_STUB_GAP,
+    MEET_INDEX_STUB_W,
     MEET_INDEX_WEIGHTS,
     MEET_LABEL_W,
     MEET_WRITE_LABEL_H,
@@ -19,6 +22,8 @@ from parch.layouts.planner.painters import (
     checklist_content_height,
     meeting_head_height,
     meeting_head_seats,
+    meeting_index_link_hits,
+    meeting_index_row_parts,
     meeting_index_row_seats,
     meeting_seats,
     meetings_index_roster,
@@ -30,6 +35,10 @@ from parch.layouts.planner.painters import (
 from parch.plotter import RecordingPlotter
 from parch.sections.meeting import MEET_ACTION_ITEMS, MEET_AGENDA, MeetingSection
 from parch.spec import Spec
+
+
+def _rects_overlap(a: Rect, b: Rect) -> bool:
+    return a.x < b.right and b.x < a.right and a.y < b.bottom and b.y < a.bottom
 
 
 _MEET_STRIP = (
@@ -217,9 +226,16 @@ def test_meeting_index_seats():
     leftover = well.h - MEET_INDEX_GAP * 15
     assert seats[0].h == pytest.approx(leftover / 16)
 
+    stub, body = meeting_index_row_parts(seats[0])
+    assert stub.x > seats[0].x
+    assert stub.w == pytest.approx(MEET_INDEX_STUB_W)
+    assert body.x == pytest.approx(stub.right + MEET_INDEX_STUB_GAP)
+    assert body.right < seats[0].right
+
     dated, title = meeting_index_row_seats(seats[0])
-    assert dated.x > seats[0].x
-    assert title.right < seats[0].right
+    assert dated.x == pytest.approx(body.x)
+    assert title.right == pytest.approx(body.right)
+    assert dated.x > stub.right
     assert dated.right < title.x
     assert title.x == pytest.approx(dated.right + MEET_INDEX_COL_GAP)
     share = dated.w + title.w
@@ -227,6 +243,10 @@ def test_meeting_index_seats():
     assert title.w > dated.w
     assert dated.y == pytest.approx(title.y)
     assert dated.bottom == pytest.approx(title.bottom)
+    hits = meeting_index_link_hits(seats[0])
+    assert hits == (stub,)
+    assert not _rects_overlap(hits[0], dated)
+    assert not _rects_overlap(hits[0], title)
 
 
 def test_meeting_index_paint_date_cues_and_links():
@@ -239,6 +259,8 @@ def test_meeting_index_paint_date_cues_and_links():
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Date") == 16
+    for slot in range(1, 17):
+        assert f"{slot:02d}" in texts
     assert "Title" not in texts
     assert "Attendees" not in texts
     assert "Agenda" not in texts
@@ -251,6 +273,13 @@ def test_meeting_index_paint_date_cues_and_links():
     assert all(box.h == pytest.approx(MEET_WRITE_LABEL_H) for box in date_boxes)
     assert all(box.w == pytest.approx(MEET_INDEX_DATE_LABEL_W) for box in date_boxes)
 
+    marks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(MEET_INDEX_MARK)
+    ]
+    assert len(marks) == 16
+
     seats = meetings_index_roster(well, 16)
     rules = [op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(0.12)]
     assert len(rules) == 32
@@ -260,9 +289,24 @@ def test_meeting_index_paint_date_cues_and_links():
         assert date_box.bottom == pytest.approx(title.bottom)
 
     link_ops = [op for op in plotter.ops if op[0] == "link"]
-    assert [(op[1], op[2]) for op in link_ops] == [
-        (seat, f"meeting-2026-{slot:02d}") for slot, seat in enumerate(seats, start=1)
+    expected_hits: list[tuple[Rect, str]] = []
+    for seat, slot in zip(seats, roster.slots, strict=True):
+        hits = meeting_index_link_hits(seat)
+        assert len(hits) == 1
+        stub, body = meeting_index_row_parts(seat)
+        dated, title = meeting_index_row_seats(seat)
+        assert hits[0] == stub
+        assert hits[0] != seat
+        assert hits[0] != body
+        assert not _rects_overlap(hits[0], dated)
+        assert not _rects_overlap(hits[0], title)
+        expected_hits.append((hits[0], slot.dest))
+    assert [(op[1], op[2]) for op in link_ops] == expected_hits
+    assert [dest for _, dest in expected_hits] == [
+        f"meeting-2026-{slot:02d}" for slot in range(1, 17)
     ]
+    for seat in seats:
+        assert all(op[1] != seat for op in link_ops)
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert fills == []
 
@@ -289,7 +333,15 @@ def test_meeting_rows_knob():
     assert "meeting-2026-13" not in dests
     plotter = RecordingPlotter()
     paint_meetings_index_roster(plotter, well_rect(NOMAD), roster)
-    assert [op[2] for op in plotter.ops if op[0] == "text"].count("Date") == 12
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("Date") == 12
+    for slot in range(1, 13):
+        assert f"{slot:02d}" in texts
+    assert "13" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
         f"meeting-2026-{slot:02d}" for slot in range(1, 13)
     ]
+    well = well_rect(NOMAD)
+    seats = meetings_index_roster(well, 12)
+    link_boxes = [op[1] for op in plotter.ops if op[0] == "link"]
+    assert link_boxes == [meeting_index_link_hits(seat)[0] for seat in seats]

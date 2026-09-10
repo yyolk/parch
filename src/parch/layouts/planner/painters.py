@@ -818,6 +818,9 @@ MEET_WRITE_LABEL_H = 3.8
 MEET_INDEX_GAP = 1.0
 MEET_INDEX_INSET_X = 1.2
 MEET_INDEX_INSET_Y = 0.7
+MEET_INDEX_STUB_W = 9.6
+MEET_INDEX_STUB_GAP = 1.6
+MEET_INDEX_MARK = 5.0
 MEET_INDEX_COL_GAP = 2.8
 MEET_INDEX_WEIGHTS = (0.22, 0.78)
 MEET_INDEX_DATE_LABEL_W = 8.0
@@ -893,24 +896,57 @@ def meetings_index_roster(box: Rect, n: int) -> tuple[Rect, ...]:
     return rows(box, n, gap=MEET_INDEX_GAP)
 
 
-def meeting_index_row_seats(row: Rect) -> tuple[Rect, Rect]:
-    """Date cue | title write-in, after a quiet inset."""
+def meeting_index_row_parts(row: Rect) -> tuple[Rect, Rect]:
+    """Stub | date+title body, after a quiet inset and stub gap."""
     inner = row.inset(MEET_INDEX_INSET_X, MEET_INDEX_INSET_Y)
-    return columns(inner, 2, gap=MEET_INDEX_COL_GAP, weights=MEET_INDEX_WEIGHTS)
+    stub, rest = inner.split_left(MEET_INDEX_STUB_W)
+    body = Rect(rest.x + MEET_INDEX_STUB_GAP, rest.y, rest.w - MEET_INDEX_STUB_GAP, rest.h)
+    return stub, body
+
+
+def meeting_index_row_seats(row: Rect) -> tuple[Rect, Rect]:
+    """Date cue | title write-in on the body. Stub is not a write-in."""
+    _, body = meeting_index_row_parts(row)
+    return columns(body, 2, gap=MEET_INDEX_COL_GAP, weights=MEET_INDEX_WEIGHTS)
+
+
+def meeting_index_link_hits(row: Rect) -> tuple[Rect, ...]:
+    """Stub column only. Date and title write-ins stay unlinkable."""
+    stub, _body = meeting_index_row_parts(row)
+    return (stub,)
 
 
 def paint_meetings_index_roster(plotter: Plotter, box: Rect, index: MeetingIndex) -> None:
-    """Thesis A — dense dated roster. Each row links to that Meeting dest."""
+    """Thesis A — dense dated roster. Stub is the dest hit; write-ins stay unlinkable."""
     for seat, slot in zip(meetings_index_roster(box, len(index.slots)), index.slots, strict=True):
-        _paint_meeting_index_row(plotter, seat)
-        plotter.link(seat, slot.dest)
+        _paint_meeting_index_row(plotter, seat, slot.number)
+        for hit in meeting_index_link_hits(seat):
+            plotter.link(hit, slot.dest)
 
 
-def _paint_meeting_index_row(plotter: Plotter, box: Rect) -> None:
-    """Date cue (labeled short rule) + title write-in/rule on one baseline."""
+def _paint_meeting_index_row(plotter: Plotter, box: Rect, number: int) -> None:
+    """Slot stub + date cue + title write-in/rule on one baseline."""
+    stub, _body = meeting_index_row_parts(box)
+    _paint_meeting_index_stub(plotter, stub, number)
     dated, title = meeting_index_row_seats(box)
     _paint_meeting_index_date_cue(plotter, dated)
     _paint_meeting_index_title(plotter, title)
+
+
+def _paint_meeting_index_stub(plotter: Plotter, stub: Rect, number: int) -> None:
+    """Hairline slot mark — the visible tap target, Projects L spirit."""
+    mark_y = stub.y + (stub.h - MEET_INDEX_MARK) / 2
+    mark = Rect(stub.x + (stub.w - MEET_INDEX_MARK) / 2, mark_y, MEET_INDEX_MARK, MEET_INDEX_MARK)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{number:02d}",
+        size=6.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
 
 
 def _paint_meeting_index_date_cue(plotter: Plotter, box: Rect) -> None:
