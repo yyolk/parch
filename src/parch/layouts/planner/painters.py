@@ -286,9 +286,9 @@ def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
 
 
 def project_ticket_preview_cards(preview: Rect) -> tuple[Rect, ...]:
-    """G's three stacked cards, thumbnail — hairline open frames."""
+    """G's three cards, side-by-side thumbnail — hairline open frames."""
     pocket = preview.inset(TICKET_PREVIEW_INSET, TICKET_PREVIEW_INSET)
-    return rows(pocket, 3, gap=TICKET_PREVIEW_GAP)
+    return columns(pocket, 3, gap=TICKET_PREVIEW_GAP)
 
 
 def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:

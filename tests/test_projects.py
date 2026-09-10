@@ -238,9 +238,12 @@ def test_project_ticket_seats():
     assert len(cards) == 3
     assert cards[0].y > preview.y
     assert cards[-1].bottom < preview.bottom
-    assert cards[1].y > cards[0].bottom
     assert cards[0].x > preview.x
-    assert cards[0].right < preview.right
+    assert cards[-1].right < preview.right
+    assert cards[1].x > cards[0].right
+    assert cards[2].x > cards[1].right
+    assert cards[0].y == pytest.approx(cards[1].y)
+    assert cards[0].h == pytest.approx(cards[1].h)
 
 
 def test_projects_index_paint_write_in_underlines_and_links():
@@ -286,8 +289,8 @@ def test_projects_index_paint_write_in_underlines_and_links():
         if op[0] == "rect"
         and op[2]
         and not op[3]
-        and op[1].w < TICKET_STUB_W * 3
-        and op[1].h < TICKET_MARK
+        and op[1].w < TICKET_STUB_W
+        and op[1].h > TICKET_MARK
     ]
     assert len(previews) == 8 * 3
 
