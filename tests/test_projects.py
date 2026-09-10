@@ -198,7 +198,7 @@ def test_projects_clone_a_tracks():
         "plus",
         "square",
         "hexagon",
-        "chevron",
+        "cross",
     )
 
 

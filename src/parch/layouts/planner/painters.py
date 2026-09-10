@@ -299,7 +299,7 @@ CLONE_ICONS = (
     "plus",
     "square",
     "hexagon",
-    "chevron",
+    "cross",
 )
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
@@ -461,8 +461,8 @@ def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
             _fill_star(plotter, box)
         case "hexagon":
             _fill_hexagon(plotter, box)
-        case "chevron":
-            _fill_chevron(plotter, box)
+        case "cross":
+            _fill_cross(plotter, box)
         case _:
             raise ValueError(f"unknown clone icon {kind!r}")
 
@@ -545,17 +545,12 @@ def _fill_hexagon(plotter: Plotter, box: Rect) -> None:
     _fill_poly(plotter, box, pts)
 
 
-def _fill_chevron(plotter: Plotter, box: Rect) -> None:
-    """Right-pointing filled chevron (notched arrow), not a point-up triangle."""
-    cy = box.y + box.h / 2
-    notch = box.w * 0.36
-    pts = [
-        (box.x, box.y),
-        (box.right, cy),
-        (box.x, box.bottom),
-        (box.x + notch, cy),
-    ]
-    _fill_poly(plotter, box, pts)
+def _fill_cross(plotter: Plotter, box: Rect) -> None:
+    """X — two thick diagonals. Distinct from plus and from the 5-point star."""
+    t = min(box.w, box.h) * 0.22
+    x0, y0, x1, y1 = box.x, box.y, box.right, box.bottom
+    _fill_poly(plotter, box, [(x0 + t, y0), (x1, y1 - t), (x1 - t, y1), (x0, y0 + t)])
+    _fill_poly(plotter, box, [(x1 - t, y0), (x1, y0 + t), (x0 + t, y1), (x0, y1 - t)])
 
 
 def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:
