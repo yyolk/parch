@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectSpine,
     ProjectsBoard,
+    ProjectsIndexSpines,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +277,141 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+INDEX_SPINE_W = 10.0
+INDEX_SPINE_GAP = 1.6
+INDEX_SPINE_ROW_GAP = 8.0
+INDEX_SPINE_PLANK = 1.6
+INDEX_SPINE_AIR = 3.2
+INDEX_SPINE_HEAD = 1.4
+INDEX_SPINE_FOOT_H = 5.4
+INDEX_SPINE_LETTER_H = 5.6
+INDEX_SPINE_LETTER_SIZE = 8.0
+INDEX_SPINE_HINT_SIZE = 5.2
+
+
+def spine_title_letters(name: str) -> str:
+    """Stacked spine stamp — letters only, uppercase."""
+    return "".join(ch.upper() for ch in name if ch.isalpha())
+
+
+def projects_index_spine_row_count(n: int) -> int:
+    """One shelf when the catalog is short; two otherwise."""
+    return 1 if n <= 6 else 2
+
+
+def projects_index_spine_row_counts(n: int) -> tuple[int, ...]:
+    """Split spines across shelves, extra on the top row."""
+    if n < 1:
+        raise ValueError(f"n must be >= 1, not {n}")
+    rows_n = projects_index_spine_row_count(n)
+    if rows_n == 1:
+        return (n,)
+    top = (n + 1) // 2
+    return (top, n - top)
+
+
+def projects_index_spine_shelves(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal shelf tracks for the spine index."""
+    return rows(well, projects_index_spine_row_count(n), gap=INDEX_SPINE_ROW_GAP)
+
+
+def projects_index_spine_planks(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Thin shelf lip under each row of spines."""
+    return tuple(
+        Rect(shelf.x, shelf.bottom - INDEX_SPINE_PLANK, shelf.w, INDEX_SPINE_PLANK)
+        for shelf in projects_index_spine_shelves(well, n)
+    )
+
+
+def projects_index_spine_seats(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Thin centered book spines sitting on each shelf plank."""
+    seats: list[Rect] = []
+    for shelf, count in zip(
+        projects_index_spine_shelves(well, n),
+        projects_index_spine_row_counts(n),
+        strict=True,
+    ):
+        books = Rect(
+            shelf.x,
+            shelf.y + INDEX_SPINE_AIR,
+            shelf.w,
+            shelf.h - INDEX_SPINE_AIR - INDEX_SPINE_PLANK,
+        )
+        group_w = count * INDEX_SPINE_W + (count - 1) * INDEX_SPINE_GAP
+        x0 = books.x + (books.w - group_w) / 2
+        for i in range(count):
+            seats.append(
+                Rect(
+                    x0 + i * (INDEX_SPINE_W + INDEX_SPINE_GAP),
+                    books.y,
+                    INDEX_SPINE_W,
+                    books.h,
+                )
+            )
+    return tuple(seats)
+
+
+def paint_projects_index_spines(
+    plotter: Plotter, box: Rect, board: ProjectsIndexSpines
+) -> None:
+    """Thesis N — shelf of named spines. Each strip links to a G-craft leaf."""
+    n = len(board.spines)
+    for plank in projects_index_spine_planks(box, n):
+        plotter.rect(plank, stroke=False, fill=True, fill_gray=SOFT)
+        plotter.line(
+            plank.x, plank.y, plank.right, plank.y, stroke_width=HAIR, stroke_gray=INK
+        )
+    for seat, spine in zip(projects_index_spine_seats(box, n), board.spines, strict=True):
+        _paint_project_spine(plotter, seat, spine)
+        plotter.link(seat, spine.dest)
+
+
+def _paint_project_spine(plotter: Plotter, box: Rect, spine: ProjectSpine) -> None:
+    """Thin bound strip: stacked short title, dest hint at the foot."""
+    filled = int(spine.hint) % 2 == 0
+    ink = PAPER if filled else INK
+    if filled:
+        plotter.rect(box, stroke=False, fill=True, fill_gray=INK)
+    else:
+        plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        head = Rect(box.x, box.y, box.w, INDEX_SPINE_HEAD)
+        plotter.rect(head, stroke=False, fill=True, fill_gray=INK)
+    foot = Rect(box.x, box.bottom - INDEX_SPINE_FOOT_H, box.w, INDEX_SPINE_FOOT_H)
+    title = Rect(box.x, box.y + INDEX_SPINE_HEAD, box.w, foot.y - box.y - INDEX_SPINE_HEAD)
+    _paint_stacked_spine_title(plotter, title, spine.name, gray=ink)
+    plotter.text(
+        foot,
+        spine.hint,
+        size=INDEX_SPINE_HINT_SIZE,
+        face="sans",
+        gray=ink,
+        small_caps=True,
+        align="center",
+    )
+
+
+def _paint_stacked_spine_title(
+    plotter: Plotter, box: Rect, name: str, *, gray: float
+) -> None:
+    """Printed short title as a centered column of letters (no rotate primitive)."""
+    letters = spine_title_letters(name)
+    if not letters:
+        return
+    stack_h = len(letters) * INDEX_SPINE_LETTER_H
+    y = box.y + max((box.h - stack_h) / 2, 0)
+    for i, ch in enumerate(letters):
+        cell = Rect(box.x, y + i * INDEX_SPINE_LETTER_H, box.w, INDEX_SPINE_LETTER_H)
+        plotter.text(
+            cell,
+            ch,
+            size=INDEX_SPINE_LETTER_SIZE,
+            bold=True,
+            face="serif",
+            gray=gray,
+            align="center",
+        )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -931,6 +1068,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
+        elif item.label == "Proj":
+            dests["Proj"] = item.dest
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
@@ -942,6 +1081,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index_spines":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1092,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Proj", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1114,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index_spines" | "project":
+            return "Proj"
         case _:
             return "Year"
