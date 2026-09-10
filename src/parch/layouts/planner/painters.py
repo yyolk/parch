@@ -277,6 +277,86 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+STATUS_STRIP_HEAD_H = 8.4
+STATUS_STRIP_MIN = 6.4
+STATUS_STRIP_INSET = 1.5
+
+
+def project_status_strip_seats(box: Rect) -> tuple[Rect, tuple[Rect, Rect, Rect]]:
+    """Legend band over three equal status lanes. Comparison only."""
+    legend, body = box.split_top(STATUS_STRIP_HEAD_H)
+    todo, doing, done = columns(body, 3)
+    return legend, (todo, doing, done)
+
+
+def project_status_strip_legend_slots(legend: Rect) -> tuple[Rect, Rect, Rect]:
+    """Todo | Doing | Done filter chips — same column tracks as the lanes."""
+    todo, doing, done = columns(legend, 3)
+    return todo, doing, done
+
+
+def project_status_strip_name_box(lane: Rect) -> Rect:
+    """Quiet inset inside a status lane before name-line tracks."""
+    return Rect(
+        lane.x + STATUS_STRIP_INSET,
+        lane.y + 0.6,
+        lane.w - 2 * STATUS_STRIP_INSET,
+        lane.h - 1.0,
+    )
+
+
+def project_status_strip_name_rows(lane: Rect) -> tuple[Rect, ...]:
+    """Project-name strips that fill a status lane. Comparison only."""
+    n = max(1, int(lane.h // STATUS_STRIP_MIN))
+    return rows(lane, n)
+
+
+def paint_projects_status_strips(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """Thesis E — status-first swim lanes. Comparison only — not the default.
+
+    Horizontal Todo → Doing → Done as three wide lanes. Name lines only;
+    cards/tasks knobs stay unused so the scan is “where is each project”.
+    """
+    _ = board
+    legend, lanes = project_status_strip_seats(box)
+    _wash(plotter, legend, WASH)
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    plotter.line(box.x, legend.bottom, box.right, legend.bottom, stroke_width=HAIR, stroke_gray=INK)
+    slots = project_status_strip_legend_slots(legend)
+    for i, (slot, lane, label) in enumerate(
+        zip(slots, lanes, PROJECT_STATUS_LABELS, strict=True)
+    ):
+        if i:
+            plotter.line(slot.x, box.y, slot.x, box.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        _paint_status_strip_chip(plotter, slot, label)
+        _paint_status_strip_names(plotter, lane)
+
+
+def _paint_status_strip_chip(plotter: Plotter, slot: Rect, label: str) -> None:
+    """Static filter chip — open mark + small-caps. No arrows."""
+    mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+    mark = Rect(slot.x + STATUS_STRIP_INSET, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    muted = label == "Done"
+    plotter.text(
+        Rect(mark.right + 0.9, slot.y, max(slot.right - mark.right - 1.4, 1), slot.h),
+        label,
+        size=6.8,
+        face="sans",
+        gray=MUTED if muted else INK,
+        small_caps=True,
+        align="left",
+    )
+
+
+def _paint_status_strip_names(plotter: Plotter, lane: Rect) -> None:
+    """Blank project-name rules. No task ticks — the lane is the status."""
+    inset = project_status_strip_name_box(lane)
+    for band in project_status_strip_name_rows(inset):
+        y = band.y + band.h * 0.72
+        plotter.line(inset.x, y, inset.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)

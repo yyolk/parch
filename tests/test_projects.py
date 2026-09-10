@@ -11,11 +11,19 @@ from parch.layouts.planner.painters import (
     PROJECT_P,
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
+    RULE,
+    STATUS_STRIP_HEAD_H,
     TICK,
+    WASH,
     paint_projects,
+    paint_projects_status_strips,
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
+    project_status_strip_legend_slots,
+    project_status_strip_name_box,
+    project_status_strip_name_rows,
+    project_status_strip_seats,
     strip_active,
     strip_items,
 )
@@ -138,6 +146,87 @@ def test_projects_knobs_from_spec():
     ]
     assert len(ticks) == 2 * 5
     assert [op[2] for op in plotter.ops if op[0] == "text"].count("P") == 2
+
+
+def test_project_status_strip_tracks():
+    well = Rect(4, 20, 110, 90)
+    legend, lanes = project_status_strip_seats(well)
+    assert legend.y == pytest.approx(well.y)
+    assert legend.x == pytest.approx(well.x)
+    assert legend.w == pytest.approx(well.w)
+    assert legend.h == pytest.approx(STATUS_STRIP_HEAD_H)
+    assert len(lanes) == 3
+    assert lanes[0].y == pytest.approx(legend.bottom)
+    assert lanes[0].x == pytest.approx(well.x)
+    assert lanes[-1].right == pytest.approx(well.right)
+    assert lanes[-1].bottom == pytest.approx(well.bottom)
+    assert lanes[1].x == pytest.approx(lanes[0].right)
+    assert lanes[2].x == pytest.approx(lanes[1].right)
+    assert all(lane.w == pytest.approx(well.w / 3) for lane in lanes)
+
+    slots = project_status_strip_legend_slots(legend)
+    assert [slot.x for slot in slots] == [pytest.approx(lane.x) for lane in lanes]
+    assert [slot.w for slot in slots] == [pytest.approx(lane.w) for lane in lanes]
+
+    names = project_status_strip_name_rows(lanes[0])
+    assert len(names) >= 8
+    assert names[0].y == pytest.approx(lanes[0].y)
+    assert names[-1].bottom == pytest.approx(lanes[0].bottom)
+    assert names[0].x == pytest.approx(lanes[0].x)
+
+
+def test_projects_status_strips_paint_legend_and_name_lines():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_projects_status_strips(plotter, well, board)
+
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("Todo") == 1
+    assert texts.count("Doing") == 1
+    assert texts.count("Done") == 1
+    assert "P" not in texts
+    assert "Focus" not in texts
+    assert "Notes" not in texts
+    assert "PROJECT" not in texts
+
+    legend, lanes = project_status_strip_seats(well)
+    marks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(PROJECT_STATUS_MARK)
+    ]
+    assert len(marks) == 3
+    for op in marks:
+        assert op[1].y + op[1].h <= legend.bottom + 0.01
+
+    expected = 3 * len(project_status_strip_name_rows(project_status_strip_name_box(lanes[0])))
+    name_rules = [op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(RULE)]
+    assert len(name_rules) == expected
+    assert expected > board.cards * board.tasks
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert ticks == []
+
+    washes = [op for op in plotter.ops if op[0] == "rect" and op[3] and not op[2]]
+    assert len(washes) == 1
+    assert washes[0][1].h == pytest.approx(legend.h)
+    assert washes[0][5] == pytest.approx(WASH)
+
+    p_boxes = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+    ]
+    assert p_boxes == []
 
 
 def test_projects_header_year_and_seven_tabs():
