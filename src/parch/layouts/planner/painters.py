@@ -398,6 +398,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
 
 HABIT_LABEL_W = 28.0
 HABIT_HEAD_H = 4.2
+HABIT_HEAD_DOW_H = 7.6
 HABIT_TRANSPOSED_COLS = 10
 HABIT_DAY_W = 13.0
 HABIT_DOW_W = 5.2
@@ -466,6 +467,63 @@ def habit_seats_transposed(
     names = columns(name_band, habits, gap=0.4)
     bands = rows(body, max(1, days), gap=0.15)
     return day_col, names, bands
+
+
+def paint_habit_grid_weekday_zebra(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
+    """Habits as rows, days across. Stacked day+weekday + row zebra. Comparison only."""
+    label, rest = box.split_left(HABIT_LABEL_W)
+    matrix = Rect(rest.x + 1.6, rest.y, rest.w - 1.6, rest.h)
+    head = Rect(box.x, box.y, box.w, HABIT_HEAD_DOW_H)
+    plotter.text(
+        Rect(label.x, head.y, label.w, head.h),
+        "Habit",
+        size=5.8,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    day_heads = columns(Rect(matrix.x, head.y, matrix.w, head.h), grid.days)
+    num_h = 3.8
+    for i, col in enumerate(day_heads):
+        day_n = i + 1
+        plotter.text(
+            Rect(col.x, col.y + 0.15, col.w, num_h),
+            str(day_n),
+            size=3.5,
+            face="sans",
+            gray=MUTED,
+            align="center",
+        )
+        plotter.text(
+            Rect(col.x, col.y + num_h - 0.1, col.w, col.h - num_h),
+            habit_dow_letter(grid.year, grid.month, day_n),
+            size=3.3,
+            face="sans",
+            gray=MUTED,
+            align="center",
+        )
+        if i < len(grid.day_dests) and grid.day_dests[i]:
+            plotter.link(col, grid.day_dests[i])
+    plotter.line(box.x, head.bottom, box.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+    body = Rect(box.x, head.bottom + 0.5, box.w, box.h - HABIT_HEAD_DOW_H - 0.5)
+    bands = rows(body, max(1, grid.rows))
+    day_tracks = columns(Rect(matrix.x, body.y, matrix.w, body.h), grid.days)
+    for i, band in enumerate(bands):
+        if i % 2:
+            y0, y1 = _stripe_span(bands, i, axis="y", end=box.bottom)
+            _wash(plotter, Rect(box.x, y0, box.w, y1 - y0), HABIT_WASH)
+        plotter.line(
+            label.x,
+            band.bottom - 0.55,
+            label.right - 0.6,
+            band.bottom - 0.55,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+        for col in day_tracks:
+            cell = Rect(col.x, band.y, col.w, band.h).inset(0.16, 0.4)
+            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def _wash(plotter: Plotter, box: Rect, gray: float) -> None:

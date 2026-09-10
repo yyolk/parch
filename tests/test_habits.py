@@ -11,6 +11,7 @@ from parch.layouts.planner.painters import (
     habit_seats_transposed,
     paint_habit_grid,
     paint_habit_grid_transposed,
+    paint_habit_grid_weekday_zebra,
     strip_active,
     strip_items,
 )
@@ -109,3 +110,21 @@ def test_habit_transposed_seat_and_paint():
     assert labels.count("W") >= 1
     assert "F" in labels and "M" in labels
     assert all("·" not in label for label in labels)
+
+
+def test_habit_weekday_zebra_paint():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    ink = RecordingPlotter()
+    paint_habit_grid_weekday_zebra(ink, Rect(4, 20, 110, 120), grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == 12 * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
+    assert len(fills) == grid.rows // 2
+    assert {op[5] for op in fills} == {HABIT_WASH}
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "1" in labels and "31" in labels
+    assert "W" in labels and "F" in labels and "M" in labels
+    assert "Habit" in labels
+    assert all("1W" not in label and "31F" not in label for label in labels)
