@@ -7,6 +7,9 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    CLONE_ICON,
+    CLONE_ICONS,
+    CLONE_STRIP_H,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
     PROJECT_STATUS_H,
@@ -17,6 +20,7 @@ from parch.layouts.planner.painters import (
     TICKET_MARK,
     TICKET_NAME_WEIGHTS,
     TICKET_PREVIEW_GAP,
+    TICKET_STRIP_PAD,
     TICKET_STUB_W,
     paint_project,
     paint_projects,
@@ -25,6 +29,7 @@ from parch.layouts.planner.painters import (
     project_card_left_seats,
     project_card_seats,
     project_ticket_body_seats,
+    project_ticket_name_seats,
     project_ticket_parts,
     project_ticket_preview_cards,
     project_ticket_seats,
@@ -250,6 +255,35 @@ def test_project_ticket_seats():
     assert cards[0].y == pytest.approx(cards[1].y)
     assert cards[0].h == pytest.approx(cards[1].h)
 
+    write, strip = project_ticket_name_seats(name)
+    assert strip.h == pytest.approx(CLONE_STRIP_H)
+    assert write.bottom + TICKET_STRIP_PAD == pytest.approx(strip.y)
+    assert strip.x == pytest.approx(name.x)
+    assert strip.w == pytest.approx(name.w)
+    assert write.right == pytest.approx(name.right)
+    assert write.right < preview.x
+    assert CLONE_ICON == pytest.approx(2.1)
+    assert CLONE_ICONS == (
+        "triangle",
+        "cross",
+        "hexagon",
+        "square",
+        "crescent",
+        "diamond",
+        "circle",
+        "plus",
+        "star",
+    )
+
+    nomad = project_ticket_seats(well_rect(NOMAD), 8)[0]
+    nstub, nbody = project_ticket_parts(nomad)
+    nname, _npreview = project_ticket_body_seats(nbody)
+    nwrite, nstrip = project_ticket_name_seats(nname)
+    stub_mark_bottom = nstub.y + (nstub.h + TICKET_MARK) / 2
+    assert nwrite.bottom >= stub_mark_bottom - 0.05
+    assert nstrip.y > stub_mark_bottom
+    assert nwrite.right < _npreview.x
+
 
 def test_projects_index_paint_write_in_underlines_and_links():
     spec = Spec(notes_pages=1)
@@ -284,9 +318,12 @@ def test_projects_index_paint_write_in_underlines_and_links():
     for seat, rule in zip(seats, rules, strict=True):
         _, body = project_ticket_parts(seat)
         name, preview = project_ticket_body_seats(body)
-        assert rule[1] == pytest.approx(name.x)
-        assert rule[3] == pytest.approx(name.right)
+        write, strip = project_ticket_name_seats(name)
+        assert rule[1] == pytest.approx(write.x)
+        assert rule[2] == pytest.approx(write.bottom)
+        assert rule[3] == pytest.approx(write.right)
         assert rule[3] < preview.x
+        assert rule[2] < strip.y
 
     painted = [op[1] for op in plotter.ops if op[0] == "rect" and op[2] and not op[3]]
     expected: list[Rect] = []
@@ -307,7 +344,7 @@ def test_projects_index_paint_write_in_underlines_and_links():
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links == [f"project-2026-{slot:02d}" for slot in range(1, 9)]
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
-    assert fills == []
+    assert len(fills) >= 8 * len(CLONE_ICONS)
 
     chrome = RecordingPlotter()
     chrome.begin_page()
