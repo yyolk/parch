@@ -11,6 +11,7 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectDetail,
     ProjectsBoard,
     QuarterGrid,
     Schedule,
@@ -227,6 +228,58 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_project_notes(plotter, right, first_y=rule_y)
 
 
+PROJECT_DEEP_HEADER_H = 8.0
+PROJECT_DEEP_META_H = 4.2
+PROJECT_DEEP_GAP = 2.4
+PROJECT_DEEP_STATUS_W = 50.0
+PROJECT_DEEP_TASKS = 9
+
+
+def project_deep_tasks_height(n: int) -> float:
+    """Focus-craft ticks only — no Focus label slab."""
+    return 0.6 + TICK + (max(1, n) - 1) * FOCUS_PITCH + 0.4
+
+
+def project_deep_seats(well: Rect, tasks: int) -> tuple[Rect, Rect, Rect, Rect]:
+    """header, meta, tasks (content-height), notes (flex leftover). Notes is majority."""
+    header, rest = well.split_top(PROJECT_DEEP_HEADER_H)
+    meta = Rect(rest.x, rest.y + PROJECT_DEEP_GAP, rest.w, PROJECT_DEEP_META_H)
+    leftover = Rect(
+        well.x,
+        meta.bottom + PROJECT_DEEP_GAP,
+        well.w,
+        well.bottom - (meta.bottom + PROJECT_DEEP_GAP),
+    )
+    task_h = project_deep_tasks_height(tasks)
+    task_box, notes = rows(
+        leftover,
+        2,
+        gap=PROJECT_DEEP_GAP,
+        weights=(task_h, max(leftover.h - task_h - PROJECT_DEEP_GAP, 1)),
+    )
+    return header, meta, task_box, notes
+
+
+def project_deep_header_seats(header: Rect) -> tuple[Rect, Rect]:
+    """P+name underline | Todo / Doing / Done."""
+    name, status = header.split_left(header.w - PROJECT_DEEP_STATUS_W)
+    gap = 2.4
+    name = Rect(name.x, name.y, max(name.w - gap, 1), name.h)
+    status = Rect(name.right + gap, header.y, header.right - name.right - gap, header.h)
+    return name, status
+
+
+def paint_project_deep(plotter: Plotter, box: Rect, detail: ProjectDetail) -> None:
+    """Thesis C — one project fills the well. No spine, graph, or diagonal status."""
+    header, meta, tasks, notes = project_deep_seats(box, detail.tasks)
+    name, status = project_deep_header_seats(header)
+    rule_y = _paint_project_name(plotter, name)
+    _paint_project_deep_status(plotter, status, rule_y)
+    _paint_project_deep_meta(plotter, meta)
+    _paint_project_tasks(plotter, tasks, detail.tasks)
+    _paint_project_notes(plotter, notes, first_y=notes.y + PROJECT_NOTE_PITCH)
+
+
 def _paint_project_name(plotter: Plotter, header: Rect) -> float:
     y = header.y + (header.h - PROJECT_P) / 2
     mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
@@ -275,6 +328,44 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+def _paint_project_deep_status(plotter: Plotter, box: Rect, rule_y: float) -> None:
+    """Todo / Doing / Done sitting on the name underline. Orthogonal, no arrows."""
+    for slot, label in zip(columns(box, 3, gap=1.4), PROJECT_STATUS_LABELS, strict=True):
+        mark = Rect(slot.x, rule_y - PROJECT_STATUS_MARK, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.7, mark.y - 0.6, max(slot.right - mark.right - 0.7, 1), PROJECT_STATUS_MARK + 1.2),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+
+
+def _paint_project_deep_meta(plotter: Plotter, box: Rect) -> None:
+    """Quiet keyword slot — hash + rule. Not a rotated spine."""
+    mark_w = 3.6
+    plotter.text(
+        Rect(box.x, box.y, mark_w, box.h),
+        "#",
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        align="left",
+    )
+    y = box.y + box.h * 0.72
+    plotter.line(
+        box.x + mark_w + 1.2,
+        y,
+        box.right,
+        y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1031,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "project_detail":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1060,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "project_detail":
             return ""
         case _:
             return "Year"

@@ -38,10 +38,11 @@ def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[0:8] == [
+    assert dests[0:9] == [
         "cover",
         "year-2026",
         "projects-2026",
+        "project-detail-2026",
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",

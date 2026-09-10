@@ -22,7 +22,7 @@ def test_habit_pages_follow_each_month():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[7:11] == [
+    assert dests[8:12] == [
         "month-2026-01",
         "month-2026-01-habits",
         "month-2026-02",

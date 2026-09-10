@@ -31,7 +31,7 @@ def test_projects_page_after_annual():
     assert page.dest == "projects-2026"
     assert page.kind == "projects"
     assert page.title == "Projects"
-    assert pages[3].dest == "quarter-2026-Q1"
+    assert pages[4].dest == "quarter-2026-Q1"
 
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     assert board.year == 2026
