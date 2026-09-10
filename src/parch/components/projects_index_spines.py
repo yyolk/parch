@@ -1,4 +1,4 @@
-"""Thesis N experiment — shelf of named project spines and one-project leaves. Data only."""
+"""Thesis N experiment — shelf of write-in project spines and one-project leaves. Data only."""
 
 from dataclasses import dataclass
 

@@ -6,33 +6,15 @@ from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
 
-# Short stamped titles — stacked on a thin spine, not write-in underlines.
-_SPINE_NAMES: tuple[tuple[str, str], ...] = (
-    ("Atlas", "atlas"),
-    ("Beacon", "beacon"),
-    ("Drift", "drift"),
-    ("Focus", "focus"),
-    ("Harbor", "harbor"),
-    ("Hatch", "hatch"),
-    ("Ledger", "ledger"),
-    ("Nomad", "nomad"),
-    ("Parch", "parch"),
-    ("Press", "press"),
-    ("Spine", "spine"),
-    ("Tide", "tide"),
-)
-
-
 def spine_catalog(spec: Spec) -> tuple[ProjectSpine, ...]:
-    """Named spines with dests and two-digit leaf hints. Length follows the spec knob."""
-    chosen = _SPINE_NAMES[: spec.project_index_spines]
+    """Write-in spines with dests and two-digit leaf hints. Length follows the spec knob."""
     return tuple(
         ProjectSpine(
-            name=name,
-            dest=spec.dest_for_project(slug),
+            name="",
+            dest=spec.dest_for_project(f"{index:02d}"),
             hint=f"{index:02d}",
         )
-        for index, (name, slug) in enumerate(chosen, start=1)
+        for index in range(1, spec.project_index_spines + 1)
     )
 
 
@@ -69,12 +51,12 @@ class ProjectsIndexSpinesSection:
                 Page(
                     dest=spine.dest,
                     kind="project",
-                    title=spine.name,
+                    title="Project",
                     nav=nav,
                     components=(
                         ProjectLeaf(
                             year=spec.year,
-                            name=spine.name,
+                            name="Project",
                             dest=spine.dest,
                             index_dest=index_dest,
                             hint=spine.hint,

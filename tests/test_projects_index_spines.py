@@ -3,16 +3,19 @@ import pytest
 from parch.books import YearPlanner
 from parch.components import ProjectLeaf, ProjectsBoard, ProjectsIndexSpines
 from parch.devices.nomad import NOMAD
+from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     INDEX_SPINE_AIR,
+    INDEX_SPINE_FOOT_H,
     INDEX_SPINE_GAP,
     INDEX_SPINE_HEAD,
     INDEX_SPINE_PLANK,
     INDEX_SPINE_ROW_GAP,
     INDEX_SPINE_W,
     PROJECT_P,
+    RULE_C,
     PROJECT_STATUS_MARK,
     TICK,
     paint_project,
@@ -23,7 +26,7 @@ from parch.layouts.planner.painters import (
     projects_index_spine_row_counts,
     projects_index_spine_seats,
     projects_index_spine_shelves,
-    spine_title_letters,
+    projects_index_spine_writeins,
     strip_active,
     strip_items,
 )
@@ -64,16 +67,17 @@ def test_projects_index_spines_page_and_leaves():
     assert board.year == 2026
     assert board.index_dest == spec.projects_index_spines_dest
     assert len(board.spines) == 12
-    assert board.spines[0].name == "Atlas"
-    assert board.spines[0].dest == "project-2026-atlas"
+    assert board.spines[0].name == ""
+    assert board.spines[0].dest == "project-2026-01"
     assert board.spines[0].hint == "01"
-    assert board.spines[-1].name == "Tide"
+    assert board.spines[-1].name == ""
+    assert board.spines[-1].dest == "project-2026-12"
     assert board.spines[-1].hint == "12"
 
     leaves = [p for p in pages if p.kind == "project"]
     assert len(leaves) == 12
-    assert leaves[0].dest == "project-2026-atlas"
-    assert leaves[0].title == "Atlas"
+    assert leaves[0].dest == "project-2026-01"
+    assert leaves[0].title == "Project"
     leaf = next(item for item in leaves[0].components if isinstance(item, ProjectLeaf))
     assert leaf.index_dest == spec.projects_index_spines_dest
     assert leaf.hint == "01"
@@ -149,23 +153,26 @@ def test_spine_seats_two_centered_shelves():
             assert later.x - earlier.right == pytest.approx(INDEX_SPINE_GAP)
 
 
-def test_paint_spines_prints_names_and_links():
+def test_paint_spines_writeins_and_links():
     spec = Spec(notes_pages=1)
     page = _index_pages(spec)[0]
     board = next(item for item in page.components if isinstance(item, ProjectsIndexSpines))
+    well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_projects_index_spines(plotter, well_rect(NOMAD), board)
+    paint_projects_index_spines(plotter, well, board)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    names = [spine.name for spine in board.spines]
-    assert all(name not in texts for name in names)
+    for name in ("Atlas", "Beacon", "Tide", "Harbor", "Nomad", "Parch"):
+        assert name not in texts
+    letter_ops = [
+        op
+        for op in plotter.ops
+        if op[0] == "text" and len(op[2]) == 1 and op[2].isalpha()
+    ]
+    assert letter_ops == []
     for spine in board.spines:
-        letters = spine_title_letters(spine.name)
-        for ch in letters:
-            assert ch in texts
         assert spine.hint in texts
-    expected_a = sum(spine_title_letters(spine.name).count("A") for spine in board.spines)
-    assert texts.count("A") == expected_a
+        assert spine.name == ""
     assert texts.count("01") == 1
     assert texts.count("12") == 1
     assert "Todo" not in texts
@@ -174,13 +181,22 @@ def test_paint_spines_prints_names_and_links():
     assert "PROJECT" not in texts
     assert "Focus" not in texts
 
-    letter_ops = [
+    seats = projects_index_spine_seats(well, 12)
+    writeins = 0
+    for seat in seats:
+        foot_top = seat.bottom - INDEX_SPINE_FOOT_H
+        well_title = Rect(
+            seat.x, seat.y + INDEX_SPINE_HEAD, seat.w, foot_top - seat.y - INDEX_SPINE_HEAD
+        )
+        marks = projects_index_spine_writeins(well_title)
+        assert len(marks) >= 4
+        writeins += len(marks)
+    rules = [
         op
         for op in plotter.ops
-        if op[0] == "text" and len(op[2]) == 1 and op[2].isalpha()
+        if op[0] == "line" and op[5] == pytest.approx(RULE_C)
     ]
-    assert letter_ops
-    assert all(op[5] and op[6] == "serif" for op in letter_ops)
+    assert len(rules) == writeins
 
     ticks = [
         op
@@ -198,14 +214,13 @@ def test_paint_spines_prints_names_and_links():
     links = plotter.links()
     assert links == [spine.dest for spine in board.spines]
     assert spec.projects_index_spines_dest not in links
-    well = well_rect(NOMAD)
     for op in plotter.ops:
         if op[0] == "link":
             assert op[1].w == pytest.approx(INDEX_SPINE_W)
             assert op[1].x > well.x
 
 
-def test_spine_fills_alternate_and_headcaps():
+def test_spine_open_frames_and_headcaps():
     spec = Spec(notes_pages=1)
     page = _index_pages(spec)[0]
     board = next(item for item in page.components if isinstance(item, ProjectsIndexSpines))
@@ -223,8 +238,17 @@ def test_spine_fills_alternate_and_headcaps():
         for op in ink_fills
         if op[1].w == pytest.approx(INDEX_SPINE_W) and op[1].h == pytest.approx(INDEX_SPINE_HEAD)
     ]
-    assert len(dark_spines) == 6
-    assert len(headcaps) == 6
+    assert dark_spines == []
+    assert len(headcaps) == 12
+    frames = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(INDEX_SPINE_W)
+    ]
+    assert len(frames) == 12
     planks = [
         op
         for op in plotter.ops
@@ -237,7 +261,8 @@ def test_index_spines_knob():
     spec = Spec(notes_pages=1, project_index_spines=8)
     catalog = spine_catalog(spec)
     assert len(catalog) == 8
-    assert catalog[-1].name == "Nomad"
+    assert catalog[-1].name == ""
+    assert catalog[-1].dest == "project-2026-08"
     seats = projects_index_spine_seats(well_rect(NOMAD), 8)
     assert len(seats) == 8
     assert projects_index_spine_row_counts(8) == (4, 4)
@@ -256,8 +281,8 @@ def test_index_and_leaves_link_both_ways():
 
     dests = plotter.dests()
     assert dests[0] == spec.projects_index_spines_dest
-    assert "project-2026-atlas" in dests
-    assert "project-2026-tide" in dests
+    assert "project-2026-01" in dests
+    assert "project-2026-12" in dests
 
     links = plotter.links()
     for spine in spine_catalog(spec):
@@ -269,12 +294,13 @@ def test_index_and_leaves_link_both_ways():
     assert "Shelf" in texts
     assert "Index" in texts
     assert texts.count("Proj") >= 2
-    assert "Atlas" in texts
+    assert "Atlas" not in texts
+    assert "Project" in texts
 
 
 def test_project_leaf_reuses_card_craft():
     spec = Spec(notes_pages=1)
-    page = next(p for p in _index_pages(spec) if p.dest == "project-2026-atlas")
+    page = next(p for p in _index_pages(spec) if p.dest == "project-2026-01")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
@@ -320,5 +346,5 @@ def test_index_spines_header_and_proj_active():
     for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
         assert label in texts
     assert strip_active(page.kind) == "Proj"
-    assert plotter.links().count("project-2026-atlas") == 1
+    assert plotter.links().count("project-2026-01") == 1
     assert spec.projects_index_spines_dest in plotter.links()

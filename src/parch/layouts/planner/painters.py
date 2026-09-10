@@ -286,14 +286,9 @@ INDEX_SPINE_PLANK = 1.6
 INDEX_SPINE_AIR = 3.2
 INDEX_SPINE_HEAD = 1.4
 INDEX_SPINE_FOOT_H = 5.4
-INDEX_SPINE_LETTER_H = 5.6
-INDEX_SPINE_LETTER_SIZE = 8.0
+INDEX_SPINE_RULE_PITCH = 5.6
+INDEX_SPINE_RULE_INSET = 1.5
 INDEX_SPINE_HINT_SIZE = 5.2
-
-
-def spine_title_letters(name: str) -> str:
-    """Stacked spine stamp — letters only, uppercase."""
-    return "".join(ch.upper() for ch in name if ch.isalpha())
 
 
 def projects_index_spine_row_count(n: int) -> int:
@@ -356,7 +351,7 @@ def projects_index_spine_seats(well: Rect, n: int) -> tuple[Rect, ...]:
 def paint_projects_index_spines(
     plotter: Plotter, box: Rect, board: ProjectsIndexSpines
 ) -> None:
-    """Thesis N — shelf of named spines. Each strip links to a G-craft leaf."""
+    """Thesis N — shelf of write-in spines. Each strip links to a G-craft leaf."""
     n = len(board.spines)
     for plank in projects_index_spine_planks(box, n):
         plotter.rect(plank, stroke=False, fill=True, fill_gray=SOFT)
@@ -368,49 +363,46 @@ def paint_projects_index_spines(
         plotter.link(seat, spine.dest)
 
 
+def projects_index_spine_writeins(box: Rect) -> tuple[float, ...]:
+    """Y positions for stacked write-in rules inside a spine title well."""
+    y = box.y + INDEX_SPINE_RULE_PITCH * 0.85
+    marks: list[float] = []
+    while y < box.bottom - 0.35:
+        marks.append(y)
+        y += INDEX_SPINE_RULE_PITCH
+    return tuple(marks)
+
+
 def _paint_project_spine(plotter: Plotter, box: Rect, spine: ProjectSpine) -> None:
-    """Thin bound strip: stacked short title, dest hint at the foot."""
-    filled = int(spine.hint) % 2 == 0
-    ink = PAPER if filled else INK
-    if filled:
-        plotter.rect(box, stroke=False, fill=True, fill_gray=INK)
-    else:
-        plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        head = Rect(box.x, box.y, box.w, INDEX_SPINE_HEAD)
-        plotter.rect(head, stroke=False, fill=True, fill_gray=INK)
+    """Open bound strip: stacked write-in rules, dest hint at the foot."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    head = Rect(box.x, box.y, box.w, INDEX_SPINE_HEAD)
+    plotter.rect(head, stroke=False, fill=True, fill_gray=INK)
     foot = Rect(box.x, box.bottom - INDEX_SPINE_FOOT_H, box.w, INDEX_SPINE_FOOT_H)
     title = Rect(box.x, box.y + INDEX_SPINE_HEAD, box.w, foot.y - box.y - INDEX_SPINE_HEAD)
-    _paint_stacked_spine_title(plotter, title, spine.name, gray=ink)
+    _paint_spine_writein(plotter, title)
     plotter.text(
         foot,
         spine.hint,
         size=INDEX_SPINE_HINT_SIZE,
         face="sans",
-        gray=ink,
+        gray=INK,
         small_caps=True,
         align="center",
     )
 
 
-def _paint_stacked_spine_title(
-    plotter: Plotter, box: Rect, name: str, *, gray: float
-) -> None:
-    """Printed short title as a centered column of letters (no rotate primitive)."""
-    letters = spine_title_letters(name)
-    if not letters:
-        return
-    stack_h = len(letters) * INDEX_SPINE_LETTER_H
-    y = box.y + max((box.h - stack_h) / 2, 0)
-    for i, ch in enumerate(letters):
-        cell = Rect(box.x, y + i * INDEX_SPINE_LETTER_H, box.w, INDEX_SPINE_LETTER_H)
-        plotter.text(
-            cell,
-            ch,
-            size=INDEX_SPINE_LETTER_SIZE,
-            bold=True,
-            face="serif",
-            gray=gray,
-            align="center",
+def _paint_spine_writein(plotter: Plotter, box: Rect) -> None:
+    """Blank stacked underlines for a handwritten short title."""
+    inset = INDEX_SPINE_RULE_INSET
+    for y in projects_index_spine_writeins(box):
+        plotter.line(
+            box.x + inset,
+            y,
+            box.right - inset,
+            y,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
         )
 
 

@@ -146,7 +146,7 @@ class Spec:
         return _dest(t"projects-index-spines-{self.year:04d}")
 
     def dest_for_project(self, slug: str) -> str:
-        """One-project leaf dest, e.g. ``project-2026-atlas``."""
+        """One-project leaf dest, e.g. ``project-2026-01``."""
         if not slug:
             raise ConfigError("project slug must not be empty")
         return _dest(t"project-{self.year:04d}-{slug}")
