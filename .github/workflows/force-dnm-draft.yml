@@ -34,16 +34,7 @@ jobs:
           MARKER='<!-- dnm-forced-draft -->'
 
           has_dnm() {
-            TEXT="$1" python3 -c '
-          import os, re, sys, unicodedata
-          chars = []
-          for c in os.environ.get("TEXT", ""):
-              if unicodedata.category(c) == "Zs" or c in "\u200b\u200c\u200d\u2060\ufeff":
-                  chars.append(" ")
-              else:
-                  chars.append(c)
-          sys.exit(0 if re.search(r"do[\\s_-]*not[\\s_-]*merge", "".join(chars), re.I) else 1)
-          '
+            TEXT="$1" python3 -c 'import os,re,sys,unicodedata; t="".join(" " if unicodedata.category(c)=="Zs" or c in "\u200b\u200c\u200d\u2060\ufeff" else c for c in os.environ.get("TEXT","")); sys.exit(0 if "donotmerge" in re.sub(r"[^a-z0-9]+", "", t.lower()) else 1)'
           }
 
           title_hit=false
