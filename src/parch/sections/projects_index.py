@@ -6,7 +6,7 @@ from parch.spec import Spec
 
 
 class ProjectsIndexSection:
-    """Write-in cover index plus one G-craft sheet per slot. PROJ lands on the index."""
+    """2×2 cover index plus one G-craft sheet per slot. PROJ lands on the index."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

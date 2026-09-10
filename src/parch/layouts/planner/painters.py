@@ -231,8 +231,11 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
 
 PROJECT_INDEX_COLS = 2
 PROJECT_INDEX_GAP = 2.6
-COVER_INSET = 1.8
-COVER_RULE_INSET = 3.2
+COVER_INSET = 1.2
+COVER_QUAD_GAP = 1.2
+COVER_RULE_INSET = 1.4
+COVER_LINE_PITCH = 3.2
+COVER_LINE_PAD = 2.4
 
 
 def projects_index_covers(well: Rect, slots: int) -> tuple[Rect, ...]:
@@ -246,28 +249,40 @@ def projects_index_covers(well: Rect, slots: int) -> tuple[Rect, ...]:
     return tuple(seats)
 
 
+def projects_index_cover_quads(cover: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """UL write-in, UR / LL / LR card frames — 2×2 inside the cover."""
+    top, bot = rows(cover.inset(COVER_INSET), 2, gap=COVER_QUAD_GAP)
+    ul, ur = columns(top, 2, gap=COVER_QUAD_GAP)
+    ll, lr = columns(bot, 2, gap=COVER_QUAD_GAP)
+    return ul, ur, ll, lr
+
+
 def paint_projects_index_covers(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis K — mini covers. Blank name underline; whole cover links to the leaf."""
+    """Thesis K — mini covers. UL lined well + three empty card frames; whole cover links."""
     dests = index.dests
     for cover, dest in zip(projects_index_covers(box, len(dests)), dests, strict=True):
         plotter.rect(cover, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        inner = cover.inset(COVER_INSET)
-        plotter.rect(inner, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        _paint_cover_name_rule(plotter, inner)
+        writein, *cards = projects_index_cover_quads(cover)
+        _paint_cover_writein(plotter, writein)
+        for card in cards:
+            plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
         plotter.link(cover, dest)
 
 
-def _paint_cover_name_rule(plotter: Plotter, inner: Rect) -> None:
-    """Empty write-in underline, centered in the cover."""
-    y = inner.y + inner.h / 2
-    plotter.line(
-        inner.x + COVER_RULE_INSET,
-        y,
-        inner.right - COVER_RULE_INSET,
-        y,
-        stroke_width=RULE,
-        stroke_gray=RULE_C,
-    )
+def _paint_cover_writein(plotter: Plotter, box: Rect) -> None:
+    """Upper-left lined write-in well — name / notes, not a single centered rule."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    y = box.y + COVER_LINE_PAD
+    while y < box.bottom - 0.3:
+        plotter.line(
+            box.x + COVER_RULE_INSET,
+            y,
+            box.right - COVER_RULE_INSET,
+            y,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+        y += COVER_LINE_PITCH
 
 
 def paint_project_sheet(plotter: Plotter, box: Rect, sheet: ProjectSheet) -> None:

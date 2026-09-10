@@ -8,6 +8,9 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     COVER_INSET,
+    COVER_LINE_PAD,
+    COVER_LINE_PITCH,
+    COVER_QUAD_GAP,
     COVER_RULE_INSET,
     HAIR,
     INK,
@@ -17,6 +20,7 @@ from parch.layouts.planner.painters import (
     paint_project_sheet,
     paint_projects,
     paint_projects_index_covers,
+    projects_index_cover_quads,
     projects_index_covers,
     strip_active,
     strip_items,
@@ -106,6 +110,35 @@ def test_projects_index_cover_tracks():
         projects_index_covers(well, 4)
 
 
+def test_projects_index_cover_quads_are_two_by_two():
+    cover = Rect(4, 20, 50, 40)
+    ul, ur, ll, lr = projects_index_cover_quads(cover)
+    inset = cover.inset(COVER_INSET)
+    assert ul.x == pytest.approx(inset.x)
+    assert ul.y == pytest.approx(inset.y)
+    assert ur.x > ul.right
+    assert ur.y == pytest.approx(ul.y)
+    assert ll.x == pytest.approx(ul.x)
+    assert ll.y > ul.bottom
+    assert lr.x == pytest.approx(ur.x)
+    assert lr.y == pytest.approx(ll.y)
+    assert ur.right == pytest.approx(inset.right)
+    assert ll.bottom == pytest.approx(inset.bottom)
+    assert lr.right == pytest.approx(inset.right)
+    assert lr.bottom == pytest.approx(inset.bottom)
+    assert ur.x - ul.right == pytest.approx(COVER_QUAD_GAP)
+    assert ll.y - ul.bottom == pytest.approx(COVER_QUAD_GAP)
+
+
+def _writein_line_count(box: Rect) -> int:
+    n = 0
+    y = box.y + COVER_LINE_PAD
+    while y < box.bottom - 0.3:
+        n += 1
+        y += COVER_LINE_PITCH
+    return n
+
+
 def test_paint_projects_index_covers_writein_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
@@ -127,20 +160,26 @@ def test_paint_projects_index_covers_writein_and_links():
         for op in plotter.ops
         if op[0] == "rect" and op[2] and not op[3] and op[6] == pytest.approx(INK)
     ]
-    assert len(frames) == 12
+    assert len(frames) == 6 * 5
 
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert fills == []
 
-    lines = [op for op in plotter.ops if op[0] == "line"]
-    assert len(lines) == 6
     seats = projects_index_covers(well, 6)
-    for cover, line in zip(seats, lines, strict=True):
-        inner = cover.inset(COVER_INSET)
-        assert line[1] == pytest.approx(inner.x + COVER_RULE_INSET)
-        assert line[2] == pytest.approx(inner.y + inner.h / 2)
-        assert line[3] == pytest.approx(inner.right - COVER_RULE_INSET)
-        assert line[4] == pytest.approx(inner.y + inner.h / 2)
+    expected_lines = sum(_writein_line_count(projects_index_cover_quads(c)[0]) for c in seats)
+    lines = [op for op in plotter.ops if op[0] == "line"]
+    assert len(lines) == expected_lines
+    assert expected_lines > 6
+    for cover in seats:
+        ul, ur, ll, lr = projects_index_cover_quads(cover)
+        assert ul.right < ur.x
+        assert ul.bottom < ll.y
+        cover_lines = [op for op in lines if ul.x <= op[1] < ul.right]
+        assert len(cover_lines) == _writein_line_count(ul)
+        for line in cover_lines:
+            assert line[1] == pytest.approx(ul.x + COVER_RULE_INSET)
+            assert line[3] == pytest.approx(ul.right - COVER_RULE_INSET)
+            assert ul.y < line[2] < ul.bottom
 
     links = plotter.links()
     assert links == list(index.dests)
@@ -161,7 +200,14 @@ def test_index_slots_eight_is_two_by_four():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts == []
     assert "Project 08" not in texts
-    assert len([op for op in plotter.ops if op[0] == "line"]) == 8
+    frames = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[6] == pytest.approx(INK)
+    ]
+    assert len(frames) == 8 * 5
+    expected_lines = sum(_writein_line_count(projects_index_cover_quads(c)[0]) for c in seats)
+    assert len([op for op in plotter.ops if op[0] == "line"]) == expected_lines
     assert plotter.links() == list(index.dests)
 
 
@@ -255,10 +301,13 @@ def test_stacked_board_painter_unchanged():
     assert len(ticks) == 12
 
 
-def test_cover_inner_frame_is_inset():
+def test_cover_quads_sit_inside_the_cover():
     well = Rect(4, 20, 110, 90)
     cover = projects_index_covers(well, 6)[0]
-    inner = cover.inset(COVER_INSET)
-    assert inner.w == pytest.approx(cover.w - 2 * COVER_INSET)
-    assert inner.h == pytest.approx(cover.h - 2 * COVER_INSET)
+    ul, ur, ll, lr = projects_index_cover_quads(cover)
+    for quad in (ul, ur, ll, lr):
+        assert quad.x > cover.x
+        assert quad.y > cover.y
+        assert quad.right < cover.right
+        assert quad.bottom < cover.bottom
     assert HAIR == pytest.approx(0.18)
