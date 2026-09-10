@@ -9,6 +9,9 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     HabitGrid,
+    MeetingAgenda,
+    MeetingIndex,
+    MeetingSlot,
     MonthGrid,
     Notes,
     Priorities,
@@ -804,6 +807,167 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
         y += PROJECT_NOTE_PITCH
 
 
+MEET_GAP = 2.6
+MEET_HEAD_INSET_X = 1.8
+MEET_HEAD_INSET_Y = 1.2
+MEET_HEAD_LINE_H = 5.4
+MEET_HEAD_COL_GAP = 2.8
+MEET_HEAD_WEIGHTS = (0.64, 0.36)
+MEET_LABEL_W = 12.0
+MEET_WRITE_LABEL_H = 3.8
+MEET_INDEX_FOCUS_GAP = 2.6
+MEET_INDEX_FOCUS_WEIGHTS = (1.0, 2.0)
+MEET_INDEX_ROW_GAP = 0.7
+MEET_INDEX_INSET_X = 1.8
+MEET_INDEX_INSET_Y = 1.5
+MEET_INDEX_STUB_W = 8.0
+MEET_INDEX_FOCUS_STUB_W = 10.0
+MEET_INDEX_FOCUS_AGENDA = 2
+MEET_INDEX_MARK = 5.6
+MEET_INDEX_LIST_MARK = 3.6
+MEET_INDEX_PANEL_GAP = 1.4
+
+
+def meeting_head_height() -> float:
+    """One-line title|date band — not two stacked write-ins."""
+    return MEET_HEAD_INSET_Y * 2 + MEET_HEAD_LINE_H
+
+
+def _below(box: Rect, gap: float) -> Rect:
+    return Rect(box.x, box.y + gap, box.w, box.h - gap)
+
+
+def meeting_seats(
+    well: Rect, agenda: int, action_items: int
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Head, agenda, leftover notes, action items. Notes flex."""
+    head, rest = well.split_top(meeting_head_height())
+    leftover = _below(rest, MEET_GAP)
+    agenda_h = checklist_content_height(agenda)
+    agenda_box, rest = leftover.split_top(agenda_h)
+    leftover = _below(rest, MEET_GAP)
+    action_h = checklist_content_height(action_items)
+    notes_h = max(leftover.h - action_h - MEET_GAP, 1)
+    notes, action_box = rows(leftover, 2, gap=MEET_GAP, weights=(notes_h, action_h))
+    return head, agenda_box, notes, action_box
+
+
+def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title write-in | Date write-in on one horizontal row."""
+    inner = head.inset(MEET_HEAD_INSET_X, MEET_HEAD_INSET_Y)
+    return columns(inner, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
+
+
+def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
+    """Locked Meeting dest — title|date, agenda, notes, action items."""
+    head, agenda_box, notes, action_items = meeting_seats(
+        box, agenda.agenda, agenda.action_items
+    )
+    _paint_meeting_head(plotter, head)
+    _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
+    _paint_note_box(plotter, notes, label="Notes")
+    _paint_checklist_box(plotter, action_items, label="Action items", rows=agenda.action_items)
+
+
+def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    title, dated = meeting_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Title")
+    _paint_meeting_writein(plotter, dated, "Date")
+
+
+def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    """Label and underline share a baseline — rule sits just under the scaps."""
+    tag, write = box.split_left(MEET_LABEL_W)
+    rule_y = box.bottom
+    label_box = Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H)
+    plotter.text(
+        label_box,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+
+
+def meetings_index_focus_seats(well: Rect, rows_n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Featured next/focus panel over a compact linked roster. Weights after the gap."""
+    focus, listing = rows(well, 2, gap=MEET_INDEX_FOCUS_GAP, weights=MEET_INDEX_FOCUS_WEIGHTS)
+    return focus, rows(listing, max(1, rows_n), gap=MEET_INDEX_ROW_GAP)
+
+
+def meetings_index_focus_parts(focus: Rect) -> tuple[Rect, Rect, Rect]:
+    """Stub | title|date head | compact agenda preview inside the featured inset."""
+    inner = focus.inset(MEET_INDEX_INSET_X, MEET_INDEX_INSET_Y)
+    stub, body = inner.split_left(MEET_INDEX_FOCUS_STUB_W)
+    head, rest = body.split_top(MEET_HEAD_LINE_H)
+    leftover = _below(rest, MEET_INDEX_PANEL_GAP)
+    return stub, head, leftover
+
+
+def meetings_index_list_row(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Stub | title write-in | date write-in."""
+    inner = Rect(row.x + MEET_INDEX_INSET_X, row.y, row.w - 2 * MEET_INDEX_INSET_X, row.h)
+    stub, rest = inner.split_left(MEET_INDEX_STUB_W)
+    title, dated = columns(rest, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
+    return stub, title, dated
+
+
+def paint_meetings_index_focus(plotter: Plotter, box: Rect, index: MeetingIndex) -> None:
+    """Thesis E — one featured meeting panel, then a compact linked list of the rest."""
+    focus, listing = meetings_index_focus_seats(box, len(index.entries))
+    _paint_meetings_index_focus_panel(plotter, focus, index.featured)
+    plotter.link(focus, index.featured.dest)
+    for row, slot in zip(listing, index.entries, strict=True):
+        _paint_meetings_index_list_row(plotter, row, slot)
+        plotter.link(row, slot.dest)
+
+
+def _paint_meetings_index_focus_panel(
+    plotter: Plotter, focus: Rect, slot: MeetingSlot
+) -> None:
+    plotter.rect(focus, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    stub, head, agenda = meetings_index_focus_parts(focus)
+    _paint_meeting_slot_mark(plotter, stub, slot.number, size=MEET_INDEX_MARK, text_size=7.0)
+    title, dated = columns(head, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
+    _paint_meeting_writein(plotter, title, "Title")
+    _paint_meeting_writein(plotter, dated, "Date")
+    _paint_checklist_box(plotter, agenda, label="Agenda", rows=MEET_INDEX_FOCUS_AGENDA)
+
+
+def _paint_meetings_index_list_row(plotter: Plotter, row: Rect, slot: MeetingSlot) -> None:
+    stub, title, dated = meetings_index_list_row(row)
+    _paint_meeting_slot_mark(plotter, stub, slot.number, size=MEET_INDEX_LIST_MARK, text_size=6.2)
+    rule_y = stub.y + (stub.h + MEET_INDEX_LIST_MARK) / 2
+    plotter.line(title.x, rule_y, title.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(dated.x, rule_y, dated.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(row.x, row.bottom, row.right, row.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+
+
+def _paint_meeting_slot_mark(
+    plotter: Plotter, stub: Rect, number: int, *, size: float, text_size: float
+) -> None:
+    mark = Rect(
+        stub.x + (stub.w - size) / 2,
+        stub.y + (stub.h - size) / 2,
+        size,
+        size,
+    )
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{number:02d}",
+        size=text_size,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1454,6 +1618,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("projects-index-"):
             dests["Proj"] = item.dest
+        elif item.dest.startswith("meetings-index-"):
+            dests["Meet"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1471,7 +1637,9 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects_index":
             dests["Proj"] = page.dest
-        case "projects" | "project":
+        case "meetings_index":
+            dests["Meet"] = page.dest
+        case "projects" | "project" | "meeting":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -1480,7 +1648,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1502,6 +1670,8 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects_index" | "project":
             return "Proj"
+        case "meetings_index" | "meeting":
+            return "Meet"
         case "projects":
             return ""
         case _:

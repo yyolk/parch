@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Meet · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
 
@@ -26,6 +26,11 @@ PROJ dest (strip label **Proj**):
 - index page → self
 - G projects dest → the index page that lists that row (header chip is the same dest)
 - everywhere else → index page 1 (``spec.projects_index_dest``)
+
+MEET dest (strip label **Meet**):
+- meetings index → self
+- meeting dest → the index (``spec.meetings_index_dest``; header chip is the same dest)
+- everywhere else → the index
 
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
@@ -67,6 +72,7 @@ def planner_nav(
         NavItem("Mon", mon),
         NavItem("Habit", spec.dest_for_habits(habit_month)),
         NavItem("Proj", proj_dest or spec.projects_index_dest),
+        NavItem("Meet", spec.meetings_index_dest),
         NavItem("Week", week_dest),
         NavItem("Day", spec.dest_for_day(landing)),
     ]
