@@ -282,6 +282,24 @@ CLONE_ICONS = (
     "plus",
     "star",
 )
+CLONE_SPINE_W = 1.4
+CLONE_RAIL_GAP = 2.6
+CLONE_RAIL_WEIGHTS = (0.76, 0.24)
+CLONE_CARD_WEIGHTS = (0.50, 0.50)
+CLONE_INSET_X = 1.6
+CLONE_INSET_Y = 1.4
+CLONE_COL_GAP = 3.4
+CLONE_STAR = 2.0
+CLONE_TRACK_H = 26.0
+CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
+CLONE_P_PAD = 0.40
+CLONE_P_CORNER = (2.15, 1.85)
+CLONE_P_SIZE = 5.2
+CLONE_NAME_GAP = 1.4
+CLONE_TASK_TOP = 0.4
+CLONE_TASK_CLEAR = 0.55
+CLONE_DOT_PITCH = 2.8
+CLONE_DOT = 0.32
 
 
 def project_ticket_seats(well: Rect, n: int) -> tuple[Rect, ...]:
@@ -396,6 +414,167 @@ def _paint_perforation(
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
     """Minimum packed width of the G icon set (spread uses the full strip seat)."""
     return n * CLONE_ICON + max(n - 1, 0) * CLONE_ICON_GAP
+
+
+def clone_task_count(box: Rect) -> int:
+    """Focus rows that fill ``box``, with clearance above the symbol strip."""
+    usable = box.h - CLONE_TASK_TOP - CLONE_TASK_CLEAR
+    if usable < TICK:
+        return 1
+    return max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+
+
+def projects_clone_a_name_field(header: Rect) -> tuple[Rect, Rect]:
+    """P square and the bordered name field beside it."""
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    field = Rect(
+        mark.right + CLONE_NAME_GAP,
+        y,
+        max(header.right - mark.right - CLONE_NAME_GAP, 1),
+        PROJECT_P,
+    )
+    return mark, field
+
+
+def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
+    """Board column | status rail — kanban’s right-hand track, Nomad-narrow."""
+    return columns(well, 2, gap=CLONE_RAIL_GAP, weights=CLONE_RAIL_WEIGHTS)
+
+
+def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tuple[Rect, ...]]:
+    """Stacked project cards and the matching three-stage rail seats."""
+    board, rail = projects_clone_a_well(well)
+    return project_card_seats(board, cards), rows(rail, cards, gap=PROJECT_CARD_GAP)
+
+
+def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
+    """spine, header, name field, tasks, notes (full right), icon strip (left)."""
+    spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
+    body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
+        CLONE_INSET_X, CLONE_INSET_Y
+    )
+    left, notes = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    name_h, left_rest = left.split_top(PROJECT_HEADER_H)
+    _, name_field = projects_clone_a_name_field(name_h)
+    mid = Rect(
+        left_rest.x,
+        left_rest.y + PROJECT_LEFT_GAP,
+        left_rest.w,
+        left_rest.h - PROJECT_LEFT_GAP,
+    )
+    tasks, strip = rows(
+        mid,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(mid.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
+    )
+    return spine, name_h, name_field, tasks, notes, strip
+
+
+def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+    """G #215 clone well — spine, soft P + name box, ticks, 2.8 mm dots, strip, status rail."""
+    cards, rails = projects_clone_a_seats(box, board.cards)
+    _wash(plotter, projects_clone_a_well(box)[1], WASH)
+    for card, rail in zip(cards, rails, strict=True):
+        spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(card)
+        plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
+        _paint_clone_priority(plotter, name_h)
+        plotter.rect(name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        _paint_clone_tasks(plotter, tasks)
+        _paint_clone_dot_grid(plotter, notes)
+        _paint_clone_icon_strip(plotter, strip)
+        _paint_clone_status_track(plotter, rail)
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    nx = max(2, int(inset.w / CLONE_DOT_PITCH))
+    ny = max(2, int(inset.h / CLONE_DOT_PITCH))
+    for band in rows(inset, ny):
+        for cell in columns(band, nx):
+            plotter.rect(
+                Rect(
+                    cell.x + (cell.w - CLONE_DOT) / 2,
+                    cell.y + (cell.h - CLONE_DOT) / 2,
+                    CLONE_DOT,
+                    CLONE_DOT,
+                ),
+                stroke=False,
+                fill=True,
+                fill_gray=RULE_C,
+            )
+
+
+def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
+    """P-box: muted corner-fraction label, leftover is write-in. Clone only."""
+    mark, _field = projects_clone_a_name_field(header)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    cw, ch = CLONE_P_CORNER
+    plotter.text(
+        Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
+        "P",
+        size=CLONE_P_SIZE,
+        face="sans",
+        gray=MUTED,
+        align="left",
+        small_caps=True,
+    )
+    return mark.bottom
+
+
+def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> None:
+    count = clone_task_count(box) if n is None else max(1, n)
+    y = box.y + CLONE_TASK_TOP
+    star_right = box.right - CLONE_STAR - 1.0
+    for _ in range(count):
+        _paint_focus_row(plotter, box.x, y, star_right)
+        star = Rect(
+            box.right - CLONE_STAR,
+            y + (TICK - CLONE_STAR) / 2,
+            CLONE_STAR,
+            CLONE_STAR,
+        )
+        _paint_diamond(plotter, star)
+        y += FOCUS_PITCH
+
+
+def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
+    """Vertical Todo → In Progress → Done. Squares stand in for circles."""
+    track_h = min(CLONE_TRACK_H, box.h - 2.0)
+    track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
+    inset = track.inset(1.4, 0.6)
+    marks: list[Rect] = []
+    for slot, label in zip(rows(inset, 3, gap=1.8), CLONE_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        marks.append(mark)
+    cx = marks[0].x + marks[0].w / 2
+    for above, below in zip(marks, marks[1:]):
+        plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_diamond(plotter: Plotter, box: Rect) -> None:
+    """Hairline rhombus — favorite/tag stand-in where ★ is missing."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    plotter.line(cx, box.y, box.right, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:

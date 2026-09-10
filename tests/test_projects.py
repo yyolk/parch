@@ -7,9 +7,15 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    CLONE_DOT,
     CLONE_ICON,
     CLONE_ICONS,
+    CLONE_P_PAD,
+    CLONE_P_SIZE,
+    CLONE_SPINE_W,
+    CLONE_STATUS_LABELS,
     CLONE_STRIP_H,
+    MUTED,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
     PROJECT_STATUS_H,
@@ -24,7 +30,9 @@ from parch.layouts.planner.painters import (
     TICKET_STRIP_LEFT,
     TICKET_STRIP_PAD,
     TICKET_STUB_W,
+    clone_task_count,
     paint_projects,
+    paint_projects_clone_faithful,
     paint_projects_index_tickets,
     project_card_columns,
     project_card_left_seats,
@@ -35,6 +43,9 @@ from parch.layouts.planner.painters import (
     project_ticket_parts,
     project_ticket_preview_cards,
     project_ticket_seats,
+    projects_clone_a_card,
+    projects_clone_a_seats,
+    projects_clone_a_well,
     strip_active,
     strip_items,
 )
@@ -381,23 +392,96 @@ def test_projects_index_paint_write_in_underlines_and_links():
     assert "Harbor" not in chrome_texts
 
 
-def test_project_page_three_card_board_and_index_chip():
+def test_projects_clone_a_tracks():
+    well = Rect(4, 20, 110, 90)
+    cards, rails = projects_clone_a_seats(well, 3)
+    board, rail = projects_clone_a_well(well)
+    assert len(cards) == len(rails) == 3
+    assert cards[0].x == pytest.approx(board.x)
+    assert cards[0].w == pytest.approx(board.w)
+    assert cards[-1].bottom == pytest.approx(board.bottom)
+    assert rails[0].x == pytest.approx(rail.x)
+    assert rails[0].right == pytest.approx(rail.right)
+    assert rails[-1].bottom == pytest.approx(rail.bottom)
+    assert rail.x > board.right
+    assert rail.right == pytest.approx(well.right)
+    assert cards[0].y == pytest.approx(rails[0].y)
+    assert cards[-1].bottom == pytest.approx(rails[-1].bottom)
+
+    spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(cards[0])
+    assert spine.x == pytest.approx(cards[0].x)
+    assert spine.w == pytest.approx(CLONE_SPINE_W)
+    assert spine.h == pytest.approx(cards[0].h)
+    assert name_h.x > spine.right
+    assert name_field.x > name_h.x
+    assert name_field.right == pytest.approx(name_h.right)
+    assert name_field.h == pytest.approx(PROJECT_P)
+    assert tasks.x == pytest.approx(name_h.x)
+    assert tasks.y > name_h.bottom
+    assert notes.x > name_h.right
+    assert notes.y == pytest.approx(name_h.y)
+    assert notes.h > name_h.h + tasks.h
+    assert strip.y > tasks.bottom
+    assert strip.x == pytest.approx(tasks.x)
+    assert strip.w == pytest.approx(tasks.w)
+    assert strip.h == pytest.approx(CLONE_STRIP_H)
+    assert notes.bottom == pytest.approx(strip.bottom)
+    assert notes.right < cards[0].right
+
+
+def test_project_page_g_clone_and_index_chip():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "projects-2026-01")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
-    paint_projects(ink, well, board)
+    paint_projects_clone_faithful(ink, well, board)
     texts = [op[2] for op in ink.ops if op[0] == "text"]
     assert texts.count("P") == 3
     assert "Atlas" not in texts
     assert texts.count("Todo") == 3
+    assert texts.count("In Progress") == 3
+    assert texts.count("Done") == 3
+    assert "Doing" not in texts
+    p_texts = [op for op in ink.ops if op[0] == "text" and op[2] == "P"]
+    assert all(op[7] == pytest.approx(MUTED) for op in p_texts)
+    assert all(op[3] == pytest.approx(CLONE_P_SIZE) for op in p_texts)
     ticks = [
         op
         for op in ink.ops
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
-    assert len(ticks) == 3 * 4
+    _, _, _, tasks, _, _ = projects_clone_a_card(projects_clone_a_seats(well, 3)[0][0])
+    assert len(ticks) == 3 * clone_task_count(tasks)
+    assert clone_task_count(tasks) > 4
+    spines = [
+        op
+        for op in ink.ops
+        if op[0] == "rect" and op[3] and op[1].w == pytest.approx(CLONE_SPINE_W)
+    ]
+    assert len(spines) == 3
+    dots = [
+        op
+        for op in ink.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[1].w == pytest.approx(CLONE_DOT)
+        and op[1].h == pytest.approx(CLONE_DOT)
+    ]
+    assert len(dots) > 30
+    assert all(op[5] == pytest.approx(198 / 255) for op in dots)
+    assert CLONE_STATUS_LABELS == ("Todo", "In Progress", "Done")
+    p_boxes = [
+        op[1]
+        for op in ink.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+    ]
+    assert len(p_boxes) == 3
+    for mark, text in zip(p_boxes, p_texts, strict=True):
+        label = text[1]
+        assert label.x >= mark.x + CLONE_P_PAD - 0.01
+        assert label.y >= mark.y + CLONE_P_PAD - 0.01
 
     chrome = RecordingPlotter()
     chrome.begin_page()
@@ -407,6 +491,7 @@ def test_project_page_three_card_board_and_index_chip():
     assert "Atlas" not in labels
     assert "Index" in labels
     assert "Proj" in labels
+    assert "In Progress" in labels
     assert strip_active(page.kind) == "Proj"
     assert dict(strip_items(page))["Proj"] == spec.projects_index_dest
     assert spec.projects_index_dest == "projects-index-2026"
