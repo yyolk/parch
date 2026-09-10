@@ -16,6 +16,7 @@ from parch.layouts.planner.painters import (
     TICKET_GAP,
     TICKET_MARK,
     TICKET_NAME_WEIGHTS,
+    TICKET_PREVIEW_GAP,
     TICKET_STUB_W,
     paint_project,
     paint_projects,
@@ -243,6 +244,9 @@ def test_project_ticket_seats():
     assert cards[-1].right < preview.right
     assert cards[1].x > cards[0].right
     assert cards[2].x > cards[1].right
+    assert cards[1].x - cards[0].right == pytest.approx(TICKET_PREVIEW_GAP)
+    assert cards[2].x - cards[1].right == pytest.approx(TICKET_PREVIEW_GAP)
+    assert TICKET_PREVIEW_GAP == pytest.approx(1.4)
     assert cards[0].y == pytest.approx(cards[1].y)
     assert cards[0].h == pytest.approx(cards[1].h)
 
