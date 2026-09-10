@@ -14,6 +14,8 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewIndex,
+    ReviewWeekPage,
     Schedule,
     TasksIndex,
     TasksWeekPage,
@@ -39,6 +41,8 @@ from parch.layouts.planner.painters import (
     paint_projects_clone_faithful,
     paint_projects_index_tickets,
     paint_quarter,
+    paint_review,
+    paint_reviews_index_months,
     paint_schedule,
     paint_task,
     paint_tasks_index_months,
@@ -98,6 +102,10 @@ class PlannerLayout:
                 paint_tasks_index_months(plotter, well, _one(page, TasksIndex))
             case "task":
                 paint_task(plotter, well, _one(page, TasksWeekPage))
+            case "reviews_index":
+                paint_reviews_index_months(plotter, well, _one(page, ReviewIndex))
+            case "review":
+                paint_review(plotter, well, _one(page, ReviewWeekPage))
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
@@ -163,6 +171,10 @@ def _header_meta(page: Page) -> str:
             return f"Q{_one(page, TasksIndex).quarter}"
         case "task":
             return str(_one(page, TasksWeekPage).year)
+        case "reviews_index":
+            return f"Q{_one(page, ReviewIndex).quarter}"
+        case "review":
+            return str(_one(page, ReviewWeekPage).year)
         case "quarter":
             return ""
         case "month":
@@ -210,6 +222,9 @@ def _header_chip(page: Page) -> str:
         case "task":
             week = _one(page, TasksWeekPage)
             return f"W{week.iso_week:02d}"
+        case "review":
+            week = _one(page, ReviewWeekPage)
+            return f"W{week.iso_week:02d}"
         case _:
             return ""
 
@@ -226,6 +241,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, MeetingAgenda).index_dest or None
         case "task":
             return _one(page, TasksWeekPage).index_dest or None
+        case "review":
+            return _one(page, ReviewWeekPage).index_dest or None
         case _:
             return None
 

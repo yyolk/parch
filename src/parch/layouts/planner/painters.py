@@ -18,6 +18,9 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewIndex,
+    ReviewWeek,
+    ReviewWeekPage,
     Schedule,
     TaskWeek,
     TasksIndex,
@@ -1112,6 +1115,110 @@ def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
     _paint_note_box(plotter, notes, label="Notes")
 
 
+REVIEW_INDEX_BAND_GAP = 2.6
+REVIEW_INDEX_INSET_X = 1.8
+REVIEW_INDEX_INSET_Y = 1.6
+REVIEW_INDEX_HEAD_H = 5.2
+REVIEW_INDEX_HEAD_GAP = 1.6
+REVIEW_INDEX_CHIP_GAP = 2.2
+REVIEW_INDEX_CHIP_H = 18.0
+REVIEW_INDEX_CHIP_INSET_X = 0.6
+REVIEW_INDEX_CHIP_INSET_Y = 0.7
+REVIEW_INDEX_CHIP_LINE_GAP = 0.3
+
+
+def review_index_bands(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal month bands — months are first-class, not week-weighted status slices."""
+    return rows(well, n, gap=REVIEW_INDEX_BAND_GAP)
+
+
+def review_index_chip_strip(band: Rect) -> Rect:
+    """Content-height chip row, vertically centered under the month header."""
+    inner = band.inset(REVIEW_INDEX_INSET_X, REVIEW_INDEX_INSET_Y)
+    _head, rest = inner.split_top(REVIEW_INDEX_HEAD_H)
+    body = Rect(rest.x, rest.y + REVIEW_INDEX_HEAD_GAP, rest.w, rest.h - REVIEW_INDEX_HEAD_GAP)
+    h = min(REVIEW_INDEX_CHIP_H, body.h)
+    return Rect(body.x, body.y + (body.h - h) / 2, body.w, h)
+
+
+def review_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
+    """Month header over a row of week chips (`tracks.columns`)."""
+    inner = band.inset(REVIEW_INDEX_INSET_X, REVIEW_INDEX_INSET_Y)
+    head, _rest = inner.split_top(REVIEW_INDEX_HEAD_H)
+    return head, columns(review_index_chip_strip(band), n, gap=REVIEW_INDEX_CHIP_GAP)
+
+
+def review_index_link_hits(chip: Rect) -> tuple[Rect, ...]:
+    """Whole chip. Month header stays unlinkable."""
+    return (chip,)
+
+
+def review_chip_range(monday: date, sunday: date) -> tuple[str, ...]:
+    """Compact chip dates — one line in-month, two lines when the week crosses months."""
+    if monday.month == sunday.month:
+        return (f"{monday.day}–{sunday.day}",)
+    left = f"{monday.day} {MONTH_NAMES[monday.month - 1][:3]}"
+    right = f"{sunday.day} {MONTH_NAMES[sunday.month - 1][:3]}"
+    return (left, right)
+
+
+def paint_reviews_index_months(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
+    """Thesis C — month bands × week-chip columns. Not Active/Waiting, not This week/Later."""
+    for band_box, band in zip(review_index_bands(box, len(index.bands)), index.bands, strict=True):
+        plotter.rect(band_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        head, chips = review_index_band_seats(band_box, len(band.weeks))
+        plotter.text(
+            head,
+            band.name,
+            size=7.2,
+            bold=True,
+            face="sans",
+            gray=INK,
+            small_caps=True,
+            align="left",
+        )
+        plotter.line(head.x, head.bottom, head.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        for chip, week in zip(chips, band.weeks, strict=True):
+            _paint_review_index_chip(plotter, chip, week)
+            for hit in review_index_link_hits(chip):
+                plotter.link(hit, week.dest)
+
+
+def _paint_review_index_chip(plotter: Plotter, chip: Rect, week: ReviewWeek) -> None:
+    plotter.rect(chip, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inner = chip.inset(REVIEW_INDEX_CHIP_INSET_X, REVIEW_INDEX_CHIP_INSET_Y)
+    lines = (f"W{week.iso_week:02d}", *review_chip_range(week.monday, week.sunday))
+    week_w = 1.4
+    rest_w = 1.0
+    weights = (week_w, *tuple(rest_w for _ in lines[1:]))
+    seats = rows(inner, len(lines), gap=REVIEW_INDEX_CHIP_LINE_GAP, weights=weights)
+    plotter.text(
+        seats[0],
+        lines[0],
+        size=8.2,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+    for seat, label in zip(seats[1:], lines[1:], strict=True):
+        plotter.text(
+            seat,
+            label,
+            size=5.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="center",
+        )
+
+
+def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
+    """Thin weekly Review dest — lined notes stub. Chip is the week."""
+    _ = page
+    _paint_note_box(plotter, box, label="Notes")
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1773,6 +1880,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = item.dest
         elif item.dest.startswith("tasks-index-"):
             dests["Task"] = item.dest
+        elif item.dest.startswith("reviews-index-"):
+            dests["Rev"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1800,6 +1909,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Task"] = page.dest
         case "task":
             pass
+        case "reviews_index":
+            dests["Rev"] = page.dest
+        case "review":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1807,7 +1920,19 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
+    order = (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Proj",
+        "Meet",
+        "Task",
+        "Rev",
+        "Week",
+        "Day",
+        "Notes",
+    )
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1833,6 +1958,8 @@ def strip_active(kind: str) -> str:
             return "Meet"
         case "tasks_index" | "task":
             return "Task"
+        case "reviews_index" | "review":
+            return "Rev"
         case "projects":
             return ""
         case _:
