@@ -8,10 +8,15 @@ from parch.spec import Spec
 def test_annual_page_and_year_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:8]] == [
+    dests = [page.dest for page in pages]
+    assert dests[:4] == [
         "cover",
         "year-2026",
         "projects-2026",
+        "projects-index-2026",
+    ]
+    assert dests[4:13] == [f"project-2026-{n:02d}" for n in range(1, 10)]
+    assert dests[13:18] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -32,6 +37,7 @@ def test_annual_page_and_year_nav():
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),
+        ("Proj", "projects-index-2026"),
     )
     assert all(label != "Cover" for label, _ in strip_items(annual))
 
@@ -58,7 +64,9 @@ def test_annual_paint_links_all_months():
     links = plotter.links()
     assert dests[1] == "year-2026"
     assert dests[2] == "projects-2026"
-    assert dests[3:7] == [
+    assert dests[3] == "projects-index-2026"
+    assert dests[4:13] == [f"project-2026-{n:02d}" for n in range(1, 10)]
+    assert dests[13:17] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
