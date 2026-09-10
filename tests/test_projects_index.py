@@ -8,6 +8,7 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     COVER_INSET,
+    COVER_RULE_INSET,
     HAIR,
     INK,
     PROJECT_P,
@@ -52,7 +53,7 @@ def test_projects_index_follows_board_then_sheets():
 
     sheet = next(page for page in pages if page.dest == "projects-2026-03")
     assert sheet.kind == "project"
-    assert sheet.title == "Project 03"
+    assert sheet.title == "Project"
     assert strip_active(sheet.kind) == "Proj"
     assert dict(strip_items(sheet))["Proj"] == "projects-index-2026"
     card = next(item for item in sheet.components if isinstance(item, ProjectSheet))
@@ -105,21 +106,21 @@ def test_projects_index_cover_tracks():
         projects_index_covers(well, 4)
 
 
-def test_paint_projects_index_covers_titles_and_links():
+def test_paint_projects_index_covers_writein_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     index = next(item for item in page.components if isinstance(item, ProjectsIndex))
+    well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_projects_index_covers(plotter, well_rect(NOMAD), index)
+    paint_projects_index_covers(plotter, well, index)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts == []
     for n in range(1, 7):
-        assert f"Project {n:02d}" in texts
+        assert f"Project {n:02d}" not in texts
     assert "P" not in texts
     assert "Todo" not in texts
-    assert "Doing" not in texts
-    assert "Done" not in texts
-    assert "PROJECT" not in texts
+    assert "Atlas" not in texts
 
     frames = [
         op
@@ -132,7 +133,14 @@ def test_paint_projects_index_covers_titles_and_links():
     assert fills == []
 
     lines = [op for op in plotter.ops if op[0] == "line"]
-    assert lines == []
+    assert len(lines) == 6
+    seats = projects_index_covers(well, 6)
+    for cover, line in zip(seats, lines, strict=True):
+        inner = cover.inset(COVER_INSET)
+        assert line[1] == pytest.approx(inner.x + COVER_RULE_INSET)
+        assert line[2] == pytest.approx(inner.y + inner.h / 2)
+        assert line[3] == pytest.approx(inner.right - COVER_RULE_INSET)
+        assert line[4] == pytest.approx(inner.y + inner.h / 2)
 
     links = plotter.links()
     assert links == list(index.dests)
@@ -151,12 +159,14 @@ def test_index_slots_eight_is_two_by_four():
     plotter = RecordingPlotter()
     paint_projects_index_covers(plotter, well, index)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Project 08" in texts
-    assert "P" not in texts
+    assert texts == []
+    assert "Project 08" not in texts
+    assert [op for op in plotter.ops if op[0] == "line"]
+    assert len([op for op in plotter.ops if op[0] == "line"]) == 8
     assert plotter.links() == list(index.dests)
 
 
-def test_printed_titles_from_spec():
+def test_spec_titles_are_not_printed_on_covers():
     spec = Spec(
         notes_pages=1,
         project_titles=("Atlas", "Harbor", "Keel", "Nomad", "Quarry", "Ridge"),
@@ -168,9 +178,9 @@ def test_printed_titles_from_spec():
     paint_projects_index_covers(plotter, well_rect(NOMAD), index)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     for title in index.titles:
-        assert title in texts
+        assert title not in texts
     leaf = next(p for p in YearPlanner().pages(spec) if p.dest == "projects-2026-02")
-    assert leaf.title == "Harbor"
+    assert leaf.title == "Project"
 
 
 def test_project_sheet_reuses_g_card_and_links_home():
@@ -210,7 +220,8 @@ def test_project_sheet_reuses_g_card_and_links_home():
     chrome.begin_page()
     PlannerLayout().paint(page, chrome, NOMAD)
     texts = [op[2] for op in chrome.ops if op[0] == "text"]
-    assert "Project 01" in texts
+    assert "Project" in texts
+    assert "Project 01" not in texts
     assert "01" in texts
     assert "Index" in texts
     assert "Proj" in texts
@@ -228,7 +239,7 @@ def test_index_header_projects_and_year():
     assert "2026" in texts
     assert "Proj" in texts
     for n in range(1, 7):
-        assert f"Project {n:02d}" in texts
+        assert f"Project {n:02d}" not in texts
         assert f"projects-2026-{n:02d}" in plotter.links()
 
 

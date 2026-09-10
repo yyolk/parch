@@ -232,11 +232,11 @@ def paint_projects(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
 PROJECT_INDEX_COLS = 2
 PROJECT_INDEX_GAP = 2.6
 COVER_INSET = 1.8
-COVER_TITLE_SIZE = 10.0
+COVER_RULE_INSET = 3.2
 
 
 def projects_index_covers(well: Rect, slots: int) -> tuple[Rect, ...]:
-    """2×3 (6) or 2×4 (8) mini-cover seats. Columns first, then down the rows."""
+    """2×3 (6) or 2×4 (8) mini-cover seats. Left-to-right, then down."""
     if slots not in (6, 8):
         raise ValueError(f"slots must be 6 or 8, not {slots}")
     row_n = slots // PROJECT_INDEX_COLS
@@ -247,26 +247,27 @@ def projects_index_covers(well: Rect, slots: int) -> tuple[Rect, ...]:
 
 
 def paint_projects_index_covers(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis K — titled mini covers. Printed name, whole cover links to the leaf."""
-    for cover, dest, title in zip(
-        projects_index_covers(box, len(index.dests)),
-        index.dests,
-        index.titles,
-        strict=True,
-    ):
+    """Thesis K — mini covers. Blank name underline; whole cover links to the leaf."""
+    dests = index.dests
+    for cover, dest in zip(projects_index_covers(box, len(dests)), dests, strict=True):
         plotter.rect(cover, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
         inner = cover.inset(COVER_INSET)
         plotter.rect(inner, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        plotter.text(
-            inner,
-            title,
-            size=COVER_TITLE_SIZE,
-            bold=True,
-            face="serif",
-            gray=INK,
-            align="center",
-        )
+        _paint_cover_name_rule(plotter, inner)
         plotter.link(cover, dest)
+
+
+def _paint_cover_name_rule(plotter: Plotter, inner: Rect) -> None:
+    """Empty write-in underline, centered in the cover."""
+    y = inner.y + inner.h / 2
+    plotter.line(
+        inner.x + COVER_RULE_INSET,
+        y,
+        inner.right - COVER_RULE_INSET,
+        y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def paint_project_sheet(plotter: Plotter, box: Rect, sheet: ProjectSheet) -> None:
