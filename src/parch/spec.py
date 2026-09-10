@@ -195,6 +195,21 @@ class Spec:
             raise ConfigError(f"meeting slot out of range: {slot}")
         return _dest(t"meeting-{self.year:04d}-{slot:02d}")
 
+    @property
+    def tasks_index_dest(self) -> str:
+        """Task landing — two-column numbered week chip list."""
+        return _dest(t"tasks-index-{self.year:04d}")
+
+    def dest_for_tasks(self, day: date) -> str:
+        """Weekly Tasks dest, e.g. ``tasks-2026-W01``. ISO week of ``day``."""
+        iso = day.isocalendar()
+        return _dest(t"tasks-{iso.year:04d}-W{iso.week:02d}")
+
+    def dest_for_tasks_week(self, iso_year: int, iso_week: int) -> str:
+        if not 1 <= iso_week <= 53:
+            raise ConfigError(f"ISO week out of range: {iso_week}")
+        return _dest(t"tasks-{iso_year:04d}-W{iso_week:02d}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")

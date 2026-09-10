@@ -3,7 +3,7 @@
 import math
 from datetime import date, timedelta
 
-from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS
+from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -19,6 +19,8 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TasksIndex,
+    WeeklyTasks,
     WeekStrip,
 )
 from parch.devices.nomad import Device
@@ -970,6 +972,99 @@ def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
 
 
+TASK_GAP = 2.6
+TASK_COL_GAP = 2.8
+TASK_INDEX_GAP = 0.55
+TASK_INDEX_COL_GAP = 3.2
+TASK_INDEX_INSET_X = 0.6
+TASK_INDEX_INSET_Y = 0.25
+TASK_INDEX_CHIP_W = 12.2
+TASK_INDEX_CHIP_GAP = 1.4
+TASK_INDEX_CHIP_H = 3.6
+
+
+def weekly_tasks_seats(well: Rect, morning: int, later: int) -> tuple[Rect, Rect, Rect]:
+    """Morning | Later pair, leftover notes full width. Checklists are content-height."""
+    pair_h = max(checklist_content_height(morning), checklist_content_height(later))
+    pair, rest = well.split_top(pair_h)
+    leftover = _below(rest, TASK_GAP)
+    morning_box, later_box = columns(pair, 2, gap=TASK_COL_GAP)
+    return morning_box, later_box, leftover
+
+
+def paint_weekly_tasks(plotter: Plotter, box: Rect, tasks: WeeklyTasks) -> None:
+    """Thesis F dest — two-column Morning | Later checklists, leftover notes below."""
+    morning, later, notes = weekly_tasks_seats(box, tasks.morning, tasks.later)
+    _paint_checklist_box(plotter, morning, label="Morning", rows=tasks.morning)
+    _paint_checklist_box(plotter, later, label="Later", rows=tasks.later)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def tasks_index_seats(box: Rect, n: int) -> tuple[Rect, ...]:
+    """Row-major two-column week list filling the well."""
+    if n < 1:
+        return ()
+    n_rows = (n + 1) // 2
+    seats: list[Rect] = []
+    for i, band in enumerate(rows(box, n_rows, gap=TASK_INDEX_GAP)):
+        left, right = columns(band, 2, gap=TASK_INDEX_COL_GAP)
+        seats.append(left)
+        if i * 2 + 1 < n:
+            seats.append(right)
+    return tuple(seats)
+
+
+def task_index_chip_parts(cell: Rect) -> tuple[Rect, Rect]:
+    """Week chip | printed range, after a quiet inset."""
+    inner = cell.inset(TASK_INDEX_INSET_X, TASK_INDEX_INSET_Y)
+    chip_h = min(TASK_INDEX_CHIP_H, inner.h)
+    chip_y = inner.y + (inner.h - chip_h) / 2
+    chip = Rect(inner.x, chip_y, TASK_INDEX_CHIP_W, chip_h)
+    rest = Rect(
+        chip.right + TASK_INDEX_CHIP_GAP,
+        inner.y,
+        max(inner.right - chip.right - TASK_INDEX_CHIP_GAP, 1),
+        inner.h,
+    )
+    return chip, rest
+
+
+def task_index_link_hits(cell: Rect) -> tuple[Rect, ...]:
+    """Chip only. Printed week range stays unlinkable."""
+    chip, _range = task_index_chip_parts(cell)
+    return (chip,)
+
+
+def paint_tasks_index_chips(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+    """Thesis F — two-column numbered week chips. Chip is the dest hit."""
+    for seat, week in zip(tasks_index_seats(box, len(index.weeks)), index.weeks, strict=True):
+        _paint_task_index_chip(plotter, seat, week.iso_week, short_date_range(week.monday, week.sunday))
+        for hit in task_index_link_hits(seat):
+            plotter.link(hit, week.dest)
+
+
+def _paint_task_index_chip(plotter: Plotter, cell: Rect, iso_week: int, span: str) -> None:
+    chip, labeled = task_index_chip_parts(cell)
+    plotter.rect(chip, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        chip,
+        f"W{iso_week:02d}",
+        size=6.0,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+    plotter.text(
+        labeled,
+        span,
+        size=5.8,
+        face="sans",
+        gray=MUTED,
+        align="left",
+    )
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1622,6 +1717,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
             dests["Meet"] = item.dest
+        elif item.dest.startswith("tasks-index-"):
+            dests["Task"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1645,6 +1742,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = page.dest
         case "meeting":
             pass
+        case "tasks_index":
+            dests["Task"] = page.dest
+        case "tasks":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1652,7 +1753,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1676,6 +1777,8 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "meetings_index" | "meeting":
             return "Meet"
+        case "tasks_index" | "tasks":
+            return "Task"
         case "projects":
             return ""
         case _:

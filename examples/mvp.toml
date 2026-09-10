@@ -23,3 +23,5 @@ index_pages = 3
 
 [meetings]
 index_rows = 16
+
+# Tasks index F is calendar-driven: one dest per ISO week that touches the pressed months.
