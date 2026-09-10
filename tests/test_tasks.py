@@ -26,7 +26,7 @@ from parch.layouts.planner.painters import (
     TICK,
     checklist_content_height,
     paint_task,
-    paint_tasks_index_months,
+    paint_tasks_index,
     task_row_count,
     strip_active,
     strip_items,
@@ -221,7 +221,7 @@ def test_tasks_index_paint_month_headers_and_week_links():
     index = next(item for item in page.components if isinstance(item, TasksIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_tasks_index_months(plotter, well, index)
+    paint_tasks_index(plotter, well, index)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "January" in texts

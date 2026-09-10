@@ -33,8 +33,8 @@ from parch.layouts.planner.painters import (
     TICKET_STRIP_PAD,
     TICKET_STUB_W,
     clone_task_count,
-    paint_projects_clone_faithful,
-    paint_projects_index_tickets,
+    paint_project,
+    paint_projects_index,
     project_card_columns,
     project_card_left_seats,
     project_card_seats,
@@ -132,7 +132,7 @@ def test_projects_knobs_from_spec():
     assert board.cards == 2
     assert board.tasks == 5
     plotter = RecordingPlotter()
-    paint_projects_clone_faithful(plotter, Rect(4, 20, 110, 90), board)
+    paint_project(plotter, Rect(4, 20, 110, 90), board)
     assert [op[2] for op in plotter.ops if op[0] == "text"].count("P") == 2
 
 
@@ -267,7 +267,7 @@ def test_projects_index_paint_write_in_underlines_and_links():
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_projects_index_tickets(plotter, well, roster)
+    paint_projects_index(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     for slot in range(1, 9):
@@ -420,7 +420,7 @@ def test_project_page_g_clone_and_index_chip():
     assert board.number == 1
     well = well_rect(NOMAD)
     ink = RecordingPlotter()
-    paint_projects_clone_faithful(ink, well, board)
+    paint_project(ink, well, board)
     texts = [op[2] for op in ink.ops if op[0] == "text"]
     assert texts.count("P") == 3
     assert "Atlas" not in texts
@@ -502,7 +502,7 @@ def test_projects_tickets_knob():
     assert "projects-2026-06" in dests
     assert "projects-2026-07" not in dests
     plotter = RecordingPlotter()
-    paint_projects_index_tickets(plotter, Rect(4, 20, 110, 90), roster)
+    paint_projects_index(plotter, Rect(4, 20, 110, 90), roster)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Field" not in texts
     assert "Grove" not in texts
@@ -540,7 +540,7 @@ def test_projects_index_pages_knob():
 
     page_two = next(item for item in indexes[1].components if isinstance(item, ProjectsIndex))
     plotter = RecordingPlotter()
-    paint_projects_index_tickets(plotter, well_rect(NOMAD), page_two)
+    paint_projects_index(plotter, well_rect(NOMAD), page_two)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "09" in texts
     assert "16" in texts

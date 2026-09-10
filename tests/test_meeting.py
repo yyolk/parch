@@ -28,7 +28,7 @@ from parch.layouts.planner.painters import (
     meeting_seats,
     meetings_index_roster,
     paint_meeting,
-    paint_meetings_index_roster,
+    paint_meetings_index,
     strip_active,
     strip_items,
 )
@@ -257,7 +257,7 @@ def test_meeting_index_paint_date_cues_and_links():
     roster = next(item for item in page.components if isinstance(item, MeetingIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_meetings_index_roster(plotter, well, roster)
+    paint_meetings_index(plotter, well, roster)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Date") == 16
@@ -334,7 +334,7 @@ def test_meeting_rows_knob():
     assert dests[1:] == [f"meeting-2026-{slot:02d}" for slot in range(1, 13)]
     assert "meeting-2026-13" not in dests
     plotter = RecordingPlotter()
-    paint_meetings_index_roster(plotter, well_rect(NOMAD), roster)
+    paint_meetings_index(plotter, well_rect(NOMAD), roster)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Date") == 12
     for slot in range(1, 13):
