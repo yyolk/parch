@@ -20,3 +20,7 @@ cards = 3
 tasks = 4
 tickets = 8
 index_pages = 3
+
+[meetings]
+tickets = 8
+index_pages = 1

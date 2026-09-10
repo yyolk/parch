@@ -44,7 +44,7 @@ def test_week_dests_and_nav_strip():
         "projects-2026",
         "projects-index-2026-01",
     ]
-    assert dests[12:17] == [
+    assert dests[21:26] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -65,6 +65,7 @@ def test_week_dests_and_nav_strip():
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
         ("Proj", "projects-index-2026-01"),
+        ("Meet", "meeting-index-2026-01"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),

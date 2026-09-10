@@ -9,6 +9,9 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     HabitGrid,
+    MeetingAgenda,
+    MeetingsIndex,
+    MeetingTicket,
     MonthGrid,
     Notes,
     Priorities,
@@ -412,6 +415,114 @@ def _paint_perforation(
         walked = stop + gap
 
 
+MEET_TICKET_WRITE_PAD = 3.2
+MEET_PREVIEW_INSET = 0.45
+MEET_PREVIEW_GAP = 0.45
+MEET_PREVIEW_WEIGHTS = (0.16, 0.22, 0.40, 0.22)
+MEET_PREVIEW_TICK = 1.15
+MEET_PREVIEW_NOTE_PITCH = 1.55
+
+
+def meeting_ticket_seats(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Same stacked ticket rows as Projects L — equal fill."""
+    return project_ticket_seats(well, n)
+
+
+def meeting_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
+    return project_ticket_parts(ticket)
+
+
+def meeting_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
+    """Short write-in | meeting preview motif (not G cards)."""
+    return project_ticket_body_seats(body)
+
+
+def meeting_ticket_write_in(name: Rect) -> Rect:
+    """Raised write-in underline. No G symbol strip under it."""
+    write_h = max(name.h - MEET_TICKET_WRITE_PAD, 1)
+    return Rect(name.x, name.y, name.w, write_h)
+
+
+def meeting_ticket_preview_bands(preview: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """Dest silhouette: title|date, agenda ticks, notes, action ticks."""
+    pocket = preview.inset(MEET_PREVIEW_INSET)
+    return rows(pocket, 4, gap=MEET_PREVIEW_GAP, weights=MEET_PREVIEW_WEIGHTS)
+
+
+def meeting_ticket_link_hits(ticket: Rect) -> tuple[Rect, Rect]:
+    """Stub column + preview motif. Write-in stays unlinkable."""
+    stub, body = meeting_ticket_parts(ticket)
+    _, preview = meeting_ticket_body_seats(body)
+    return stub, preview
+
+
+def paint_meetings_index_tickets(plotter: Plotter, box: Rect, index: MeetingsIndex) -> None:
+    """Thesis B — stub, short write-in, meeting preview; stub + preview links."""
+    for seat, ticket in zip(
+        meeting_ticket_seats(box, len(index.tickets)), index.tickets, strict=True
+    ):
+        _paint_meeting_ticket(plotter, seat, ticket)
+        for hit in meeting_ticket_link_hits(seat):
+            plotter.link(hit, ticket.dest)
+
+
+def _paint_meeting_ticket(plotter: Plotter, box: Rect, ticket: MeetingTicket) -> None:
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    stub, body = meeting_ticket_parts(box)
+    name, preview = meeting_ticket_body_seats(body)
+    write = meeting_ticket_write_in(name)
+    mark_y = stub.y + (stub.h - TICKET_MARK) / 2
+    mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{ticket.number:02d}",
+        size=6.6,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+    perf_x = stub.right + 0.55
+    _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
+    plotter.line(write.x, write.bottom, write.right, write.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_meeting_ticket_preview(plotter, preview)
+    _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
+
+
+def _paint_meeting_ticket_preview(plotter: Plotter, preview: Rect) -> None:
+    """Mini Meeting dest — stacked head / agenda / notes / actions. Not G cards."""
+    plotter.rect(preview, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    head, agenda, notes, actions = meeting_ticket_preview_bands(preview)
+    title, dated = columns(head, 2, gap=0.6, weights=(0.64, 0.36))
+    plotter.line(title.x, title.bottom, title.right, title.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(dated.x, dated.bottom, dated.right, dated.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_meeting_preview_ticks(plotter, agenda, 4)
+    y = notes.y + MEET_PREVIEW_NOTE_PITCH
+    while y < notes.bottom - 0.08:
+        plotter.line(notes.x, y, notes.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += MEET_PREVIEW_NOTE_PITCH
+    _paint_meeting_preview_ticks(plotter, actions, 3)
+
+
+def _paint_meeting_preview_ticks(plotter: Plotter, box: Rect, n: int) -> None:
+    mark = MEET_PREVIEW_TICK
+    gap = 0.55
+    y = box.y + max((box.h - mark) / 2, 0)
+    x = box.x
+    for _ in range(n):
+        if x + mark > box.right:
+            break
+        plotter.rect(
+            Rect(x, y, mark, mark),
+            stroke=True,
+            fill=False,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+        x += mark + gap
+
+
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
     """Minimum packed width of the G icon set (spread uses the full strip seat)."""
     return n * CLONE_ICON + max(n - 1, 0) * CLONE_ICON_GAP
@@ -802,6 +913,81 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+MEET_GAP = 2.6
+MEET_HEAD_INSET_X = 1.8
+MEET_HEAD_INSET_Y = 1.2
+MEET_HEAD_LINE_H = 5.4
+MEET_HEAD_COL_GAP = 2.8
+MEET_HEAD_WEIGHTS = (0.64, 0.36)
+MEET_LABEL_W = 12.0
+MEET_WRITE_LABEL_H = 3.8
+
+
+def meeting_head_height() -> float:
+    """One-line title|date band — not two stacked write-ins."""
+    return MEET_HEAD_INSET_Y * 2 + MEET_HEAD_LINE_H
+
+
+def _below(box: Rect, gap: float) -> Rect:
+    return Rect(box.x, box.y + gap, box.w, box.h - gap)
+
+
+def meeting_seats(
+    well: Rect, agenda: int, action_items: int
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Head, agenda, leftover notes, action items. Notes flex."""
+    head, rest = well.split_top(meeting_head_height())
+    leftover = _below(rest, MEET_GAP)
+    agenda_h = checklist_content_height(agenda)
+    agenda_box, rest = leftover.split_top(agenda_h)
+    leftover = _below(rest, MEET_GAP)
+    action_h = checklist_content_height(action_items)
+    notes_h = max(leftover.h - action_h - MEET_GAP, 1)
+    notes, action_box = rows(leftover, 2, gap=MEET_GAP, weights=(notes_h, action_h))
+    return head, agenda_box, notes, action_box
+
+
+def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title write-in | Date write-in on one horizontal row."""
+    inner = head.inset(MEET_HEAD_INSET_X, MEET_HEAD_INSET_Y)
+    return columns(inner, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
+
+
+def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
+    """Locked Meeting dest — title|date, agenda, notes, action items."""
+    head, agenda_box, notes, action_items = meeting_seats(
+        box, agenda.agenda, agenda.action_items
+    )
+    _paint_meeting_head(plotter, head)
+    _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
+    _paint_note_box(plotter, notes, label="Notes")
+    _paint_checklist_box(plotter, action_items, label="Action items", rows=agenda.action_items)
+
+
+def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    title, dated = meeting_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Title")
+    _paint_meeting_writein(plotter, dated, "Date")
+
+
+def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    """Label and underline share a baseline — rule sits just under the scaps."""
+    tag, write = box.split_left(MEET_LABEL_W)
+    rule_y = box.bottom
+    label_box = Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H)
+    plotter.text(
+        label_box,
+        label,
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -1454,6 +1640,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("projects-index-"):
             dests["Proj"] = item.dest
+        elif item.dest.startswith("meeting-index-"):
+            dests["Meet"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1473,6 +1661,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = page.dest
         case "projects" | "project":
             pass
+        case "meetings_index":
+            dests["Meet"] = page.dest
+        case "meeting":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1480,7 +1672,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1504,5 +1696,7 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "projects":
             return ""
+        case "meetings_index" | "meeting":
+            return "Meet"
         case _:
             return "Year"

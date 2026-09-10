@@ -33,7 +33,7 @@ def test_quarter_page_and_provisional_nav():
         "projects-2026",
         "projects-index-2026-01",
     ]
-    assert [page.dest for page in pages[12:17]] == [
+    assert [page.dest for page in pages[21:26]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -57,6 +57,7 @@ def test_quarter_page_and_provisional_nav():
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
         ("Proj", "projects-index-2026-01"),
+        ("Meet", "meeting-index-2026-01"),
         ("Week", "week-2026-W01"),
         ("Day", "2026-01-01"),
         ("Notes", "2026-01-01-notes-1"),

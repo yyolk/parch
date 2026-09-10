@@ -69,6 +69,8 @@ class Spec:
     project_tasks: int = 4
     project_tickets: int = 8
     project_index_pages: int = 1
+    meeting_tickets: int = 8
+    meeting_index_pages: int = 1
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -101,6 +103,10 @@ class Spec:
             raise ConfigError("project_tickets must be 6–10")
         if not 1 <= self.project_index_pages <= 6:
             raise ConfigError("project_index_pages must be 1–6")
+        if not 6 <= self.meeting_tickets <= 10:
+            raise ConfigError("meeting_tickets must be 6–10")
+        if not 1 <= self.meeting_index_pages <= 6:
+            raise ConfigError("meeting_index_pages must be 1–6")
 
     @property
     def weekday_start(self) -> int:
@@ -171,6 +177,33 @@ class Spec:
             raise ConfigError(f"project slot out of range: {slot}")
         return _dest(t"projects-{self.year:04d}-{slot:02d}")
 
+    @property
+    def meeting_count(self) -> int:
+        """Meeting dest pages: ``index_pages × tickets`` (one row → one Meeting page)."""
+        return self.meeting_index_pages * self.meeting_tickets
+
+    def dest_for_meetings_index(self, page: int) -> str:
+        if not 1 <= page <= self.meeting_index_pages:
+            raise ConfigError(f"meetings index page out of range: {page}")
+        return _dest(t"meeting-index-{self.year:04d}-{page:02d}")
+
+    @property
+    def meetings_index_dest(self) -> str:
+        """Meet landing — index page 1."""
+        return self.dest_for_meetings_index(1)
+
+    def dest_for_meetings_index_of(self, slot: int) -> str:
+        """Index page that lists ``slot`` (1-based global row)."""
+        if not 1 <= slot <= self.meeting_count:
+            raise ConfigError(f"meeting slot out of range: {slot}")
+        page = (slot - 1) // self.meeting_tickets + 1
+        return self.dest_for_meetings_index(page)
+
+    def dest_for_meeting(self, slot: int) -> str:
+        if not 1 <= slot <= self.meeting_count:
+            raise ConfigError(f"meeting slot out of range: {slot}")
+        return _dest(t"meeting-{self.year:04d}-{slot:02d}")
+
     def dest_for_quarter(self, quarter: int) -> str:
         if not 1 <= quarter <= 4:
             raise ConfigError(f"quarter out of range: {quarter}")
@@ -226,6 +259,8 @@ class Spec:
         habits_table = habits if isinstance(habits, dict) else {}
         projects = data.get("projects")
         projects_table = projects if isinstance(projects, dict) else {}
+        meetings = data.get("meetings")
+        meetings_table = meetings if isinstance(meetings, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -248,6 +283,15 @@ class Spec:
             ),
             project_index_pages=int(
                 projects_table.get("index_pages", data.get("project_index_pages", 1))
+            ),
+            meeting_tickets=int(
+                meetings_table.get(
+                    "tickets_per_page",
+                    meetings_table.get("tickets", data.get("meeting_tickets", 8)),
+                )
+            ),
+            meeting_index_pages=int(
+                meetings_table.get("index_pages", data.get("meeting_index_pages", 1))
             ),
         )
 
