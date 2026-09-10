@@ -283,8 +283,6 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
 
 
 DIRECTORY_COL_GAP = 5.2
-DIRECTORY_NAME_SIZE = 8.0
-DIRECTORY_NAME_H = 5.6
 DIRECTORY_ROW_H = 9.4
 LEAF_RAIL_GAP = 2.6
 LEAF_RAIL_WEIGHTS = (0.76, 0.24)
@@ -300,7 +298,7 @@ LEAF_TRACK_H = 26.0
 
 
 def directory_column_counts(n: int) -> tuple[int, int]:
-    """Split ``n`` names across two phone-book columns (left gets the extra)."""
+    """Split ``n`` write-in rows across two phone-book columns (left gets the extra)."""
     if n < 1:
         raise ValueError(f"n must be >= 1, not {n}")
     left = (n + 1) // 2
@@ -321,8 +319,8 @@ def projects_directory_rows(col: Rect, n: int) -> tuple[Rect, ...]:
 
 
 def paint_projects_index_directory(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
-    """Thesis J — two columns of printed names, quiet hairlines, each name a leaf dest."""
-    left_n, right_n = directory_column_counts(len(index.names))
+    """Thesis J — two columns of write-in underlines; each row links to a leaf."""
+    left_n, right_n = directory_column_counts(len(index.dests))
     left_col, right_col = projects_directory_columns(box)
     gutter_x = (left_col.right + right_col.x) / 2
     plotter.line(
@@ -333,42 +331,20 @@ def paint_projects_index_directory(plotter: Plotter, box: Rect, index: ProjectsI
         stroke_width=HAIR,
         stroke_gray=SOFT,
     )
-    _paint_directory_column(
-        plotter, left_col, index.names[:left_n], index.dests[:left_n]
-    )
+    _paint_directory_column(plotter, left_col, index.dests[:left_n])
     if right_n:
-        _paint_directory_column(
-            plotter, right_col, index.names[left_n:], index.dests[left_n:]
-        )
+        _paint_directory_column(plotter, right_col, index.dests[left_n:])
 
 
-def _paint_directory_column(
-    plotter: Plotter, col: Rect, names: tuple[str, ...], dests: tuple[str, ...]
-) -> None:
-    for seat, name, dest in zip(
-        projects_directory_rows(col, len(names)), names, dests, strict=True
-    ):
-        name_box = Rect(
-            seat.x,
-            seat.bottom - DIRECTORY_NAME_H - 0.35,
-            seat.w,
-            DIRECTORY_NAME_H,
-        )
-        plotter.text(
-            name_box,
-            name,
-            size=DIRECTORY_NAME_SIZE,
-            face="serif",
-            gray=INK,
-            align="left",
-        )
+def _paint_directory_column(plotter: Plotter, col: Rect, dests: tuple[str, ...]) -> None:
+    for seat, dest in zip(projects_directory_rows(col, len(dests)), dests, strict=True):
         plotter.line(
             seat.x,
-            seat.bottom,
+            seat.bottom - 0.35,
             seat.right,
-            seat.bottom,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
+            seat.bottom - 0.35,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
         )
         plotter.link(seat, dest)
 
@@ -396,13 +372,13 @@ def project_leaf_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect]:
 
 
 def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
-    """G-craft leaf — printed name, tasks, dot-grid notes, vertical status rail."""
+    """G-craft leaf — write-in name, tasks, dot-grid notes, vertical status rail."""
     board, rail = project_leaf_seats(box)
     _wash(plotter, rail, WASH)
     spine, header, tasks, notes, card = project_leaf_card(board)
     plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
     plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    _paint_project_name(plotter, header, leaf.name)
+    _paint_project_name(plotter, header)
     fit = max(1, int((tasks.h - 0.4 - TICK) / FOCUS_PITCH) + 1)
     _paint_project_tasks(plotter, tasks, max(leaf.tasks, fit))
     _paint_leaf_dot_grid(plotter, notes)

@@ -2,7 +2,6 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import ProjectLeaf, ProjectsBoard, ProjectsIndex
-from parch.components.projects import SAMPLE_TITLES, sample_titles
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
@@ -10,6 +9,8 @@ from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     DIRECTORY_COL_GAP,
     DIRECTORY_ROW_H,
+    RULE,
+    RULE_C,
     LEAF_DOT,
     LEAF_SPINE_W,
     PROJECT_COL_WEIGHTS,
@@ -59,7 +60,6 @@ def test_projects_directory_after_annual():
 
     index = next(item for item in page.components if isinstance(item, ProjectsIndex))
     assert index.year == 2026
-    assert index.names == SAMPLE_TITLES[:12]
     assert index.dests == tuple(f"project-{n}" for n in range(1, 13))
 
     assert strip_active(page.kind) == "Proj"
@@ -164,8 +164,8 @@ def test_projects_header_year_and_eight_tabs():
     assert "2026" in texts
     for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes", "Proj"):
         assert label in texts
-    for name in SAMPLE_TITLES[:12]:
-        assert name in texts
+    assert "North Cabin" not in texts
+    assert "Atlas Notes" not in texts
 
 
 def test_directory_column_tracks():
@@ -190,7 +190,7 @@ def test_directory_column_tracks():
     assert directory_column_counts(11) == (6, 5)
 
 
-def test_paint_directory_prints_names_and_links_leaves():
+def test_paint_directory_underlines_and_links_leaves():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
     index = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -199,12 +199,19 @@ def test_paint_directory_prints_names_and_links_leaves():
     paint_projects_index_directory(plotter, well, index)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    for name in SAMPLE_TITLES[:12]:
-        assert name in texts
+    assert texts == []
+    assert "North Cabin" not in texts
     assert "P" not in texts
     assert "Todo" not in texts
-    assert "Focus" not in texts
-    assert texts.count("______") == 0
+
+    rules = [
+        op
+        for op in plotter.ops
+        if op[0] == "line"
+        and op[5] == pytest.approx(RULE)
+        and op[6] == pytest.approx(RULE_C)
+    ]
+    assert len(rules) == 12
 
     links = plotter.links()
     assert links == [f"project-{n}" for n in range(1, 13)]
@@ -229,22 +236,23 @@ def test_directory_proj_tab_active_and_annual_lands_there():
     PlannerLayout().paint(index, plotter, NOMAD)
     assert plotter.links().count("project-1") == 1
     assert "projects-2026" in plotter.links()
-    assert "North Cabin" in [op[2] for op in plotter.ops if op[0] == "text"]
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "North Cabin" not in texts
+    assert "Projects" in texts
 
 
-def test_project_leaf_prints_name_and_links_back():
+def test_project_leaf_write_in_name_and_links_back():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     leaf_page = next(p for p in pages if p.dest == "project-1")
     assert leaf_page.kind == "project"
-    assert leaf_page.title == "North Cabin"
+    assert leaf_page.title == "Project 01"
     assert strip_active(leaf_page.kind) == "Proj"
     assert strip_items(leaf_page) == NAV8
 
     leaf = next(item for item in leaf_page.components if isinstance(item, ProjectLeaf))
     assert leaf.year == 2026
     assert leaf.number == 1
-    assert leaf.name == "North Cabin"
     assert leaf.tasks == 4
     assert leaf.index_dest == "projects-2026"
 
@@ -252,7 +260,8 @@ def test_project_leaf_prints_name_and_links_back():
     plotter.begin_page()
     PlannerLayout().paint(leaf_page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "North Cabin" in texts
+    assert "North Cabin" not in texts
+    assert "Project 01" in texts
     assert "Index" in texts
     assert "2026" in texts
     assert "P" in texts
@@ -263,7 +272,7 @@ def test_project_leaf_prints_name_and_links_back():
     ink = RecordingPlotter()
     paint_project(ink, well, leaf)
     ink_texts = [op[2] for op in ink.ops if op[0] == "text"]
-    assert ink_texts.count("North Cabin") == 1
+    assert "North Cabin" not in ink_texts
     assert ink_texts.count("P") == 1
     assert "Todo" in ink_texts
     assert "In Progress" in ink_texts
@@ -290,7 +299,6 @@ def test_project_index_rows_knob():
     pages = YearPlanner().pages(spec)
     index = next(p for p in pages if p.kind == "projects")
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
-    assert roster.names == sample_titles(10)
     assert len(roster.dests) == 10
     dests = [p.dest for p in pages]
     assert dests.count("project-10") == 1
