@@ -284,6 +284,8 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
 
 DIRECTORY_COL_GAP = 5.2
 DIRECTORY_NAME_SIZE = 8.0
+DIRECTORY_NAME_H = 5.6
+DIRECTORY_ROW_H = 9.4
 LEAF_RAIL_GAP = 2.6
 LEAF_RAIL_WEIGHTS = (0.76, 0.24)
 LEAF_SPINE_W = 1.4
@@ -311,8 +313,11 @@ def projects_directory_columns(box: Rect) -> tuple[Rect, Rect]:
 
 
 def projects_directory_rows(col: Rect, n: int) -> tuple[Rect, ...]:
-    """One name row per track. Hairlines sit on the row bottoms."""
-    return rows(col, n, gap=0)
+    """Fixed-pitch name rows packed from the top — leftover stays empty."""
+    if n < 1:
+        raise ValueError(f"n must be >= 1, not {n}")
+    band = Rect(col.x, col.y, col.w, min(n * DIRECTORY_ROW_H, col.h))
+    return rows(band, n, gap=0)
 
 
 def paint_projects_index_directory(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
@@ -343,8 +348,14 @@ def _paint_directory_column(
     for seat, name, dest in zip(
         projects_directory_rows(col, len(names)), names, dests, strict=True
     ):
+        name_box = Rect(
+            seat.x,
+            seat.bottom - DIRECTORY_NAME_H - 0.35,
+            seat.w,
+            DIRECTORY_NAME_H,
+        )
         plotter.text(
-            Rect(seat.x, seat.y, seat.w, seat.h),
+            name_box,
             name,
             size=DIRECTORY_NAME_SIZE,
             face="serif",
@@ -392,7 +403,8 @@ def paint_project(plotter: Plotter, box: Rect, leaf: ProjectLeaf) -> None:
     plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
     plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _paint_project_name(plotter, header, leaf.name)
-    _paint_project_tasks(plotter, tasks, leaf.tasks)
+    fit = max(1, int((tasks.h - 0.4 - TICK) / FOCUS_PITCH) + 1)
+    _paint_project_tasks(plotter, tasks, max(leaf.tasks, fit))
     _paint_leaf_dot_grid(plotter, notes)
     _paint_leaf_status_rail(plotter, rail)
 

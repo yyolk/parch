@@ -9,6 +9,7 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     DIRECTORY_COL_GAP,
+    DIRECTORY_ROW_H,
     LEAF_DOT,
     LEAF_SPINE_W,
     PROJECT_COL_WEIGHTS,
@@ -180,9 +181,11 @@ def test_directory_column_tracks():
     seats = projects_directory_rows(left, left_n)
     assert len(seats) == 6
     assert seats[0].y == pytest.approx(left.y)
-    assert seats[-1].bottom == pytest.approx(left.bottom)
+    assert seats[-1].bottom == pytest.approx(left.y + 6 * DIRECTORY_ROW_H)
+    assert seats[-1].bottom < left.bottom
     for earlier, later in zip(seats, seats[1:]):
         assert later.y == pytest.approx(earlier.bottom)
+        assert later.h == pytest.approx(DIRECTORY_ROW_H)
 
     assert directory_column_counts(11) == (6, 5)
 
