@@ -8,6 +8,7 @@ from parch.components.priorities import Priorities
 from parch.components.projects import ProjectTicket, ProjectsBoard, ProjectsIndex
 from parch.components.quarter import QuarterGrid
 from parch.components.schedule import Schedule
+from parch.components.tasks import TaskTicket, TasksIndex, WeekTasks
 from parch.components.week import WeekDay, WeekStrip
 
 type Component = (
@@ -26,7 +27,10 @@ type Component = (
     | ProjectsIndex
     | QuarterGrid
     | Schedule
+    | TaskTicket
+    | TasksIndex
     | WeekStrip
+    | WeekTasks
 )
 
 __all__ = [
@@ -48,6 +52,9 @@ __all__ = [
     "ProjectsIndex",
     "QuarterGrid",
     "Schedule",
+    "TaskTicket",
+    "TasksIndex",
     "WeekDay",
     "WeekStrip",
+    "WeekTasks",
 ]

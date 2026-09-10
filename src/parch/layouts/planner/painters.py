@@ -19,7 +19,10 @@ from parch.components import (
     ProjectsIndex,
     QuarterGrid,
     Schedule,
+    TaskTicket,
+    TasksIndex,
     WeekStrip,
+    WeekTasks,
 )
 from parch.devices.nomad import Device
 from parch.geom import Rect
@@ -970,6 +973,161 @@ def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
 
 
+TASK_GAP = 2.6
+TASK_TICKET_WRITE_PAD = 3.2
+TASK_PREVIEW_INSET = 0.45
+TASK_PREVIEW_GAP = 0.45
+TASK_PREVIEW_WEIGHTS = (0.16, 0.28, 0.36, 0.20)
+TASK_PREVIEW_TICK = 1.15
+TASK_PREVIEW_NOTE_PITCH = 1.55
+TASK_BAND_GAP = 2.8
+
+
+def week_tasks_seats(
+    well: Rect, tasks: int, carry: int
+) -> tuple[Rect, Rect, Rect, Rect]:
+    """Head, tasks, leftover notes, done/carry band. Notes flex."""
+    head, rest = well.split_top(meeting_head_height())
+    leftover = _below(rest, TASK_GAP)
+    tasks_h = checklist_content_height(tasks)
+    tasks_box, rest = leftover.split_top(tasks_h)
+    leftover = _below(rest, TASK_GAP)
+    band_h = checklist_content_height(carry)
+    notes_h = max(leftover.h - band_h - TASK_GAP, 1)
+    notes, band = rows(leftover, 2, gap=TASK_GAP, weights=(notes_h, band_h))
+    return head, tasks_box, notes, band
+
+
+def week_tasks_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Week write-in | Range write-in on one horizontal row."""
+    return meeting_head_seats(head)
+
+
+def week_tasks_band_seats(band: Rect) -> tuple[Rect, Rect]:
+    """Done | Carry — two content-height checklists."""
+    return columns(band, 2, gap=TASK_BAND_GAP)
+
+
+def paint_week_tasks(plotter: Plotter, box: Rect, week: WeekTasks) -> None:
+    """Locked weekly Tasks dest — week|range, tasks, notes, done/carry."""
+    head, tasks_box, notes, band = week_tasks_seats(box, week.tasks, week.carry)
+    _paint_week_tasks_head(plotter, head)
+    _paint_checklist_box(plotter, tasks_box, label="Tasks", rows=week.tasks)
+    _paint_note_box(plotter, notes, label="Notes")
+    done, carry = week_tasks_band_seats(band)
+    _paint_checklist_box(plotter, done, label="Done", rows=week.carry)
+    _paint_checklist_box(plotter, carry, label="Carry", rows=week.carry)
+
+
+def _paint_week_tasks_head(plotter: Plotter, head: Rect) -> None:
+    plotter.rect(head, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    title, dated = week_tasks_head_seats(head)
+    _paint_meeting_writein(plotter, title, "Week")
+    _paint_meeting_writein(plotter, dated, "Range")
+
+
+def task_ticket_seats(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Same stacked ticket rows as Projects L / Meeting B — equal fill."""
+    return project_ticket_seats(well, n)
+
+
+def task_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
+    return project_ticket_parts(ticket)
+
+
+def task_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
+    """Short write-in | weekly-tasks preview motif (not G cards)."""
+    return project_ticket_body_seats(body)
+
+
+def task_ticket_write_in(name: Rect) -> Rect:
+    """Raised write-in underline. No G symbol strip under it."""
+    write_h = max(name.h - TASK_TICKET_WRITE_PAD, 1)
+    return Rect(name.x, name.y, name.w, write_h)
+
+
+def task_ticket_preview_bands(preview: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """Dest silhouette: week|range, task ticks, notes, done/carry."""
+    pocket = preview.inset(TASK_PREVIEW_INSET)
+    return rows(pocket, 4, gap=TASK_PREVIEW_GAP, weights=TASK_PREVIEW_WEIGHTS)
+
+
+def task_ticket_link_hits(ticket: Rect) -> tuple[Rect, Rect]:
+    """Stub column + preview motif. Write-in stays unlinkable."""
+    stub, body = task_ticket_parts(ticket)
+    _, preview = task_ticket_body_seats(body)
+    return stub, preview
+
+
+def paint_tasks_index_tickets(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+    """Thesis B — stub, short write-in, weekly-tasks preview; stub + preview links."""
+    for seat, ticket in zip(
+        task_ticket_seats(box, len(index.tickets)), index.tickets, strict=True
+    ):
+        _paint_task_ticket(plotter, seat, ticket)
+        for hit in task_ticket_link_hits(seat):
+            plotter.link(hit, ticket.dest)
+
+
+def _paint_task_ticket(plotter: Plotter, box: Rect, ticket: TaskTicket) -> None:
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    stub, body = task_ticket_parts(box)
+    name, preview = task_ticket_body_seats(body)
+    write = task_ticket_write_in(name)
+    mark_y = stub.y + (stub.h - TICKET_MARK) / 2
+    mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        mark,
+        f"{ticket.number:02d}",
+        size=6.6,
+        bold=True,
+        face="serif",
+        gray=INK,
+        align="center",
+    )
+    perf_x = stub.right + 0.55
+    _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
+    plotter.line(write.x, write.bottom, write.right, write.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_task_ticket_preview(plotter, preview)
+    _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
+
+
+def _paint_task_ticket_preview(plotter: Plotter, preview: Rect) -> None:
+    """Mini weekly Tasks dest — stacked head / tasks / notes / done|carry. Not G cards."""
+    plotter.rect(preview, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    head, tasks, notes, band = task_ticket_preview_bands(preview)
+    title, dated = columns(head, 2, gap=0.6, weights=(0.64, 0.36))
+    plotter.line(title.x, title.bottom, title.right, title.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(dated.x, dated.bottom, dated.right, dated.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_task_preview_ticks(plotter, tasks, 8)
+    y = notes.y + TASK_PREVIEW_NOTE_PITCH
+    while y < notes.bottom - 0.08:
+        plotter.line(notes.x, y, notes.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += TASK_PREVIEW_NOTE_PITCH
+    done, carry = columns(band, 2, gap=0.6)
+    _paint_task_preview_ticks(plotter, done, 3)
+    _paint_task_preview_ticks(plotter, carry, 3)
+
+
+def _paint_task_preview_ticks(plotter: Plotter, box: Rect, n: int) -> None:
+    mark = TASK_PREVIEW_TICK
+    gap = 0.55
+    y = box.y + max((box.h - mark) / 2, 0)
+    x = box.x
+    for _ in range(n):
+        if x + mark > box.right:
+            break
+        plotter.rect(
+            Rect(x, y, mark, mark),
+            stroke=True,
+            fill=False,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+        x += mark + gap
+
+
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
     paint_quarter_a_focus_notes(plotter, box, grid)
@@ -1622,6 +1780,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
             dests["Meet"] = item.dest
+        elif item.dest.startswith("tasks-index-"):
+            dests["Task"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
@@ -1645,6 +1805,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Meet"] = page.dest
         case "meeting":
             pass
+        case "tasks_index":
+            dests["Task"] = page.dest
+        case "task":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -1652,7 +1816,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes")
+    order = ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -1676,6 +1840,8 @@ def strip_active(kind: str) -> str:
             return "Proj"
         case "meetings_index" | "meeting":
             return "Meet"
+        case "tasks_index" | "task":
+            return "Task"
         case "projects":
             return ""
         case _:
