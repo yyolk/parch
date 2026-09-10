@@ -307,6 +307,8 @@ CLONE_P_SIZE = 5.2
 CLONE_NAME_GAP = 1.4
 CLONE_TASK_TOP = 0.4
 CLONE_TASK_CLEAR = 0.55
+CLONE_DOT_PITCH = 4.15
+CLONE_DOT = 0.36
 
 
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
@@ -373,7 +375,7 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
 def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """projects_clone_a — kanban information architecture in Nomad #207 craft.
 
-    Lined notes (daily-notes pitch), not graph: graph fights e-ink at this size.
+    Dot-grid notes (daily-notes pitch), not graph: light hairline dots.
     Status nodes are open squares — ``Plotter`` has no circle primitive.
     Spine is a narrow ink bar; rotated PROJECT / chevrons stay off.
     """
@@ -385,10 +387,31 @@ def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBo
         _paint_clone_priority(plotter, name_h)
         plotter.rect(name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
         _paint_clone_tasks(plotter, tasks)
-        _paint_note_box(plotter, notes)
+        _paint_clone_dot_grid(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
         _paint_clone_status_track(plotter, rail)
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    nx = max(2, int(inset.w / CLONE_DOT_PITCH))
+    ny = max(2, int(inset.h / CLONE_DOT_PITCH))
+    for band in rows(inset, ny):
+        for cell in columns(band, nx):
+            plotter.rect(
+                Rect(
+                    cell.x + (cell.w - CLONE_DOT) / 2,
+                    cell.y + (cell.h - CLONE_DOT) / 2,
+                    CLONE_DOT,
+                    CLONE_DOT,
+                ),
+                stroke=False,
+                fill=True,
+                fill_gray=RULE_C,
+            )
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:

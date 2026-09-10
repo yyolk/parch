@@ -7,6 +7,7 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    CLONE_DOT,
     CLONE_ICONS,
     CLONE_P_PAD,
     CLONE_P_SIZE,
@@ -267,6 +268,16 @@ def test_projects_clone_faithful_paint():
 
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3] and not op[2]]
     assert len(fills) > 4  # rail + spines + filled icon scanlines
+    dots = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and not op[2]
+        and op[1].w == pytest.approx(CLONE_DOT)
+        and op[1].h == pytest.approx(CLONE_DOT)
+    ]
+    assert len(dots) > 30
     assert CLONE_STATUS_LABELS == ("Todo", "In Progress", "Done")
 
 
