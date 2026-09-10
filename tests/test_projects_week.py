@@ -94,7 +94,7 @@ def test_projects_week_seats_side_by_side():
 
     tag, write, cluster = projects_week_head_seats(head)
     assert tag.x == pytest.approx(head.x)
-    assert write.x > tag.right
+    assert write.x == pytest.approx(tag.right)
     assert cluster.right == pytest.approx(head.right)
     assert cluster.w == pytest.approx(WEEK_TOUCH_W)
     assert write.right < cluster.x
