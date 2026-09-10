@@ -65,8 +65,8 @@ _TASK_STRIP = (
 def test_tasks_not_in_year_planner():
     spec = Spec(notes_pages=1)
     dests = [page.dest for page in YearPlanner().pages(spec)]
-    assert dests[12] == "meetings-index-2026"
-    assert dests[29] == "quarter-2026-Q1"
+    assert dests[11] == "meetings-index-2026"
+    assert dests[28] == "quarter-2026-Q1"
     assert not any(dest.startswith("tasks-") for dest in dests)
     year = next(page for page in YearPlanner().pages(spec) if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]

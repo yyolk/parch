@@ -27,14 +27,13 @@ from parch.tracks import rows
 def test_quarter_page_and_provisional_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:4]] == [
+    assert [page.dest for page in pages[:3]] == [
         "cover",
         "year-2026",
-        "projects-2026",
         "projects-index-2026-01",
     ]
-    assert [page.dest for page in pages[12:13]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[29:34]] == [
+    assert [page.dest for page in pages[11:12]] == ["meetings-index-2026"]
+    assert [page.dest for page in pages[28:33]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",

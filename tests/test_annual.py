@@ -8,17 +8,16 @@ from parch.spec import Spec
 def test_annual_page_and_year_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:4]] == [
+    assert [page.dest for page in pages[:3]] == [
         "cover",
         "year-2026",
-        "projects-2026",
         "projects-index-2026-01",
     ]
-    assert [page.dest for page in pages[4:12]] == [
+    assert [page.dest for page in pages[3:11]] == [
         f"projects-2026-{slot:02d}" for slot in range(1, 9)
     ]
-    assert [page.dest for page in pages[12:13]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[29:34]] == [
+    assert [page.dest for page in pages[11:12]] == ["meetings-index-2026"]
+    assert [page.dest for page in pages[28:33]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
@@ -66,11 +65,10 @@ def test_annual_paint_links_all_months():
     dests = plotter.dests()
     links = plotter.links()
     assert dests[1] == "year-2026"
-    assert dests[2] == "projects-2026"
-    assert dests[3] == "projects-index-2026-01"
-    assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
-    assert dests[12] == "meetings-index-2026"
-    assert dests[29:33] == [
+    assert dests[2] == "projects-index-2026-01"
+    assert dests[3:11] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
+    assert dests[11] == "meetings-index-2026"
+    assert dests[28:32] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",

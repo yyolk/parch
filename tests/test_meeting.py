@@ -58,11 +58,10 @@ def test_meeting_after_projects_in_year_book():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2] == "projects-2026"
-    assert dests[3] == "projects-index-2026-01"
-    assert dests[12] == "meetings-index-2026"
-    assert dests[13:29] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
-    assert dests[29] == "quarter-2026-Q1"
+    assert dests[2] == "projects-index-2026-01"
+    assert dests[11] == "meetings-index-2026"
+    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
+    assert dests[28] == "quarter-2026-Q1"
     assert [page.kind for page in pages].count("meetings_index") == 1
     assert [page.kind for page in pages].count("meeting") == 16
 

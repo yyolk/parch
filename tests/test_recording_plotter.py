@@ -33,7 +33,7 @@ from parch.spec import Spec
 
 def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
-    dests = ["cover", spec.year_dest, spec.projects_dest]
+    dests = ["cover", spec.year_dest]
     dests.extend(
         spec.dest_for_projects_index(page)
         for page in range(1, spec.project_index_pages + 1)

@@ -78,19 +78,21 @@ def test_projects_page_after_annual():
     pages = YearPlanner().pages(spec)
     assert pages[1].dest == "year-2026"
     page = pages[2]
-    assert page.dest == "projects-2026"
-    assert page.kind == "projects"
+    assert page.dest == spec.projects_index_dest
+    assert page.kind == "projects_index"
     assert page.title == "Projects"
-    assert pages[3].dest == "projects-index-2026-01"
-    assert pages[12].dest == "meetings-index-2026"
-    assert pages[29].dest == "quarter-2026-Q1"
+    assert spec.projects_index_dest == "projects-index-2026-01"
+    assert pages[11].dest == "meetings-index-2026"
+    assert pages[28].dest == "quarter-2026-Q1"
+    assert not any(item.kind == "projects" for item in pages)
+    assert spec.projects_dest not in [item.dest for item in pages]
 
-    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
-    assert board.year == 2026
-    assert board.cards == 3
-    assert board.tasks == 4
+    roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
+    assert roster.year == 2026
+    assert roster.dest == spec.projects_index_dest
+    assert len(roster.tickets) == 8
 
-    assert strip_active(page.kind) == ""
+    assert strip_active(page.kind) == "Proj"
     assert strip_items(page) == _PROJ_STRIP
 
 
@@ -124,8 +126,7 @@ def test_project_card_tracks():
 
 def test_projects_paint_cards_ticks_and_status():
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
-    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    board = ProjectsBoard(year=spec.year, cards=spec.project_cards, tasks=spec.project_tasks)
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
     paint_projects(plotter, well, board)
@@ -170,8 +171,7 @@ def test_projects_paint_cards_ticks_and_status():
 
 def test_projects_knobs_from_spec():
     spec = Spec(notes_pages=1, project_cards=2, project_tasks=5)
-    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
-    board = next(item for item in page.components if isinstance(item, ProjectsBoard))
+    board = ProjectsBoard(year=spec.year, cards=spec.project_cards, tasks=spec.project_tasks)
     assert board.cards == 2
     assert board.tasks == 5
     plotter = RecordingPlotter()
@@ -187,13 +187,14 @@ def test_projects_knobs_from_spec():
 
 def test_projects_header_year_and_eight_tabs():
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects")
+    page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
     plotter = RecordingPlotter()
     plotter.begin_page()
     PlannerLayout().paint(page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Projects" in texts
     assert "2026" in texts
+    assert strip_active(page.kind) == "Proj"
     for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Week", "Day", "Notes"):
         assert label in texts
 
@@ -202,14 +203,13 @@ def test_projects_index_tickets_and_proj_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2] == "projects-2026"
-    assert dests[3] == "projects-index-2026-01"
-    assert dests[4:12] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
-    assert dests[12] == "meetings-index-2026"
-    assert dests[13:29] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
-    assert dests[29] == "quarter-2026-Q1"
+    assert dests[2] == "projects-index-2026-01"
+    assert dests[3:11] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
+    assert dests[11] == "meetings-index-2026"
+    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
+    assert dests[28] == "quarter-2026-Q1"
 
-    index = pages[3]
+    index = pages[2]
     assert index.kind == "projects_index"
     assert index.title == "Projects"
     assert strip_active(index.kind) == "Proj"
@@ -565,14 +565,14 @@ def test_projects_index_pages_knob():
     assert spec.project_count == 24
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[3:6] == [
+    assert dests[2:5] == [
         "projects-index-2026-01",
         "projects-index-2026-02",
         "projects-index-2026-03",
     ]
-    assert dests[6:30] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
-    assert dests[30] == "meetings-index-2026"
-    assert dests[47] == "quarter-2026-Q1"
+    assert dests[5:29] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
+    assert dests[29] == "meetings-index-2026"
+    assert dests[46] == "quarter-2026-Q1"
 
     indexes = [page for page in pages if page.kind == "projects_index"]
     assert len(indexes) == 3
