@@ -979,6 +979,7 @@ TASK_INDEX_INSET_Y = 1.4
 TASK_INDEX_HEAD_H = 4.2
 TASK_INDEX_HEAD_GAP = 0.8
 TASK_INDEX_ROW_GAP = 1.0
+TASK_INDEX_LINE_H = 5.4
 TASK_INDEX_WEEK_W = 12.0
 TASK_INDEX_RANGE_W = 26.0
 TASK_INDEX_WRITE_GAP = 2.8
@@ -999,9 +1000,21 @@ def tasks_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
     return head, rows(body, n, gap=TASK_INDEX_ROW_GAP)
 
 
+def tasks_index_week_strip(row: Rect) -> Rect:
+    """Content-height text+rule strip, vertically centered in the stretched week row."""
+    h = min(TASK_INDEX_LINE_H, row.h)
+    return Rect(row.x, row.y + (row.h - h) / 2, row.w, h)
+
+
+def tasks_index_rule_y(row: Rect) -> float:
+    """Write-in baseline — strip bottom, not the stretched row floor."""
+    return tasks_index_week_strip(row).bottom
+
+
 def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
-    """Wnn stub | printed range | write-in leftover. Gap before the hline."""
-    stub, rest = row.split_left(TASK_INDEX_WEEK_W)
+    """Wnn stub | printed range | write-in leftover on the centered content strip."""
+    strip = tasks_index_week_strip(row)
+    stub, rest = strip.split_left(TASK_INDEX_WEEK_W)
     dated, after = rest.split_left(TASK_INDEX_RANGE_W)
     write = Rect(
         after.x + TASK_INDEX_WRITE_GAP,
@@ -1061,11 +1074,12 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
         small_caps=True,
         align="left",
     )
+    rule_y = tasks_index_rule_y(row)
     plotter.line(
         write.x,
-        write.bottom,
+        rule_y,
         write.right,
-        write.bottom,
+        rule_y,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )

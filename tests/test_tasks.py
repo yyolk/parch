@@ -15,6 +15,7 @@ from parch.layouts.planner.painters import (
     TASK_GAP,
     TASK_INDEX_BAND_GAP,
     TASK_INDEX_HEAD_H,
+    TASK_INDEX_LINE_H,
     TASK_INDEX_RANGE_W,
     TASK_INDEX_WEEK_W,
     TASK_INDEX_WRITE_GAP,
@@ -28,7 +29,9 @@ from parch.layouts.planner.painters import (
     tasks_index_band_seats,
     tasks_index_bands,
     tasks_index_link_hits,
+    tasks_index_rule_y,
     tasks_index_week_parts,
+    tasks_index_week_strip,
 )
 from parch.plotter import RecordingPlotter
 from parch.sections.tasks import TasksSection
@@ -139,21 +142,31 @@ def test_tasks_index_seats_weighted_by_weeks():
     assert bands[2].h == pytest.approx(leftover * 5 / 14)
     assert bands[1].y == pytest.approx(bands[0].bottom + TASK_INDEX_BAND_GAP)
 
-    head, rows = tasks_index_band_seats(bands[0], 5)
+    head, week_rows = tasks_index_band_seats(bands[0], 5)
     assert head.h == pytest.approx(TASK_INDEX_HEAD_H)
     assert head.x > bands[0].x
-    assert len(rows) == 5
-    assert rows[0].y > head.bottom
-    assert rows[-1].bottom < bands[0].bottom
-    stub, dated, write = tasks_index_week_parts(rows[0])
+    assert len(week_rows) == 5
+    assert week_rows[0].y > head.bottom
+    assert week_rows[-1].bottom < bands[0].bottom
+    assert week_rows[0].h > TASK_INDEX_LINE_H
+    assert week_rows[1].y > week_rows[0].bottom
+    stub, dated, write = tasks_index_week_parts(week_rows[0])
+    strip = tasks_index_week_strip(week_rows[0])
+    assert strip.h == pytest.approx(TASK_INDEX_LINE_H)
+    assert strip.y == pytest.approx(week_rows[0].y + (week_rows[0].h - TASK_INDEX_LINE_H) / 2)
     assert stub.w == pytest.approx(TASK_INDEX_WEEK_W)
     assert dated.x == pytest.approx(stub.right)
     assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
     assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
-    assert write.right == pytest.approx(rows[0].right)
+    assert write.right == pytest.approx(week_rows[0].right)
+    assert write.h == pytest.approx(TASK_INDEX_LINE_H)
+    assert write.bottom < week_rows[0].bottom
+    assert write.y > week_rows[0].y
     assert write.w > dated.w
-    assert tasks_index_link_hits(rows[0]) == (stub, dated)
-    assert not any(_rects_overlap(hit, write) for hit in tasks_index_link_hits(rows[0]))
+    assert tasks_index_link_hits(week_rows[0]) == (stub, dated)
+    assert not any(_rects_overlap(hit, write) for hit in tasks_index_link_hits(week_rows[0]))
+    assert tasks_index_rule_y(week_rows[0]) == pytest.approx(strip.bottom)
+    assert tasks_index_rule_y(week_rows[0]) == pytest.approx(write.bottom)
 
 
 def test_task_dest_seats():
@@ -237,8 +250,12 @@ def test_tasks_index_paint_month_headers_and_week_links():
         _stub, _dated, write = tasks_index_week_parts(seat)
         assert line[1] == pytest.approx(write.x)
         assert line[3] == pytest.approx(write.right)
-        assert line[2] == pytest.approx(write.bottom)
-        assert line[4] == pytest.approx(write.bottom)
+        rule_y = tasks_index_rule_y(seat)
+        assert line[2] == pytest.approx(rule_y)
+        assert line[4] == pytest.approx(rule_y)
+        assert rule_y == pytest.approx(write.bottom)
+        assert rule_y < seat.bottom
+        assert rule_y == pytest.approx(tasks_index_week_strip(seat).bottom)
 
 
 def test_task_paint_checklist_and_notes():
