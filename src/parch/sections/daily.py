@@ -1,7 +1,7 @@
 from datetime import date
 
 from parch.calendar import WEEKDAY_FULL
-from parch.components import Notes, Schedule
+from parch.components import Notes, Priorities, Schedule
 from parch.sections.annual import build_month_mini
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
@@ -27,6 +27,7 @@ class DailySection:
                 components=(
                     Schedule(label="Schedule", hours=hours),
                     Notes(label="Notes"),
+                    Priorities(label="Priorities", rows=spec.priority_rows),
                     build_month_mini(spec, day),
                 ),
             )

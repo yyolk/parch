@@ -45,6 +45,7 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         "schedule_to": spec.schedule_to,
         "notes_pages": spec.notes_pages,
         "habit_columns": spec.habit_columns,
+        "priority_rows": spec.priority_rows,
     }
     if year is not None:
         data["year"] = year

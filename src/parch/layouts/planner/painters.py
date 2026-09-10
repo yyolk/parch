@@ -10,6 +10,7 @@ from parch.components import (
     HabitGrid,
     MonthGrid,
     Notes,
+    Priorities,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -304,18 +305,30 @@ FOCUS_PAD_MID = 1.2
 FOCUS_PAD_BOT = 1.4
 
 
-def focus_content_height() -> float:
+def checklist_content_height(rows: int) -> float:
     """Label + tight checklist rows + pad — not a fraction of the parent."""
-    rows_h = TICK + (FOCUS_ROWS - 1) * FOCUS_PITCH
+    rows_h = TICK + (max(1, rows) - 1) * FOCUS_PITCH
     return FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID + rows_h + FOCUS_PAD_BOT
+
+
+def focus_content_height() -> float:
+    return checklist_content_height(FOCUS_ROWS)
 
 
 def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
     """Outlined FOCUS checklist — empty ticks + underline. Not a section."""
+    _paint_checklist_box(plotter, box, label="Focus", rows=FOCUS_ROWS)
+
+
+def paint_priorities(plotter: Plotter, box: Rect, priorities: Priorities) -> None:
+    _paint_checklist_box(plotter, box, label=priorities.label, rows=priorities.rows)
+
+
+def _paint_checklist_box(plotter: Plotter, box: Rect, *, label: str, rows: int) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     plotter.text(
         Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
-        "Focus",
+        label,
         size=6.4,
         face="sans",
         gray=MUTED,
@@ -325,7 +338,7 @@ def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
     x = box.x + 1.6
     right = box.right - 1.6
     y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
-    for _ in range(FOCUS_ROWS):
+    for _ in range(max(1, rows)):
         _paint_focus_row(plotter, x, y, right)
         y += FOCUS_PITCH
 

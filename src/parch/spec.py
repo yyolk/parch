@@ -64,6 +64,7 @@ class Spec:
     schedule_to: int = 16
     notes_pages: int = 2
     habit_columns: int = 10
+    priority_rows: int = 6
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -86,6 +87,8 @@ class Spec:
             raise ConfigError("notes_pages must be >= 0")
         if not 4 <= self.habit_columns <= 16:
             raise ConfigError("habit_columns must be 4–16")
+        if not 4 <= self.priority_rows <= 8:
+            raise ConfigError("priority_rows must be 4–8")
 
     @property
     def weekday_start(self) -> int:
@@ -189,6 +192,7 @@ class Spec:
             schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
+            priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
         )
 
     @classmethod

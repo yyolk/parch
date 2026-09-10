@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 
 from parch.books import YearPlanner
-from parch.components import AnnualMonth, Notes, Schedule
+from parch.components import AnnualMonth, Notes, Priorities, Schedule
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner.layout import (
@@ -11,10 +11,17 @@ from parch.layouts.planner.layout import (
     DAILY_COL_WEIGHTS,
     DAILY_MINI_GAP,
     DAILY_MINI_H,
+    DAILY_PRIO_GAP,
     daily_left_seats,
+    daily_right_seats,
     well_rect,
 )
-from parch.layouts.planner.painters import _paint_mini_month
+from parch.layouts.planner.painters import (
+    TICK,
+    _paint_mini_month,
+    checklist_content_height,
+    paint_priorities,
+)
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 from parch.tracks import columns
@@ -27,6 +34,9 @@ def test_daily_has_mini_month_daily_notes_does_not():
     notes = next(page for page in pages if page.dest == "2026-07-15-notes-1")
     assert any(isinstance(item, Schedule) for item in daily.components)
     assert any(isinstance(item, Notes) for item in daily.components)
+    prio = next(item for item in daily.components if isinstance(item, Priorities))
+    assert prio.label == "Priorities"
+    assert prio.rows == 6
     mini = next(item for item in daily.components if isinstance(item, AnnualMonth))
     assert mini.month == 7
     assert mini.highlight_day == 15
@@ -34,6 +44,7 @@ def test_daily_has_mini_month_daily_notes_does_not():
     assert mini.weekday_labels[0] == "Mon"
     assert not any(isinstance(item, AnnualMonth) for item in notes.components)
     assert not any(isinstance(item, Schedule) for item in notes.components)
+    assert not any(isinstance(item, Priorities) for item in notes.components)
 
 
 def test_daily_mini_links_and_highlight():
@@ -81,3 +92,21 @@ def test_daily_left_column_split():
     assert sched.bottom + DAILY_MINI_GAP == pytest.approx(mini.y)
     assert mini.bottom == pytest.approx(left.bottom)
     assert right.h == pytest.approx(well.h)
+
+
+def test_daily_right_column_priorities_over_notes():
+    well = well_rect(NOMAD)
+    _left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
+    prio, notes = daily_right_seats(right, 6)
+    assert prio.h == pytest.approx(checklist_content_height(6))
+    assert prio.y == pytest.approx(right.y)
+    assert notes.y == pytest.approx(prio.bottom + DAILY_PRIO_GAP)
+    assert notes.bottom == pytest.approx(right.bottom)
+    ink = RecordingPlotter()
+    paint_priorities(ink, prio, Priorities(label="Priorities", rows=6))
+    ticks = [op for op in ink.ops if op[0] == "rect" and op[2] and op[1].w == TICK]
+    assert len(ticks) == 6
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "Priorities" in labels
+    assert Spec().priority_rows == 6
+    assert Spec.from_mapping({"daily": {"priority_rows": 5}}).priority_rows == 5

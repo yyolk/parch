@@ -23,6 +23,7 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_month(1) == "month-2026-01"
     assert spec.dest_for_habits(7) == "month-2026-07-habits"
     assert spec.habit_columns == 10
+    assert spec.priority_rows == 6
     assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"

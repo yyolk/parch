@@ -8,6 +8,7 @@ from parch.components import (
     HabitGrid,
     MonthGrid,
     Notes,
+    Priorities,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -16,6 +17,7 @@ from parch.devices.nomad import Device
 from parch.geom import Rect
 from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
+    checklist_content_height,
     _paint_mini_month,
     paint_annual,
     paint_cover,
@@ -24,6 +26,7 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_nav,
     paint_notes,
+    paint_priorities,
     paint_quarter,
     paint_schedule,
     paint_week,
@@ -39,6 +42,7 @@ COL_GAP = 3.0
 DAILY_MINI_H = 34.0
 DAILY_MINI_GAP = 2.2
 DAILY_COL_WEIGHTS = (0.34, 0.66)
+DAILY_PRIO_GAP = 2.2
 
 
 class PlannerLayout:
@@ -79,11 +83,14 @@ class PlannerLayout:
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
                 mini = _one(page, AnnualMonth)
+                priorities = _one(page, Priorities)
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
+                prio_box, notes_box = daily_right_seats(right, priorities.rows)
                 paint_schedule(plotter, sched_box, schedule)
                 _paint_mini_month(plotter, mini_box, mini)
-                paint_notes(plotter, right, notes)
+                paint_priorities(plotter, prio_box, priorities)
+                paint_notes(plotter, notes_box, notes)
             case "daily_notes":
                 paint_notes(plotter, well, _one(page, Notes))
             case _:
@@ -97,6 +104,17 @@ def daily_left_seats(left: Rect) -> tuple[Rect, Rect]:
         2,
         gap=DAILY_MINI_GAP,
         weights=(left.h - DAILY_MINI_H - DAILY_MINI_GAP, DAILY_MINI_H),
+    )
+
+
+def daily_right_seats(right: Rect, priority_rows: int) -> tuple[Rect, Rect]:
+    """Content-height Priorities over flex Notes. No dead band under the last tick."""
+    prio_h = checklist_content_height(priority_rows)
+    return rows(
+        right,
+        2,
+        gap=DAILY_PRIO_GAP,
+        weights=(prio_h, max(right.h - prio_h - DAILY_PRIO_GAP, 1)),
     )
 
 
