@@ -11,7 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
+    ProjectIndexItem,
     ProjectsBoard,
+    ProjectsIndexChecklist,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +277,70 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+INDEX_CHECKLIST_GAP = 1.8
+INDEX_CHECKLIST_PAGE_W = 9.0
+INDEX_CHECKLIST_NAME_W = 38.0
+INDEX_CHECKLIST_TICK_GAP = 1.6
+INDEX_CHECKLIST_NAME_SIZE = 9.0
+INDEX_CHECKLIST_PAGE_SIZE = 7.4
+
+
+def projects_index_checklist(well: Rect, n: int) -> tuple[Rect, ...]:
+    """Equal row tracks for the named checklist index."""
+    return rows(well, n, gap=INDEX_CHECKLIST_GAP)
+
+
+def projects_index_checklist_row(row: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """Tick column, printed name, leader, dest/page number."""
+    tick_col, rest = row.split_left(TICK + INDEX_CHECKLIST_TICK_GAP)
+    body, page = rest.split_left(rest.w - INDEX_CHECKLIST_PAGE_W)
+    name, leaders = body.split_left(INDEX_CHECKLIST_NAME_W)
+    return tick_col, name, leaders, page
+
+
+def paint_projects_index_checklist(
+    plotter: Plotter, box: Rect, board: ProjectsIndexChecklist
+) -> None:
+    """Thesis O — printed names + dest/page numbers. Names link to leaves."""
+    seats = projects_index_checklist(box, len(board.items))
+    for seat, item in zip(seats, board.items, strict=True):
+        _paint_index_checklist_row(plotter, seat, item)
+
+
+def _paint_index_checklist_row(plotter: Plotter, box: Rect, item: ProjectIndexItem) -> None:
+    tick_col, name, leaders, page = projects_index_checklist_row(box)
+    tick_y = box.y + (box.h - TICK) / 2
+    tick = Rect(tick_col.x, tick_y, TICK, TICK)
+    plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    plotter.text(
+        name,
+        item.name,
+        size=INDEX_CHECKLIST_NAME_SIZE,
+        face="serif",
+        gray=INK,
+        align="left",
+    )
+    rule_y = tick.bottom
+    plotter.line(
+        leaders.x + 0.6,
+        rule_y,
+        leaders.right - 0.6,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    plotter.text(
+        page,
+        item.page,
+        size=INDEX_CHECKLIST_PAGE_SIZE,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="right",
+    )
+    plotter.link(Rect(name.x, box.y, page.right - name.x, box.h), item.dest)
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -927,6 +993,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = item.dest
         elif item.dest.startswith("week-"):
             dests["Week"] = item.dest
+        elif item.dest.startswith("projects-"):
+            dests["Proj"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
@@ -942,6 +1010,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Habit"] = page.dest
         case "projects":
             pass
+        case "projects_index_checklist":
+            dests["Proj"] = page.dest
+        case "project":
+            pass
         case "weekly":
             dests["Week"] = page.dest
         case "daily":
@@ -949,7 +1021,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-    order = ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
+    order = ("Year", "Proj", "Quar", "Mon", "Habit", "Week", "Day", "Notes")
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
@@ -971,5 +1043,7 @@ def strip_active(kind: str) -> str:
             return "Habit"
         case "projects":
             return ""
+        case "projects_index_checklist" | "project":
+            return "Proj"
         case _:
             return "Year"

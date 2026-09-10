@@ -1,6 +1,9 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Day · Notes.
+"""Planner strip dests. Layout remaps these into Year · Proj · Quar · Mon · Habit · Week · Day · Notes.
 
 QUAR is provisional — may come out of the strip later.
+
+PROJ is exploratory — only emitted when ``proj_dest`` is set (Thesis O checklist).
+PROJ dest: index page → self; project leaf → the named checklist.
 
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
@@ -51,18 +54,25 @@ def planner_nav(
     week_dest: str,
     day: date | None = None,
     month: int | None = None,
+    proj_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
     habit_month = month if month is not None else landing.month
     items = [
         NavItem("Year", spec.year_dest),
-        NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
-        NavItem("Mon", mon),
-        NavItem("Habit", spec.dest_for_habits(habit_month)),
-        NavItem("Week", week_dest),
-        NavItem("Day", spec.dest_for_day(landing)),
     ]
+    if proj_dest:
+        items.append(NavItem("Proj", proj_dest))
+    items.extend(
+        [
+            NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
+            NavItem("Mon", mon),
+            NavItem("Habit", spec.dest_for_habits(habit_month)),
+            NavItem("Week", week_dest),
+            NavItem("Day", spec.dest_for_day(landing)),
+        ]
+    )
     if spec.notes_pages > 0:
         items.append(NavItem("Notes", spec.dest_for_notes(landing, 1)))
     return tuple(items)
