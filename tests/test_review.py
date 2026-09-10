@@ -24,7 +24,7 @@ from parch.layouts.planner.painters import (
     RULE_C,
     SOFT,
     paint_review,
-    paint_review_index_grid,
+    paint_review_index,
     review_day_cues,
     review_day_link_hits,
     review_day_parts,
@@ -219,7 +219,7 @@ def test_review_index_paint_month_headers_hairlines_and_week_links():
     index = next(item for item in page.components if isinstance(item, ReviewIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_review_index_grid(plotter, well, index)
+    paint_review_index(plotter, well, index)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     for name in (

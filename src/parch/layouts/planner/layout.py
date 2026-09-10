@@ -32,19 +32,19 @@ from parch.layouts.planner.painters import (
     paint_habit_grid,
     paint_header,
     paint_meeting,
-    paint_meetings_index_roster,
+    paint_meetings_index,
     paint_month_grid,
     paint_nav,
     paint_notes,
     paint_priorities,
-    paint_projects_clone_faithful,
-    paint_projects_index_tickets,
+    paint_project,
+    paint_projects_index,
     paint_quarter,
     paint_review,
-    paint_review_index_grid,
+    paint_review_index,
     paint_schedule,
     paint_task,
-    paint_tasks_index_months,
+    paint_tasks_index,
     paint_week,
     paint_toolbar,
     strip_active,
@@ -88,19 +88,19 @@ class PlannerLayout:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid))
             case "projects_index":
-                paint_projects_index_tickets(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
             case "project":
-                paint_projects_clone_faithful(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard))
             case "meetings_index":
-                paint_meetings_index_roster(plotter, well, _one(page, MeetingIndex))
+                paint_meetings_index(plotter, well, _one(page, MeetingIndex))
             case "meeting":
                 paint_meeting(plotter, well, _one(page, MeetingAgenda))
             case "tasks_index":
-                paint_tasks_index_months(plotter, well, _one(page, TasksIndex))
+                paint_tasks_index(plotter, well, _one(page, TasksIndex))
             case "task":
                 paint_task(plotter, well, _one(page, TasksWeekPage))
             case "review_index":
-                paint_review_index_grid(plotter, well, _one(page, ReviewIndex))
+                paint_review_index(plotter, well, _one(page, ReviewIndex))
             case "review":
                 paint_review(plotter, well, _one(page, ReviewWeekPage))
             case "quarter":

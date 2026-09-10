@@ -320,7 +320,7 @@ def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
     return (stub, *project_ticket_preview_cards(preview))
 
 
-def paint_projects_index_tickets(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+def paint_projects_index(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
     """Thesis L — stub, raised write-in, G symbol strip, 3-card preview; stub + preview links."""
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
         _paint_project_ticket(plotter, seat, ticket)
@@ -447,7 +447,7 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
     return spine, name_h, name_field, tasks, notes, strip
 
 
-def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+def paint_project(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
     """G #215 clone well — spine, soft P + name box, ticks, 2.8 mm dots, strip, status rail."""
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
@@ -855,7 +855,7 @@ def meeting_index_link_hits(row: Rect) -> tuple[Rect, ...]:
     return (stub,)
 
 
-def paint_meetings_index_roster(plotter: Plotter, box: Rect, index: MeetingIndex) -> None:
+def paint_meetings_index(plotter: Plotter, box: Rect, index: MeetingIndex) -> None:
     """Thesis A — dense dated roster. Stub is the dest hit; write-ins stay unlinkable."""
     for seat, slot in zip(meetings_index_roster(box, len(index.slots)), index.slots, strict=True):
         _paint_meeting_index_row(plotter, seat, slot.number)
@@ -967,7 +967,7 @@ def tasks_index_link_hits(row: Rect) -> tuple[Rect, ...]:
     return (stub, dated)
 
 
-def paint_tasks_index_months(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
+def paint_tasks_index(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
     """Thesis C — month-banded week rows. Not Active/Waiting/Done, not This week/Later."""
     counts = tuple(len(band.weeks) for band in index.bands)
     for band_box, band in zip(tasks_index_bands(box, counts), index.bands, strict=True):
@@ -1105,7 +1105,7 @@ def review_index_rule_y(row: Rect) -> float:
     return row.bottom
 
 
-def paint_review_index_grid(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
+def paint_review_index(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
     """Thesis B — dense week chips in several columns; month headers + hairlines."""
     counts = tuple(len(band.weeks) for band in index.bands)
     n_cols = review_index_cols(counts)
