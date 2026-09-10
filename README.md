@@ -61,4 +61,6 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Liberation Fonts](https://github.com/liberationfonts/liberation-fonts) (Sans + Serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Liberation Sans](https://github.com/liberationfonts/liberation-fonts) 2.1.5 and [Besley](https://indestructibletype.com/Besley.html) 4.0 (Indestructible Type, serif) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE` and `src/parch/fonts/LICENSE-Besley`.
+
+Besley SERIF exploration (draft, do not merge): [`artifacts/mvp/exp-font-besley.pdf`](artifacts/mvp/exp-font-besley.pdf) and `exp-font-besley-*.png` (cover, year, projects/meeting/tasks/review indexes, quarter, month, week, daily). **SANS = Liberation Sans. SERIF = Besley.**

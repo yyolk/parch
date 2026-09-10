@@ -1,4 +1,4 @@
-"""Vendored Liberation Sans/Serif (OFL-1.1)."""
+"""Vendored Liberation Sans + Besley (OFL-1.1)."""
 
 from pathlib import Path
 
