@@ -291,15 +291,16 @@ CLONE_STRIP_H = 2.8
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
+# Alternate linear/solid, keep like silhouettes apart (plus≠cross, circle≠hexagon).
 CLONE_ICONS = (
-    "star",
-    "triangle",
+    "plus",
     "circle",
     "diamond",
-    "plus",
     "square",
+    "star",
     "hexagon",
     "cross",
+    "triangle",
 )
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
