@@ -1059,7 +1059,9 @@ def _paint_tasks_index_focus_panel(
         gray=INK,
         align="right",
     )
-    _paint_checklist_box(plotter, ticks, label="Tasks", rows=preview)
+    preview_h = min(checklist_content_height(preview), ticks.h)
+    preview_box, _rest = ticks.split_top(preview_h)
+    _paint_checklist_box(plotter, preview_box, label="Tasks", rows=preview)
 
 
 def _paint_tasks_index_list_row(plotter: Plotter, row: Rect, slot: TaskWeek) -> None:
