@@ -11,23 +11,31 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     HAIR,
+    REVIEW_DAY_GAP,
+    REVIEW_GAP,
     REVIEW_INDEX_BAND_GAP,
     REVIEW_INDEX_CHIP_GAP,
     REVIEW_INDEX_CHIP_H,
     REVIEW_INDEX_CHIP_INSET_X,
     REVIEW_INDEX_LABEL_GAP,
     REVIEW_INDEX_MONTH_W,
+    REVIEW_STRIP_H,
     RULE,
     RULE_C,
     SOFT,
     paint_review,
     paint_review_index_grid,
+    review_day_cues,
+    review_day_link_hits,
+    review_day_parts,
+    review_day_rule_y,
     review_index_chip,
     review_index_cols,
     review_index_link_hits,
     review_index_month_rows,
     review_index_row_parts,
     review_index_rule_y,
+    review_seats,
     strip_active,
     strip_items,
 )
@@ -111,6 +119,19 @@ def test_review_dest_page():
     assert dest.monday == date(2025, 12, 29)
     assert dest.sunday == date(2026, 1, 4)
     assert dest.index_dest == "review-index-2026"
+    assert [day.weekday_label for day in dest.days] == [
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat",
+        "Sun",
+    ]
+    assert [day.day.day for day in dest.days] == [29, 30, 31, 1, 2, 3, 4]
+    assert dest.days[0].dest is None
+    assert dest.days[3].dest == "2026-01-01"
+    assert dest.days[6].dest == "2026-01-04"
     assert strip_active(page.kind) == "Rev"
     assert strip_items(page) == _REV_STRIP
     assert ("Rev", "review-index-2026") in strip_items(page)
@@ -276,34 +297,100 @@ def test_review_index_paint_month_headers_hairlines_and_week_links():
         assert box == review_index_chip(seat)
 
 
-def test_review_dest_paint_unlabeled_notes():
-    dest = ReviewWeekPage(
-        year=2026,
-        iso_year=2026,
-        iso_week=1,
-        monday=date(2025, 12, 29),
-        sunday=date(2026, 1, 4),
-        index_dest="review-index-2026",
-    )
+def test_review_dest_seats_use_tracks():
+    well = well_rect(NOMAD)
+    strip, notes = review_seats(well)
+    assert strip.y == pytest.approx(well.y)
+    assert strip.h == pytest.approx(REVIEW_STRIP_H)
+    assert strip.w == pytest.approx(well.w)
+    assert notes.y == pytest.approx(strip.bottom + REVIEW_GAP)
+    assert notes.bottom == pytest.approx(well.bottom)
+    assert notes.h > strip.h
+    assert notes.h > well.h * 0.7
+
+    cues = review_day_cues(strip)
+    assert len(cues) == 7
+    assert cues[0].x == pytest.approx(strip.x)
+    assert cues[-1].right == pytest.approx(strip.right)
+    via = columns(strip, 7, gap=REVIEW_DAY_GAP)
+    assert cues == via
+    leftover = strip.w - REVIEW_DAY_GAP * 6
+    assert cues[0].w == pytest.approx(leftover / 7)
+    assert cues[1].x == pytest.approx(cues[0].right + REVIEW_DAY_GAP)
+
+    label, write = review_day_parts(cues[0])
+    assert label.y > cues[0].y
+    assert write.bottom < cues[0].bottom
+    assert write.y == pytest.approx(label.bottom)
+    hits = review_day_link_hits(cues[0])
+    assert hits == (label,)
+    assert not any(_rects_overlap(hit, write) for hit in hits)
+    rule_y = review_day_rule_y(cues[0])
+    assert rule_y > write.y
+    assert rule_y < write.bottom
+    assert rule_y < cues[0].bottom
+
+
+def test_review_paint_day_cues_and_unlabeled_narrative():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in ReviewSection(spec).pages() if p.dest == "review-2026-W01")
+    dest = next(item for item in page.components if isinstance(item, ReviewWeekPage))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
     paint_review(plotter, well, dest)
+
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert texts == []
-    assert "Notes" not in texts
-    assert "Agenda" not in texts
-    outlines = [
-        op
+    assert texts.count("Review") == 0
+    assert texts.count("Notes") == 0
+    assert texts.count("Week") == 0
+    for label in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"):
+        assert label in texts
+    assert "29" in texts
+    assert "1" in texts
+    assert "4" in texts
+
+    strip, notes = review_seats(well)
+    cues = review_day_cues(strip)
+    boxes = [
+        op[1]
         for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1] == well
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(cues[0].w)
     ]
-    assert len(outlines) == 1
-    hlines = [
+    assert len(boxes) == 7
+    note_box = next(
+        op[1] for op in plotter.ops if op[0] == "rect" and op[2] and not op[3] and op[1] == notes
+    )
+    assert note_box == notes
+
+    links = [(op[1], op[2]) for op in plotter.ops if op[0] == "link"]
+    assert [dest_name for _hit, dest_name in links] == [
+        "2026-01-01",
+        "2026-01-02",
+        "2026-01-03",
+        "2026-01-04",
+    ]
+    for cue, day in zip(cues, dest.days, strict=True):
+        label, write = review_day_parts(cue)
+        if day.dest:
+            assert (label, day.dest) in links
+            assert not any(_rects_overlap(hit, write) for hit, _dest in links)
+        else:
+            assert all(op[2] != day.day.isoformat() for op in plotter.ops if op[0] == "link")
+
+    rules = [
         op
         for op in plotter.ops
         if op[0] == "line" and op[5] == pytest.approx(RULE) and op[6] == pytest.approx(RULE_C)
     ]
-    assert len(hlines) > 8
+    for cue in cues:
+        _label, write = review_day_parts(cue)
+        rule_y = review_day_rule_y(cue)
+        assert any(
+            op[1] == pytest.approx(write.x)
+            and op[3] == pytest.approx(write.right)
+            and op[2] == pytest.approx(rule_y)
+            for op in rules
+        )
 
 
 def test_review_header_week_chip_and_rev_tab():
@@ -314,6 +401,7 @@ def test_review_header_week_chip_and_rev_tab():
     PlannerLayout().paint(page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Review" in texts
+    assert texts.count("Review") == 1
     assert "W01" in texts
     assert "2026" in texts
     for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Rev", "Week", "Day", "Notes"):

@@ -7,7 +7,13 @@ from parch.components.notes import Notes
 from parch.components.priorities import Priorities
 from parch.components.projects import ProjectTicket, ProjectsBoard, ProjectsIndex
 from parch.components.quarter import QuarterGrid
-from parch.components.review import ReviewIndex, ReviewMonthBand, ReviewWeek, ReviewWeekPage
+from parch.components.review import (
+    ReviewDay,
+    ReviewIndex,
+    ReviewMonthBand,
+    ReviewWeek,
+    ReviewWeekPage,
+)
 from parch.components.schedule import Schedule
 from parch.components.tasks import TaskWeek, TasksIndex, TasksMonthBand, TasksWeekPage
 from parch.components.week import WeekDay, WeekStrip
@@ -27,6 +33,7 @@ type Component = (
     | ProjectsBoard
     | ProjectsIndex
     | QuarterGrid
+    | ReviewDay
     | ReviewIndex
     | ReviewMonthBand
     | ReviewWeek
@@ -57,6 +64,7 @@ __all__ = [
     "ProjectsBoard",
     "ProjectsIndex",
     "QuarterGrid",
+    "ReviewDay",
     "ReviewIndex",
     "ReviewMonthBand",
     "ReviewWeek",

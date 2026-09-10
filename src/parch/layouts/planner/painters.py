@@ -18,6 +18,7 @@ from parch.components import (
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    ReviewDay,
     ReviewIndex,
     ReviewWeek,
     ReviewWeekPage,
@@ -1121,6 +1122,13 @@ REVIEW_INDEX_LABEL_GAP = 1.6
 REVIEW_INDEX_CHIP_GAP = 1.2
 REVIEW_INDEX_CHIP_INSET_X = 0.35
 REVIEW_INDEX_CHIP_H = 6.8
+REVIEW_GAP = 2.6
+REVIEW_DAY_GAP = 1.0
+REVIEW_STRIP_H = 18.0
+REVIEW_DAY_INSET_X = 0.7
+REVIEW_DAY_INSET_Y = 0.55
+REVIEW_DOW_H = 3.6
+REVIEW_NUM_H = 5.4
 
 
 def review_index_cols(week_counts: tuple[int, ...]) -> int:
@@ -1212,10 +1220,82 @@ def _paint_review_index_chip(plotter: Plotter, cell: Rect, week: ReviewWeek) -> 
     )
 
 
+def review_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Mon–Sun cue strip over leftover week narrative. Strip is content-height; notes flex."""
+    strip, rest = well.split_top(REVIEW_STRIP_H)
+    notes = Rect(rest.x, rest.y + REVIEW_GAP, rest.w, rest.h - REVIEW_GAP)
+    return strip, notes
+
+
+def review_day_cues(strip: Rect) -> tuple[Rect, ...]:
+    """Seven equal day columns — ``tracks.columns``. Horizon scan, not status slices."""
+    return columns(strip, 7, gap=REVIEW_DAY_GAP)
+
+
+def review_day_parts(cue: Rect) -> tuple[Rect, Rect]:
+    """Dow+date label | one-line write-in. ``tracks`` after a quiet inset."""
+    inner = cue.inset(REVIEW_DAY_INSET_X, REVIEW_DAY_INSET_Y)
+    label_h = REVIEW_DOW_H + REVIEW_NUM_H
+    return inner.split_top(label_h)
+
+
+def review_day_link_hits(cue: Rect) -> tuple[Rect, ...]:
+    """Label only. Write-in stays unlinkable (Meeting A / Tasks C)."""
+    label, _write = review_day_parts(cue)
+    return (label,)
+
+
+def review_day_rule_y(cue: Rect) -> float:
+    """One-line prompt baseline — mid write pocket, not the hairline box floor."""
+    _label, write = review_day_parts(cue)
+    return write.y + min(4.15, write.h * 0.55)
+
+
 def paint_review(plotter: Plotter, box: Rect, page: ReviewWeekPage) -> None:
-    """Thin weekly Review dest — unlabeled lined well. Chip is the week."""
-    _ = page
-    _paint_note_box(plotter, box)
+    """Thesis E — seven day cues, then unlabeled week narrative. Chrome names the page."""
+    strip, notes = review_seats(box)
+    for cue, day in zip(review_day_cues(strip), page.days, strict=True):
+        _paint_review_day_cue(plotter, cue, day)
+        if day.dest:
+            for hit in review_day_link_hits(cue):
+                plotter.link(hit, day.dest)
+    _paint_note_box(plotter, notes)
+
+
+def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
+    """Mini write: weekday + date over a one-line prompt. Hairline pocket."""
+    plotter.rect(cue, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    label, write = review_day_parts(cue)
+    ink = INK if day.dest else MUTED
+    dow = Rect(label.x, label.y, label.w, REVIEW_DOW_H)
+    num = Rect(label.x, dow.bottom, label.w, REVIEW_NUM_H)
+    plotter.text(
+        dow,
+        day.weekday_label,
+        size=5.6,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="center",
+    )
+    plotter.text(
+        num,
+        str(day.day.day),
+        size=9.2,
+        bold=True,
+        face="sans",
+        gray=ink,
+        align="center",
+    )
+    rule_y = review_day_rule_y(cue)
+    plotter.line(
+        write.x,
+        rule_y,
+        write.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:

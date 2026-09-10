@@ -1,14 +1,14 @@
 from datetime import date, timedelta
 
-from parch.calendar import MONTH_NAMES, iso_monday, month_week_bands
-from parch.components import ReviewIndex, ReviewMonthBand, ReviewWeek, ReviewWeekPage
+from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, iso_monday, month_week_bands
+from parch.components import ReviewDay, ReviewIndex, ReviewMonthBand, ReviewWeek, ReviewWeekPage
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
 
 
 class ReviewSection:
-    """Exploratory Review index B + weekly dest stubs. Week grid; not in YearPlanner."""
+    """Review index B + weekly dest E. Week-chip grid; not in YearPlanner."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -68,6 +68,14 @@ class ReviewSection:
     def _dest_page(self, week: ReviewWeek, index_dest: str) -> Page:
         spec = self.spec
         landing = self._landing(week.monday)
+        days = tuple(
+            ReviewDay(
+                day=day,
+                weekday_label=WEEKDAY_LABELS[day.weekday()],
+                dest=spec.dest_for_day(day) if spec.presses_day(day) else None,
+            )
+            for day in (week.monday + timedelta(days=offset) for offset in range(7))
+        )
         return Page(
             dest=week.dest,
             kind="review",
@@ -86,6 +94,7 @@ class ReviewSection:
                     iso_week=week.iso_week,
                     monday=week.monday,
                     sunday=week.sunday,
+                    days=days,
                     index_dest=index_dest,
                 ),
             ),

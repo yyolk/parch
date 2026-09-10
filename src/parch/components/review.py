@@ -5,6 +5,15 @@ from datetime import date
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewDay:
+    """One Mon–Sun cue on the dest strip — label may link; write-in stays unlinkable."""
+
+    day: date
+    weekday_label: str
+    dest: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewWeek:
     """One linked week chip on the year grid — printed horizon, not a status mark."""
 
@@ -35,11 +44,12 @@ class ReviewIndex:
 
 @dataclass(frozen=True, slots=True)
 class ReviewWeekPage:
-    """Thin weekly Review dest stub. Chip is Wnn → index."""
+    """Thesis E — seven day cues over a week narrative well. Chip is Wnn → index."""
 
     year: int
     iso_year: int
     iso_week: int
     monday: date
     sunday: date
+    days: tuple[ReviewDay, ...]
     index_dest: str
