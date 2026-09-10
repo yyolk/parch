@@ -986,6 +986,7 @@ TASK_INDEX_RANGE_W = 20.4
 # Midpoint of original WRITE_GAP (2.8) and 4pt (1.41).
 TASK_INDEX_WRITE_GAP = 2.105
 TASK_GAP = 2.6
+TASK_CHECKLIST_FRAC = 2 / 3
 
 
 def tasks_index_bands(well: Rect, week_counts: tuple[int, ...]) -> tuple[Rect, ...]:
@@ -1084,17 +1085,30 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
     )
 
 
-def task_seats(well: Rect, rows_n: int) -> tuple[Rect, Rect]:
-    """Content-height Tasks checklist over flex Notes."""
-    check, rest = well.split_top(checklist_content_height(rows_n))
+def task_row_count(well: Rect, floor: int = 1) -> int:
+    """Tick rows that fill ≈⅔ of the well (minus ``TASK_GAP``), unlabeled."""
+    target = (well.h - TASK_GAP) * TASK_CHECKLIST_FRAC
+    usable = target - FOCUS_PAD_TOP - FOCUS_PAD_BOT
+    if usable < TICK:
+        fitted = 1
+    else:
+        fitted = max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+    return max(floor, fitted)
+
+
+def task_seats(well: Rect, rows_n: int | None = None) -> tuple[Rect, Rect]:
+    """Unlabeled checklist ≈⅔ of well (minus ``TASK_GAP``); Notes take the leftover."""
+    n = task_row_count(well) if rows_n is None else rows_n
+    check, rest = well.split_top(checklist_content_height(n, labeled=False))
     notes = Rect(rest.x, rest.y + TASK_GAP, rest.w, rest.h - TASK_GAP)
     return check, notes
 
 
 def paint_task(plotter: Plotter, box: Rect, page: TasksWeekPage) -> None:
-    """Weekly Tasks dest — checklist + leftover notes. Week identity lives in the chip."""
-    checklist, notes = task_seats(box, page.rows)
-    _paint_checklist_box(plotter, checklist, label="Tasks", rows=page.rows)
+    """Weekly Tasks dest — unlabeled ⅔ checklist + leftover notes. Chip is the week."""
+    rows_n = task_row_count(box, floor=page.rows)
+    checklist, notes = task_seats(box, rows_n)
+    _paint_checklist_box(plotter, checklist, rows=rows_n)
     _paint_note_box(plotter, notes, label="Notes")
 
 
@@ -1236,10 +1250,13 @@ FOCUS_PAD_MID = 1.2
 FOCUS_PAD_BOT = 1.4
 
 
-def checklist_content_height(rows: int) -> float:
-    """Label + tight checklist rows + pad — not a fraction of the parent."""
+def checklist_content_height(rows: int, *, labeled: bool = True) -> float:
+    """Tight checklist rows + pad — label band optional. Not a fraction of the parent."""
     rows_h = TICK + (max(1, rows) - 1) * FOCUS_PITCH
-    return FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID + rows_h + FOCUS_PAD_BOT
+    pads = FOCUS_PAD_TOP + FOCUS_PAD_BOT
+    if labeled:
+        pads += FOCUS_LABEL_H + FOCUS_PAD_MID
+    return pads + rows_h
 
 
 def focus_content_height() -> float:
@@ -1255,20 +1272,24 @@ def paint_priorities(plotter: Plotter, box: Rect, priorities: Priorities) -> Non
     _paint_checklist_box(plotter, box, label=priorities.label, rows=priorities.rows)
 
 
-def _paint_checklist_box(plotter: Plotter, box: Rect, *, label: str, rows: int) -> None:
+def _paint_checklist_box(
+    plotter: Plotter, box: Rect, *, rows: int, label: str | None = None
+) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    plotter.text(
-        Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
-        label,
-        size=6.4,
-        face="sans",
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
+    y = box.y + FOCUS_PAD_TOP
+    if label:
+        plotter.text(
+            Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
+            label,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
     x = box.x + 1.6
     right = box.right - 1.6
-    y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
     for _ in range(max(1, rows)):
         _paint_focus_row(plotter, x, y, right)
         y += FOCUS_PITCH

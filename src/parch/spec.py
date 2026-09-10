@@ -70,7 +70,7 @@ class Spec:
     project_tickets: int = 8
     project_index_pages: int = 1
     meeting_index_rows: int = 16
-    task_rows: int = 6
+    task_rows: int = 6  # toml floor; dest paint derives the fitted count
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:

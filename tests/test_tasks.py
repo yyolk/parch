@@ -12,6 +12,10 @@ from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     RULE,
     RULE_C,
+    FOCUS_PAD_BOT,
+    FOCUS_PAD_TOP,
+    FOCUS_PITCH,
+    TASK_CHECKLIST_FRAC,
     TASK_GAP,
     TASK_INDEX_BAND_GAP,
     TASK_INDEX_HEAD_H,
@@ -23,6 +27,7 @@ from parch.layouts.planner.painters import (
     checklist_content_height,
     paint_task,
     paint_tasks_index_months,
+    task_row_count,
     strip_active,
     strip_items,
     task_seats,
@@ -181,14 +186,24 @@ def test_tasks_index_seats_weighted_by_weeks():
 
 def test_task_dest_seats():
     well = well_rect(NOMAD)
-    checklist, notes = task_seats(well, 6)
+    n = task_row_count(well)
+    target = (well.h - TASK_GAP) * TASK_CHECKLIST_FRAC
+    usable = target - FOCUS_PAD_TOP - FOCUS_PAD_BOT
+    expected = max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+    assert n == expected
+    assert n == 17
+    assert n > 8
+    checklist, notes = task_seats(well)
     assert checklist.y == pytest.approx(well.y)
-    assert checklist.h == pytest.approx(checklist_content_height(6))
+    assert checklist.h == pytest.approx(checklist_content_height(n, labeled=False))
     assert checklist.w == pytest.approx(well.w)
     assert notes.y == pytest.approx(checklist.bottom + TASK_GAP)
     assert notes.bottom == pytest.approx(well.bottom)
-    assert notes.h > checklist.h
-    assert notes.h > well.h * 0.4
+    assert checklist.h <= target
+    assert target - checklist.h < FOCUS_PITCH
+    assert checklist.h > notes.h
+    assert checklist.h == pytest.approx(well.h * TASK_CHECKLIST_FRAC, rel=0.08)
+    assert notes.h == pytest.approx((well.h - TASK_GAP) * (1 - TASK_CHECKLIST_FRAC), rel=0.12)
 
 
 def test_tasks_index_paint_month_headers_and_week_links():
@@ -282,7 +297,7 @@ def test_task_paint_checklist_and_notes():
     plotter = RecordingPlotter()
     paint_task(plotter, well, dest)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert texts.count("Tasks") == 1
+    assert texts.count("Tasks") == 0
     assert texts.count("Notes") == 1
     assert "Agenda" not in texts
     assert "Action items" not in texts
@@ -292,7 +307,8 @@ def test_task_paint_checklist_and_notes():
         for op in plotter.ops
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
-    assert len(ticks) == 6
+    assert len(ticks) == task_row_count(well)
+    assert len(ticks) > 8
 
 
 def test_task_header_week_chip_and_task_tab():
@@ -345,14 +361,16 @@ def test_task_rows_knob():
     assert dests[1:] == [f"tasks-2026-W{week:02d}" for week in range(1, 6)]
     dest = next(item for item in pages[1].components if isinstance(item, TasksWeekPage))
     assert dest.rows == 5
+    well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_task(plotter, well_rect(NOMAD), dest)
+    paint_task(plotter, well, dest)
     ticks = [
         op
         for op in plotter.ops
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
-    assert len(ticks) == 5
+    assert len(ticks) == task_row_count(well, floor=5)
+    assert len(ticks) == task_row_count(well)
 
 
 def test_q1_bands_match_calendar():
