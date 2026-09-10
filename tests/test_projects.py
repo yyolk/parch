@@ -8,17 +8,18 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     CLONE_ICONS,
+    CLONE_P_PAD,
     CLONE_P_SIZE,
     CLONE_SPINE_W,
     CLONE_STATUS_LABELS,
     CLONE_STRIP_H,
-    CLONE_STRIP_MIN_FRAC,
     MUTED,
     PROJECT_COL_WEIGHTS,
     PROJECT_P,
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
+    clone_icon_cluster_width,
     paint_header,
     paint_nav,
     paint_projects,
@@ -182,9 +183,12 @@ def test_projects_clone_a_tracks():
     assert notes.x == pytest.approx(secondary.x)
     assert notes.y == pytest.approx(secondary.bottom)
     assert strip.y > tasks.bottom
-    assert strip.y > notes.bottom
+    assert strip.x == pytest.approx(tasks.x)
+    assert strip.w == pytest.approx(clone_icon_cluster_width())
+    assert strip.w < tasks.w
     assert strip.h == pytest.approx(CLONE_STRIP_H)
-    assert strip.w / cards[0].w >= CLONE_STRIP_MIN_FRAC - 1e-9
+    assert notes.bottom == pytest.approx(strip.bottom)
+    assert notes.h > strip.h * 4
     assert notes.right < cards[0].right
     assert CLONE_ICONS == ("star", "triangle", "circle", "diamond", "plus", "square")
 
@@ -211,6 +215,8 @@ def test_projects_clone_faithful_paint():
     p_texts = [op for op in plotter.ops if op[0] == "text" and op[2] == "P"]
     assert all(op[7] == pytest.approx(MUTED) for op in p_texts)
     assert all(op[3] == pytest.approx(CLONE_P_SIZE) for op in p_texts)
+    assert all(op[6] == "sans" for op in p_texts)
+    assert all(op[8] is True for op in p_texts)
     p_boxes = [
         op[1]
         for op in plotter.ops
@@ -219,8 +225,8 @@ def test_projects_clone_faithful_paint():
     assert len(p_boxes) == 3
     for mark, text in zip(p_boxes, p_texts, strict=True):
         label = text[1]
-        assert label.x >= mark.x - 0.01
-        assert label.y >= mark.y - 0.01
+        assert label.x >= mark.x + CLONE_P_PAD - 0.01
+        assert label.y >= mark.y + CLONE_P_PAD - 0.01
         assert label.right <= mark.x + mark.w * 0.55
         assert label.bottom <= mark.y + mark.h * 0.5
 

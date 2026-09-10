@@ -285,15 +285,21 @@ CLONE_CARD_WEIGHTS = (0.50, 0.50)
 CLONE_INSET_X = 1.6
 CLONE_INSET_Y = 1.4
 CLONE_COL_GAP = 3.4
-CLONE_STRIP_H = 4.0
-CLONE_STRIP_MIN_FRAC = 0.6
 CLONE_ICON = 2.1
+CLONE_ICON_GAP = 0.85
+CLONE_STRIP_H = 2.8
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
 CLONE_ICONS = ("star", "triangle", "circle", "diamond", "plus", "square")
-CLONE_P_CORNER = (2.2, 1.85)
-CLONE_P_SIZE = 4.4
+CLONE_P_PAD = 0.40
+CLONE_P_CORNER = (2.15, 1.85)
+CLONE_P_SIZE = 5.2
+
+
+def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
+    """Tight left-packed strip: n icons + (n-1) gaps. No full-card spread."""
+    return n * CLONE_ICON + max(n - 1, 0) * CLONE_ICON_GAP
 
 
 def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
@@ -308,26 +314,27 @@ def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tu
 
 
 def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
-    """spine, P+name, secondary field, tasks, notes, bottom icon strip."""
+    """spine, P+name, secondary, tasks, notes (full right), left-packed icon cluster."""
     spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
     body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
         CLONE_INSET_X, CLONE_INSET_Y
     )
-    main, strip = rows(
-        body,
-        2,
-        gap=PROJECT_LEFT_GAP,
-        weights=(body.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
-    )
-    left, right = columns(main, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    left, right = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
     name_h, left_rest = left.split_top(PROJECT_HEADER_H)
     secondary, notes = right.split_top(PROJECT_HEADER_H)
-    tasks = Rect(
+    mid = Rect(
         left_rest.x,
         left_rest.y + PROJECT_LEFT_GAP,
         left_rest.w,
         left_rest.h - PROJECT_LEFT_GAP,
     )
+    tasks, strip_band = rows(
+        mid,
+        2,
+        gap=PROJECT_LEFT_GAP,
+        weights=(mid.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
+    )
+    strip = Rect(strip_band.x, strip_band.y, clone_icon_cluster_width(), strip_band.h)
     return spine, name_h, secondary, tasks, notes, strip
 
 
@@ -366,12 +373,13 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     cw, ch = CLONE_P_CORNER
     plotter.text(
-        Rect(mark.x + 0.18, mark.y + 0.12, cw, ch),
+        Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
         "P",
         size=CLONE_P_SIZE,
-        face="serif",
+        face="sans",
         gray=MUTED,
         align="left",
+        small_caps=True,
     )
     rule_y = mark.bottom
     plotter.line(
@@ -401,10 +409,10 @@ def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
-    """Filled association icons on tracks.columns — no frames."""
-    slots = columns(box, len(CLONE_ICONS), gap=2.2)
+    """Filled icons, left-packed on tracks.columns — no frames, no full-card spread."""
+    slots = columns(box, len(CLONE_ICONS), gap=CLONE_ICON_GAP)
     for slot, kind in zip(slots, CLONE_ICONS, strict=True):
-        s = min(CLONE_ICON, slot.h - 0.25, slot.w - 0.25)
+        s = min(CLONE_ICON, slot.h - 0.2, slot.w)
         icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
         _paint_clone_icon(plotter, icon, kind)
 
