@@ -279,19 +279,18 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
 
 
 MEET_GAP = 2.6
-MEET_COL_GAP = 2.6
 MEET_HEAD_INSET_X = 1.8
 MEET_HEAD_INSET_Y = 1.4
-MEET_TITLE_H = 7.6
-MEET_DATE_H = 5.6
-MEET_HEAD_LINE_GAP = 1.2
+MEET_HEAD_LINE_H = 7.6
+MEET_HEAD_COL_GAP = 2.8
+MEET_HEAD_WEIGHTS = (0.64, 0.36)
 MEET_LABEL_W = 14.0
 MEET_LINE_PITCH = 4.15
 
 
 def meeting_head_height() -> float:
-    """Content-height title + date write-ins — not a fraction of the well."""
-    return MEET_HEAD_INSET_Y * 2 + MEET_TITLE_H + MEET_HEAD_LINE_GAP + MEET_DATE_H
+    """One-line title|date band — not two stacked write-ins."""
+    return MEET_HEAD_INSET_Y * 2 + MEET_HEAD_LINE_H
 
 
 def meeting_attendees_height(lines: int) -> float:
@@ -310,44 +309,39 @@ def _below(box: Rect, gap: float) -> Rect:
 
 
 def meeting_seats(
-    well: Rect, attendees: int, agenda: int, actions: int
+    well: Rect, attendees: int, agenda: int, action_items: int
 ) -> tuple[Rect, Rect, Rect, Rect, Rect]:
-    """Title/date, attendees, agenda | actions, leftover notes. Notes flex."""
+    """Head, attendees, agenda, leftover notes, action items. Notes flex."""
     head, rest = well.split_top(meeting_head_height())
     leftover = _below(rest, MEET_GAP)
     att_h = meeting_attendees_height(attendees)
     attendees_box, rest = leftover.split_top(att_h)
     leftover = _below(rest, MEET_GAP)
-    pair_h = max(checklist_content_height(agenda), checklist_content_height(actions))
-    pair, notes = rows(
-        leftover,
-        2,
-        gap=MEET_GAP,
-        weights=(pair_h, max(leftover.h - pair_h - MEET_GAP, 1)),
-    )
-    left, right = columns(pair, 2, gap=MEET_COL_GAP)
-    agenda_box = Rect(left.x, left.y, left.w, checklist_content_height(agenda))
-    actions_box = Rect(right.x, right.y, right.w, checklist_content_height(actions))
-    return head, attendees_box, agenda_box, notes, actions_box
+    agenda_h = checklist_content_height(agenda)
+    agenda_box, rest = leftover.split_top(agenda_h)
+    leftover = _below(rest, MEET_GAP)
+    action_h = checklist_content_height(action_items)
+    notes_h = max(leftover.h - action_h - MEET_GAP, 1)
+    notes, action_box = rows(leftover, 2, gap=MEET_GAP, weights=(notes_h, action_h))
+    return head, attendees_box, agenda_box, notes, action_box
 
 
 def meeting_head_seats(head: Rect) -> tuple[Rect, Rect]:
-    """Title underline over a quieter date line."""
+    """Title write-in | Date write-in on one horizontal row."""
     inner = head.inset(MEET_HEAD_INSET_X, MEET_HEAD_INSET_Y)
-    title, dated = rows(inner, 2, gap=MEET_HEAD_LINE_GAP, weights=(MEET_TITLE_H, MEET_DATE_H))
-    return title, dated
+    return columns(inner, 2, gap=MEET_HEAD_COL_GAP, weights=MEET_HEAD_WEIGHTS)
 
 
 def paint_meeting(plotter: Plotter, box: Rect, agenda: MeetingAgenda) -> None:
-    """Exploratory Meeting well — title, people, agenda, notes, actions."""
-    head, attendees, agenda_box, notes, actions = meeting_seats(
-        box, agenda.attendees, agenda.agenda, agenda.actions
+    """Exploratory Meeting well — title|date, people, agenda, notes, action items."""
+    head, attendees, agenda_box, notes, action_items = meeting_seats(
+        box, agenda.attendees, agenda.agenda, agenda.action_items
     )
     _paint_meeting_head(plotter, head)
     _paint_meeting_attendees(plotter, attendees, agenda.attendees)
     _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda)
     _paint_note_box(plotter, notes, label="Notes")
-    _paint_checklist_box(plotter, actions, label="Actions", rows=agenda.actions)
+    _paint_checklist_box(plotter, action_items, label="Action items", rows=agenda.action_items)
 
 
 def _paint_meeting_head(plotter: Plotter, head: Rect) -> None:

@@ -8,4 +8,4 @@ class MeetingAgenda:
     year: int
     attendees: int
     agenda: int
-    actions: int
+    action_items: int

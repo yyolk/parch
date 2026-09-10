@@ -6,7 +6,7 @@ from parch.spec import Spec
 
 MEET_ATTENDEES = 3
 MEET_AGENDA = 5
-MEET_ACTIONS = 3
+MEET_ACTION_ITEMS = 3
 
 
 class MeetingSection:
@@ -29,7 +29,7 @@ class MeetingSection:
                         year=spec.year,
                         attendees=MEET_ATTENDEES,
                         agenda=MEET_AGENDA,
-                        actions=MEET_ACTIONS,
+                        action_items=MEET_ACTION_ITEMS,
                     ),
                 ),
             )

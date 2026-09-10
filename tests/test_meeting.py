@@ -7,8 +7,8 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
-    MEET_COL_GAP,
     MEET_GAP,
+    MEET_HEAD_COL_GAP,
     MEET_LABEL_W,
     TICK,
     checklist_content_height,
@@ -21,7 +21,7 @@ from parch.layouts.planner.painters import (
     strip_items,
 )
 from parch.plotter import RecordingPlotter
-from parch.sections.meeting import MEET_ACTIONS, MEET_AGENDA, MEET_ATTENDEES, MeetingSection
+from parch.sections.meeting import MEET_ACTION_ITEMS, MEET_AGENDA, MEET_ATTENDEES, MeetingSection
 from parch.spec import Spec
 
 
@@ -45,10 +45,10 @@ def test_meeting_page():
     assert agenda.year == 2026
     assert agenda.attendees == 3
     assert agenda.agenda == 5
-    assert agenda.actions == 3
+    assert agenda.action_items == 3
     assert MEET_ATTENDEES == 3
     assert MEET_AGENDA == 5
-    assert MEET_ACTIONS == 3
+    assert MEET_ACTION_ITEMS == 3
     assert strip_active(page.kind) == ""
     assert strip_items(page) == (
         ("Year", "year-2026"),
@@ -63,36 +63,37 @@ def test_meeting_page():
 
 def test_meeting_seats_stack():
     well = well_rect(NOMAD)
-    head, attendees, agenda, notes, actions = meeting_seats(well, 3, 5, 3)
+    head, attendees, agenda, notes, action_items = meeting_seats(well, 3, 5, 3)
     assert head.y == pytest.approx(well.y)
     assert head.h == pytest.approx(meeting_head_height())
     assert head.x == pytest.approx(well.x)
+    assert head.w == pytest.approx(well.w)
     assert attendees.y == pytest.approx(head.bottom + MEET_GAP)
     assert attendees.h == pytest.approx(meeting_attendees_height(3))
     assert attendees.w == pytest.approx(well.w)
     assert agenda.y == pytest.approx(attendees.bottom + MEET_GAP)
     assert agenda.h == pytest.approx(checklist_content_height(5))
-    assert actions.y == pytest.approx(agenda.y)
-    assert actions.h == pytest.approx(checklist_content_height(3))
-    assert actions.x == pytest.approx(agenda.right + MEET_COL_GAP)
-    assert agenda.w == pytest.approx(actions.w)
-    assert notes.y > agenda.bottom
+    assert agenda.w == pytest.approx(well.w)
     assert notes.y == pytest.approx(agenda.bottom + MEET_GAP)
-    assert notes.bottom == pytest.approx(well.bottom)
     assert notes.w == pytest.approx(well.w)
+    assert action_items.y == pytest.approx(notes.bottom + MEET_GAP)
+    assert action_items.bottom == pytest.approx(well.bottom)
+    assert action_items.h == pytest.approx(checklist_content_height(3))
+    assert action_items.w == pytest.approx(well.w)
     assert notes.h > agenda.h
-    assert notes.h > well.h * 0.35
+    assert notes.h > action_items.h
 
     title, dated = meeting_head_seats(head)
-    assert title.y > head.y
-    assert dated.y > title.bottom
-    assert title.h > dated.h
-    assert title.w == pytest.approx(dated.w)
-    assert MEET_LABEL_W < title.w / 4
+    assert title.y == pytest.approx(dated.y)
+    assert title.h == pytest.approx(dated.h)
+    assert title.bottom == pytest.approx(dated.bottom)
+    assert dated.x == pytest.approx(title.right + MEET_HEAD_COL_GAP)
+    assert title.w > dated.w
+    assert MEET_LABEL_W < title.w / 3
 
 
 def test_meeting_paint_template():
-    agenda = MeetingAgenda(year=2026, attendees=3, agenda=5, actions=3)
+    agenda = MeetingAgenda(year=2026, attendees=3, agenda=5, action_items=3)
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
     paint_meeting(plotter, well, agenda)
@@ -102,8 +103,9 @@ def test_meeting_paint_template():
     assert texts.count("Date") == 1
     assert texts.count("Attendees") == 1
     assert texts.count("Agenda") == 1
-    assert texts.count("Actions") == 1
+    assert texts.count("Action items") == 1
     assert texts.count("Notes") == 1
+    assert "Actions" not in texts
     assert "P" not in texts
     assert "Todo" not in texts
     assert "Doing" not in texts
@@ -124,7 +126,7 @@ def test_meeting_paint_template():
 
 
 def test_meeting_knobs():
-    agenda = MeetingAgenda(year=2026, attendees=2, agenda=4, actions=2)
+    agenda = MeetingAgenda(year=2026, attendees=2, agenda=4, action_items=2)
     plotter = RecordingPlotter()
     paint_meeting(plotter, Rect(4, 20, 110, 90), agenda)
     ticks = [
@@ -135,7 +137,8 @@ def test_meeting_knobs():
     assert len(ticks) == 4 + 2
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Agenda" in texts
-    assert "Actions" in texts
+    assert "Action items" in texts
+    assert "Actions" not in texts
 
 
 def test_meeting_header_year_and_seven_tabs():
@@ -151,3 +154,5 @@ def test_meeting_header_year_and_seven_tabs():
     for label in ("Year", "Quar", "Mon", "Habit", "Week", "Day", "Notes"):
         assert label in texts
     assert texts.count("Notes") == 2
+    assert "Action items" in texts
+    assert "Meet" not in (label for label, _ in strip_items(page))
