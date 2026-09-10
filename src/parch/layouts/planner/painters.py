@@ -291,15 +291,48 @@ CLONE_STRIP_H = 2.8
 CLONE_STAR = 2.0
 CLONE_TRACK_H = 26.0
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
-CLONE_ICONS = ("star", "triangle", "circle", "diamond", "plus", "square")
+CLONE_ICONS = (
+    "star",
+    "triangle",
+    "circle",
+    "diamond",
+    "plus",
+    "square",
+    "hexagon",
+    "chevron",
+)
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
 CLONE_P_SIZE = 5.2
+CLONE_NAME_GAP = 1.4
+CLONE_TASK_TOP = 0.4
+CLONE_TASK_CLEAR = 0.55
 
 
 def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
-    """Tight left-packed strip: n icons + (n-1) gaps. No full-card spread."""
+    """Minimum packed width of the icon set (spread uses the full strip seat)."""
     return n * CLONE_ICON + max(n - 1, 0) * CLONE_ICON_GAP
+
+
+def clone_task_count(box: Rect) -> int:
+    """Focus rows that fill ``box``, with clearance above the symbol strip."""
+    usable = box.h - CLONE_TASK_TOP - CLONE_TASK_CLEAR
+    if usable < TICK:
+        return 1
+    return max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+
+
+def projects_clone_a_name_field(header: Rect) -> tuple[Rect, Rect]:
+    """P square and the bordered name field beside it."""
+    y = header.y + (header.h - PROJECT_P) / 2
+    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    field = Rect(
+        mark.right + CLONE_NAME_GAP,
+        y,
+        max(header.right - mark.right - CLONE_NAME_GAP, 1),
+        PROJECT_P,
+    )
+    return mark, field
 
 
 def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
@@ -314,28 +347,27 @@ def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tu
 
 
 def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rect]:
-    """spine, P+name, secondary, tasks, notes (full right), left-packed icon cluster."""
+    """spine, header, name field, tasks, notes (full right), icon strip (left)."""
     spine = Rect(card.x, card.y, CLONE_SPINE_W, card.h)
     body = Rect(card.x + CLONE_SPINE_W, card.y, card.w - CLONE_SPINE_W, card.h).inset(
         CLONE_INSET_X, CLONE_INSET_Y
     )
-    left, right = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
+    left, notes = columns(body, 2, gap=CLONE_COL_GAP, weights=CLONE_CARD_WEIGHTS)
     name_h, left_rest = left.split_top(PROJECT_HEADER_H)
-    secondary, notes = right.split_top(PROJECT_HEADER_H)
+    _, name_field = projects_clone_a_name_field(name_h)
     mid = Rect(
         left_rest.x,
         left_rest.y + PROJECT_LEFT_GAP,
         left_rest.w,
         left_rest.h - PROJECT_LEFT_GAP,
     )
-    tasks, strip_band = rows(
+    tasks, strip = rows(
         mid,
         2,
         gap=PROJECT_LEFT_GAP,
         weights=(mid.h - CLONE_STRIP_H - PROJECT_LEFT_GAP, CLONE_STRIP_H),
     )
-    strip = Rect(strip_band.x, strip_band.y, clone_icon_cluster_width(), strip_band.h)
-    return spine, name_h, secondary, tasks, notes, strip
+    return spine, name_h, name_field, tasks, notes, strip
 
 
 def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
@@ -348,18 +380,11 @@ def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBo
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
     for card, rail in zip(cards, rails, strict=True):
-        spine, name_h, secondary, tasks, notes, strip = projects_clone_a_card(card)
+        spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(card)
         plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
         _paint_clone_priority(plotter, name_h)
-        sec_y = secondary.y + (secondary.h - PROJECT_P) / 2
-        plotter.rect(
-            Rect(secondary.x, sec_y, secondary.w, PROJECT_P),
-            stroke=True,
-            fill=False,
-            stroke_width=HAIR,
-            stroke_gray=INK,
-        )
-        _paint_clone_tasks(plotter, tasks, board.tasks)
+        plotter.rect(name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        _paint_clone_tasks(plotter, tasks)
         _paint_note_box(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
         _paint_clone_status_track(plotter, rail)
@@ -368,8 +393,7 @@ def paint_projects_clone_faithful(plotter: Plotter, box: Rect, board: ProjectsBo
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
     """P-box: muted corner-fraction label, leftover is write-in. Clone only."""
-    y = header.y + (header.h - PROJECT_P) / 2
-    mark = Rect(header.x, y, PROJECT_P, PROJECT_P)
+    mark, _field = projects_clone_a_name_field(header)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     cw, ch = CLONE_P_CORNER
     plotter.text(
@@ -381,22 +405,14 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
         align="left",
         small_caps=True,
     )
-    rule_y = mark.bottom
-    plotter.line(
-        mark.right + 1.4,
-        rule_y,
-        header.right,
-        rule_y,
-        stroke_width=RULE,
-        stroke_gray=RULE_C,
-    )
-    return rule_y
+    return mark.bottom
 
 
-def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
-    y = box.y + 0.4
+def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> None:
+    count = clone_task_count(box) if n is None else max(1, n)
+    y = box.y + CLONE_TASK_TOP
     star_right = box.right - CLONE_STAR - 1.0
-    for _ in range(max(1, n)):
+    for _ in range(count):
         _paint_focus_row(plotter, box.x, y, star_right)
         star = Rect(
             box.right - CLONE_STAR,
@@ -409,8 +425,8 @@ def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int) -> None:
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
-    """Filled icons, left-packed on tracks.columns — no frames, no full-card spread."""
-    slots = columns(box, len(CLONE_ICONS), gap=CLONE_ICON_GAP)
+    """Filled icons, even spread on tracks.columns across the strip seat."""
+    slots = columns(box, len(CLONE_ICONS), gap=1.3)
     for slot, kind in zip(slots, CLONE_ICONS, strict=True):
         s = min(CLONE_ICON, slot.h - 0.2, slot.w)
         icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
@@ -443,6 +459,10 @@ def _paint_clone_icon(plotter: Plotter, box: Rect, kind: str) -> None:
             _fill_triangle(plotter, box)
         case "star":
             _fill_star(plotter, box)
+        case "hexagon":
+            _fill_hexagon(plotter, box)
+        case "chevron":
+            _fill_chevron(plotter, box)
         case _:
             raise ValueError(f"unknown clone icon {kind!r}")
 
@@ -496,12 +516,8 @@ def _fill_triangle(plotter: Plotter, box: Rect) -> None:
     _fill_span_rows(plotter, spans, dy)
 
 
-def _fill_star(plotter: Plotter, box: Rect) -> None:
-    cx = box.x + box.w / 2
-    cy = box.y + box.h / 2
-    r = min(box.w, box.h) / 2
-    pts = _star_poly(cx, cy, r)
-    ys, dy = _scan_box(box, n=13)
+def _fill_poly(plotter: Plotter, box: Rect, pts: list[tuple[float, float]], *, n: int = 12) -> None:
+    ys, dy = _scan_box(box, n=n)
     spans: list[tuple[float, float, float]] = []
     for y in ys:
         xs = _poly_xs_at(pts, y)
@@ -509,6 +525,37 @@ def _fill_star(plotter: Plotter, box: Rect) -> None:
         for i in range(0, len(xs) - 1, 2):
             spans.append((y - dy / 2, xs[i], xs[i + 1]))
     _fill_span_rows(plotter, spans, dy)
+
+
+def _fill_star(plotter: Plotter, box: Rect) -> None:
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    _fill_poly(plotter, box, _star_poly(cx, cy, min(box.w, box.h) / 2), n=13)
+
+
+def _fill_hexagon(plotter: Plotter, box: Rect) -> None:
+    """Pointy-top hexagon — distinct from square and diamond."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    r = min(box.w, box.h) / 2
+    pts = [
+        (cx + r * math.cos(math.radians(-90 + i * 60)), cy + r * math.sin(math.radians(-90 + i * 60)))
+        for i in range(6)
+    ]
+    _fill_poly(plotter, box, pts)
+
+
+def _fill_chevron(plotter: Plotter, box: Rect) -> None:
+    """Right-pointing filled chevron (notched arrow), not a point-up triangle."""
+    cy = box.y + box.h / 2
+    notch = box.w * 0.36
+    pts = [
+        (box.x, box.y),
+        (box.right, cy),
+        (box.x, box.bottom),
+        (box.x + notch, cy),
+    ]
+    _fill_poly(plotter, box, pts)
 
 
 def _star_poly(cx: float, cy: float, r: float) -> list[tuple[float, float]]:

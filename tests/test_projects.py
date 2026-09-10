@@ -19,7 +19,7 @@ from parch.layouts.planner.painters import (
     PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
-    clone_icon_cluster_width,
+    clone_task_count,
     paint_header,
     paint_nav,
     paint_projects,
@@ -171,26 +171,35 @@ def test_projects_clone_a_tracks():
     assert cards[0].y == pytest.approx(rails[0].y)
     assert cards[-1].bottom == pytest.approx(rails[-1].bottom)
 
-    spine, name_h, secondary, tasks, notes, strip = projects_clone_a_card(cards[0])
+    spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(cards[0])
     assert spine.x == pytest.approx(cards[0].x)
     assert spine.w == pytest.approx(CLONE_SPINE_W)
     assert spine.h == pytest.approx(cards[0].h)
     assert name_h.x > spine.right
-    assert secondary.x > name_h.right
-    assert name_h.y == pytest.approx(secondary.y)
+    assert name_field.x > name_h.x
+    assert name_field.right == pytest.approx(name_h.right)
+    assert name_field.h == pytest.approx(PROJECT_P)
     assert tasks.x == pytest.approx(name_h.x)
     assert tasks.y > name_h.bottom
-    assert notes.x == pytest.approx(secondary.x)
-    assert notes.y == pytest.approx(secondary.bottom)
+    assert notes.x > name_h.right
+    assert notes.y == pytest.approx(name_h.y)
+    assert notes.h > name_h.h + tasks.h
     assert strip.y > tasks.bottom
     assert strip.x == pytest.approx(tasks.x)
-    assert strip.w == pytest.approx(clone_icon_cluster_width())
-    assert strip.w < tasks.w
+    assert strip.w == pytest.approx(tasks.w)
     assert strip.h == pytest.approx(CLONE_STRIP_H)
     assert notes.bottom == pytest.approx(strip.bottom)
-    assert notes.h > strip.h * 4
     assert notes.right < cards[0].right
-    assert CLONE_ICONS == ("star", "triangle", "circle", "diamond", "plus", "square")
+    assert CLONE_ICONS == (
+        "star",
+        "triangle",
+        "circle",
+        "diamond",
+        "plus",
+        "square",
+        "hexagon",
+        "chevron",
+    )
 
 
 def test_projects_clone_faithful_paint():
@@ -235,7 +244,9 @@ def test_projects_clone_faithful_paint():
         for op in plotter.ops
         if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
     ]
-    assert len(ticks) == 3 * 4
+    _, _, _, tasks, _, _ = projects_clone_a_card(projects_clone_a_seats(well, 3)[0][0])
+    assert len(ticks) == 3 * clone_task_count(tasks)
+    assert clone_task_count(tasks) > 4
 
     marks = [
         op
