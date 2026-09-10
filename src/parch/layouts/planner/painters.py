@@ -12,6 +12,7 @@ from parch.components import (
     Notes,
     Priorities,
     ProjectsBoard,
+    ProjectsWeek,
     QuarterGrid,
     Schedule,
     WeekStrip,
@@ -275,6 +276,153 @@ def _paint_project_notes(plotter: Plotter, box: Rect, *, first_y: float) -> None
     while y < box.bottom - 0.15:
         plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
         y += PROJECT_NOTE_PITCH
+
+
+WEEK_HEAD_H = 8.0
+WEEK_LABEL_W = 12.0
+WEEK_TOUCH_W = 46.0
+WEEK_TOUCH_GAP = 2.0
+WEEK_GAP = 2.6
+WEEK_CARD_COL_GAP = 2.6
+WEEK_CARD_INSET_X = 1.6
+WEEK_CARD_INSET_Y = 1.3
+WEEK_CARD_HEADER_H = 6.2
+WEEK_CARD_STATUS_H = 6.2
+WEEK_CARD_LEFT_GAP = 1.0
+WEEK_TASK_TOP = 0.4
+WEEK_STATUS_MARK = 2.0
+WEEK_STATUS_GAP = 0.8
+WEEK_LETTER_H = 3.2
+WEEK_TOUCH_PAD = 0.35
+
+
+def week_task_band_height(tasks: int) -> float:
+    """Content height of n Focus ticks, matching ``_paint_project_tasks``."""
+    n = max(1, tasks)
+    return WEEK_TASK_TOP + TICK + (n - 1) * FOCUS_PITCH
+
+
+def week_card_content_height(tasks: int) -> float:
+    """Hairline card tall enough for P+name, ticks, and tiny status — not flex."""
+    return (
+        WEEK_CARD_INSET_Y * 2
+        + WEEK_CARD_HEADER_H
+        + WEEK_CARD_LEFT_GAP
+        + week_task_band_height(tasks)
+        + WEEK_CARD_LEFT_GAP
+        + WEEK_CARD_STATUS_H
+    )
+
+
+def projects_week_seats(well: Rect, tasks: int) -> tuple[Rect, Rect, Rect]:
+    """Week write-in, content-height card pair, leftover notes dump."""
+    head, rest = well.split_top(WEEK_HEAD_H)
+    leftover = Rect(rest.x, rest.y + WEEK_GAP, rest.w, rest.h - WEEK_GAP)
+    cards_h = week_card_content_height(tasks)
+    notes_h = max(leftover.h - cards_h - WEEK_GAP, 1)
+    cards, notes = rows(leftover, 2, gap=WEEK_GAP, weights=(cards_h, notes_h))
+    return head, cards, notes
+
+
+def projects_week_head_seats(head: Rect) -> tuple[Rect, Rect, Rect]:
+    """``Week`` tag | blank write-in | compact Mon–Sun touched strip."""
+    tag, rest = head.split_left(WEEK_LABEL_W)
+    write, touch = rest.split_left(rest.w - WEEK_TOUCH_W - WEEK_TOUCH_GAP)
+    cluster = Rect(touch.x + WEEK_TOUCH_GAP, touch.y, WEEK_TOUCH_W, touch.h)
+    return tag, write, cluster
+
+
+def projects_week_cards(band: Rect, cards: int) -> tuple[Rect, ...]:
+    """Side-by-side weekly focus cards — not a stacked board."""
+    return columns(band, max(1, cards), gap=WEEK_CARD_COL_GAP)
+
+
+def projects_week_card_seats(card: Rect, tasks: int) -> tuple[Rect, Rect, Rect]:
+    """P+name, task ticks, tiny Todo/Doing/Done — stacked, no notes pocket."""
+    inner = card.inset(WEEK_CARD_INSET_X, WEEK_CARD_INSET_Y)
+    header, rest = inner.split_top(WEEK_CARD_HEADER_H)
+    body = Rect(
+        rest.x,
+        rest.y + WEEK_CARD_LEFT_GAP,
+        rest.w,
+        rest.h - WEEK_CARD_LEFT_GAP,
+    )
+    task_h = week_task_band_height(tasks)
+    tasks_box = Rect(body.x, body.y, body.w, task_h)
+    status = Rect(
+        body.x,
+        tasks_box.bottom + WEEK_CARD_LEFT_GAP,
+        body.w,
+        WEEK_CARD_STATUS_H,
+    )
+    return header, tasks_box, status
+
+
+def paint_projects_week(plotter: Plotter, box: Rect, board: ProjectsWeek) -> None:
+    """Thesis K — this week’s two projects, shared dump. Not a permanent board."""
+    head, cards, notes = projects_week_seats(box, board.tasks)
+    _paint_week_head(plotter, head)
+    for card in projects_week_cards(cards, board.cards):
+        plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        header, tasks, status = projects_week_card_seats(card, board.tasks)
+        _paint_project_name(plotter, header)
+        _paint_project_tasks(plotter, tasks, board.tasks)
+        _paint_week_status(plotter, status)
+    _paint_note_box(plotter, notes, label="Notes")
+
+
+def _paint_week_head(plotter: Plotter, head: Rect) -> None:
+    tag, write, cluster = projects_week_head_seats(head)
+    plotter.text(
+        tag,
+        "Week",
+        size=6.4,
+        face="sans",
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    rule_y = tag.y + tag.h * 0.72
+    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    _paint_week_touched(plotter, cluster)
+
+
+def _paint_week_touched(plotter: Plotter, strip: Rect) -> None:
+    """Small Mon–Sun ticks — mark days this week’s projects were touched."""
+    for slot, label in zip(columns(strip, 7, gap=0.55), WEEKDAY_LABELS, strict=True):
+        plotter.text(
+            Rect(slot.x, slot.y + WEEK_TOUCH_PAD, slot.w, WEEK_LETTER_H),
+            label[0],
+            size=5.0,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="center",
+        )
+        tick = Rect(
+            slot.x + (slot.w - TICK) / 2,
+            slot.y + WEEK_TOUCH_PAD + WEEK_LETTER_H + 0.25,
+            TICK,
+            TICK,
+        )
+        plotter.rect(tick, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _paint_week_status(plotter: Plotter, box: Rect) -> None:
+    """Tiny orthogonal Todo / Doing / Done — same words, smaller marks."""
+    for slot, label in zip(columns(box, 3, gap=WEEK_STATUS_GAP), PROJECT_STATUS_LABELS, strict=True):
+        mark_y = slot.y + (slot.h - WEEK_STATUS_MARK) / 2
+        mark = Rect(slot.x, mark_y, WEEK_STATUS_MARK, WEEK_STATUS_MARK)
+        plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.text(
+            Rect(mark.right + 0.55, slot.y, max(slot.right - mark.right - 0.55, 1), slot.h),
+            label,
+            size=5.0,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
 
 
 def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
@@ -940,7 +1088,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Mon"] = page.dest
         case "habits":
             dests["Habit"] = page.dest
-        case "projects":
+        case "projects" | "projects_week":
             pass
         case "weekly":
             dests["Week"] = page.dest
@@ -969,7 +1117,7 @@ def strip_active(kind: str) -> str:
             return "Notes"
         case "habits":
             return "Habit"
-        case "projects":
+        case "projects" | "projects_week":
             return ""
         case _:
             return "Year"

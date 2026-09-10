@@ -9,6 +9,7 @@ type PageKind = Literal[
     "cover",
     "annual",
     "projects",
+    "projects_week",
     "quarter",
     "month",
     "habits",
