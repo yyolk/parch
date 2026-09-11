@@ -108,3 +108,10 @@ class RecordingPlotter(Plotter):
                 case ("link", _, str() as dest):
                     found.append(dest)
         return found
+
+    def text_ops(self) -> list[Op]:
+        return [op for op in self.ops if op[0] == "text"]
+
+    def face_only_text(self) -> list[Op]:
+        """Text ops that never set ``family`` — FaceBridge / legacy face+bold."""
+        return [op for op in self.text_ops() if op[10] is None]

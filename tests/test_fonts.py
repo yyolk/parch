@@ -4,22 +4,26 @@ import pytest
 from parch.components import CoverTitle
 from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY
 from parch.fonts import (
+    JOST_SCALE,
+    TYPE_STEPS,
     EffectiveRamp,
     FaceBridge,
     FontCatalog,
     JostRamp,
+    TypeEmphasis,
     TypeFace,
     TypeFamily,
     TypeInk,
     TypeOverlay,
     TypePatch,
-    TypeRole,
+    TypeStep,
     TypeWeight,
     apply_overlay,
     bind_ramp,
     compose_overlays,
     font_dir,
     jost_catalog,
+    scale_ink,
 )
 from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
@@ -81,12 +85,49 @@ def test_jost_catalog_is_four_cuts():
         catalog.path("jost", "hairline")
 
 
-def test_jost_ramp_role_map():
+def test_jost_scale_table_invariants():
+    """Closed ladder: seven used steps, sizes descend, weights stay in catalog."""
+    assert TYPE_STEPS == (
+        "display",
+        "title",
+        "eyebrow",
+        "body",
+        "chrome",
+        "label",
+        "caption",
+    )
+    assert set(JOST_SCALE) == set(TYPE_STEPS)
+    sizes = [JOST_SCALE[step].size for step in TYPE_STEPS]
+    assert sizes == sorted(sizes, reverse=True)
+    assert len(set(sizes)) == len(sizes)
+
+    catalog = jost_catalog()
     ramp = JostRamp()
-    assert ramp.ink("cover_year") == TypeInk(family="jost", weight="heavy", size=42)
-    assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=10)
-    assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)
+    rank = {"book": 0, "medium": 1, "bold": 2, "heavy": 3}
+    for step in TYPE_STEPS:
+        regular = ramp.ink(step)
+        strong = ramp.ink(step, "strong")
+        assert regular == ramp.ink(step, emphasis="regular")
+        assert regular == scale_ink(step)
+        assert regular.family == "jost"
+        assert strong.family == "jost"
+        assert regular.size == strong.size == JOST_SCALE[step].size
+        assert regular.weight == JOST_SCALE[step].regular
+        assert strong.weight == JOST_SCALE[step].strong
+        catalog.path(regular.family, regular.weight)
+        catalog.path(strong.family, strong.weight)
+        assert rank[strong.weight] >= rank[regular.weight]
+
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
+    assert ramp.ink("title", "strong") == TypeInk(family="jost", weight="bold", size=11)
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.2)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
+    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
+    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
+    with pytest.raises(KeyError):
+        ramp.ink("cover_year")  # type: ignore[arg-type]
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
 
 
@@ -104,7 +145,7 @@ def _family(op: tuple[object, ...]) -> object:
     return op[10]
 
 
-def test_cover_year_uses_jost_heavy_via_jost_ramp():
+def test_cover_uses_display_eyebrow_body_steps():
     plotter = RecordingPlotter()
     paint_cover(plotter, NOMAD, _cover(), ramp=JostRamp())
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
@@ -112,14 +153,16 @@ def test_cover_year_uses_jost_heavy_via_jost_ramp():
     assert year[9] == "heavy"
     assert _family(year) == "jost"
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == 10
     assert brow[9] == "medium"
     assert _family(brow) == "jost"
     specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
-    assert _family(specs) is None
-    assert specs[6] == "sans"
+    assert specs[3] == 8.2
+    assert specs[9] == "book"
+    assert _family(specs) == "jost"
 
 
-def test_header_chrome_is_jost_book_via_jost_ramp():
+def test_header_uses_title_and_chrome_steps():
     plotter = RecordingPlotter()
     paint_header(
         plotter,
@@ -146,16 +189,16 @@ def test_header_chrome_is_jost_book_via_jost_ramp():
 def test_cover_honors_stub_ramp():
     class StubRamp:
         def __init__(self) -> None:
-            self.roles: list[TypeRole] = []
+            self.calls: list[tuple[TypeStep, TypeEmphasis]] = []
 
-        def ink(self, role: TypeRole) -> TypeInk:
-            self.roles.append(role)
+        def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
+            self.calls.append((step, emphasis))
             return TypeInk(family="jost", weight="book", size=12)
 
     ramp = StubRamp()
     plotter = RecordingPlotter()
     paint_cover(plotter, NOMAD, _cover(), ramp=ramp)
-    assert ramp.roles == ["cover_brow", "cover_year"]
+    assert [step for step, _emphasis in ramp.calls] == ["eyebrow", "display", "body"]
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == 12
     assert year[9] == "book"
@@ -169,11 +212,11 @@ def test_cover_honors_stub_ramp():
 def test_header_honors_stub_ramp():
     class StubRamp:
         def __init__(self) -> None:
-            self.roles: list[TypeRole] = []
+            self.calls: list[tuple[TypeStep, TypeEmphasis]] = []
 
-        def ink(self, role: TypeRole) -> TypeInk:
-            self.roles.append(role)
-            if role == "page_title":
+        def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
+            self.calls.append((step, emphasis))
+            if step == "title":
                 return TypeInk(family="jost", weight="bold", size=9)
             return TypeInk(family="jost", weight="book", size=6)
 
@@ -187,7 +230,7 @@ def test_header_honors_stub_ramp():
         chip="01",
         ramp=ramp,
     )
-    assert ramp.roles == ["page_title", "chrome"]
+    assert [step for step, _emphasis in ramp.calls] == ["title", "chrome"]
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
     assert title[3] == 9
     assert title[9] == "bold"
@@ -209,8 +252,8 @@ class _SpyRamp:
         self.catalog = jost_catalog()
         self.faces: list[tuple[TypeFace, bool, float, TypeWeight | None]] = []
 
-    def ink(self, role: TypeRole) -> TypeInk:
-        raise AssertionError(f"role path must not run for face+bold text: {role}")
+    def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
+        raise AssertionError(f"step path must not run for face+bold text: {step} {emphasis}")
 
     def resolve_face(
         self,
@@ -271,11 +314,13 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeInk is TypeInk
     assert fonts.TypeFamily is TypeFamily
     assert fonts.TypeFace is TypeFace
+    assert fonts.TypeStep is TypeStep
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
     assert fonts.EffectiveRamp is EffectiveRamp
     assert fonts.TypeOverlay is TypeOverlay
     assert fonts.TypePatch is TypePatch
+    assert fonts.TYPE_STEPS is TYPE_STEPS
 
 
 def test_overlay_explicit_size_keeps_default_weight():
@@ -297,12 +342,16 @@ def test_overlay_both_fields_win():
     assert apply_overlay(base, patch) == TypeInk(family="jost", weight="medium", size=8.6)
 
 
-def test_overlay_missing_role_keeps_default():
+def test_overlay_missing_step_keeps_default():
     ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.0)))
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=9.0)
-    assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)
-    assert ramp.ink("cover_year") == TypeInk(family="jost", weight="heavy", size=42)
-    assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=9.0)
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.2)
+    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
+    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
 
 
 def test_overlay_never_changes_family():
@@ -312,27 +361,29 @@ def test_overlay_never_changes_family():
 
 
 def test_compose_overlays_later_explicit_field_wins():
-    device = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"), cover_brow=TypePatch(size=12.0))
+    device = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"), eyebrow=TypePatch(size=12.0))
     press_over = TypeOverlay(chrome=TypePatch(size=10.0))
     merged = compose_overlays(device, press_over)
     ramp = EffectiveRamp(overlay=merged)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=10.0)
-    assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=12.0)
-    assert ramp.ink("page_title").size == 11
+    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="medium", size=10.0)
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=12.0)
+    assert ramp.ink("title").size == 11
 
 
 def test_empty_effective_ramp_matches_jost_defaults():
     empty = EffectiveRamp()
     jost = JostRamp()
-    for role in ("cover_year", "cover_brow", "page_title", "chrome"):
-        assert empty.ink(role) == jost.ink(role)
+    for step in TYPE_STEPS:
+        assert empty.ink(step) == jost.ink(step)
+        assert empty.ink(step, "strong") == jost.ink(step, "strong")
 
 
 def test_bind_ramp_explicit_wins_over_overlay():
     class StubRamp:
         catalog = jost_catalog()
 
-        def ink(self, role: TypeRole) -> TypeInk:
+        def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
             return TypeInk(family="jost", weight="book", size=3)
 
         def resolve_face(
@@ -365,8 +416,9 @@ def test_nomad_overlay_is_identity():
     assert NOMAD.type_overlay == TypeOverlay()
     ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
     jost = JostRamp()
-    for role in ("cover_year", "cover_brow", "page_title", "chrome"):
-        assert ramp.ink(role) == jost.ink(role)
+    for step in TYPE_STEPS:
+        assert ramp.ink(step) == jost.ink(step)
+        assert ramp.ink(step, "strong") == jost.ink(step, "strong")
 
 
 def test_identity_effective_ramp_reaches_cover_and_header():
@@ -406,7 +458,7 @@ def test_press_wires_identity_effective_ramp(tmp_path: Path):
     device_ramp = bind_ramp(overlay=compose_overlays(NOMAD.type_overlay, None))
     assert isinstance(device_ramp, EffectiveRamp)
     assert device_ramp.ink("chrome") == JostRamp().ink("chrome")
-    assert device_ramp.ink("page_title") == JostRamp().ink("page_title")
+    assert device_ramp.ink("title") == JostRamp().ink("title")
 
 
 def test_press_overlay_reaches_header_roles(tmp_path: Path):

@@ -1,5 +1,5 @@
 from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY, get_device
-from parch.fonts import EffectiveRamp, JostRamp, TypeOverlay
+from parch.fonts import TYPE_STEPS, EffectiveRamp, JostRamp, TypeOverlay
 from parch import ConfigError
 import pytest
 
@@ -39,5 +39,6 @@ def test_nomad_supplies_identity_type_overlay():
     assert NOMAD_TYPE_OVERLAY == TypeOverlay()
     ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
     jost = JostRamp()
-    for role in ("cover_year", "cover_brow", "page_title", "chrome"):
-        assert ramp.ink(role) == jost.ink(role)
+    for step in TYPE_STEPS:
+        assert ramp.ink(step) == jost.ink(step)
+        assert ramp.ink(step, "strong") == jost.ink(step, "strong")
