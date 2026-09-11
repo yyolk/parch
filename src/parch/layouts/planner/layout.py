@@ -22,6 +22,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
+from parch.fonts.ramp import JostRamp, TypeRamp
 from parch.geom import Rect
 from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
@@ -62,13 +63,20 @@ DAILY_PRIO_GAP = 2.2
 
 
 class PlannerLayout:
-    """Seat components below the unmarked toolbar. Cover skips slab/nav."""
+    """Seat components below the unmarked toolbar. Cover skips slab/nav.
+
+    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
+    cover / header paint. Other painters still hardcode face policy — spike scope.
+    """
+
+    def __init__(self, ramp: TypeRamp | None = None) -> None:
+        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         paint_toolbar(plotter, device)
         match page.kind:
             case "cover":
-                paint_cover(plotter, device, _one(page, CoverTitle))
+                paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,
@@ -76,6 +84,7 @@ class PlannerLayout:
                     page.title,
                     _header_meta(page),
                     _header_meta_dest(page),
+                    ramp=self.ramp,
                     chip=_header_chip(page),
                     chip_dest=_header_chip_dest(page),
                 )
