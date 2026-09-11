@@ -1902,14 +1902,14 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         "Year",
         "Quar",
         "Mon",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
         "Habit",
         "Proj",
         "Meet",
         "Task",
-        "Rev",
-        "Week",
-        "Day",
-        "Notes",
     )
     return tuple((label, dests[label]) for label in order if label in dests)
 

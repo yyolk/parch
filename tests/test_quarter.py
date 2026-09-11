@@ -48,14 +48,14 @@ def test_quarter_page_and_provisional_nav():
         ("Year", "year-2026"),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
+        ("Week", "week-2026-W01"),
+        ("Rev", "review-index-2026"),
+        ("Day", "2026-01-01"),
+        ("Notes", "2026-01-01-notes-1"),
         ("Habit", "month-2026-01-habits"),
         ("Proj", "projects-index-2026-01"),
         ("Meet", "meetings-index-2026"),
         ("Task", "tasks-index-2026-Q1"),
-        ("Rev", "review-index-2026"),
-        ("Week", "week-2026-W01"),
-        ("Day", "2026-01-01"),
-        ("Notes", "2026-01-01-notes-1"),
     )
 
     grid = next(item for item in quarter.components if isinstance(item, QuarterGrid))

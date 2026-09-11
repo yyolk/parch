@@ -40,7 +40,7 @@ def test_habit_pages_follow_each_month():
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)
     labels = [label for label, _ in strip_items(july)]
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"]
+    assert labels == ["Year", "Quar", "Mon", "Week", "Rev", "Day", "Notes", "Habit", "Proj", "Meet", "Task"]
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31

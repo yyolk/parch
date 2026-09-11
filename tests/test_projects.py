@@ -62,14 +62,14 @@ _PROJ_STRIP = (
     ("Year", "year-2026"),
     ("Quar", "quarter-2026-Q1"),
     ("Mon", "month-2026-01"),
+    ("Week", "week-2026-W01"),
+    ("Rev", "review-index-2026"),
+    ("Day", "2026-01-01"),
+    ("Notes", "2026-01-01-notes-1"),
     ("Habit", "month-2026-01-habits"),
     ("Proj", "projects-index-2026-01"),
     ("Meet", "meetings-index-2026"),
     ("Task", "tasks-index-2026-Q1"),
-    ("Rev", "review-index-2026"),
-    ("Week", "week-2026-W01"),
-    ("Day", "2026-01-01"),
-    ("Notes", "2026-01-01-notes-1"),
 )
 
 
@@ -144,7 +144,7 @@ def test_projects_header_year_and_tabs():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Projects" in texts
     assert "2026" in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"):
+    for label in ("Year", "Quar", "Mon", "Week", "Rev", "Day", "Notes", "Habit", "Proj", "Meet", "Task"):
         assert label in texts
 
 
