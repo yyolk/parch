@@ -7,25 +7,12 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import JostBesleyRamp, JostRamp, MartianBesleyRamp, TypeRamp
+from parch.fonts import JostRamp, TypeRamp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
-_RAMP_TOKENS = {"jost", "jost-besley", "martian-besley"}
-
-
-def _ramp_named(token: str) -> TypeRamp:
-    match token:
-        case "jost-besley":
-            return JostBesleyRamp()
-        case "martian-besley":
-            return MartianBesleyRamp()
-        case "jost":
-            return JostRamp()
-        case _:
-            raise ConfigError(f"unknown ramp {token!r}; known: jost, jost-besley, martian-besley")
 
 
 def press(
@@ -36,9 +23,9 @@ def press(
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. Pass ``JostBesleyRamp`` (``--ramp jost-besley``)
-    or ``MartianBesleyRamp`` (``--ramp martian-besley``) for dual-font specimens.
-    The ramp's catalog is handed to ``Fpdf2Plotter``.
+    Default ramp is ``JostRamp``. The ramp's catalog is handed to
+    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
+    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
     """
     device = get_device(spec.device)
     resolved = JostRamp() if ramp is None else ramp
@@ -116,12 +103,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int, help="Overlay planner year.")
     parser.add_argument("--month", type=int, help="MVP month (1–12).")
     parser.add_argument("--day", type=int, help="MVP daily page day-of-month.")
-    parser.add_argument(
-        "--ramp",
-        choices=sorted(_RAMP_TOKENS),
-        default="jost",
-        help="Type ramp: jost (default), jost-besley, or martian-besley.",
-    )
     # Accept a leading `press` verb so `parch press` and `python -m parch press` match.
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "press":
@@ -130,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month, day=args.day)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], ramp=_ramp_named(args.ramp))
+        first = press(spec, outputs[0])
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

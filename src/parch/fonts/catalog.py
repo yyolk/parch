@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Mapping
 
-type TypeFamily = Literal["jost", "besley", "martian"]
+# More families later; today the catalog is Jost only.
+type TypeFamily = Literal["jost"]
 type TypeWeight = Literal["book", "medium", "bold", "heavy"]
 
 
@@ -38,29 +39,5 @@ def jost_catalog(root: Path | None = None) -> FontCatalog:
             ("jost", "medium"): base / "Jost-500-Medium.ttf",
             ("jost", "bold"): base / "Jost-700-Bold.ttf",
             ("jost", "heavy"): base / "Jost-800-Heavy.ttf",
-        }
-    )
-
-
-def jost_besley_catalog(root: Path | None = None) -> FontCatalog:
-    """Jost ladder plus Besley Regular (book) and Bold. No Besley medium/heavy files."""
-    base = font_dir() if root is None else root
-    return FontCatalog(
-        {
-            **jost_catalog(base).cuts,
-            ("besley", "book"): base / "Besley-Regular.ttf",
-            ("besley", "bold"): base / "Besley-Bold.ttf",
-        }
-    )
-
-
-def martian_besley_catalog(root: Path | None = None) -> FontCatalog:
-    """Jost + Besley plus Martian Regular (book) and Bold. No Martian medium/heavy files."""
-    base = font_dir() if root is None else root
-    return FontCatalog(
-        {
-            **jost_besley_catalog(base).cuts,
-            ("martian", "book"): base / "martian-grotesk" / "MartianGrotesk-Regular.ttf",
-            ("martian", "bold"): base / "martian-grotesk" / "MartianGrotesk-Bold.ttf",
         }
     )
