@@ -1,0 +1,28 @@
+# Nomad MVP — cover → annual → projects index/dests → meetings → tasks → review → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+title = "Year planner"
+
+[daily]
+schedule_from = 7
+schedule_to = 16
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6

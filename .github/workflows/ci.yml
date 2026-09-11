@@ -2,114 +2,76 @@ name: CI
 
 on:
   push:
-    branches: [master]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          cache-suffix: cli
-      - name: Install poppler-utils
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - run: uv sync --group dev
       - run: uv run pytest
-      - name: Generate Nomad PDF
+      - name: Press Nomad MVP
         run: |
-          uv run parch press supernote-nomad -w out/nomad
+          uv run parch press examples/mvp.toml -w out/nomad -o out/nomad.pdf
           test -s out/nomad/index.pdf
+          test -s out/nomad.pdf
 
-  test-typst-native:
+  # One Nomad catalog path. PR events stay test-only. workflow_dispatch uploads
+  # one dry-run artifact; push to the default branch deploys Pages. No product-PDF upload.
+  pages:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
+    needs: [test]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          cache-suffix: typst-native
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
-      - run: uv sync --extra typst-native --group dev
-      - name: Test with in-process typst
-        env:
-          PARCH_TYPST: py
-        run: uv run pytest -m "not slow"
-      - name: Press Nomad with typst-py
-        env:
-          PARCH_TYPST: py
-        run: |
-          uv run parch press supernote-nomad -w out/nomad-py
-          test -s out/nomad-py/index.pdf
-      - name: Proof one MOS-left page with typst-py
-        env:
-          PARCH_TYPST: py
-        run: |
-          uv run parch proof 158x210 --pages 1 -w out/proof-py
-          test -s out/proof-py/preview-1.svg
-
-  pages-plan:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      devices: ${{ steps.devices.outputs.devices }}
-      max_parallel: ${{ steps.devices.outputs.max_parallel }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          cache-suffix: pages-plan
       - run: uv sync --group dev
-      - id: devices
+      - name: Build Nomad specimen catalog
         run: |
-          DEVICES="$(uv run python -c "from parch.device_frame import FRAME_DEVICE_IDS; import json; print(json.dumps(sorted(FRAME_DEVICE_IDS)))")"
-          {
-            echo "devices<<EOF"
-            printf '%s\n' "$DEVICES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-          echo "max_parallel=$(printf '%s' "$DEVICES" | uv run python -c 'import json,sys; print(len(json.load(sys.stdin)))')" >> "$GITHUB_OUTPUT"
-
-  pages-specimen:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [test, pages-plan]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      max-parallel: ${{ fromJSON(needs.pages-plan.outputs.max_parallel) }}
-      matrix:
-        device: ${{ fromJSON(needs.pages-plan.outputs.devices) }}
-    env:
-      DEVICE: ${{ matrix.device }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+          uv run parch specimen supernote-nomad -w out
+          test -s out/specimens/index.html
+          test -s out/specimens/supernote-nomad/cover.png
+          test -s out/specimens/supernote-nomad/index.html
+          test ! -e out/specimens/supernote-nomad/specimen.pdf
+      - name: Upload catalog (dry-run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          cache-suffix: pages
-          save-cache: false
-      - run: uv sync --group dev
-      - name: Build device specimen
-        run: |
-          uv run parch specimen "$DEVICE" -w out
-          test -s "out/specimens/${DEVICE}/lined-left/cover.svg"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: specimen-${{ matrix.device }}
-          path: out/specimens/${{ matrix.device }}
+          name: specimens
+          path: out/specimens
           if-no-files-found: error
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        with:
+          path: out/specimens
 
-  pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: pages-specimen
+  deploy:
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    needs: [pages]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,36 +81,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          cache-suffix: pages
-      - run: uv sync --group dev
-      - name: Download specimen shards
-        uses: actions/download-artifact@v8
-        with:
-          pattern: specimen-*
-          path: /tmp/specimen-shards
-      - name: Merge catalog and write index
-        run: |
-          mkdir -p out/specimens
-          found=0
-          for shard in /tmp/specimen-shards/specimen-*; do
-            [ -d "$shard" ] || continue
-            device="${shard##*/}"
-            device="${device#specimen-}"
-            mv "$shard" "out/specimens/${device}"
-            found=$((found + 1))
-          done
-          expected="$(uv run python -c 'from parch.device_frame import FRAME_DEVICE_IDS; print(len(FRAME_DEVICE_IDS))')"
-          test "$found" -eq "$expected"
-          uv run python -c 'from pathlib import Path; from parch.device_frame import FRAME_DEVICE_IDS; from parch.services.specimen import write_catalog_index, listed_catalog_devices; root=Path("out/specimens"); write_catalog_index(root, listed_catalog_devices(root) or sorted(FRAME_DEVICE_IDS))'
-          test -s out/specimens/index.html
-          test -s out/specimens/158x210/lined-left/cover.svg
-          test -s out/specimens/158x210/dotted-right/cover.svg
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: out/specimens
       - id: deploy
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

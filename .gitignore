@@ -1,5 +1,6 @@
 .venv
 out/
+artifacts/
 .tools/
 docs/samples/
 __pycache__/

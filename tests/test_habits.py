@@ -1,909 +1,202 @@
-"""Habits index + per-month tracker grids."""
-
-
 import pytest
 
-from parch import ConfigError
-from parch.compose.page_data import HeadingMark
-from parch.config import load
-from parch.mos.configurator import Configurator
-from parch.mos.manifest import Manifest
-from parch.sections.habits import Habits, _habit_header
-from parch.services.generate import Generate
-from parch.toml_config import parse_toml
-from tests.test_toml_omit_sections import _LABEL_DEF, _PADDED_LINK, compile_pdf
-from tests.toml_fixtures import _minimal, short_january
-from tests.helpers import base_config, load_default
-
-
-def _habit_header_src(name: str) -> str:
-    return _habit_header(name)
-
-NOMAD = base_config("158x210", extras=True)
-MONTHS = (
-    "january",
-    "february",
-    "march",
-    "april",
-    "may",
-    "june",
-    "july",
-    "august",
-    "september",
-    "october",
-    "november",
-    "december",
+from parch.books import YearPlanner
+from parch.components import HabitGrid
+from parch.devices import NOMAD
+from parch.geom import Rect
+from parch.layouts.planner import PlannerLayout
+from parch.layouts.planner.painters import (
+    HABIT_WASH,
+    HABIT_WASH_CROSS,
+    HEADER_H,
+    habit_dow_letter,
+    habit_seats,
+    paint_habit_grid,
+    strip_active,
+    strip_items,
 )
-_MARK_RULE = "contents_bars(size:"
-_TRAIL_MARK = "padded_link(<index>, contents_bars"
-_TRAIL_HEADING = "trail_heading("
-_LEAD_PAIR = "lead_pair("
-_SEAT_RTL = "spacing: 1fr, direction: rtl"
-_FOLLOW_SPACING = "spacing: 0.5em"
-_HEADER_LINE = "line(start: (0%, 100%), end: (100%, 0%), stroke: regular_stroke)"
-_NAMED_MARK = "align(center + horizon, text["
-_BOX = "grid.cell(stroke: regular_stroke, [])"
-_BOX_FRIDAY = "grid.cell(stroke: (rest: regular_stroke, bottom: thick_stroke), [])"
-_WEEK_RULE = "grid.cell(colspan:"
-_JAN_DAYS = 31
-_DEFAULT_COLUMNS = 4
-_RIGHT_MOS = """[mos]
-side_menu = "right"
-reverse_months_quarters = true
-menu_rotate = "270deg"
-column_gutter = "1.5mm"
-row_gutter = "1.5mm"
-"""
-
-
-def _generate(dto) -> str:
-    return Generate(i18n=load_default()).generate(dto)
-
-
-def _habits(dto) -> Habits:
-    params = {}
-    for section in dto["planner"]["sections"]:
-        if section.get("class") == "habits" or section.get("name") == "habits":
-            params = dict(section.get("params") or {})
-            break
-    return Habits(
-        section_name="habits",
-        i18n=load_default(),
-        configurator=Configurator(dto),
-        habit_columns=params.get("habit_columns", Habits.DEFAULT_COLUMNS),
-        names=params.get("names"),
-    )
-
-
-def _pages(typst: str) -> list[str]:
-    return typst.split("#pagebreak()")
-
-
-def _index_page(typst: str) -> str:
-    for page in _pages(typst):
-        if "[Habits <habits>]" in page and "mos_strip(" not in page and "mos_frame(" not in page:
-            return page
-    raise AssertionError("no Habits index page")
-
-
-def _month_page(typst: str, name: str = "january") -> str:
-    needle = f"{name.title()}<habits-{name}>"
-    for page in _pages(typst):
-        if needle in page and "mos_frame(" in page:
-            return page
-    raise AssertionError(f"no Habits month page {name}")
-
-
-def _habit_rows_spec(page: str) -> str:
-    start = page.index("columns: (auto, 1fr")
-    chunk = page[start:]
-    begin = chunk.index("rows: (") + len("rows: (")
-    end = chunk.index(")", begin)
-    return chunk[begin:end]
-
-
-def test_listed_without_table_defaults_columns_and_pages():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="default-habits.toml")
-    section = dto["planner"]["sections"][0]
-    assert section["name"] == "habits"
-    assert section["class"] == "habits"
-    assert section["params"]["habit_columns"] == 4
-    assert section["params"]["names"] == []
-    habits = _habits(dto)
-    assert habits.habit_columns == Habits.DEFAULT_COLUMNS == 4
-    assert habits.names == []
-    typst = _generate(dto)
-    assert "<habits>" in typst
-    for name in MONTHS:
-        assert f"<habits-{name}>" in typst
-    assert typst.count("#pagebreak()") == 12  # 1 index + 12 months - 1
-
-
-def test_short_january_is_one_index_and_one_month():
-    dto = parse_toml(
-        _minimal(enable=["habits"], sections="[section.habits]\nhabit_columns = 12\n"),
-        source="short.toml",
-    )
-    typst = _generate(short_january(dto))
-    assert "<habits>" in typst
-    assert "<habits-january>" in typst
-    for name in MONTHS[1:]:
-        assert f"<habits-{name}>" not in typst
-    assert typst.count("#pagebreak()") == 1
-
-
-def test_index_title_is_habits_and_month_links_back():
-    dto = parse_toml(
-        _minimal(
-            enable=["annual", "habits"],
-            sections="""[section.annual]
-show_month_name = true
-""",
-        ),
-        source="links.toml",
-    )
-    typst = _generate(dto)
-    index = _index_page(typst)
-    month = _month_page(typst)
-    assert "padded_link(<annual>)" not in index
-    assert "2026 /" not in index
-    assert "text(size: h1)[/]" not in index
-    assert "text(size: h1, [Habits <habits>])" in index
-    assert "padded_link(<habits>)" in month
-    assert "2026 /" not in month
-    assert "text(size: h1)[/]" not in month
-    assert "January<habits-january>" in month
-    labels = set(_LABEL_DEF.findall(typst))
-    links = set(_PADDED_LINK.findall(typst))
-    assert {"habits", "habits-january", "annual"} <= labels
-    assert {"habits", "habits-january"} <= links
-    assert "annual" not in set(_PADDED_LINK.findall(index + month))
-
-
-def test_header_is_habits_without_year_when_contents_off():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="no-annual.toml")
-    typst = _generate(dto)
-    index = _index_page(typst)
-    month = _month_page(typst)
-    for page in (index, month):
-        assert "padded_link(<annual>)" not in page
-        assert "2026 /" not in page
-        assert "text(size: h1)[/]" not in page
-    assert "pad(right: 3mm" not in index
-    assert "padded_link(<index>" not in index
-    assert "text(size: h1, [Habits <habits>])" in index
-    assert "stack(" not in index
-    assert "padded_link(<habits>)" in month
-    assert "January<habits-january>" in month
-
-
-def test_mos_month_cells_on_habit_page_target_habit_ids():
-    dto = parse_toml(
-        _minimal(
-            enable=["annual", "monthly", "habits"],
-            sections="""[section.annual]
-show_month_name = true
-
-[section.monthly]
-week_label_rotation = "90deg"
-daily_cell_height = "16mm"
-""",
-        ),
-        source="mos-retarget.toml",
-    )
-    typst = _generate(dto)
-    habit_jan = _month_page(typst)
-    assert "(<habits-january>, [Jan])" in habit_jan
-    assert "(<habits-february>, [Feb])" in habit_jan
-    assert "(<month-2026-01-01>, [Jan])" not in habit_jan
-    assert "show-quarters: false" in habit_jan
-    assert "mos_strip(" in habit_jan
-    cal_jan = next(
-        page
-        for page in _pages(typst)
-        if "January<month-2026-01-01>" in page and "mos_strip(" in page
-    )
-    bind = typst[typst.index("#let mos_strip = mos_strip.with(months:") :].split("\n", 1)[0]
-    assert "(<month-2026-02-01>, [Feb])" in bind
-    assert "(<habits-february>, [Feb])" not in bind
-    assert "(none, [Q1])" in bind
-    assert "mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ())" in cal_jan
-    assert "show-quarters: false" not in cal_jan
-    assert "columns: (1fr, 3fr)" not in cal_jan
-    assert "columns: (3fr, 1fr)" not in cal_jan
-
-
-def test_habit_month_mos_is_months_only():
-    """Habits-only generate: month MOS is months, no quarters, no heading toggle."""
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="months-only.toml")
-    typst = _generate(dto)
-    habit_jan = _month_page(typst)
-    for name in MONTHS:
-        assert f"(<habits-{name}>, " in habit_jan
-    assert "show-quarters: false" in habit_jan
-    assert "mos_strip(" in habit_jan
-    assert "mos_tabs(" not in habit_jan
-    assert "mos_rail(" not in habit_jan
-    assert "columns: (1fr, 3fr)" not in habit_jan
-    assert "columns: (3fr, 1fr)" not in habit_jan
-    assert ", [Calendar])" not in habit_jan
-    assert ", [Habits])" not in habit_jan
-
-
-def test_habit_month_has_no_heading_toggle():
-    dto = parse_toml(
-        _minimal(
-            enable=["monthly", "habits"],
-            sections="""[section.monthly]
-week_label_rotation = "90deg"
-daily_cell_height = "16mm"
-""",
-        ),
-        source="toggle.toml",
-    )
-    typst = _generate(dto)
-    habit_jan = _month_page(typst)
-    assert "padded_link(<month-2026-01-01>, [Calendar])" not in habit_jan
-    assert "grid.cell(fill: black, text(white)[#padded_link(<habits-january>, [Habits])])" not in habit_jan
-
-
-def _assert_heading_pair(title: str, name: str = "January") -> None:
-    """Habits then January on one left-aligned line, descender seated."""
-    needle = f"{name}<habits-{name.lower()}>"
-    assert "dir: ttb" not in title
-    assert _TRAIL_MARK not in title
-    assert _MARK_RULE not in title
-    assert "column-gutter: 6pt" not in title
-    assert "text(size: h1)[/]" not in title
-    assert "2026 /" not in title
-    assert "spacing: 1fr" not in title
-    assert "dir: ltr" in title
-    assert "spacing: 0.5em" in title
-    assert "width: 90%" in title
-    assert "width: 100%" not in title
-    assert "height: 100%" not in title
-    assert "align(horizon + left" in title
-    assert "padded_link(<habits>)" in title
-    assert needle in title
-    assert title.index("padded_link(<habits>)") < title.index(needle)
-    assert 'bottom-edge: "descender"' in title
-    assert "inset: (bottom: 0.25em)" in title
-    assert 'top-edge: "cap-height"' not in title
-    assert "inset: (top: 0.25em)" not in title
-
-
-def test_habit_month_pages_set_trail_mark_alone():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="trail.toml")
-    habits = _habits(dto)
-    manifest = Manifest()
-    habits.register(manifest)
-    pages = habits.pages(manifest)
-    assert pages[0].raw_typst is True
-    assert pages[0].heading_mark is HeadingMark.LEAD
-    month_names = (
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    )
-    for page, name in zip(pages[1:], month_names, strict=True):
-        assert page.heading_mark is HeadingMark.TRAIL
-        assert page.nav_links == []
-        assert page.show_quarters is False
-        title = page.title or ""
-        content = page.content
-        _assert_heading_pair(title, name)
-        assert f"{name}<habits-{name.lower()}>" not in content
-        assert 'bottom-edge: "descender"' not in content
-        assert "inset: (x: 2mm)" in content
-        assert "align: horizon + right" in content
-
-
-def test_mos_right_month_title_is_the_same_heading_pair():
-    dto = parse_toml(
-        _minimal(enable=["habits"], mos=_RIGHT_MOS, sections=""),
-        source="trail-right.toml",
-    )
-    habits = _habits(dto)
-    manifest = Manifest()
-    habits.register(manifest)
-    january = habits.pages(manifest)[1]
-    title = january.title or ""
-    assert january.heading_mark is HeadingMark.TRAIL
-    assert january.nav_links == []
-    _assert_heading_pair(title)
-    assert "January<habits-january>" not in january.content
-    assert 'bottom-edge: "descender"' not in january.content
-    assert "inset: (x: 2mm)" in january.content
-    left = parse_toml(_minimal(enable=["habits"], sections=""), source="trail-left.toml")
-    left_jan = _habits(left).pages(manifest)[1]
-    assert left_jan.title == january.title
-
-
-def test_grid_uses_stroke_boxes_horizontal_names_and_thin_day_rules():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="grid.toml")
-    typst = _generate(dto)
-    assert "grid.cell(stroke: regular_stroke, [])" in typst
-    assert _HEADER_LINE not in typst
-    assert "luma(140)" not in typst
-    assert "luma(180)" not in typst
-    assert "grid.hline" not in typst
-    assert _WEEK_RULE not in typst
-    assert "0.4mm" not in typst
-    assert "grid.cell(stroke: (rest: regular_stroke, bottom: thick_stroke)" not in typst
-    assert 'text(weight: "bold")' not in typst
-    assert "columns: (auto, 0.8mm" not in typst
-    assert "Mon 1" in typst
-    assert "Sat" in typst
-    assert "Sun" in typst
-
-
-def test_day_cells_link_when_daily_exists():
-    dto = parse_toml(
-        _minimal(
-            enable=["daily", "habits"],
-            sections="""[section.daily]
-item_spacing = "4mm"
-
-[section.daily.left.schedule]
-hour_from = 8
-hour_to = 20
-
-[section.daily.right.priorities]
-count = 1
-""",
-        ),
-        source="daily-links.toml",
-    )
-    typst = _generate(short_january(dto))
-    habit_jan = _month_page(typst)
-    assert "padded_link(<2026-01-01>)" in habit_jan
-    assert "padded_link(<2026-01-14>)" in habit_jan
-    assert "Thu 1" in habit_jan
-
-
-def test_habit_columns_is_configurable():
-    dto = parse_toml(
-        _minimal(enable=["habits"], sections="[section.habits]\nhabit_columns = 8\n"),
-        source="cols-8.toml",
-    )
-    assert dto["planner"]["sections"][0]["params"]["habit_columns"] == 8
-    habits = _habits(dto)
-    assert habits.habit_columns == 8
-    typst = _generate(short_january(dto))
-    assert typst.count(_BOX) == 8 + _JAN_DAYS * 8
-    assert _BOX_FRIDAY not in typst
-    assert _WEEK_RULE not in typst
-    assert "grid.hline" not in typst
-    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" in typst
-
-
-def test_unknown_key_on_section_habits_raises():
-    with pytest.raises(ConfigError, match="unknown key: section.habits.foo"):
-        parse_toml(
-            _minimal(enable=["habits"], sections="[section.habits]\nfoo = 1\n"),
-            source="foo.toml",
-        )
-
-
-def test_habit_columns_bool_and_float_rejected():
-    with pytest.raises(ConfigError, match="expected integer"):
-        parse_toml(
-            _minimal(enable=["habits"], sections="[section.habits]\nhabit_columns = true\n"),
-            source="bool.toml",
-        )
-    with pytest.raises(ConfigError, match="expected integer"):
-        parse_toml(
-            _minimal(enable=["habits"], sections="[section.habits]\nhabit_columns = 12.5\n"),
-            source="float.toml",
-        )
-
-
-def test_index_is_raw_typst_month_pages_use_mos():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="chrome.toml")
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    month = _month_page(typst)
-    assert "mos_strip(" in month
-    assert "show-quarters: false" in month
-    assert "mos_tabs(" not in month
-    assert "mos_rail(" not in month
-    assert "rotate(" not in month
-    assert "January" in index
-    assert "JAN" not in index
-    assert "→" not in index
-    assert "columns: 1fr" in index
-    assert "columns: (auto, 1fr)" not in index
-    assert "grid.cell(fill: black" not in index
-    assert "align: horizon + left" in index
-    assert "align(horizon + left" in index
-    assert "box(width: 100%, height: 100%" in index
-    assert "padded_link(<habits-january>, box(width: 100%, height: 100%" in index
-    assert "padded_link(<habits-january>)[January]" not in index
-    assert "stroke: (bottom: regular_stroke)" not in index
-    assert "2026 /" not in index
-    assert "text(size: h1, [Habits <habits>])" in index
-
-
-def test_mos_full_year_is_thirteen_pages_of_habits():
-    dto = load(NOMAD)
-    names = [s["name"] for s in Configurator(dto).enabled_sections()]
-    assert "habits" in names
-    assert names[-5:] == ["habits", "review", "tasks", "meetings", "colophon"]
-    habits = next(s for s in dto["planner"]["sections"] if s["name"] == "habits")
-    assert habits["params"]["habit_columns"] == 4
-    assert habits["params"]["names"] == []
-    typst = _generate(dto)
-    assert "<habits>" in typst
-    for name in MONTHS:
-        assert f"<habits-{name}>" in typst
-
-
-def test_tiny_annual_habits_compiles(tmp_path):
-    dto = parse_toml(
-        _minimal(
-            enable=["annual", "habits"],
-            sections="""[section.annual]
-show_month_name = true
-""",
-        ),
-        source="tiny-habits.toml",
-    )
-    typst = _generate(dto)
-    pdf, stderr = compile_pdf(typst, tmp_path / "tiny-habits")
-    assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-
-
-def test_short_january_mos_compiles(tmp_path):
-    dto = short_january(load(NOMAD))
-    typst = _generate(dto)
-    assert "<habits>" in typst
-    assert "<habits-january>" in typst
-    assert "<habits-february>" not in typst
-    pdf, stderr = compile_pdf(typst, tmp_path / "mos-habits")
-    assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-
-
-def test_default_names_are_empty_and_headers_are_blank():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="no-names.toml")
-    assert dto["planner"]["sections"][0]["params"]["names"] == []
-    habits = _habits(dto)
-    assert habits.names == []
-    typst = _generate(short_january(dto))
-    assert _NAMED_MARK not in typst
-    assert _HEADER_LINE not in typst
-    assert typst.count(_BOX) == _DEFAULT_COLUMNS + _JAN_DAYS * _DEFAULT_COLUMNS
-    assert _BOX_FRIDAY not in typst
-
-
-def test_two_names_typeset_and_pad_to_four_columns():
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            sections="[section.habits]\nnames = [\"Sleep\", \"Move\"]\n",
-        ),
-        source="two-names.toml",
-    )
-    params = dto["planner"]["sections"][0]["params"]
-    assert params["habit_columns"] == 4
-    assert params["names"] == ["Sleep", "Move"]
-    habits = _habits(dto)
-    assert habits.names == ["Sleep", "Move"]
-    typst = _generate(short_january(dto))
-    assert "Sleep" in typst
-    assert "Move" in typst
-    assert typst.count(_NAMED_MARK) == 2
-    assert _HEADER_LINE not in typst
-    assert typst.count(_BOX) == 2 + _JAN_DAYS * 4
-    assert _BOX_FRIDAY not in typst
-    assert "rotate(" not in _habit_header_src("Sleep")
-    assert _HEADER_LINE not in _habit_header_src("Sleep")
-    assert _HEADER_LINE not in _habit_header_src("")
-    assert _BOX == _habit_header_src("")
-
-
-def test_more_names_than_columns_is_config_error():
-    with pytest.raises(ConfigError, match="names has 3 entries but habit_columns is 2"):
-        parse_toml(
-            _minimal(
-                enable=["habits"],
-                sections="[section.habits]\nhabit_columns = 2\nnames = [\"A\", \"B\", \"C\"]\n",
-            ),
-            source="too-many.toml",
-        )
-
-
-def test_empty_string_name_stays_blank_header():
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            sections="[section.habits]\nnames = [\"Sleep\", \"\", \"Water\"]\n",
-        ),
-        source="blank-slot.toml",
-    )
-    assert dto["planner"]["sections"][0]["params"]["names"] == ["Sleep", "", "Water"]
-    typst = _generate(short_january(dto))
-    assert "Sleep" in typst
-    assert "Water" in typst
-    assert typst.count(_NAMED_MARK) == 2
-    assert _HEADER_LINE not in typst
-    assert "align(center + horizon, text[])" not in typst
-
-
-def test_same_names_on_every_month_page():
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            sections="[section.habits]\nnames = [\"Sleep\", \"Move\"]\n",
-        ),
-        source="every-month.toml",
-    )
-    typst = _generate(dto)
-    named = [page for page in _pages(typst) if "align(center + horizon, text[Sleep])" in page]
-    assert len(named) == 12
-    for page in named:
-        assert "align(center + horizon, text[Move])" in page
-        assert _HEADER_LINE not in page
-        assert "mos_strip(" in page
-        assert "show-quarters: false" in page
-        assert "mos_tabs(" not in page
-        assert "mos_rail(" not in page
-        sleep_cell = page[page.index("align(center + horizon, text[Sleep])") :]
-        sleep_cell = sleep_cell[: sleep_cell.index("grid.cell(stroke: regular_stroke, [])")]
-        assert "rotate(" not in sleep_cell
-
-
-def test_names_escape_typst_specials():
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            sections="""[section.habits]
-names = ["Caffeine#1", "A[B]", "C\\\\D"]
-""",
-        ),
-        source="escape.toml",
-    )
-    assert dto["planner"]["sections"][0]["params"]["names"] == ["Caffeine#1", "A[B]", r"C\D"]
-    typst = _generate(short_january(dto))
-    assert r"Caffeine\#1" in typst
-    assert r"A\[B\]" in typst
-    assert r"C\\D" in typst
-    assert "align(center + horizon, text[Caffeine#1])" not in typst
-
-
-def test_named_headers_compile(tmp_path):
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            sections="[section.habits]\nnames = [\"Sleep\", \"Move\", \"Water\"]\n",
-        ),
-        source="named-compile.toml",
-    )
-    typst = _generate(short_january(dto))
-    pdf, stderr = compile_pdf(typst, tmp_path / "named-habits")
-    assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-
-
-def _mos_page(typst: str, *needles: str, exclude: str | None = None) -> str:
-    for page in typst.split("#pagebreak()"):
-        if all(needle in page for needle in needles) and (
-            exclude is None or exclude not in page
-        ):
-            return page
-    raise AssertionError(f"no page matching {needles!r}")
-
-
-def test_habit_month_follows_side_menu_dates_stay_left():
-    """MOS-right moves the months strip; habit dates stay left of the grid."""
-    right = parse_toml(
-        _minimal(enable=["habits"], mos=_RIGHT_MOS, sections=""),
-        source="habits-mos-right.toml",
-    )
-    right_typst = _generate(right)
-    right_jan = _mos_page(right_typst, "January<habits-january>", "mos_frame(")
-    assert "#mos_frame(\n  right," in right_jan
-    assert "#mos_frame(\n  left," not in right_jan
-    right_grid = right_jan[right_jan.index("columns: (auto, 1fr") :]
-    assert "Thu 1" in right_grid
-    assert "Mon 5" in right_grid
-    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr)" in right_jan
-    thu = right_grid.index("Thu 1")
-    assert right_grid.index(_BOX, thu) > thu
-    right_june = _mos_page(right_typst, "June<habits-june>", "mos_frame(")
-    june_grid = right_june[right_june.index("columns: (auto, 1fr") :]
-    assert "Mon 1" in june_grid
-    mon = june_grid.index("Mon 1")
-    assert june_grid.index(_BOX, mon) > mon
-
-    left = parse_toml(_minimal(enable=["habits"], sections=""), source="habits-mos-left.toml")
-    left_jan = _mos_page(_generate(left), "January<habits-january>", "mos_frame(")
-    assert "#mos_frame(\n  left," in left_jan
-    assert "#mos_frame(\n  right," not in left_jan
-    left_grid = left_jan[left_jan.index("columns: (auto, 1fr") :]
-    assert "Thu 1" in left_grid
-    left_thu = left_grid.index("Thu 1")
-    assert left_grid.index(_BOX, left_thu) > left_thu
-    for page in (right_jan, left_jan):
-        assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Thu 1]])" in page
-        heading = page[page.index("width: 90%") : page.index("Thu 1")]
-        assert "dir: ttb" not in heading
-        assert "align(horizon + left" in heading
-        assert heading.index("padded_link(<habits>)") < heading.index("January<habits-january>")
-
-    monthly = """[section.monthly]
-week_label_rotation = "90deg"
-daily_cell_height = "16mm"
-"""
-    both_right = parse_toml(
-        _minimal(enable=["monthly", "habits"], mos=_RIGHT_MOS, sections=monthly),
-        source="monthly-habits-right.toml",
-    )
-    monthly_only = parse_toml(
-        _minimal(enable=["monthly"], mos=_RIGHT_MOS, sections=monthly),
-        source="monthly-right.toml",
-    )
-    both_typst = _generate(both_right)
-    only_typst = _generate(monthly_only)
-    cal_both = _mos_page(
-        both_typst,
-        "January<month-2026-01-01>",
-        "mos_strip(",
-        exclude="<habits-january>",
-    )
-    cal_only = _mos_page(only_typst, "January<month-2026-01-01>", "mos_strip(")
-    assert "#mos_frame(\n  right," in cal_both
-    assert "#mos_frame(\n  left," not in cal_both
-    both_bind = both_typst[both_typst.index("#let mos_strip = mos_strip.with(months:") :].split("\n", 1)[0]
-    assert "(none, [Q1])" in both_bind
-    assert "(<month-2026-02-01>, [Feb])" in both_bind
-    assert "(<habits-february>, [Feb])" not in both_bind
-    assert "columns: (auto, 1fr, 1fr" not in cal_both
-    assert "#mos_frame(\n  right," in cal_only
-    only_bind = only_typst[only_typst.index("#let mos_strip = mos_strip.with(months:") :].split("\n", 1)[0]
-    assert "(none, [Q1])" in only_bind
-    assert "(<month-2026-02-01>, [Feb])" in only_bind
-    assert "mos_strip(highlight-months: (<month-2026-01-01>,), highlight-quarters: ())" in cal_only
-
-
-def test_named_header_is_upright_blank_is_empty_cell():
-    named = _habit_header("Sleep")
-    blank = _habit_header("")
-    assert "Sleep" in named
-    assert "rotate(" not in named
-    assert "atan" not in named
-    assert _HEADER_LINE not in named
-    assert "align(center + horizon, text[Sleep])" in named
-    assert _HEADER_LINE not in blank
-    assert blank == _BOX
-    assert "Sleep" not in blank
-
-
-def test_index_is_a_frozen_toc_with_full_names():
-    """Yearly PDF: full month names, no current-month invert, labels centered in the band."""
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="index-toc.toml")
-    typst = _generate(dto)
-    index = _index_page(typst)
-    full = (
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    )
-    for name in full:
-        wrapped = (
-            f"padded_link(<habits-{name.lower()}>, "
-            f"box(width: 100%, height: 100%, align(horizon + left, [{name}])))"
-        )
-        assert wrapped in index
-        assert f"padded_link(<habits-{name.lower()}>)[{name}]" not in index
-    for abbr in (
-        "JAN",
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-        "JUL",
-        "AUG",
-        "SEP",
-        "OCT",
-        "NOV",
-        "DEC",
-    ):
-        assert abbr not in index
-    assert "grid.cell(fill: black" not in index
-    assert "text(white)" not in index
-    assert "→" not in index
-    assert "1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr" in index
-    assert "align: horizon + left" in index
-    assert "align(horizon + left" in index
-    assert "box(width: 100%, height: 100%" in index
-    assert "inset: (x: 4pt, y: 0pt)" in index
-    assert "align: bottom" not in index
-    assert "stroke: (bottom: regular_stroke)" not in index
-
-
-def test_index_has_no_current_month_even_in_another_planner_year():
-    dto = parse_toml(
-        _minimal(
-            enable=["habits"],
-            calendar="""[calendar]
-year = 2025
-week_starts = "Monday"
-""",
-            sections="",
-        ),
-        source="index-2025.toml",
-    )
-    typst = _generate(dto)
-    index = _index_page(typst)
-    assert "grid.cell(fill: black" not in index
-    assert "text(white)" not in index
-    assert (
-        "padded_link(<habits-january>, "
-        "box(width: 100%, height: 100%, align(horizon + left, [January])))"
-        in index
-    )
-    assert "padded_link(<habits-january>)[January]" not in index
-    assert "JAN" not in index
-    assert "AUG" not in index
-    assert "stroke: (bottom: regular_stroke)" not in index
-
-
-def test_january_has_thin_day_rules_and_four_columns():
-    dto = parse_toml(_minimal(enable=["habits"], sections=""), source="friday.toml")
-    typst = _generate(dto)
-    january = _month_page(typst, "january")
-    december = _month_page(typst, "december")
-    assert january.count(_BOX) == _JAN_DAYS * 4 + 4
-    assert december.count(_BOX) == 31 * 4 + 4
-    assert _WEEK_RULE not in january
-    assert _WEEK_RULE not in december
-    jan_rows = _habit_rows_spec(january)
-    dec_rows = _habit_rows_spec(december)
-    assert jan_rows.count("1fr") == _JAN_DAYS
-    assert dec_rows.count("1fr") == 31
-    assert "0.4mm" not in jan_rows
-    assert "0.4mm" not in dec_rows
-    assert jan_rows.startswith("regular_height, 1fr, 1fr")
-    assert dec_rows.startswith("regular_height, 1fr, 1fr")
-    assert "16mm" not in jan_rows
-    assert "16mm" not in dec_rows
-    for page in (january, december):
-        assert "grid.hline" not in page
-        assert _BOX_FRIDAY not in page
-        assert "bottom: thick_stroke" not in page
-        assert 'text(weight: "bold")' not in page
-        assert page.count("grid.cell(inset: (x: 2mm), align: horizon + right,") == 31
-        assert "colspan:" not in page
-        assert "0.4mm" not in page
-        assert _HEADER_LINE not in page
-    for day in (2, 9, 16, 23, 30):
-        assert f"grid.cell(inset: (x: 2mm), align: horizon + right, [#[Fri {day}]])" in january
-        assert (
-            f"grid.cell(stroke: (rest: regular_stroke, bottom: thick_stroke), "
-            f"align(horizon + right, [#[Fri {day}]]))"
-        ) not in january
-    for day in (4, 11, 18, 25):
-        assert f"grid.cell(inset: (x: 2mm), align: horizon + right, [#[Fri {day}]])" in december
-        assert (
-            f"grid.cell(stroke: (rest: regular_stroke, bottom: thick_stroke), "
-            f"align(horizon + right, [#[Fri {day}]]))"
-        ) not in december
-    assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Sat 3]])" in january
-    assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Sun 4]])" in january
-    assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Mon 5]])" in january
-    assert "Thu 1" in january
-    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr)" in january
-    assert "columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" not in january
-    assert "0.8mm" not in january
-    assert "luma(140)" not in january
-    assert "luma(180)" not in january
-
-
-def test_index_heading_is_trail_strip_when_contents_on():
-    dto = parse_toml(
-        _minimal(enable=["index", "habits"], sections=""),
-        source="mark.toml",
-    )
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    month = _month_page(typst)
-    assert _TRAIL_MARK in index
-    assert _TRAIL_MARK in month
-    assert index.count(_MARK_RULE) == 1
-    assert month.count(_MARK_RULE) == 1
-    assert "2026 /" not in index
-    assert "text(size: h1)[/]" not in index
-    assert "padded_link(<annual>)" not in index
-    assert "text(size: h1, [Habits <habits>])" in index
-    assert "[Habits <habits>]" in index
-    assert _LEAD_PAIR in index
-    assert _FOLLOW_SPACING in index
-    assert _SEAT_RTL not in index
-    assert _TRAIL_HEADING not in index
-    assert index.index(_TRAIL_MARK) < index.index("[Habits <habits>]")
-    assert "column-gutter: 6pt" not in index
-    month_heading = month[month.index(_TRAIL_HEADING) : month.index(_TRAIL_MARK)]
-    assert "direction:" not in month
-    assert _TRAIL_HEADING in month
-    assert "dir: ttb" not in month_heading
-    assert "column-gutter: 6pt" not in month_heading
-    assert "January<habits-january>" in month_heading
-    assert "padded_link(<habits>)" in month_heading
-    assert month_heading.index("padded_link(<habits>)") < month_heading.index("January<habits-january>")
-    pair = month_heading[month_heading.index("dir: ltr") : month_heading.index("January<habits-january>")]
-    assert _TRAIL_MARK not in pair
-    assert _MARK_RULE not in pair
-    assert "width: 90%" in month_heading
-    assert "align(horizon + left" in month_heading
-    assert "height: 100%" not in month_heading
-    assert "align(bottom + left" not in month_heading
-    assert "spacing: 0.5em" in month_heading
-    assert month.index("January<habits-january>") < month.index(_TRAIL_MARK)
-    assert month.index(_TRAIL_MARK) < month.index("Thu 1")
-    assert 'bottom-edge: "descender"' in month_heading
-    assert "inset: (bottom: 0.25em)" in month_heading
-    assert 'top-edge: "cap-height"' not in month
-    assert "inset: (top: 0.25em)" not in month
-    assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Thu 1]])" in month
-    assert "padded_link(<habits>)" in month
-    assert "2026 /" not in month
-    assert "text(size: h1)[/]" not in month
-    assert ", [Habits])" not in month
-    assert ", [Calendar])" not in month
-    contents = next(p for p in _pages(typst) if 'weight: "bold")[Contents <index>]' in p)
-    assert "padded_link(<index>" not in contents
-    assert "padded_link(<habits>" in contents
-
-
-def test_mos_right_month_mark_trails_alone_left_of_rail():
-    dto = parse_toml(
-        _minimal(enable=["index", "habits"], mos=_RIGHT_MOS, sections=""),
-        source="habits-mos-right-mark.toml",
-    )
-    typst = _generate(short_january(dto))
-    month = _month_page(typst)
-    assert _TRAIL_MARK in month
-    assert month.index("January<habits-january>") < month.index(_TRAIL_MARK)
-    heading = month[month.index(_TRAIL_HEADING) : month.index(_TRAIL_MARK)]
-    assert "direction:" not in month
-    assert _TRAIL_HEADING in month
-    assert "dir: ttb" not in heading
-    assert "column-gutter: 6pt" not in heading
-    assert heading.index("padded_link(<habits>)") < heading.index("January<habits-january>")
-    pair = heading[heading.index("dir: ltr") : heading.index("January<habits-january>")]
-    assert _TRAIL_MARK not in pair
-    assert _MARK_RULE not in pair
-    assert "width: 90%" in heading
-    assert "align(horizon + left" in heading
-    assert "height: 100%" not in heading
-    assert "align(bottom + left" not in heading
-    assert "spacing: 0.5em" in heading
-    assert 'bottom-edge: "descender"' in heading
-    assert "inset: (bottom: 0.25em)" in heading
-    assert 'top-edge: "cap-height"' not in heading
-    assert "inset: (top: 0.25em)" not in heading
-    assert "grid.cell(inset: (x: 2mm), align: horizon + right, [#[Thu 1]])" in month
-    assert "padded_link(<habits>)" in month
-    assert "2026 /" not in month
-    assert ", [Habits])" not in month
-    assert ", [Calendar])" not in month
-    assert "#mos_frame(\n  right," in month
-    assert "rowspan: 2" not in month
+from parch.plotter import RecordingPlotter
+from parch.spec import Spec
+
+
+def test_habit_pages_follow_each_month():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+    dests = [page.dest for page in pages]
+    assert dests[143:147] == [
+        "month-2026-01",
+        "month-2026-01-habits",
+        "month-2026-02",
+        "month-2026-02-habits",
+    ]
+    habits = [name for name in dests if name.endswith("-habits")]
+    assert habits == [f"month-2026-{month:02d}-habits" for month in range(1, 13)]
+
+    july = next(page for page in pages if page.dest == "month-2026-07-habits")
+    assert july.kind == "habits"
+    assert july.title == "Habits · July 2026"
+    assert strip_active(july.kind) == "Habit"
+    assert ("Habit", "month-2026-07-habits") in strip_items(july)
+    assert ("Mon", "month-2026-07") in strip_items(july)
+    assert ("Quar", "quarter-2026-Q3") in strip_items(july)
+    labels = [label for label, _ in strip_items(july)]
+    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"]
+
+    grid = next(item for item in july.components if isinstance(item, HabitGrid))
+    assert grid.days == 31
+    assert grid.rows == 10
+    assert grid.month_dest == "month-2026-07"
+    assert grid.day_dests[14] == "2026-07-15"
+
+    feb = next(page for page in pages if page.dest == "month-2026-02-habits")
+    feb_grid = next(item for item in feb.components if isinstance(item, HabitGrid))
+    assert feb_grid.days == 28
+
+
+def test_habit_paint_smoke_and_nav_link():
+    plotter = RecordingPlotter()
+    YearPlanner().plot(Spec(notes_pages=1), plotter)
+    dests = plotter.dests()
+    links = plotter.links()
+    assert "month-2026-07-habits" in dests
+    assert "month-2026-07-habits" in links
+    assert "month-2026-01-habits" in links
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "Habits · July 2026" in texts
+    assert "Habits" not in texts
+    assert "Month" not in texts
+    assert "Habit" in texts
+    assert "31" in texts
+
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-01-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == grid.rows * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
+    assert fills
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "1" in labels and "31" in labels
+    assert "W" in labels
+
+
+def _header_ops(ops: list) -> tuple[list[str], list[str]]:
+    top = NOMAD.content_top + HEADER_H
+    texts = [op[2] for op in ops if op[0] == "text" and op[1].y < top]
+    links = [op[2] for op in ops if op[0] == "link" and op[1].y < top]
+    return texts, links
+
+
+def test_month_and_habits_headers_drop_reciprocal_chips():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+    month = next(p for p in pages if p.dest == "month-2026-07")
+    habits = next(p for p in pages if p.dest == "month-2026-01-habits")
+
+    month_ink = RecordingPlotter()
+    month_ink.begin_page()
+    PlannerLayout().paint(month, month_ink, NOMAD)
+    month_texts, month_links = _header_ops(month_ink.ops)
+    assert "July 2026" in month_texts
+    assert "Q3" in month_texts
+    assert "Habits" not in month_texts
+    assert "Month" not in month_texts
+    assert month_links == ["quarter-2026-Q3"]
+    assert dict(strip_items(month))["Habit"] == "month-2026-07-habits"
+
+    habits_ink = RecordingPlotter()
+    habits_ink.begin_page()
+    PlannerLayout().paint(habits, habits_ink, NOMAD)
+    habits_texts, habits_links = _header_ops(habits_ink.ops)
+    assert "Habits · January 2026" in habits_texts
+    assert "Q1" in habits_texts
+    assert "Habits" not in habits_texts
+    assert "Month" not in habits_texts
+    assert habits_links == ["quarter-2026-Q1"]
+    assert dict(strip_items(habits))["Mon"] == "month-2026-01"
+
+
+def test_habit_seat_and_paint():
+    box = Rect(4, 20, 110, 120)
+    day_col, names, bands = habit_seats(box, 31, 10)
+    assert len(names) == 10
+    assert len(bands) == 31
+    assert day_col.x == pytest.approx(box.x)
+    assert names[0].y == pytest.approx(box.y)
+    assert bands[0].y > names[0].bottom
+    assert bands[-1].bottom == pytest.approx(box.bottom)
+
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, box, grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == grid.rows * 31
+    fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
+    grays = {op[5] for op in fills}
+    assert grays == {HABIT_WASH, HABIT_WASH_CROSS}
+    assert HABIT_WASH_CROSS > 0.9
+    odd_rows, odd_cols = 31 // 2, grid.rows // 2
+    assert len(fills) == odd_rows + odd_cols + odd_rows * odd_cols
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "1" in labels and "31" in labels
+    assert habit_dow_letter(2026, 7, 1) == "W"
+    assert habit_dow_letter(2026, 7, 6) == "M"
+    assert habit_dow_letter(2026, 7, 31) == "F"
+    assert labels.count("W") >= 1
+    assert "F" in labels and "M" in labels
+    assert all("·" not in label for label in labels)
+
+
+def test_habit_paint_follows_spec_columns():
+    spec = Spec(notes_pages=1, habit_columns=8)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    assert grid.rows == 8
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
+    cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
+    assert len(cells) == 8 * 31
+
+
+def test_habit_nav_landings():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+
+    def habit_dest(dest: str) -> str:
+        page = next(p for p in pages if p.dest == dest)
+        return dict(strip_items(page))["Habit"]
+
+    assert habit_dest("year-2026") == "month-2026-01-habits"
+    assert habit_dest("quarter-2026-Q1") == "month-2026-01-habits"
+    assert habit_dest("quarter-2026-Q3") == "month-2026-07-habits"
+    assert habit_dest("month-2026-07") == "month-2026-07-habits"
+    assert habit_dest("month-2026-07-habits") == "month-2026-07-habits"
+    assert habit_dest("week-2026-W01") == "month-2026-01-habits"
+    assert habit_dest("week-2026-W06") == "month-2026-02-habits"
+    assert habit_dest("2026-07-15") == "month-2026-07-habits"
+    assert habit_dest("2026-07-15-notes-1") == "month-2026-07-habits"
+    assert habit_dest("2026-01-15") == "month-2026-01-habits"
+
+
+def test_habit_day_labels_link_to_dailies():
+    spec = Spec(notes_pages=1)
+    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    grid = next(item for item in page.components if isinstance(item, HabitGrid))
+    box = Rect(4, 20, 110, 120)
+    day_col, names, _bands = habit_seats(box, grid.days, grid.rows)
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, box, grid)
+    hits = [(op[1], op[2]) for op in ink.ops if op[0] == "link"]
+    dests = [dest for _, dest in hits]
+    assert dests.count("2026-07-01") == 1
+    assert dests.count("2026-07-31") == 1
+    assert all(f"2026-07-{day:02d}" in dests for day in range(1, 32))
+    for hit, dest in hits:
+        if dest.startswith("2026-07-"):
+            assert hit.x == pytest.approx(day_col.x)
+            assert hit.right == pytest.approx(day_col.right)
+            assert hit.right <= names[0].x + 0.01

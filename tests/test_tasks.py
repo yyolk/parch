@@ -1,533 +1,396 @@
-"""Weekly Tasks: week index + ticked leftover pages (raw Typst, no MOS)."""
-
+from datetime import date
 
 import pytest
 
-from parch import ConfigError
-from parch.config import load
-from parch.mos.configurator import Configurator
-from parch.compose.page_data import HeadingMark
-from parch.mos.manifest import Manifest
-from parch.sections.tasks import Tasks
-from parch.services.generate import Generate
-from parch.toml_config import parse_toml
-from tests.test_toml_omit_sections import _LABEL_DEF, _PADDED_LINK, compile_pdf
-from tests.toml_fixtures import _minimal, short_january
-from tests.helpers import base_config, load_default
-
-NOMAD = base_config("158x210", extras=True)
-_EN_DASH = "–"
-_MARK_RULE = "contents_bars(size:"
-_TRAIL_MARK = "padded_link(<index>, contents_bars"
-_LEAD_PAIR = "lead_pair("
-_SEAT_RTL = "spacing: 1fr, direction: rtl"
-_FOLLOW_SPACING = "spacing: 0.5em"
-_W01_TITLE = f"Week 1 #h(0.6em) Dec 29 {_EN_DASH} Jan 4"
-
-# 2026, Monday week start: Jan 1 is Thursday.
-# Full year: Dec 29 2025 – Jan 3 2027 → 53 ISO weeks.
-# short_january (end 2026-01-14) still walks all of January: 5 weeks.
-_JAN_WEEKS = (
-    ("2026W01", 1, f"Dec 29 {_EN_DASH} Jan 4"),
-    ("2026W02", 2, f"Jan 5 {_EN_DASH} 11"),
-    ("2026W03", 3, f"Jan 12 {_EN_DASH} 18"),
-    ("2026W04", 4, f"Jan 19 {_EN_DASH} 25"),
-    ("2026W05", 5, f"Jan 26 {_EN_DASH} Feb 1"),
+from parch.books import YearPlanner
+from parch.calendar import month_week_bands, short_date_range
+from parch.components import TasksIndex, TasksWeekPage
+from parch.devices.nomad import NOMAD
+from parch.geom import Rect
+from parch.layouts.planner import PlannerLayout
+from parch.layouts.planner.layout import well_rect
+from parch.layouts.planner.painters import (
+    RULE,
+    RULE_C,
+    FOCUS_PAD_BOT,
+    FOCUS_PAD_TOP,
+    FOCUS_PITCH,
+    TASK_CHECKLIST_FRAC,
+    TASK_GAP,
+    TASK_INDEX_BAND_GAP,
+    TASK_INDEX_HEAD_H,
+    TASK_INDEX_LINE_H,
+    TASK_INDEX_RANGE_W,
+    TASK_INDEX_WEEK_W,
+    TASK_INDEX_WRITE_GAP,
+    TICK,
+    checklist_content_height,
+    paint_task,
+    paint_tasks_index,
+    task_row_count,
+    strip_active,
+    strip_items,
+    task_seats,
+    tasks_index_band_seats,
+    tasks_index_bands,
+    tasks_index_link_hits,
+    tasks_index_rule_y,
+    tasks_index_week_parts,
+    tasks_index_week_strip,
 )
-_W44_RANGE = f"Oct 26 {_EN_DASH} Nov 1"
-_W53_RANGE = f"Dec 28 {_EN_DASH} Jan 3"
+from parch.plotter import RecordingPlotter
+from parch.sections.tasks import TasksSection
+from parch.spec import Spec
+from parch.tracks import columns
 
 
-def _generate(dto) -> str:
-    return Generate(i18n=load_default()).generate(dto)
+def _rects_overlap(a: Rect, b: Rect) -> bool:
+    return a.x < b.right and b.x < a.right and a.y < b.bottom and b.y < a.bottom
 
 
-def _tasks(dto) -> Tasks:
-    params = {}
-    for section in dto["planner"]["sections"]:
-        if section.get("class") == "tasks" or section.get("name") == "tasks":
-            params = dict(section.get("params") or {})
-            break
-    return Tasks(
-        section_name="tasks",
-        i18n=load_default(),
-        configurator=Configurator(dto),
-        weeks_per_page=params.get("weeks_per_page", Tasks.DEFAULT_WEEKS_PER_PAGE),
+_TASK_STRIP = (
+    ("Year", "year-2026"),
+    ("Quar", "quarter-2026-Q1"),
+    ("Mon", "month-2026-01"),
+    ("Habit", "month-2026-01-habits"),
+    ("Week", "week-2026-W01"),
+    ("Rev", "review-index-2026"),
+    ("Day", "2026-01-01"),
+    ("Notes", "2026-01-01-notes-1"),
+    ("Proj", "projects-index-2026-01"),
+    ("Meet", "meetings-index-2026"),
+    ("Task", "tasks-index-2026-Q1"),
+)
+
+
+def test_tasks_in_year_planner_after_meetings():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+    dests = [page.dest for page in pages]
+    kinds = [page.kind for page in pages]
+    assert dests[11] == "meetings-index-2026"
+    assert dests[28] == "tasks-index-2026-Q1"
+    assert dests[29] == "tasks-2026-W01"
+    assert dests[85] == "review-index-2026"
+    assert dests[139] == "quarter-2026-Q1"
+    assert kinds.count("tasks_index") == 4
+    assert kinds.count("task") == 53
+    assert "tasks-index-2026-Q4" in dests
+    assert "tasks-2026-W53" in dests
+    year = next(page for page in pages if page.kind == "annual")
+    labels = [label for label, _ in strip_items(year)]
+    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"]
+    assert dict(strip_items(year))["Task"] == spec.tasks_index_dest
+
+
+def test_tasks_index_page():
+    spec = Spec(notes_pages=1, months=(1, 2, 3))
+    page = next(p for p in TasksSection(spec).pages() if p.kind == "tasks_index")
+    assert page.dest == "tasks-index-2026-Q1"
+    assert page.title == "Tasks"
+    index = next(item for item in page.components if isinstance(item, TasksIndex))
+    assert index.year == 2026
+    assert index.quarter == 1
+    assert index.dest == "tasks-index-2026-Q1"
+    assert [band.month for band in index.bands] == [1, 2, 3]
+    assert [band.name for band in index.bands] == ["January", "February", "March"]
+    assert [len(band.weeks) for band in index.bands] == [5, 4, 5]
+    assert index.bands[0].weeks[0].dest == "tasks-2026-W01"
+    assert index.bands[0].weeks[-1].iso_week == 5
+    assert index.bands[1].weeks[0].iso_week == 6
+    assert index.bands[2].weeks[-1].iso_week == 14
+    assert strip_active(page.kind) == "Task"
+    assert strip_items(page) == _TASK_STRIP
+
+
+def test_tasks_dest_page():
+    spec = Spec(notes_pages=1, months=(1, 2, 3))
+    page = next(p for p in TasksSection(spec).pages() if p.dest == "tasks-2026-W01")
+    assert page.kind == "task"
+    assert page.title == "Tasks"
+    dest = next(item for item in page.components if isinstance(item, TasksWeekPage))
+    assert dest.year == 2026
+    assert dest.iso_year == 2026
+    assert dest.iso_week == 1
+    assert dest.monday == date(2025, 12, 29)
+    assert dest.sunday == date(2026, 1, 4)
+    assert dest.rows == 6
+    assert dest.index_dest == "tasks-index-2026-Q1"
+    assert strip_active(page.kind) == "Task"
+    assert strip_items(page) == _TASK_STRIP
+    assert ("Task", "tasks-index-2026-Q1") in strip_items(page)
+    assert ("Week", "week-2026-W01") in strip_items(page)
+
+
+def test_tasks_section_order_indexes_then_weeks():
+    spec = Spec(notes_pages=1)
+    dests = [page.dest for page in TasksSection(spec).pages()]
+    assert dests[0] == "tasks-index-2026-Q1"
+    assert dests[1:15] == [f"tasks-2026-W{week:02d}" for week in range(1, 15)]
+    assert dests[15] == "tasks-index-2026-Q2"
+    assert dests.count("tasks-index-2026-Q1") == 1
+    assert dests.count("tasks-index-2026-Q4") == 1
+    assert [page.kind for page in TasksSection(spec).pages()].count("tasks_index") == 4
+    assert [page.kind for page in TasksSection(spec).pages()].count("task") == 53
+    week_dests = [dest for dest in dests if dest.startswith("tasks-2026-W")]
+    assert week_dests == [f"tasks-2026-W{week:02d}" for week in range(1, 54)]
+    assert len(week_dests) == len(set(week_dests))
+    july = next(p for p in TasksSection(spec).pages() if p.dest == "tasks-2026-W29")
+    well = next(item for item in july.components if isinstance(item, TasksWeekPage))
+    assert well.index_dest == "tasks-index-2026-Q3"
+    assert dict(strip_items(july))["Task"] == "tasks-index-2026-Q3"
+    assert dict(strip_items(july))["Quar"] == "quarter-2026-Q3"
+
+
+def test_tasks_index_seats_weighted_by_weeks():
+    well = well_rect(NOMAD)
+    counts = (5, 4, 5)
+    bands = tasks_index_bands(well, counts)
+    assert len(bands) == 3
+    assert bands[0].y == pytest.approx(well.y)
+    assert bands[0].x == pytest.approx(well.x)
+    assert bands[0].w == pytest.approx(well.w)
+    assert bands[-1].bottom == pytest.approx(well.bottom)
+    leftover = well.h - TASK_INDEX_BAND_GAP * 2
+    assert bands[0].h == pytest.approx(leftover * 5 / 14)
+    assert bands[1].h == pytest.approx(leftover * 4 / 14)
+    assert bands[2].h == pytest.approx(leftover * 5 / 14)
+    assert bands[1].y == pytest.approx(bands[0].bottom + TASK_INDEX_BAND_GAP)
+
+    head, week_rows = tasks_index_band_seats(bands[0], 5)
+    assert head.h == pytest.approx(TASK_INDEX_HEAD_H)
+    assert head.x > bands[0].x
+    assert len(week_rows) == 5
+    assert week_rows[0].y > head.bottom
+    assert week_rows[-1].bottom < bands[0].bottom
+    assert week_rows[0].h > TASK_INDEX_LINE_H
+    assert week_rows[1].y > week_rows[0].bottom
+    stub, dated, write = tasks_index_week_parts(week_rows[0])
+    strip = tasks_index_week_strip(week_rows[0])
+    assert strip.h == pytest.approx(TASK_INDEX_LINE_H)
+    assert strip.y == pytest.approx(week_rows[0].y + (week_rows[0].h - TASK_INDEX_LINE_H) / 2)
+    assert stub.w == pytest.approx(TASK_INDEX_WEEK_W)
+    assert dated.x == pytest.approx(stub.right)
+    assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
+    assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
+    assert TASK_INDEX_RANGE_W == pytest.approx(20.4)
+    assert TASK_INDEX_WRITE_GAP == pytest.approx(2.105)
+    via_cols = columns(strip, 2, gap=0, weights=(TASK_INDEX_WEEK_W, max(strip.w - TASK_INDEX_WEEK_W, 1)))
+    rest = via_cols[1]
+    write_w = max(rest.w - TASK_INDEX_WRITE_GAP - TASK_INDEX_RANGE_W, 1)
+    assert (stub, dated, write) == (
+        via_cols[0],
+        *columns(rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(TASK_INDEX_RANGE_W, write_w)),
+    )
+    assert write.right == pytest.approx(week_rows[0].right)
+    assert write.h == pytest.approx(TASK_INDEX_LINE_H)
+    assert write.bottom < week_rows[0].bottom
+    assert write.y > week_rows[0].y
+    assert write.w > dated.w
+    assert tasks_index_link_hits(week_rows[0]) == (stub, dated)
+    assert not any(_rects_overlap(hit, write) for hit in tasks_index_link_hits(week_rows[0]))
+    assert tasks_index_rule_y(week_rows[0]) == pytest.approx(strip.bottom)
+    assert tasks_index_rule_y(week_rows[0]) == pytest.approx(write.bottom)
+
+
+def test_task_dest_seats():
+    well = well_rect(NOMAD)
+    n = task_row_count(well)
+    target = (well.h - TASK_GAP) * TASK_CHECKLIST_FRAC
+    usable = target - FOCUS_PAD_TOP - FOCUS_PAD_BOT
+    expected = max(1, int((usable - TICK) / FOCUS_PITCH) + 1)
+    assert n == expected
+    assert n == 17
+    assert n > 8
+    checklist, notes = task_seats(well)
+    assert checklist.y == pytest.approx(well.y)
+    assert checklist.h == pytest.approx(checklist_content_height(n, labeled=False))
+    assert checklist.w == pytest.approx(well.w)
+    assert notes.y == pytest.approx(checklist.bottom + TASK_GAP)
+    assert notes.bottom == pytest.approx(well.bottom)
+    assert checklist.h <= target
+    assert target - checklist.h < FOCUS_PITCH
+    assert checklist.h > notes.h
+    assert checklist.h == pytest.approx(well.h * TASK_CHECKLIST_FRAC, rel=0.08)
+    assert notes.h == pytest.approx((well.h - TASK_GAP) * (1 - TASK_CHECKLIST_FRAC), rel=0.12)
+
+
+def test_tasks_index_paint_month_headers_and_week_links():
+    spec = Spec(notes_pages=1, months=(1, 2, 3))
+    page = next(p for p in TasksSection(spec).pages() if p.kind == "tasks_index")
+    index = next(item for item in page.components if isinstance(item, TasksIndex))
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_tasks_index(plotter, well, index)
+
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "January" in texts
+    assert "February" in texts
+    assert "March" in texts
+    for week in range(1, 15):
+        assert f"W{week:02d}" in texts
+    assert "29 Dec–4 Jan" in texts
+    assert short_date_range(date(2026, 1, 26), date(2026, 2, 1)) in texts
+    for rejected in (
+        "Todo",
+        "Doing",
+        "Done",
+        "Active",
+        "Waiting",
+        "This week",
+        "Next week",
+        "Later",
+        "Agenda",
+        "Attendees",
+        "P",
+    ):
+        assert rejected not in texts
+
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert ticks == []
+
+    links = [op[2] for op in plotter.ops if op[0] == "link"]
+    assert links == [dest for week in range(1, 15) for dest in (f"tasks-2026-W{week:02d}",) * 2]
+    counts = tuple(len(band.weeks) for band in index.bands)
+    seats = [
+        row
+        for band_box, band in zip(tasks_index_bands(well, counts), index.bands, strict=True)
+        for row in tasks_index_band_seats(band_box, len(band.weeks))[1]
+    ]
+    expected_hits: list[tuple[Rect, str]] = []
+    for seat, dest in zip(
+        seats, [f"tasks-2026-W{week:02d}" for week in range(1, 15)], strict=True
+    ):
+        stub, dated, write = tasks_index_week_parts(seat)
+        hits = tasks_index_link_hits(seat)
+        assert hits == (stub, dated)
+        assert not any(_rects_overlap(hit, write) for hit in hits)
+        expected_hits.extend((hit, dest) for hit in hits)
+    assert [(op[1], op[2]) for op in plotter.ops if op[0] == "link"] == expected_hits
+    for seat in seats:
+        assert all(op[1] != seat for op in plotter.ops if op[0] == "link")
+
+    hlines = [
+        op
+        for op in plotter.ops
+        if op[0] == "line" and op[5] == pytest.approx(RULE) and op[6] == pytest.approx(RULE_C)
+    ]
+    assert len(hlines) == 14
+    for seat, line in zip(seats, hlines, strict=True):
+        _stub, _dated, write = tasks_index_week_parts(seat)
+        assert line[1] == pytest.approx(write.x)
+        assert line[3] == pytest.approx(write.right)
+        rule_y = tasks_index_rule_y(seat)
+        assert line[2] == pytest.approx(rule_y)
+        assert line[4] == pytest.approx(rule_y)
+        assert rule_y == pytest.approx(write.bottom)
+        assert rule_y < seat.bottom
+        assert rule_y == pytest.approx(tasks_index_week_strip(seat).bottom)
+
+
+def test_task_paint_checklist_and_notes():
+    dest = TasksWeekPage(
+        year=2026,
+        iso_year=2026,
+        iso_week=1,
+        monday=date(2025, 12, 29),
+        sunday=date(2026, 1, 4),
+        rows=6,
+        index_dest="tasks-index-2026-Q1",
+    )
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_task(plotter, well, dest)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("Tasks") == 0
+    assert texts.count("Notes") == 1
+    assert "Agenda" not in texts
+    assert "Action items" not in texts
+    assert "Todo" not in texts
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert len(ticks) == task_row_count(well)
+    assert len(ticks) > 8
+
+
+def test_task_header_week_chip_and_task_tab():
+    spec = Spec(notes_pages=1, months=(1, 2, 3))
+    page = next(p for p in TasksSection(spec).pages() if p.dest == "tasks-2026-W01")
+    plotter = RecordingPlotter()
+    plotter.begin_page()
+    PlannerLayout().paint(page, plotter, NOMAD)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "Tasks" in texts
+    assert "W01" in texts
+    assert "2026" in texts
+    assert "29 Dec–4 Jan" not in texts
+    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
+        assert label in texts
+    assert strip_active(page.kind) == "Task"
+    links = [op[2] for op in plotter.ops if op[0] == "link"]
+    assert links.count("tasks-index-2026-Q1") >= 2
+    chip = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "W01")
+    assert any(
+        op[0] == "link" and op[2] == "tasks-index-2026-Q1" and _rects_overlap(op[1], chip)
+        for op in plotter.ops
     )
 
 
-def _without_mos_bind(page: str) -> str:
-    marker = "#let mos_strip = mos_strip.with(months:"
-    if marker not in page:
-        return page
-    return page.split(marker, 1)[1].split("\n", 1)[-1]
+def test_tasks_index_chrome_task_tab():
+    spec = Spec(notes_pages=1, months=(1, 2, 3))
+    page = next(p for p in TasksSection(spec).pages() if p.kind == "tasks_index")
+    plotter = RecordingPlotter()
+    plotter.begin_page()
+    PlannerLayout().paint(page, plotter, NOMAD)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "Tasks" in texts
+    assert "Q1" in texts
+    assert "January" in texts
+    assert "Task" in texts
+    assert strip_active(page.kind) == "Task"
+    assert dict(strip_items(page))["Task"] == spec.tasks_index_dest
 
 
-def _pages(typst: str) -> list[str]:
-    return typst.split("#pagebreak()")
+def test_task_rows_knob():
+    spec = Spec(notes_pages=1, months=(1,), task_rows=5)
+    pages = TasksSection(spec).pages()
+    index = next(p for p in pages if p.kind == "tasks_index")
+    roster = next(item for item in index.components if isinstance(item, TasksIndex))
+    assert roster.quarter == 1
+    assert [band.month for band in roster.bands] == [1]
+    dests = [page.dest for page in pages]
+    assert dests[0] == "tasks-index-2026-Q1"
+    assert dests[1:] == [f"tasks-2026-W{week:02d}" for week in range(1, 6)]
+    dest = next(item for item in pages[1].components if isinstance(item, TasksWeekPage))
+    assert dest.rows == 5
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_task(plotter, well, dest)
+    ticks = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICK)
+    ]
+    assert len(ticks) == task_row_count(well, floor=5)
+    assert len(ticks) == task_row_count(well)
 
 
-def _index_page(typst: str, page_id: str = "tasks") -> str:
-    needle = f"[{'Tasks'} <{page_id}>]"
-    for page in _pages(typst):
-        if needle in page and "rotate(" not in page:
-            return _without_mos_bind(page)
-    raise AssertionError(f"no Tasks index page {page_id}")
-
-
-def _week_page(typst: str, week_id: str) -> str:
-    marker = f"<tasks-{week_id}>"
-    for page in _pages(typst):
-        if marker in page and "rotate(" not in page and "[Tasks <tasks-" not in page:
-            # week pages define #[] <tasks-WEEK>; index pages only link to it
-            if f"#[] <tasks-{week_id}>" in page:
-                return page
-    raise AssertionError(f"no Tasks week page {week_id}")
-
-
-def test_listed_without_table_defaults_weeks_per_page():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="default-tasks.toml")
-    section = dto["planner"]["sections"][0]
-    assert section["name"] == "tasks"
-    assert section["class"] == "tasks"
-    assert section["params"]["weeks_per_page"] == 13
-    tasks = _tasks(dto)
-    assert tasks.weeks_per_page == Tasks.DEFAULT_WEEKS_PER_PAGE == 13
-    typst = _generate(dto)
-    assert "<tasks>" in typst
-    for week_id, number, rng in _JAN_WEEKS:
-        assert f"<tasks-{week_id}>" in typst
-        assert str(number) in typst
-        assert rng in typst
-    assert "<tasks-2>" in typst
-    assert "<tasks-4>" in typst
-    assert "<tasks-5>" not in typst
-
-
-def test_short_january_is_one_index_and_five_weeks():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="short.toml")
-    typst = _generate(short_january(dto))
-    assert "<tasks>" in typst
-    assert "<tasks-2>" not in typst
-    for week_id, number, rng in _JAN_WEEKS:
-        assert f"<tasks-{week_id}>" in typst
-        index = _index_page(typst)
-        assert str(number) in index
-        assert rng in index
-        assert f"W{number}" not in index
-        assert f"Week {number}" not in index
-    assert typst.count("#pagebreak()") == 5  # 1 index + 5 weeks - 1
-
-
-def test_index_title_is_tasks_and_week_links_back():
-    dto = parse_toml(
-        _minimal(
-            enable=["annual", "tasks"],
-            sections="""[section.annual]
-show_month_name = true
-""",
-        ),
-        source="links.toml",
+def test_q1_bands_match_calendar():
+    spec = Spec(months=(1, 2, 3))
+    index = next(
+        item
+        for page in TasksSection(spec).pages()
+        if page.kind == "tasks_index"
+        for item in page.components
+        if isinstance(item, TasksIndex)
     )
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    assert "padded_link(<annual>)" not in index
-    assert "2026 /" not in index
-    assert "text(size: h1)[/]" not in index
-    assert "text(size: h1, [Tasks <tasks>])" in index
-    week = _week_page(typst, "2026W01")
-    assert "padded_link(<tasks>)" in week
-    assert "padded_link(<tasks-2>)" not in week
-    assert "padded_link(<annual>)" not in week
-    labels = set(_LABEL_DEF.findall(typst))
-    links = set(_PADDED_LINK.findall(typst))
-    assert {"tasks", "tasks-2026W01", "annual"} <= labels
-    assert {"tasks", "tasks-2026W01"} <= links
-    assert "annual" not in set(_PADDED_LINK.findall(index + week))
-
-
-def test_header_is_tasks_without_year_when_contents_off():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="no-annual.toml")
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    week = _week_page(typst, "2026W01")
-    for page in (index, week):
-        assert "padded_link(<annual>)" not in page
-        assert "2026 /" not in page
-        assert "text(size: h1)[/]" not in page
-        assert "pad(right: 3mm" not in page
-        assert "padded_link(<index>" not in page
-        assert "column-gutter: 6pt" not in page
-        assert "columns: (auto, auto)" not in page
-    assert "text(size: h1, [Tasks <tasks>])" in index
-    assert "stack(" not in index
-    assert "padded_link(<tasks>)" in week
-    assert _W01_TITLE in week
-    assert "<tasks-2026W01>" in typst
-
-
-def test_index_is_raw_typst_full_band_no_arrows_no_invert():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="chrome.toml")
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    assert "rotate(" not in index
-    assert "2026 /" not in index
-    assert "padded_link(<annual>)" not in index
-    assert "column-gutter: 6pt" not in index
-    assert "→" not in index
-    assert "grid.cell(fill: black" not in index
-    assert "text(white)" not in index
-    assert "Q4" not in index
-    assert "Q1" not in index
-    assert "columns: 1fr" in index
-    assert "columns: (2em, 1fr)" in index
-    assert "align: horizon + left" in index
-    assert "box(width: 100%, height: 100%" in index
-    assert (
-        "padded_link(<tasks-2026W01>, box(width: 100%, height: 100%"
-        in index
-    )
-    assert "padded_link(<tasks-2026W01>)[1" not in index
-    assert "[W01" not in index
-    assert " W01" not in index
-    assert "W1 " not in index
-    assert "Week 1" not in index
-    # no band stroke (Contents / Habits family), no quiet chunk range
-    assert "stroke: (bottom: regular_stroke)" not in index
-    assert f"Dec 29 {_EN_DASH} Feb 1" not in index
-
-
-def test_index_range_wording_same_month_cross_month_cross_year():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="ranges.toml")
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    assert f"Dec 29 {_EN_DASH} Jan 4" in index
-    assert f"Jan 5 {_EN_DASH} 11" in index
-    assert f"Jan 26 {_EN_DASH} Feb 1" in index
-    assert "2025" not in index
-    assert "2026 /" not in index
-    assert "2025-" not in index
-    assert "<tasks-2026W01>" in index
-
-
-def test_weeks_per_page_paginates_index_ids_and_crumb_targets():
-    dto = parse_toml(
-        _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = 2\n"),
-        source="paginate.toml",
-    )
-    assert dto["planner"]["sections"][0]["params"]["weeks_per_page"] == 2
-    typst = _generate(short_january(dto))
-    assert "<tasks>" in typst
-    assert "<tasks-2>" in typst
-    assert "<tasks-3>" not in typst
-    page1 = _index_page(typst, "tasks")
-    page2 = _index_page(typst, "tasks-2")
-    assert "<tasks-2026W01>" in page1
-    assert "<tasks-2026W02>" in page1
-    assert "<tasks-2026W03>" in page2
-    assert "<tasks-2026W04>" in page2
-    assert "<tasks-2026W05>" in page2
-    for page in (page1, page2):
-        assert "[Tasks <" in page
-        assert "2026 /" not in page
-        assert "text(size: h1)[/]" not in page
-        assert "padded_link(<annual>)" not in page
-        assert "Q4" not in page
-        assert "→" not in page
-    w1 = _week_page(typst, "2026W01")
-    w3 = _week_page(typst, "2026W03")
-    w5 = _week_page(typst, "2026W05")
-    assert "padded_link(<tasks>)" in w1
-    assert "padded_link(<tasks-2>)" not in w1
-    assert "padded_link(<tasks-2>)" in w3
-    assert "padded_link(<tasks>)" not in w3
-    assert "padded_link(<tasks-2>)" in w5
-    assert "padded_link(<tasks>)" not in w5
-    assert "padded_link(<tasks-3>)" not in w5
-
-
-def test_full_year_default_pagination_ids():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="year.toml")
-    typst = _generate(dto)
-    assert "<tasks>" in typst
-    assert "<tasks-2>" in typst
-    assert "<tasks-3>" in typst
-    assert "<tasks-4>" in typst
-    assert "<tasks-5>" not in typst
-    page1 = _index_page(typst, "tasks")
-    page4 = _index_page(typst, "tasks-4")
-    assert "<tasks-2026W01>" in page1
-    assert "<tasks-2026W13>" in page1
-    assert "<tasks-2026W14>" not in page1
-    assert "<tasks-2026W40>" in page4
-    assert "<tasks-2026W44>" in page4
-    assert "<tasks-2026W52>" in page4
-    assert "<tasks-2026W53>" in page4
-    assert _W44_RANGE in page4
-    assert _W53_RANGE in page4
-    w44 = _week_page(typst, "2026W44")
-    assert "padded_link(<tasks-4>)" in w44
-    assert "padded_link(<tasks>)" not in w44
-    w53 = _week_page(typst, "2026W53")
-    assert "padded_link(<tasks-4>)" in w53
-    assert "padded_link(<tasks-5>)" not in w53
-
-
-def test_week_page_is_raw_typst_ticked_not_mos():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="week-chrome.toml")
-    typst = _generate(short_january(dto))
-    week = _week_page(typst, "2026W01")
-    assert "rotate(" not in week
-    assert "lined_well(task_fill, tile-height: regular_height)" in week
-    assert "lined_well(task_fill)" not in week.replace(
-        "lined_well(task_fill, tile-height: regular_height)", ""
-    )
-    assert "$square.stroked$" not in week
-    assert "layout(" not in week
-    assert "calc.floor" not in week
-    assert "stroke: (_, _) => (bottom: regular_stroke + black)" not in week
-    assert "regular_stroke + luma(130)" not in week
-    assert "luma(130)" not in week
-    assert "rect_pattern(dotted)" not in week
-    assert "Q4" not in week
-    assert "Q1" not in week
-    assert "→" not in week
-    assert "W44" not in week
-    assert "[W01" not in week
-    assert " W01" not in week
-    assert "NOVEMBER" not in week
-    assert "January" not in week
-    assert "columns: (1fr, 1fr, 1fr)" not in week
-    assert "columns: (1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr)" in week
-    assert "What went" not in week
-    assert "prompt" not in week.lower()
-    assert "Week 1" in week
-    assert f"Dec 29 {_EN_DASH} Jan 4" in week
-    assert _W01_TITLE in week
-    assert "padded_link(<2026W01>)" not in week
-    assert "text(size: 0.85em)" in week
-    assert "luma(" not in week
-    # do not box the writing column
-    assert "stroke: regular_stroke + black" not in week or "columns: (regular_height, 1fr)" not in week
-
-
-def test_day_strip_labels_and_links_when_daily_exists():
-    dto = parse_toml(
-        _minimal(
-            enable=["daily", "tasks"],
-            sections="""[section.daily]
-item_spacing = "4mm"
-
-[section.daily.left.schedule]
-hour_from = 8
-hour_to = 20
-
-[section.daily.right.priorities]
-count = 1
-""",
-        ),
-        source="daily-links.toml",
-    )
-    typst = _generate(short_january(dto))
-    week = _week_page(typst, "2026W01")
-    assert "Monday 29" in week
-    assert "Tuesday 30" in week
-    assert "Wednesday 31" in week
-    assert "box(text(size: 6pt)[Wednesday 31])" in week
-    assert "Wed 31" not in week
-    assert week.count("line(length: 100%, stroke: regular_stroke + black)") == 7
-    assert "Thursday 1" in week
-    assert "Friday 2" in week
-    assert "Saturday 3" in week
-    assert "Sunday 4" in week
-    assert "MON / 29" not in week
-    assert "MON / 27" not in week
-    assert "Mon 29" not in week
-    assert "padded_link(<2025-12-29>" not in week
-    assert "padded_link(<2026-01-01>" in week
-    assert "padded_link(<2026-01-04>" in week
-    assert "padded_link(<2026-01-01>, box(width: 100%, height: 100%" in week
-    assert "luma(" not in week
-    assert "fill: black" not in week
-
-
-def test_day_cells_plain_when_daily_omitted():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="no-daily.toml")
-    typst = _generate(short_january(dto))
-    week = _week_page(typst, "2026W01")
-    assert "Monday 29" in week
-    assert "padded_link(<2025-12-29>" not in week
-    assert "padded_link(<2026-01-01>" not in week
-
-
-def test_week_n_taps_weekly_planner():
-    dto = parse_toml(
-        _minimal(
-            enable=["weekly", "tasks"],
-            sections="""[section.weekly]
-column_gutter = "4pt"
-""",
-        ),
-        source="week-link.toml",
-    )
-    typst = _generate(short_january(dto))
-    labels = set(_LABEL_DEF.findall(typst))
-    assert "2026W01" in labels
-    assert "tasks-2026W01" in labels
-    assert "tasks" in labels
-    week = _week_page(typst, "2026W01")
-    assert f"padded_link(<2026W01>)[{_W01_TITLE}]" in week
-    assert "padded_link(<tasks>)" in week
-    assert "padded_link(<tasks-2026W01>" in _index_page(typst)
-    assert "padded_link(<2026W01>" not in _index_page(typst)
-
-
-def test_weeks_per_page_bool_and_float_rejected():
-    with pytest.raises(ConfigError, match="expected integer"):
-        parse_toml(
-            _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = true\n"),
-            source="bool.toml",
-        )
-    with pytest.raises(ConfigError, match="expected integer"):
-        parse_toml(
-            _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = 12.5\n"),
-            source="float.toml",
-        )
-
-
-def test_weeks_per_page_zero_rejected():
-    with pytest.raises(ConfigError, match="weeks_per_page"):
-        parse_toml(
-            _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = 0\n"),
-            source="zero.toml",
-        )
-
-
-def test_unknown_key_on_section_tasks_raises():
-    with pytest.raises(ConfigError, match="unknown key: section.tasks.foo"):
-        parse_toml(
-            _minimal(enable=["tasks"], sections="[section.tasks]\nfoo = 1\n"),
-            source="foo.toml",
-        )
-
-
-def test_mos_ships_tasks_after_review():
-    dto = load(NOMAD)
-    names = [s["name"] for s in Configurator(dto).enabled_sections()]
-    assert names[-5:] == ["habits", "review", "tasks", "meetings", "colophon"]
-    tasks = next(s for s in dto["planner"]["sections"] if s["name"] == "tasks")
-    assert tasks["params"]["weeks_per_page"] == 13
-    assert "tasks" in NOMAD.read_text(encoding="utf-8")
-
-
-def test_short_january_tasks_compiles(tmp_path):
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="compile.toml")
-    typst = _generate(short_january(dto))
-    pdf, stderr = compile_pdf(typst, tmp_path / "tasks")
-    assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-
-
-def test_tiny_annual_tasks_compiles(tmp_path):
-    dto = parse_toml(
-        _minimal(
-            enable=["annual", "tasks"],
-            sections="""[section.annual]
-show_month_name = true
-""",
-        ),
-        source="tiny-tasks.toml",
-    )
-    typst = _generate(short_january(dto))
-    pdf, stderr = compile_pdf(typst, tmp_path / "tiny-tasks")
-    assert pdf.is_file() and pdf.stat().st_size > 0, stderr
-
-
-def test_range_helper_matches_locale_short_months():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="helper.toml")
-    tasks = _tasks(short_january(dto))
-    weeks = tasks._weeks()
-    assert len(weeks) == 5
-    assert tasks.range_label(weeks[0].days()[0], weeks[0].days()[-1]) == f"Dec 29 {_EN_DASH} Jan 4"
-    assert tasks.range_label(weeks[1].days()[0], weeks[1].days()[-1]) == f"Jan 5 {_EN_DASH} 11"
-    assert tasks.range_label(weeks[4].days()[0], weeks[4].days()[-1]) == f"Jan 26 {_EN_DASH} Feb 1"
-
-
-def test_chunks_pack_53_weeks_as_13_13_13_14():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="pack.toml")
-    tasks = _tasks(dto)
-    weeks = tasks._weeks()
-    assert len(weeks) == 53
-    assert tasks._page_sizes(53) == [13, 13, 13, 14]
-    chunks = tasks._chunks(weeks)
-    assert [len(c) for c in chunks] == [13, 13, 13, 14]
-    assert [w.number for w in chunks[-1]] == list(range(40, 54))
-    assert tasks._index_count(53) == 4
-
-
-def test_short_index_keeps_13_row_height():
-    dto = parse_toml(_minimal(enable=["tasks"], sections=""), source="short-height.toml")
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    assert "rows: (5fr, 8fr)" in index
-    assert "columns: (2em, 1fr)" in index
-
-
-def test_page_sizes_absorb_only_when_previous_stays_at_most_14():
-    dto = parse_toml(
-        _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = 20\n"),
-        source="leftover.toml",
-    )
-    tasks = _tasks(dto)
-    assert tasks.weeks_per_page == 20
-    assert tasks._page_sizes(21) == [20, 1]
-    assert tasks._page_sizes(53) == [20, 20, 13]
-    two = _tasks(
-        parse_toml(
-            _minimal(enable=["tasks"], sections="[section.tasks]\nweeks_per_page = 2\n"),
-            source="two.toml",
-        )
-    )
-    assert two._page_sizes(5) == [2, 3]
-
-
-def test_contents_mark_on_tasks_when_index_on():
-    dto = parse_toml(
-        _minimal(enable=["index", "tasks"], sections=""),
-        source="mark.toml",
-    )
-    typst = _generate(short_january(dto))
-    index = _index_page(typst)
-    week = _week_page(typst, "2026W01")
-    assert _TRAIL_MARK in index
-    assert _TRAIL_MARK in week
-    assert index.count(_MARK_RULE) == 1
-    assert week.count(_MARK_RULE) == 1
-    for page in (index, week):
-        assert "column-gutter: 6pt" not in page
-        assert "columns: (auto, auto)" not in page
-        assert "2026 /" not in page
-        assert "text(size: h1)[/]" not in page
-        assert "padded_link(<annual>)" not in page
-    assert "text(size: h1, [Tasks <tasks>])" in index
-    assert "padded_link(<tasks>)" in week
-    assert "[Tasks <tasks>]" in index
-    assert _LEAD_PAIR in index
-    assert _FOLLOW_SPACING in index
-    assert _SEAT_RTL not in index
-    assert "trail_heading(" not in index
-    assert index.index(_TRAIL_MARK) < index.index("[Tasks <tasks>]")
-    assert "padded_link(<tasks>)" in week
-    assert _LEAD_PAIR in week
-    assert _FOLLOW_SPACING in week
-    assert _SEAT_RTL not in week
-    assert "trail_heading(" not in week
-    assert _W01_TITLE in week
-    contents = next(p for p in _pages(typst) if 'weight: "bold")[Contents <index>]' in p)
-    assert "padded_link(<index>" not in contents
-    assert "padded_link(<tasks>" in contents
-    tasks = _tasks(dto)
-    manifest = Manifest()
-    tasks.register(manifest)
-    for page in tasks.pages(manifest):
-        assert page.heading_mark is HeadingMark.LEAD
-        assert page.raw_typst is True
+    calendar = month_week_bands(2026, (1, 2, 3), weekday_start=0)
+    assert [len(band.weeks) for band in index.bands] == [len(weeks) for _month, weeks in calendar]
+    assert index.bands[0].weeks[0].monday == calendar[0][1][0][0]

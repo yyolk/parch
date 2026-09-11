@@ -1,121 +1,80 @@
-"""Year-at-a-glance page of 12 little calendars."""
-
-import math
 from datetime import date
-from typing import Any
 
-from parch.calendar import walk
-from parch.calendar.day import Day
-from parch.calendar.month import Month
-from parch.config import StrictDict, _to_plain
-from parch.i18n import I18n
-from parch.mos.components.little_calendar import LittleCalendar
-from parch.mos.components.year_month import year_month_cell
-from parch.mos.configurator import Configurator
-from parch.mos.manifest import Manifest
-from parch.mos.nomad_nav import nomad_topband
-from parch.compose.page_data import HeadingMark, PageData
-from parch.sections._shared import _side_menu_position
+from parch.calendar import month_name, month_touching_weeks, month_weeks, weekday_labels
+from parch.components import AnnualGrid, AnnualMonth, MonthCell
+from parch.sections.nav import planner_nav
+from parch.sections.page import Page
+from parch.spec import Spec
 
 
-class Annual:
-    ID = "annual"
+def build_annual_month(spec: Spec, month: int) -> AnnualMonth:
+    pressed = spec.presses(month)
+    labels = weekday_labels(spec.weekday_start)
+    weeks = []
+    for week in month_weeks(spec.year, month, spec.weekday_start):
+        cells = []
+        for day in week:
+            if day is None:
+                cells.append(MonthCell(day=None))
+            elif pressed:
+                cells.append(MonthCell(day=day.day, dest=spec.dest_for_day(day)))
+            else:
+                cells.append(MonthCell(day=day.day, dest=None))
+        weeks.append(tuple(cells))
+    return AnnualMonth(
+        month=month,
+        name=month_name(month),
+        dest=spec.dest_for_month(month) if pressed else None,
+        weekday_labels=labels,
+        weeks=tuple(weeks),
+    )
 
-    def __init__(
-        self,
-        section_name: str,
-        i18n: I18n,
-        configurator: Configurator,
-        row_gutter: str = "5pt",
-        **other: Any,
-    ) -> None:
-        self.section_name = section_name
-        self.i18n = i18n
-        self.configurator = configurator
-        base = self.configurator.dig("planner", "params", "little_calendar") or {}
-        extra = other.get("little_calendar") or {}
-        self.little_calendar = {**_plain(base), **_plain(extra)}
-        self.row_gutter = row_gutter
-        self.side = _side_menu_position(configurator)
 
-    def register(self, manifest: Manifest) -> None:
-        manifest.register_source(self.ID)
+def build_month_mini(spec: Spec, day: date) -> AnnualMonth:
+    """Daily mini: in-month + touching days. Highlight has no dest (already here)."""
+    labels = weekday_labels(spec.weekday_start)
+    weeks = []
+    for week in month_touching_weeks(spec.year, day.month, spec.weekday_start):
+        cells = []
+        for other in week:
+            here = other.month == day.month and other.day == day.day
+            dest = None
+            if not here and spec.presses_day(other):
+                dest = spec.dest_for_day(other)
+            cells.append(
+                MonthCell(day=other.day, dest=dest, in_month=other.month == day.month)
+            )
+        weeks.append(tuple(cells))
+    return AnnualMonth(
+        month=day.month,
+        name=month_name(day.month),
+        dest=spec.dest_for_month(day.month) if spec.presses(day.month) else None,
+        weekday_labels=labels,
+        weeks=tuple(weeks),
+        highlight_day=day.day,
+    )
 
-    def pages(self, manifest: Manifest) -> list[PageData]:
-        year = self.configurator.start_date().year
-        if nomad_topband(self.configurator):
-            return [
-                PageData(
-                    title=None,
-                    content=self._nomad_content(manifest),
-                    page_id=self.ID,
-                    heading=False,
-                )
-            ]
+
+class AnnualSection:
+    def __init__(self, spec: Spec) -> None:
+        self.spec = spec
+
+    def pages(self) -> list[Page]:
+        spec = self.spec
+        months = tuple(build_annual_month(spec, month) for month in range(1, 13))
+        first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         return [
-            PageData(
-                title=f"text(size: h1)[{year}<{self.ID}>]",
-                content=self._content(manifest),
-                page_id=self.ID,
-                heading_mark=HeadingMark.TRAIL,
+            Page(
+                dest=spec.year_dest,
+                kind="annual",
+                title=str(spec.year),
+                nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
+                components=(
+                    AnnualGrid(
+                        year=spec.year,
+                        months=months,
+                        quarter_dest=spec.quarter_dest,
+                    ),
+                ),
             )
         ]
-
-    def _content(self, manifest: Manifest) -> str:
-        months = list(self._range())
-        parts: list[str] = []
-        for i, month in enumerate(months):
-            cal = LittleCalendar(
-                i18n=self.i18n,
-                manifest=manifest,
-                month=month,
-                **self.little_calendar,
-                show_week_letter=False,
-                side=self.side,
-            ).generate()
-            parts.append(f"block(width: 100%, height: 100%, {cal})")
-            nxt = months[i + 1] if i + 1 < len(months) else None
-            if nxt is not None and nxt.quarter() != month.quarter():
-                parts.append("grid.hline(stroke: regular_stroke + black)")
-        rows = ", ".join(["1fr"] * math.ceil(len(months) / 3))
-        return f"""block(
-  width: 100%,
-  height: 1fr,
-  grid(
-    columns: (1fr, 1fr, 1fr),
-    rows: ({rows}),
-    column-gutter: regular_column_gutter,
-    row-gutter: {self.row_gutter},
-
-    {",\n".join(parts)}
-  )
-)"""
-
-    def _nomad_content(self, manifest: Manifest) -> str:
-        cells = ",\n  ".join(
-            year_month_cell(self.i18n, manifest, month) for month in self._year_months()
-        )
-        return (
-            f"[#box(width: 100%, height: 100%, nomad_year_grid(\n"
-            f"  {cells},\n"
-            f")) <{self.ID}>]"
-        )
-
-    def _year_months(self) -> list[Month]:
-        year = self.configurator.start_date().year
-        start = self.configurator.weekday_start()
-        return [
-            Month(weekday_start=start, day=Day(weekday_start=start, day=date(year, month, 1)))
-            for month in range(1, 13)
-        ]
-
-    def _range(self):
-        return walk(self.configurator.start_date().month(), self.configurator.end_date().month())
-
-
-def _plain(value: Any) -> dict:
-    if isinstance(value, StrictDict):
-        return value.to_plain()
-    if isinstance(value, dict):
-        return _to_plain(value)
-    return {}

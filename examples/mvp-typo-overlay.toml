@@ -1,0 +1,54 @@
+# Same MVP job as examples/mvp.toml, plus an editable typography overlay.
+# press() merges: code defaults ⊕ device overlay (Nomad identity) ⊕ this table.
+# Closed TypeSteps only: display, title, eyebrow, body, chrome, label, caption, micro.
+# Overlay size is an absolute override for that step (does not change root).
+# schema_version must exactly match OVERLAY_SCHEMA_VERSION (1 today).
+# Unknown steps, fields, or non-Jost weights fail the press before paint.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+title = "Year planner"
+
+[daily]
+schedule_from = 7
+schedule_to = 16
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
+
+# Yolk knobs — bump chrome / titles without editing painters.
+# Each patch may set size and/or weight (book | medium | bold | heavy).
+[typography.overlay]
+schema_version = 1
+
+[typography.overlay.chrome]
+size = 9.6
+weight = "bold"
+
+[typography.overlay.title]
+size = 14
+weight = "bold"
+
+[typography.overlay.eyebrow]
+size = 13
+weight = "bold"
+
+[typography.overlay.display]
+size = 48
+weight = "heavy"

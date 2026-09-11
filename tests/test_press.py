@@ -1,168 +1,196 @@
-"""parch press dest lock: cwd product PDF, temp compile unless -w."""
-
 from pathlib import Path
 
-from parch.cli import build_parser, generate_cmd, main, press_dest, press_outfile
-from parch.services.compile import CompileError, OUTPUT_FILE
-from tests.toml_fixtures import _minimal
+import pytest
+from pypdf import PdfReader
+
+from parch.fonts import PROOF_PROFILE, TypePatch
+from parch.press import _load_spec, main, press
+from parch.spec import Spec
+
+MM_PER_INCH = 25.4
 
 
-def _job(tmp_path: Path, name: str = "mine.toml") -> Path:
-    path = tmp_path / name
-    path.write_text(_minimal(enable=["colophon"], sections=""), encoding="utf-8")
-    return path
+def _pt(mm: float) -> float:
+    return mm / MM_PER_INCH * 72.0
 
 
-def _dummy(monkeypatch, *, fail: bool = False, seen: dict | None = None):
-    captured = {} if seen is None else seen
-
-    class _DummyCompile:
-        def compile(self, workdir, file="index.typst", enable_ghostscript=False, **_kwargs):
-            workdir = Path(workdir)
-            captured["workdir"] = workdir
-            captured["ghostscript"] = enable_ghostscript
-            if fail:
-                raise CompileError("typst compile failed")
-            pdf = workdir / OUTPUT_FILE
-            pdf.write_bytes(b"%PDF-gs" if enable_ghostscript else b"%PDF-ok")
-            return pdf
-
-    monkeypatch.setattr("parch.cli.Compile", lambda: _DummyCompile())
-    return captured
+def _named_dests(reader: PdfReader) -> set[str]:
+    raw = reader.named_destinations or {}
+    return {str(key).lstrip("/") for key in raw}
 
 
-def test_press_dest_toml_stem(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    job = tmp_path / "jobs" / "mine.toml"
-    assert press_dest(job) == Path.cwd() / "mine.pdf"
-    assert press_dest("mine.toml") == Path.cwd() / "mine.pdf"
-    args = build_parser().parse_args(["press", str(job)])
-    assert press_dest(args.config, workdir=args.workdir, outfile=press_outfile(args)) == (
-        Path.cwd() / "mine.pdf"
+def _link_count(reader: PdfReader) -> int:
+    count = 0
+    for page in reader.pages:
+        annots = page.get("/Annots")
+        if annots is None:
+            continue
+        for annot in annots:
+            obj = annot.get_object()
+            if obj.get("/Subtype") == "/Link":
+                count += 1
+    return count
+
+
+def test_press_year_pdf(tmp_path: Path):
+    out = tmp_path / "mvp.pdf"
+    press(Spec(notes_pages=1), out)
+    assert out.is_file() and out.stat().st_size > 0
+
+    reader = PdfReader(out)
+    # cover + annual + index + 8 leaves + meeting index + 16 dests + 4 task indexes + 53 task dests + review index + 53 review dests + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
+    assert len(reader.pages) == 950
+
+    page = reader.pages[0]
+    assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
+    assert float(page.mediabox.height) == pytest.approx(_pt(158.5), abs=0.6)
+
+    dests = _named_dests(reader)
+    assert "cover" in dests
+    assert "year-2026" in dests
+    assert "projects-2026" not in dests
+    assert "projects-index-2026-01" in dests
+    assert "projects-2026-01" in dests
+    assert "projects-2026-08" in dests
+    assert "meetings-index-2026" in dests
+    assert "meeting-2026-01" in dests
+    assert "meeting-2026-16" in dests
+    assert "tasks-index-2026-Q1" in dests
+    assert "tasks-2026-W01" in dests
+    assert "tasks-2026-W53" in dests
+    assert "review-index-2026" in dests
+    assert "review-2026-W01" in dests
+    assert "review-2026-W53" in dests
+    assert "quarter-2026-Q1" in dests
+    assert "quarter-2026-Q4" in dests
+    assert "month-2026-01" in dests
+    assert "month-2026-07" in dests
+    assert "month-2026-07-habits" in dests
+    assert "month-2026-12" in dests
+    assert "month-2026-12-habits" in dests
+    assert "week-2026-W01" in dests
+    assert "week-2026-W53" in dests
+    assert "2026-01-01" in dests
+    assert "2026-07-15" in dests
+    assert "2026-12-31" in dests
+    assert "2026-07-15-notes-1" in dests
+    assert _link_count(reader) >= 365
+
+
+def test_cli_press_toml(tmp_path: Path):
+    spec = tmp_path / "job.toml"
+    spec.write_text(
+        'year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nnotes_pages = 1\n',
+        encoding="utf-8",
     )
+    out = tmp_path / "job.pdf"
+    assert main(["press", str(spec), "-o", str(out)]) == 0
+    assert out.is_file()
+    dests = _named_dests(PdfReader(out))
+    assert "2026-01-01" in dests
+    assert "2026-01-31" in dests
 
 
-def test_press_dest_device_id(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    args = build_parser().parse_args(["press", "supernote-nomad"])
-    assert press_dest(args.config, workdir=args.workdir, outfile=press_outfile(args)) == (
-        Path.cwd() / "supernote-nomad.pdf"
+def test_cli_load_keeps_toml_overlay_under_month_flag():
+    spec = _load_spec("examples/mvp-typo-overlay.toml", year=None, month=1)
+    assert spec.months == (1,)
+    assert spec.type_overlay.chrome == TypePatch(size=9.6, weight="bold")
+    assert spec.type_overlay.display == TypePatch(size=48, weight="heavy")
+    assert spec.project_index_pages == 3
+
+
+def test_cli_rejects_unknown_typography(tmp_path: Path, capsys):
+    spec = tmp_path / "bad.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
+        '[typography.overlay.cover_year]\nsize = 48\n',
+        encoding="utf-8",
     )
+    out = tmp_path / "bad.pdf"
+    assert main(["press", str(spec), "-o", str(out)]) == 2
+    err = capsys.readouterr().err
+    assert "unknown step 'cover_year'" in err
+    assert not out.exists()
 
 
-def test_press_dest_dash_o_and_positional():
-    flagged = build_parser().parse_args(["press", "mine.toml", "-o", "custom.pdf"])
-    assert press_dest(flagged.config, workdir=flagged.workdir, outfile=press_outfile(flagged)) == (
-        Path("custom.pdf")
+def test_cli_unknown_weight_fails(tmp_path: Path, capsys):
+    spec = tmp_path / "hair.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
+        '[typography.overlay.chrome]\nweight = "hairline"\n',
+        encoding="utf-8",
     )
-    positional = build_parser().parse_args(["press", "mine.toml", "custom.pdf"])
-    assert press_dest(
-        positional.config, workdir=positional.workdir, outfile=press_outfile(positional)
-    ) == Path("custom.pdf")
+    assert main(["press", str(spec), "-o", str(tmp_path / "hair.pdf")]) == 2
+    assert "bad weight 'hairline'" in capsys.readouterr().err
 
 
-def test_press_dest_workdir_only_is_index_pdf():
-    args = build_parser().parse_args(["press", "mine.toml", "-w", "out"])
-    assert press_dest(args.config, workdir=args.workdir, outfile=press_outfile(args)) == (
-        Path("out") / OUTPUT_FILE
+def test_cli_version_mismatch_fails(tmp_path: Path, capsys):
+    spec = tmp_path / "ver.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 99\n'
+        '[typography.overlay.chrome]\nsize = 8.6\n',
+        encoding="utf-8",
     )
+    assert main(["press", str(spec), "-o", str(tmp_path / "ver.pdf")]) == 2
+    assert "schema_version" in capsys.readouterr().err
 
 
-def test_press_dest_workdir_and_output():
-    args = build_parser().parse_args(["press", "mine.toml", "-w", "out", "-o", "custom.pdf"])
-    assert press_dest(args.config, workdir=args.workdir, outfile=press_outfile(args)) == Path(
-        "custom.pdf"
-    )
+def test_cli_proof_verb_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "proof.pdf"
+    assert main(["proof", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is True
 
 
-def test_press_output_mutex(capsys):
-    rc = main(["press", "mine.toml", "a.pdf", "-o", "b.pdf"])
-    assert rc == 1
-    assert "give outfile as a positional or -o, not both" in capsys.readouterr().err
+def test_cli_press_proof_flag_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "flag.pdf"
+    assert main(["press", "supernote-nomad", "--proof", "-o", str(out)]) == 0
+    assert seen["proof"] is True
 
 
-def test_press_output_mutex_agrees(tmp_path, monkeypatch, capsys):
-    monkeypatch.chdir(tmp_path)
-    path = _job(tmp_path)
-    _dummy(monkeypatch)
-    args = build_parser().parse_args(["press", str(path), "same.pdf", "-o", "same.pdf"])
-    assert press_outfile(args) == "same.pdf"
-    assert generate_cmd(args, argv=["parch", "press", str(path), "same.pdf", "-o", "same.pdf"]) == 0
-    assert (tmp_path / "same.pdf").read_bytes() == b"%PDF-ok"
+def test_cli_press_without_proof_stays_device_only(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "plain.pdf"
+    assert main(["press", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is False
 
 
-def test_press_default_temp_dir_gone_after_success(tmp_path, monkeypatch, capsys):
-    monkeypatch.chdir(tmp_path)
-    jobs = tmp_path / "jobs"
-    jobs.mkdir()
-    path = _job(jobs)
-    seen = _dummy(monkeypatch)
-    assert main(["press", str(path)]) == 0
-    dest = tmp_path / "mine.pdf"
-    assert dest.read_bytes() == b"%PDF-ok"
-    assert "Wrote" in capsys.readouterr().out
-    assert seen["workdir"] is not None
-    assert not seen["workdir"].exists()
-    assert not (tmp_path / "out").exists()
-    assert not (tmp_path / "jobs" / "mine.pdf").exists()
+def test_cli_proof_verb_plus_flag_stays_true(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
 
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
 
-def test_press_failed_compile_leaves_existing_dest(tmp_path, monkeypatch, capsys):
-    monkeypatch.chdir(tmp_path)
-    path = _job(tmp_path)
-    dest = tmp_path / "mine.pdf"
-    dest.write_bytes(b"keep")
-    seen = _dummy(monkeypatch, fail=True)
-    assert main(["press", str(path)]) == 1
-    assert dest.read_bytes() == b"keep"
-    assert "typst compile failed" in capsys.readouterr().err
-    assert seen["workdir"] is not None
-    assert not seen["workdir"].exists()
-
-
-def test_press_workdir_writes_index_typst(tmp_path, monkeypatch):
-    path = _job(tmp_path)
-    workdir = tmp_path / "work"
-    _dummy(monkeypatch)
-    assert main(["press", str(path), "-w", str(workdir)]) == 0
-    assert (workdir / "index.typst").is_file()
-    assert (workdir / OUTPUT_FILE).read_bytes() == b"%PDF-ok"
-    assert (workdir / "house.typ").is_file()
-
-
-def test_press_workdir_and_output_keeps_index_pdf(tmp_path, monkeypatch):
-    path = _job(tmp_path)
-    workdir = tmp_path / "work"
-    dest = tmp_path / "custom.pdf"
-    _dummy(monkeypatch)
-    assert main(["press", str(path), "-w", str(workdir), "-o", str(dest)]) == 0
-    assert dest.read_bytes() == b"%PDF-ok"
-    assert (workdir / OUTPUT_FILE).read_bytes() == b"%PDF-ok"
-    assert (workdir / "index.typst").is_file()
-
-
-def test_press_ghostscript_dest_is_gs_pdf(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    path = _job(tmp_path)
-    seen = _dummy(monkeypatch)
-    assert main(["press", str(path), "-g"]) == 0
-    assert seen["ghostscript"] is True
-    assert (tmp_path / "mine.pdf").read_bytes() == b"%PDF-gs"
-    assert not seen["workdir"].exists()
-
-
-def test_press_overwrites_existing_dest(tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    path = _job(tmp_path)
-    dest = tmp_path / "mine.pdf"
-    dest.write_bytes(b"old")
-    _dummy(monkeypatch)
-    assert main(["press", str(path)]) == 0
-    assert dest.read_bytes() == b"%PDF-ok"
-
-
-def test_proof_and_specimen_keep_out_default():
-    parser = build_parser()
-    assert parser.parse_args(["proof", "158x210", "--samples"]).workdir == "./out"
-    assert parser.parse_args(["specimen", "supernote-nomad"]).workdir == "./out"
-    assert parser.parse_args(["press", "supernote-nomad"]).workdir is None
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "both.pdf"
+    assert main(["proof", "supernote-nomad", "--proof", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+    assert PROOF_PROFILE.overlay.display is None

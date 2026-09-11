@@ -1,98 +1,47 @@
-"""One page per week spanning the configured month range."""
+from datetime import date, timedelta
 
-from parch.calendar import walk
-from parch.calendar.day import Day
-from parch.calendar.week import Week
-from parch.i18n import I18n
-from parch.mos.configurator import Configurator
-from parch.mos.manifest import Manifest
-from parch.compose.page_data import HeadingMark, PageData
-from parch.mos.nomad_nav import nomad_topband
-from parch.mos.pages.weekly import Weekly as WeeklyPage
-
-_EN_DASH = "–"
+from parch.calendar import WEEKDAY_LABELS, iso_monday
+from parch.components import WeekDay, WeekStrip
+from parch.sections.nav import planner_nav
+from parch.sections.page import Page
+from parch.spec import Spec
 
 
-class Weekly:
-    def __init__(
-        self,
-        section_name: str,
-        i18n: I18n,
-        configurator: Configurator,
-        column_gutter: str,
-        pattern: str = "dotted",
-    ) -> None:
-        self.section_name = section_name
-        self.i18n = i18n
-        self.configurator = configurator
-        self.weekday_start = self.configurator.weekday_start()
-        self.first_week_day = self.configurator.start_date().beginning_of_month().beginning_of_week()
-        self.last_week_day = self.configurator.end_date().end_of_month().end_of_week()
-        self.column_gutter = column_gutter
-        self.pattern = pattern
+class WeeklySection:
+    def __init__(self, spec: Spec) -> None:
+        self.spec = spec
 
-    def register(self, manifest: Manifest) -> None:
-        for week in self._weeks():
-            manifest.register_source(week.id)
-
-    def pages(self, manifest: Manifest) -> list[PageData]:
-        out = []
-        for week in self._weeks():
-            weekly = WeeklyPage(
-                i18n=self.i18n,
-                manifest=manifest,
-                week=week,
-                column_gutter=self.column_gutter,
-                pattern=self.pattern,
+    def pages_for(self, week: list[date]) -> list[Page]:
+        spec = self.spec
+        monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+        sunday = monday + timedelta(days=6)
+        iso = monday.isocalendar()
+        pressed = [d for d in week if spec.presses_day(d)]
+        landing = pressed[0]
+        days = tuple(
+            WeekDay(
+                day=day,
+                weekday_label=WEEKDAY_LABELS[day.weekday()],
+                dest=spec.dest_for_day(day) if spec.presses_day(day) else None,
+                in_month=spec.presses_day(day),
             )
-            thursday = next(day for day in week.days() if day.weekday_name == "thursday")
-            nomad = nomad_topband(self.configurator)
-            year = (
-                f'text(size: 7.5pt, weight: "bold")[{self.configurator.start_date().year}]'
-                if nomad
-                else None
-            )
-            out.append(
-                PageData(
-                    title=self._title(weekly, nomad=nomad),
-                    content=weekly.nomad_content() if nomad else weekly.content(),
-                    page_id=week.id,
-                    highlight_months=[thursday.month()],
-                    highlight_quarters=[],
-                    nav_links=[],
-                    heading_mark=HeadingMark.TRAIL,
-                    year=year,
-                )
-            )
-        return out
-
-    def range_label(self, first: Day, last: Day) -> str:
-        first_month = self.i18n.t(f"months.short.{first.month().name}")
-        last_month = self.i18n.t(f"months.short.{last.month().name}")
-        if first.day.month == last.day.month and first.day.year == last.day.year:
-            return f"{first_month} {first.month_day} {_EN_DASH} {last.month_day}"
-        return f"{first_month} {first.month_day} {_EN_DASH} {last_month} {last.month_day}"
-
-    def _title(self, page: WeeklyPage, *, nomad: bool = False) -> str:
-        days = page.week.days()
-        rng = self.range_label(days[0], days[-1])
-        if nomad:
-            return (
-                f'text(size: 10pt, weight: "bold")'
-                f'[{self.i18n.t("week_name")} {page.week.number}'
-                f" <{page.week.id}>  ·  {rng}]"
-            )
-        return (
-            f"text(size: h1)[{self.i18n.t('week_name')} {page.week.number}"
-            f" <{page.week.id}> #h(0.6em) {rng}]"
+            for day in week
         )
-
-    def _weeks(self) -> list[Week]:
-        days = list(walk(self.first_week_day, self.last_week_day))
-        weeks = []
-        for i in range(0, len(days), 7):
-            chunk = days[i : i + 7]
-            if not chunk:
-                continue
-            weeks.append(Week(weekday_start=self.weekday_start, day=chunk[0]))
-        return weeks
+        dest = spec.dest_for_week(monday)
+        return [
+            Page(
+                dest=dest,
+                kind="weekly",
+                title=f"Week {iso.week:02d}",
+                nav=planner_nav(spec, week_dest=dest, day=landing, month=landing.month),
+                components=(
+                    WeekStrip(
+                        iso_year=iso.year,
+                        iso_week=iso.week,
+                        monday=monday,
+                        sunday=sunday,
+                        days=days,
+                    ),
+                ),
+            )
+        ]

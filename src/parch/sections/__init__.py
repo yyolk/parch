@@ -1,35 +1,31 @@
-"""section registry — name to class for compose. Coordinator fills the manifest; chase is still MOS."""
+from parch.sections.annual import AnnualSection
+from parch.sections.cover import CoverSection
+from parch.sections.daily import DailySection
+from parch.sections.daily_notes import DailyNotesSection
+from parch.sections.habit import HabitSection
+from parch.sections.meeting import MeetingSection
+from parch.sections.month import MonthSection
+from parch.sections.page import NavItem, Page, PageKind
+from parch.sections.projects import ProjectsSection
+from parch.sections.quarter import QuarterSection
+from parch.sections.review import ReviewSection
+from parch.sections.tasks import TasksSection
+from parch.sections.weekly import WeeklySection
 
-from parch.sections.cover_plain import CoverPlain
-from parch.sections.index import Index
-from parch.sections.annual import Annual
-from parch.sections.quarterly import Quarterly
-from parch.sections.monthly import Monthly
-from parch.sections.weekly import Weekly
-from parch.sections.daily import Daily
-from parch.sections.daily_notes import DailyNotes
-from parch.sections.projects import Projects
-from parch.sections.meetings import Meetings
-from parch.sections.habits import Habits
-from parch.sections.review import Review
-from parch.sections.tasks import Tasks
-from parch.sections.colophon import Colophon
-
-SECTIONS: dict[str, type] = {
-    "cover_plain": CoverPlain,
-    "index": Index,
-    "annual": Annual,
-    "quarterly": Quarterly,
-    "monthly": Monthly,
-    "weekly": Weekly,
-    "daily": Daily,
-    "daily_notes": DailyNotes,
-    "projects": Projects,
-    "meetings": Meetings,
-    "habits": Habits,
-    "review": Review,
-    "tasks": Tasks,
-    "colophon": Colophon,
-}
-
-__all__ = ["Colophon", "SECTIONS"]
+__all__ = [
+    "AnnualSection",
+    "CoverSection",
+    "DailyNotesSection",
+    "DailySection",
+    "HabitSection",
+    "MeetingSection",
+    "MonthSection",
+    "ProjectsSection",
+    "NavItem",
+    "Page",
+    "PageKind",
+    "QuarterSection",
+    "ReviewSection",
+    "TasksSection",
+    "WeeklySection",
+]

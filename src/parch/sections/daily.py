@@ -1,76 +1,34 @@
-"""One page per day in the configured range."""
+from datetime import date
 
-from typing import Any
-
-from parch.calendar import walk
-from parch.i18n import I18n
-from parch.mos.configurator import Configurator
-from parch.mos.manifest import Manifest
-from parch.compose.page_data import HeadingMark, PageData
-from parch.mos.pages.daily import Daily as DailyPage
-from parch.mos.nomad_nav import nomad_topband
-from parch.mos.scribe_nav import scribe_hyperpaper_nav
-from parch.sections._shared import _side_menu_position, heading_and_well
+from parch.calendar import WEEKDAY_FULL
+from parch.components import Notes, Priorities, Schedule
+from parch.sections.annual import build_month_mini
+from parch.sections.nav import planner_nav
+from parch.sections.page import Page
+from parch.spec import Spec
 
 
-class Daily:
-    ID = "daily"
+class DailySection:
+    def __init__(self, spec: Spec) -> None:
+        self.spec = spec
 
-    def __init__(self, section_name: str, i18n: I18n, configurator: Configurator, **params: Any) -> None:
-        self.section_name = section_name
-        self.i18n = i18n
-        self.configurator = configurator
-        self.params = params
-
-    def register(self, manifest: Manifest) -> None:
-        for day in self._range():
-            manifest.register_source(day.id)
-
-    def pages(self, manifest: Manifest) -> list[PageData]:
-        out = []
-        side = _side_menu_position(self.configurator)
-        for day in self._range():
-            page = DailyPage(
-                i18n=self.i18n,
-                manifest=manifest,
-                day=day,
-                debug=self.configurator.debug(),
-                side=side,
-                **self.params,
+    def pages_for(self, day: date) -> list[Page]:
+        spec = self.spec
+        weekday = WEEKDAY_FULL[day.weekday()]
+        hours = tuple(range(spec.schedule_from, spec.schedule_to + 1))
+        return [
+            Page(
+                dest=spec.dest_for_day(day),
+                kind="daily",
+                title=f"{weekday[:3]} {day.day}",
+                nav=planner_nav(
+                    spec, week_dest=spec.dest_for_week(day), day=day, month=day.month
+                ),
+                components=(
+                    Schedule(label="Schedule", hours=hours),
+                    Notes(label="Notes"),
+                    Priorities(label="Priorities", rows=spec.priority_rows),
+                    build_month_mini(spec, day),
+                ),
             )
-            heading = page.title()
-            nomad = nomad_topband(self.configurator)
-            year = None
-            if nomad:
-                weekday = self.i18n.t(f"weekday.full.{day.weekday_name}")
-                month = self.i18n.t(f"months.full.{day.month().name}")
-                title = (
-                    f'text(size: 10pt, weight: "bold")'
-                    f"[{weekday}  ·  {month} {day.month_day} <{day.id}>]"
-                )
-                content = page.nomad_content()
-                year = (
-                    f'text(size: 7.5pt, weight: "bold")'
-                    f"[{self.configurator.start_date().year}]"
-                )
-            elif scribe_hyperpaper_nav(self.configurator):
-                title = page.nav_title()
-                content = heading_and_well(heading, page.content())
-            else:
-                title = heading
-                content = page.content()
-            out.append(
-                PageData(
-                    title=title,
-                    content=content,
-                    page_id=day.id,
-                    highlight_months=[day.month()],
-                    highlight_quarters=[],
-                    heading_mark=HeadingMark.TRAIL,
-                    year=year,
-                )
-            )
-        return out
-
-    def _range(self):
-        return walk(self.configurator.start_date(), self.configurator.end_date())
+        ]

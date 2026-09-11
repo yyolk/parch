@@ -1,10 +1,11 @@
-The MIT License (MIT)
+MIT License
 
-Copyright (c) 2026 PDF Planner Project
-Copyright (c) 2026 Vitaliy Kudryk (original LYP)
+Copyright (c) 2026 Joseph Chiocchi / parch authors
+Copyright (c) 2021 Vitaliy Kudryk (LYP / latex-yearly-planner)
 
-This software is a Python port of Vitaliy Kudryk's LYP (latex yearly planner),
-originally licensed under the MIT License (2026).
+parch historically grew as a Python port of Kudryk's MIT-licensed LYP.
+This tree is an fpdf2 rewrite and does not vendor LYP sources.
+The MIT notice below is retained.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

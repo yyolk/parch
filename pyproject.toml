@@ -1,16 +1,16 @@
 [project]
 name = "parch"
-version = "0.2.15"
-description = "parch -- pages for e-ink."
+version = "0.3.0a0"
+description = "parch — fixed e-ink PDF pages (fpdf2 / Nomad)."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.14"
 authors = [
   { name = "Joseph Chiocchi", email = "joe@yolk.cc" },
 ]
-keywords = ["e-ink", "planner", "typst", "supernote"]
+keywords = ["e-ink", "planner", "supernote", "fpdf2"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -18,13 +18,8 @@ classifiers = [
     "Topic :: Printing",
 ]
 dependencies = [
-    "pydantic>=2.13.4",
-    "questionary",
+    "fpdf2==2.8.5",
 ]
-
-[project.optional-dependencies]
-dev = ["pytest>=8.0"]
-typst-native = ["typst==0.15.0"]
 
 [project.urls]
 Homepage = "https://github.com/yyolk/parch"
@@ -32,7 +27,7 @@ Repository = "https://github.com/yyolk/parch"
 Issues = "https://github.com/yyolk/parch/issues"
 
 [project.scripts]
-parch = "parch.cli:main"
+parch = "parch.press:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -41,6 +36,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/parch"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/parch/fonts" = "parch/fonts"
 
 [tool.uv]
 package = true
@@ -50,13 +47,8 @@ dev = [
     "pillow>=12.3.0",
     "pypdf>=6.16.2",
     "pytest>=8.0",
-    "syrupy>=6.0.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src", "."]
-addopts = ["-m", "not slow"]
-markers = [
-    "slow: full-book backend comparison",
-]
+pythonpath = ["src"]
