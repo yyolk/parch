@@ -34,9 +34,6 @@ from parch.layouts.planner.painters import (
     paint_cover,
     paint_daily,
     paint_habit_grid,
-    paint_habit_grid_rows,
-    paint_habit_grid_transposed,
-    paint_habit_grid_weekday_zebra,
     paint_header,
     paint_meeting,
     paint_meetings_index,
@@ -47,12 +44,6 @@ from parch.layouts.planner.painters import (
     paint_project,
     paint_projects_index,
     paint_quarter,
-    paint_quarter_a_focus_notes,
-    paint_quarter_a_note_boxes,
-    paint_quarter_a_shortband,
-    paint_quarter_b_stack,
-    paint_quarter_c_focus_notes,
-    paint_quarter_c_stack_notes,
     paint_review,
     paint_review_index,
     paint_schedule,
@@ -96,16 +87,7 @@ def test_allowlist_is_closed_and_real():
         "paint_projects_index",
         "paint_project",
         "paint_quarter",
-        "paint_quarter_a_shortband",
-        "paint_quarter_a_note_boxes",
-        "paint_quarter_b_stack",
-        "paint_quarter_c_stack_notes",
-        "paint_quarter_c_focus_notes",
-        "paint_quarter_a_focus_notes",
         "paint_habit_grid",
-        "paint_habit_grid_rows",
-        "paint_habit_grid_weekday_zebra",
-        "paint_habit_grid_transposed",
         "paint_meetings_index",
         "paint_meeting",
         "paint_review_index",
@@ -199,30 +181,15 @@ def test_listed_painters_do_not_emit_face_only_text():
 
     quarter = next(page for page in pages if page.kind == "quarter")
     grid = _one(quarter, QuarterGrid)
-    for painter in (
-        paint_quarter,
-        paint_quarter_a_shortband,
-        paint_quarter_a_note_boxes,
-        paint_quarter_b_stack,
-        paint_quarter_c_stack_notes,
-        paint_quarter_c_focus_notes,
-        paint_quarter_a_focus_notes,
-    ):
-        ink = RecordingPlotter()
-        painter(ink, well, grid, ramp=ramp)
-        _assert_inked(ink)
+    ink = RecordingPlotter()
+    paint_quarter(ink, well, grid, ramp=ramp)
+    _assert_inked(ink)
 
     habit = _page("month-2026-01-habits")
     habit_grid = _one(habit, HabitGrid)
-    for painter in (
-        paint_habit_grid,
-        paint_habit_grid_rows,
-        paint_habit_grid_weekday_zebra,
-        paint_habit_grid_transposed,
-    ):
-        ink = RecordingPlotter()
-        painter(ink, well, habit_grid, ramp=ramp)
-        _assert_inked(ink)
+    ink = RecordingPlotter()
+    paint_habit_grid(ink, well, habit_grid, ramp=ramp)
+    _assert_inked(ink)
 
     ink = RecordingPlotter()
     paint_meetings_index(ink, well, _one(_page("meetings-index-2026"), MeetingIndex), ramp=ramp)
