@@ -8,8 +8,25 @@ Python 3.14+ required (language features, not just the pin).
 
 ## Architecture
 
-```
-Device → Component (data only) → Section (build Page) → Layout (chrome + seat) → Plotter → Press
+```mermaid
+flowchart TB
+  Spec[Spec] -->|drives| PressCore
+  YP["books/year_planner"] -->|walks pages| PressCore
+
+  subgraph device ["Device — canvas · chrome gate"]
+    subgraph component ["Component — data only · does not draw"]
+      subgraph section ["Section — builds Page"]
+        subgraph layout ["Layout — chrome + seat"]
+          Painters["painters under layouts/planner/"]
+          subgraph plotter ["Plotter — protocol"]
+            PressCore["Press"]
+            Backends["Fpdf2Plotter · RecordingPlotter"]
+          end
+          Painters -->|takes plotter| plotter
+        end
+      end
+    end
+  end
 ```
 
 Painters live under `layouts/planner/` and take `plotter: Plotter`. Components do not draw. The only plotter backend is `Fpdf2Plotter`. Tests use `RecordingPlotter`.
