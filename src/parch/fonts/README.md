@@ -148,9 +148,9 @@ defaults. Family is never overlaid.
 Invoke:
 
 ```shell
-uv run parch proof examples/mvp.toml -o artifacts/mvp/exp-typeramp-proof.pdf
+uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
 # or
-uv run parch press examples/mvp.toml --proof -o artifacts/mvp/exp-typeramp-proof.pdf
+uv run parch press examples/mvp.toml --proof -o out/exp-typeramp-proof.pdf
 ```
 
 API: `press(spec, out, proof=True)` or `press(spec, out, proof=ProofProfile())`.
