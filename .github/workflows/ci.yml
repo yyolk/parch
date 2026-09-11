@@ -3,10 +3,16 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+# Greenfield CI is read-only. No Pages deploy (master's specimen catalog
+# is a different tree and is not reproduced here).
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -14,8 +20,10 @@ jobs:
     env:
       UV_PYTHON: "3.14"
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           python-version: "3.14"
       - name: Install poppler-utils
@@ -29,3 +37,34 @@ jobs:
           uv run parch press examples/mvp.toml -w out/nomad -o out/nomad.pdf
           test -s out/nomad/index.pdf
           test -s out/nomad.pdf
+
+  # Fresh fpdf2 press of the Nomad MVP, uploaded as an Actions artifact.
+  # Runs on push to the greenfield tip and on workflow_dispatch. Skipped on
+  # pull_request so PR status stays the existing `test` job.
+  press-artifact:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/cursor/greenfield-nomad-mvp-3c7f')
+    needs: [test]
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.14"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.14"
+      - run: uv python install 3.14
+      - run: uv sync --group dev
+      - name: Press Nomad MVP
+        run: |
+          uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
+          test -s artifacts/mvp/nomad-2026.pdf
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: mvp-nomad-2026
+          path: artifacts/mvp/
+          if-no-files-found: error
