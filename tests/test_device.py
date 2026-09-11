@@ -6,6 +6,7 @@ from parch.fonts import (
     OVERLAY_SCHEMA_VERSION,
     ROOT_BODY,
     TYPE_STEPS,
+    Pt,
     EffectiveRamp,
     JostRamp,
     OverlayOk,
@@ -25,7 +26,7 @@ def test_nomad_geometry():
     assert NOMAD.toolbar_edge == "top"
     assert NOMAD.toolbar_clearance == 8.0
     assert NOMAD.writing_clearance == 4.0
-    assert NOMAD.root_body == ROOT_BODY == 8.5
+    assert NOMAD.root_body == ROOT_BODY == Pt(8.5)
 
 
 def test_toolbar_is_not_the_well():

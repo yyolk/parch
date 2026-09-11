@@ -15,8 +15,10 @@ from parch.fonts import (
     ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
+    Em,
     FontCatalog,
     JostRamp,
+    Pt,
     ProofProfile,
     TypeEmphasis,
     TypeFamily,
@@ -30,6 +32,7 @@ from parch.fonts import (
     compose_overlays,
     font_dir,
     jost_catalog,
+    pt_from_em,
     scale_ink,
     validate_overlay,
 )
@@ -102,16 +105,16 @@ def test_jost_scale_table_invariants():
         catalog.path(strong.family, strong.weight)
         assert rank[strong.weight] >= rank[regular.weight]
 
-    assert ramp.root_body == ROOT_BODY == 8.5
+    assert ramp.root_body == ROOT_BODY == Pt(8.5)
     assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=DISPLAY_SIZE)
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
-    assert ramp.ink("title", "strong") == TypeInk(family="jost", weight="bold", size=11)
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
-    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.5)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
-    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
-    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
-    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=4.3)
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(11))
+    assert ramp.ink("title", "strong") == TypeInk(family="jost", weight="bold", size=Pt(11))
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(10))
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=Pt(8.5))
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(7.4))
+    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=Pt(6.4))
+    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=Pt(5.4))
+    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(4.3))
     with pytest.raises(KeyError):
         ramp.ink("cover_year")  # type: ignore[arg-type]
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
@@ -179,7 +182,7 @@ def test_cover_honors_stub_ramp():
 
         def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
             self.calls.append((step, emphasis))
-            return TypeInk(family="jost", weight="book", size=12)
+            return TypeInk(family="jost", weight="book", size=Pt(12))
 
     ramp = StubRamp()
     plotter = RecordingPlotter()
@@ -203,8 +206,8 @@ def test_header_honors_stub_ramp():
         def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
             self.calls.append((step, emphasis))
             if step == "title":
-                return TypeInk(family="jost", weight="bold", size=9)
-            return TypeInk(family="jost", weight="book", size=6)
+                return TypeInk(family="jost", weight="bold", size=Pt(9))
+            return TypeInk(family="jost", weight="book", size=Pt(6))
 
     ramp = StubRamp()
     plotter = RecordingPlotter()
@@ -241,7 +244,7 @@ def test_plotter_ink_and_ref_cuts():
     assert plotter.pdf.font_family == "jost:bold"
     plotter.text(box, "eyebrow", ref=TypeRef(step="eyebrow"))
     assert plotter.pdf.font_family == "jost:medium"
-    plotter.text(box, "ink", ink=TypeInk(family="jost", weight="heavy", size=10))
+    plotter.text(box, "ink", ink=TypeInk(family="jost", weight="heavy", size=Pt(10)))
     assert plotter.pdf.font_family == "jost:heavy"
     plotter.text(box, "smcp", ref=TypeRef(step="label"), small_caps=True)
     assert plotter.pdf.font_family == "jost:book"
@@ -268,58 +271,66 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.ROOT_BODY is ROOT_BODY
     assert fonts.DISPLAY_SIZE is DISPLAY_SIZE
     assert fonts.JOST_RATIOS is JOST_RATIOS
+    assert fonts.Em is Em
+    assert fonts.Pt is Pt
+    assert fonts.pt_from_em is pt_from_em
     assert fonts.validate_overlay is validate_overlay
+    assert not hasattr(fonts, "Mm")
+    assert not hasattr(fonts, "Px")
+    assert JOST_RATIOS["body"] == Em(1.0)
+    assert ROOT_BODY == Pt(8.5)
+    assert DISPLAY_SIZE == Pt(42.0)
     assert fonts.ProofProfile is ProofProfile
     assert fonts.PROOF_PROFILE is PROOF_PROFILE
 
 
 def test_overlay_explicit_size_keeps_default_weight():
-    patch = TypePatch(size=9.0)
-    base = TypeInk(family="jost", weight="book", size=7.4)
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="book", size=9.0)
+    patch = TypePatch(size=Pt(9.0))
+    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
+    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="book", size=Pt(9.0))
     assert apply_overlay(base, None) == base
 
 
 def test_overlay_explicit_weight_keeps_default_size():
     patch = TypePatch(weight="bold")
-    base = TypeInk(family="jost", weight="book", size=7.4)
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="bold", size=7.4)
+    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
+    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="bold", size=Pt(7.4))
 
 
 def test_overlay_both_fields_win():
-    patch = TypePatch(size=8.6, weight="medium")
-    base = TypeInk(family="jost", weight="book", size=7.4)
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="medium", size=8.6)
+    patch = TypePatch(size=Pt(8.6), weight="medium")
+    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
+    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="medium", size=Pt(8.6))
 
 
 def test_overlay_missing_step_keeps_default():
-    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.0)))
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=9.0)
-    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=9.0)
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
-    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.5)
-    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
-    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
-    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=4.3)
+    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.0))
+    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=Pt(9.0))
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(11))
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(10))
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=Pt(8.5))
+    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=Pt(6.4))
+    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=Pt(5.4))
+    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(4.3))
 
 
 def test_overlay_never_changes_family():
-    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.0, weight="heavy")))
+    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0), weight="heavy")))
     assert ramp.ink("chrome").family == "jost"
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
 
 
 def test_compose_overlays_later_explicit_field_wins():
-    device = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"), eyebrow=TypePatch(size=12.0))
-    press_over = TypeOverlay(chrome=TypePatch(size=10.0))
+    device = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"), eyebrow=TypePatch(size=Pt(12.0)))
+    press_over = TypeOverlay(chrome=TypePatch(size=Pt(10.0)))
     merged = compose_overlays(device, press_over)
     ramp = EffectiveRamp(overlay=merged)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=10.0)
-    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="medium", size=10.0)
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=12.0)
-    assert ramp.ink("title").size == 11
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
+    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(12.0))
+    assert ramp.ink("title").size == Pt(11)
 
 
 def test_empty_effective_ramp_matches_jost_defaults():
@@ -335,19 +346,19 @@ def test_bind_ramp_explicit_wins_over_overlay():
         catalog = jost_catalog()
 
         def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
-            return TypeInk(family="jost", weight="book", size=3)
+            return TypeInk(family="jost", weight="book", size=Pt(3))
 
     stub = StubRamp()
-    bound = bind_ramp(ramp=stub, overlay=TypeOverlay(chrome=TypePatch(size=99)))
+    bound = bind_ramp(ramp=stub, overlay=TypeOverlay(chrome=TypePatch(size=Pt(99))))
     assert bound is stub
-    assert bound.ink("chrome").size == 3
-    overlay_only = bind_ramp(overlay=TypeOverlay(chrome=TypePatch(size=9.0)))
-    assert overlay_only.ink("chrome").size == 9.0
+    assert bound.ink("chrome").size == Pt(3)
+    overlay_only = bind_ramp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
+    assert overlay_only.ink("chrome").size == Pt(9.0)
 
 
 def test_patch_validators_are_pure():
     with pytest.raises(ValueError, match="size must be > 0"):
-        TypePatch(size=0)
+        TypePatch(size=Pt(0))
     with pytest.raises(ValueError, match="unknown weight"):
         TypePatch(weight="hairline")  # type: ignore[arg-type]
 
@@ -408,7 +419,7 @@ def test_press_overlay_reaches_header_roles(tmp_path: Path):
         Spec(months=(1,), notes_pages=0, project_index_pages=1),
         tmp_path / "over.pdf",
         plotter=plotter,
-        overlay=TypeOverlay(chrome=TypePatch(size=9.1, weight="medium")),
+        overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium")),
     )
     chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
     assert chrome_meta[3] == 9.1
@@ -472,7 +483,7 @@ def test_proof_profile_is_slightly_larger_chrome_and_title():
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=PROOF_CHROME_SIZE)
     assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=PROOF_EYEBROW_SIZE)
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
     assert PROOF_PROFILE.overlay.display is None
     assert PROOF_CHROME_SIZE == pytest.approx(JostRamp().ink("chrome").size + 1.8)
     assert PROOF_TITLE_SIZE == pytest.approx(JostRamp().ink("title").size + 2)
@@ -480,12 +491,12 @@ def test_proof_profile_is_slightly_larger_chrome_and_title():
 
 
 def test_proof_stacks_on_device_without_mutating_device_overlay():
-    device = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"))
+    device = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"))
     before = device.chrome
     merged = compose_overlays(device, PROOF_PROFILE.overlay)
     assert device.chrome is before
     assert device.chrome is not None
-    assert device.chrome.size == 8.6
+    assert device.chrome.size == Pt(8.6)
     assert merged.chrome is not None
     assert merged.chrome.size == PROOF_CHROME_SIZE
     assert merged.chrome.weight == "medium"
@@ -493,13 +504,13 @@ def test_proof_stacks_on_device_without_mutating_device_overlay():
 
 
 def test_proof_stacks_after_device_and_toml():
-    device = TypeOverlay(chrome=TypePatch(size=8.0, weight="medium"))
-    toml = TypeOverlay(chrome=TypePatch(size=8.5), title=TypePatch(size=12.0))
+    device = TypeOverlay(chrome=TypePatch(size=Pt(8.0), weight="medium"))
+    toml = TypeOverlay(chrome=TypePatch(size=Pt(8.5)), title=TypePatch(size=Pt(12.0)))
     merged = compose_overlays(device, toml, PROOF_PROFILE.overlay)
     ramp = EffectiveRamp(overlay=merged)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=PROOF_CHROME_SIZE)
     assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
 
 
 def test_proof_overlay_reaches_header_and_cover():
@@ -544,7 +555,7 @@ def test_press_proof_flag_applies_proof_profile(tmp_path: Path):
 
 
 def test_press_proof_profile_instance(tmp_path: Path):
-    custom = ProofProfile(overlay=TypeOverlay(chrome=TypePatch(size=10.5)))
+    custom = ProofProfile(overlay=TypeOverlay(chrome=TypePatch(size=Pt(10.5))))
     plotter = RecordingPlotter()
     press(
         Spec(months=(1,), notes_pages=0, project_index_pages=1),
@@ -599,29 +610,29 @@ def test_type_ref_is_frozen_type_step_only():
     with pytest.raises(ValueError, match="unknown type step"):
         TypeRef(step="cover_year")  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="size must be > 0"):
-        TypeRef(step="chrome", size=0)
+        TypeRef(step="chrome", size=Pt(0))
 
 
 def test_ramp_resolve_typeref_uses_type_step():
     ramp = JostRamp()
     assert ramp.resolve(TypeRef(step="display")) == ramp.ink("display")
     assert ramp.resolve(TypeRef(step="title", emphasis="strong")) == ramp.ink("title", "strong")
-    assert ramp.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
-        family="jost", weight="book", size=7.6
+    assert ramp.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
+        family="jost", weight="book", size=Pt(7.6)
     )
-    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.1, weight="medium")))
-    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="medium", size=9.1)
-    assert over.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
-        family="jost", weight="medium", size=7.6
+    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium")))
+    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="medium", size=Pt(9.1))
+    assert over.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
+        family="jost", weight="medium", size=Pt(7.6)
     )
     proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
     assert proof.resolve(TypeRef(step="chrome")) == TypeInk(
         family="jost", weight="book", size=PROOF_CHROME_SIZE
     )
-    assert proof.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
-        family="jost", weight="book", size=7.6
+    assert proof.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
+        family="jost", weight="book", size=Pt(7.6)
     )
-    assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=42)
+    assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=Pt(42))
 
 
 def test_plotter_ref_and_ink_only():
@@ -629,13 +640,13 @@ def test_plotter_ref_and_ink_only():
     plotter.begin_page()
     plotter.text(Rect(4, 12, 40, 8), "ref", ref=TypeRef(step="title"))
     assert plotter.pdf.font_family == "jost:medium"
-    plotter.text(Rect(4, 22, 40, 8), "ink", ink=TypeInk(family="jost", weight="book", size=8))
+    plotter.text(Rect(4, 22, 40, 8), "ink", ink=TypeInk(family="jost", weight="book", size=Pt(8)))
     assert plotter.pdf.font_family == "jost:book"
     with pytest.raises(TypeError, match="ink= or ref="):
         plotter.text(
             Rect(4, 32, 40, 8),
             "both",
-            ink=TypeInk(family="jost", weight="book", size=8),
+            ink=TypeInk(family="jost", weight="book", size=Pt(8)),
             ref=TypeRef(step="label"),
         )
     with pytest.raises(TypeError, match="ink= or ref="):

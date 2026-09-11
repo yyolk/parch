@@ -163,11 +163,12 @@ class Fpdf2Plotter(Plotter):
         if not content:
             return
         resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
+        size = float(resolved.size)
         if small_caps:
             self._draw_smcp(
                 box,
                 content,
-                size=resolved.size,
+                size=size,
                 align=align,
                 gray=gray,
                 family=resolved.family,
@@ -175,9 +176,9 @@ class Fpdf2Plotter(Plotter):
             )
             return
         register_as = self._register_name(resolved.family, resolved.weight)
-        self.pdf.set_font(register_as, "", resolved.size)
+        self.pdf.set_font(register_as, "", size)
         self._ink(gray)
-        cap = _pt_mm(resolved.size) * 0.72
+        cap = _pt_mm(size) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
         tw = self.pdf.get_string_width(content)
         match align:

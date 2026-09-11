@@ -29,10 +29,11 @@ from `display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`
 `cover_brow` → `eyebrow`, `page_title` → `title`, `chrome` → `chrome`.
 
 Sizes are **em-relative**. Ratio-driven steps are
-`root_body × JOST_RATIOS[step]`. Nomad / default `root_body` is **8.5pt**
+`pt_from_em(root_body, JOST_RATIOS[step])`. Nomad / default `root_body` is **8.5pt**
 (month day numbers). `display` is a **fixed 42pt** exception — it does not
 track root, so the cover year does not reflow when the body scale moves.
 `Device.root_body` is the device hook; press builds the ramp at that root.
+`Em` is a multiple of `root_body`; `Pt` is an absolute PDF point.
 
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
 and handed to `Fpdf2Plotter` at press time.
@@ -70,7 +71,7 @@ takes. No I/O in validators. A patch applies to both emphases of that
 step; an explicit weight replaces the emphasis-derived cut. Overlay never
 changes `family`.
 
-**Overlay size is an absolute override for that step.** It does not
+**Overlay size is an absolute `Pt` override for that step.** It does not
 change `root_body` and does not rescale sibling steps. A chrome
 `size=9.6` patch leaves title / body / micro at their em-derived sizes.
 `TypeRef.size` wins over both the em size and an overlay size.
