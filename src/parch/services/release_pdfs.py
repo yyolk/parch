@@ -1,4 +1,4 @@
-"""Release PDF matrix: one shard per device (greenfield has no paper/hand)."""
+"""Release PDF matrix: one shard per device (no paper/hand matrix)."""
 
 import json
 import sys

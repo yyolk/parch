@@ -412,7 +412,7 @@ def test_projects_clone_a_tracks():
     assert marks[2].y - marks[1].bottom > 5.0
 
 
-def test_project_page_g_clone_and_index_chip():
+def test_paint_project_and_index_chip():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "projects-2026-01")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))

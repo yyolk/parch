@@ -13,7 +13,7 @@ class MeetingSlot:
 
 @dataclass(frozen=True, slots=True)
 class MeetingIndex:
-    """Thesis A — dense dated roster. Stub per row is the dest hit; write-ins stay unlinkable."""
+    """Dense dated roster for ``paint_meetings_index``. Stub per row is the dest hit; write-ins stay unlinkable."""
 
     year: int
     dest: str

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class ProjectsBoard:
-    """G three-card well. Ticket dests set ``index_dest`` and ``number`` (header chip)."""
+    """``paint_project`` well. Ticket dests set ``index_dest`` and ``number`` (header chip)."""
 
     year: int
     cards: int
@@ -24,7 +24,7 @@ class ProjectTicket:
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
-    """Thesis L — stacked tickets. Stub and preview cards link; write-in stays unlinkable."""
+    """Stacked tickets for ``paint_projects_index``. Stub and preview cards link; write-in stays unlinkable."""
 
     year: int
     dest: str

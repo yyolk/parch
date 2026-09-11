@@ -35,7 +35,7 @@ class ReviewMonthBand:
 
 @dataclass(frozen=True, slots=True)
 class ReviewIndex:
-    """Thesis B — multi-column week-chip grid. Month headers + hairlines read across."""
+    """Multi-column week-chip grid for ``paint_review_index``. Month headers + hairlines read across."""
 
     year: int
     dest: str
@@ -44,7 +44,7 @@ class ReviewIndex:
 
 @dataclass(frozen=True, slots=True)
 class ReviewWeekPage:
-    """Thesis E — seven day cues over a week narrative well. Chip is Wnn → index."""
+    """Weekly dest for ``paint_review`` — seven day cues over a week narrative well. Chip is Wnn → index."""
 
     year: int
     iso_year: int

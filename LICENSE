@@ -4,7 +4,7 @@ Copyright (c) 2026 Joseph Chiocchi / parch authors
 Copyright (c) 2021 Vitaliy Kudryk (LYP / latex-yearly-planner)
 
 parch historically grew as a Python port of Kudryk's MIT-licensed LYP.
-This greenfield tree is a rewrite and does not vendor LYP sources.
+This tree is an fpdf2 rewrite and does not vendor LYP sources.
 The MIT notice below is retained.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

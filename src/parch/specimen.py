@@ -1,7 +1,7 @@
 """fpdf2 specimen catalog: press key pages to PNG, write a static HTML gallery.
 
-Greenfield has one hero device (SuperNote Nomad) and no paper×hand
-permutations. Catalog layout is ``<workdir>/specimens/<device-id>/``.
+One hero device (SuperNote Nomad) and no paper×hand permutations.
+Catalog layout is ``<workdir>/specimens/<device-id>/``.
 The product PDF is not part of the catalog.
 """
 

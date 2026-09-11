@@ -9,7 +9,7 @@ MEET_ACTION_ITEMS = 3
 
 
 class MeetingSection:
-    """Exploratory Meeting index A + locked dests. Index rows open Meeting pages."""
+    """``paint_meetings_index`` roster plus ``paint_meeting`` dests. Index rows open Meeting pages."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

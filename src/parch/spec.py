@@ -165,7 +165,7 @@ class Spec:
 
     @property
     def project_count(self) -> int:
-        """G dest pages: ``index_pages × tickets`` (one row → one projects page)."""
+        """``paint_project`` dest pages: ``index_pages × tickets`` (one row → one projects page)."""
         return self.project_index_pages * self.project_tickets
 
     def dest_for_projects_index(self, page: int) -> str:
@@ -201,7 +201,7 @@ class Spec:
         return _dest(t"meetings-index-{self.year:04d}")
 
     def dest_for_meetings_index_of(self, slot: int) -> str:
-        """Index page that lists ``slot`` (single roster page in thesis A)."""
+        """Index page that lists ``slot`` (single ``paint_meetings_index`` roster)."""
         if not 1 <= slot <= self.meeting_count:
             raise ConfigError(f"meeting slot out of range: {slot}")
         return self.meetings_index_dest

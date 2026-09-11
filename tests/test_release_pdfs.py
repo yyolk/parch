@@ -1,4 +1,4 @@
-"""Release PDF device matrix (greenfield: device shards only)."""
+"""Release PDF device matrix (device shards only)."""
 
 import json
 import subprocess

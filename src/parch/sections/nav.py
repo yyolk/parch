@@ -22,7 +22,7 @@ explicit ``month`` when on a month / habits page.
 
 PROJ dest (strip label **Proj**):
 - index page → self
-- G projects dest → the index page that lists that row (header chip is the same dest)
+- ``paint_project`` dest → the index page that lists that row (header chip is the same dest)
 - everywhere else → index page 1 (``spec.projects_index_dest``)
 
 MEET dest (strip label **Meet**):

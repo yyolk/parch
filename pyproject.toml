@@ -1,7 +1,7 @@
 [project]
 name = "parch"
 version = "0.3.0a0"
-description = "parch — fixed e-ink PDF pages (greenfield rewrite)."
+description = "parch — fixed e-ink PDF pages (fpdf2 / Nomad)."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.14"
