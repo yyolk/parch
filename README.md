@@ -1,6 +1,5 @@
 # parch
 
-fpdf2 / Nomad planner on this branch.
 
 parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
 
