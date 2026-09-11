@@ -24,12 +24,18 @@ from parch.components import (
 from parch.devices.nomad import Device
 from parch.fonts.ramp import JostRamp, TypeRamp
 from parch.geom import Rect
-from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
+    COL_GAP,
+    DAILY_COL_WEIGHTS,
+    DAILY_MINI_GAP,
+    DAILY_MINI_H,
+    DAILY_PRIO_GAP,
     checklist_content_height,
-    _paint_mini_month,
+    daily_left_seats,
+    daily_right_seats,
     paint_annual,
     paint_cover,
+    paint_daily,
     paint_habit_grid,
     paint_header,
     paint_meeting,
@@ -37,13 +43,11 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_nav,
     paint_notes,
-    paint_priorities,
     paint_project,
     paint_projects_index,
     paint_quarter,
     paint_review,
     paint_review_index,
-    paint_schedule,
     paint_task,
     paint_tasks_index,
     paint_week,
@@ -55,19 +59,27 @@ from parch.layouts.planner.painters import (
 from parch.plotter.protocol import Plotter
 from parch.sections.page import Page
 
-COL_GAP = 3.0
-DAILY_MINI_H = 34.0
-DAILY_MINI_GAP = 2.2
-DAILY_COL_WEIGHTS = (0.34, 0.66)
-DAILY_PRIO_GAP = 2.2
+__all__ = [
+    "COL_GAP",
+    "DAILY_COL_WEIGHTS",
+    "DAILY_MINI_GAP",
+    "DAILY_MINI_H",
+    "DAILY_PRIO_GAP",
+    "PlannerLayout",
+    "checklist_content_height",
+    "daily_left_seats",
+    "daily_right_seats",
+    "well_rect",
+]
 
 
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    every painter. Migrated surfaces call ``ramp.ink``; the FaceBridge backlog
+    keeps face/bold via ``ramp.faces``. Dual-font ramps are future work;
+    ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
@@ -96,68 +108,45 @@ class PlannerLayout:
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                paint_annual(plotter, well, _one(page, AnnualGrid), ramp=self.ramp)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=self.ramp)
             case "project":
                 paint_project(plotter, well, _one(page, ProjectsBoard))
             case "meetings_index":
-                paint_meetings_index(plotter, well, _one(page, MeetingIndex))
+                paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=self.ramp)
             case "meeting":
-                paint_meeting(plotter, well, _one(page, MeetingAgenda))
+                paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=self.ramp)
             case "tasks_index":
-                paint_tasks_index(plotter, well, _one(page, TasksIndex))
+                paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=self.ramp)
             case "task":
-                paint_task(plotter, well, _one(page, TasksWeekPage))
+                paint_task(plotter, well, _one(page, TasksWeekPage), ramp=self.ramp)
             case "review_index":
-                paint_review_index(plotter, well, _one(page, ReviewIndex))
+                paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=self.ramp)
             case "review":
-                paint_review(plotter, well, _one(page, ReviewWeekPage))
+                paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=self.ramp)
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=self.ramp)
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=self.ramp)
             case "habits":
-                paint_habit_grid(plotter, well, _one(page, HabitGrid))
+                paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=self.ramp)
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), ramp=self.ramp)
             case "daily":
-                schedule = _one(page, Schedule)
-                notes = _one(page, Notes)
-                mini = _one(page, AnnualMonth)
-                priorities = _one(page, Priorities)
-                left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
-                sched_box, mini_box = daily_left_seats(left)
-                prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
-                paint_priorities(plotter, prio_box, priorities)
-                paint_notes(plotter, notes_box, notes)
+                paint_daily(
+                    plotter,
+                    well,
+                    _one(page, Schedule),
+                    _one(page, AnnualMonth),
+                    _one(page, Priorities),
+                    _one(page, Notes),
+                    ramp=self.ramp,
+                )
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), ramp=self.ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
-
-
-def daily_left_seats(left: Rect) -> tuple[Rect, Rect]:
-    """Schedule flex over a compact year-density mini-month."""
-    return rows(
-        left,
-        2,
-        gap=DAILY_MINI_GAP,
-        weights=(left.h - DAILY_MINI_H - DAILY_MINI_GAP, DAILY_MINI_H),
-    )
-
-
-def daily_right_seats(right: Rect, priority_rows: int) -> tuple[Rect, Rect]:
-    """Content-height Priorities over flex Notes. No dead band under the last tick."""
-    prio_h = checklist_content_height(priority_rows)
-    return rows(
-        right,
-        2,
-        gap=DAILY_PRIO_GAP,
-        weights=(prio_h, max(right.h - prio_h - DAILY_PRIO_GAP, 1)),
-    )
 
 
 def _header_meta(page: Page) -> str:

@@ -16,16 +16,43 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 
 ## Type ramp
 
-`TypeInk` is `family` + `weight` + `size`. Painters call `ramp.ink(role)` and
-pass those fields to `Plotter.text`. `family` is a closed key
-(`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can pick
+`TypeInk` is `family` + `weight` + `size`. Migrated painters call
+`ramp.ink(role)` and pass those fields to `Plotter.text`. `family` is a closed
+key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can pick
 another catalog family without ripping out the plotter kwarg.
+
+Unlisted painters keep `face` + `bold` through `ramp.faces` (`FaceBridge` →
+`FaceInk`). Dual path is intentional and typed — same explicit ramp, two
+methods. No ambient container.
 
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
 and handed to `Fpdf2Plotter` at press time.
 
-| Ramp | chrome | cover_brow | page_title | cover_year |
-| --- | --- | --- | --- | --- |
-| `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
+| Ramp | chrome | cover_brow | page_title | cover_year | cover_specs |
+| --- | --- | --- | --- | --- | --- |
+| `JostRamp` (default) | Jost Book 7.4 | Jost Medium 10 | Jost Medium 11 | Jost Heavy 42 | Jost Book 8.2 |
 
-Cover and header painters take the ramp. Cover specs stay fully literal.
+Body roles on migrated wells: `label` / `label_on` 6.4, `quiet` 6.6,
+`week_num` 5.8, `micro` 4.3, `grid` / `grid_on` 5.3, `day_num` 8.5,
+`week_day` 11, `hour` 7, `ticket` Medium 6.6.
+
+### Strangler allowlist
+
+`MigratedSurface` / `MIGRATED_SURFACES` lists painter entrypoints that must
+use `ramp.ink`. A `RecordingPlotter.face_only_text()` assertion fails CI if a
+listed painter still emits face-only text ops.
+
+Migrated this spike: `paint_cover`, `paint_header`, `paint_annual`,
+`paint_month_grid`, `paint_week`, `paint_daily`, `paint_projects_index`.
+
+### Bridge backlog
+
+These stay on `FaceBridge` (face/bold ops) until a later cut:
+
+- `paint_habit_grid` (and comparison variants)
+- `paint_meetings_index` / `paint_meeting`
+- `paint_review_index` / `paint_review`
+- `paint_tasks_index` / `paint_task`
+
+Nav, quarter dest, project dest, and daily-notes wells are not on the
+allowlist either; shared helpers they call may already speak roles.

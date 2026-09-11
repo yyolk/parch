@@ -1,7 +1,17 @@
 import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
-from parch.fonts import FontCatalog, JostRamp, TypeFamily, TypeInk, TypeRole, font_dir, jost_catalog
+from parch.fonts import (
+    FaceBridge,
+    FaceInk,
+    FontCatalog,
+    JostRamp,
+    TypeFamily,
+    TypeInk,
+    TypeRole,
+    font_dir,
+    jost_catalog,
+)
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter, resolve_weight
@@ -42,8 +52,12 @@ def test_jost_ramp_role_map():
     ramp = JostRamp()
     assert ramp.ink("cover_year") == TypeInk(family="jost", weight="heavy", size=42)
     assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.ink("cover_specs") == TypeInk(family="jost", weight="book", size=8.2)
     assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
+    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
+    assert ramp.ink("ticket") == TypeInk(family="jost", weight="medium", size=6.6)
+    assert isinstance(ramp.faces, FaceBridge)
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
 
 
@@ -72,8 +86,9 @@ def test_cover_year_uses_jost_heavy_via_jost_ramp():
     assert brow[9] == "medium"
     assert _family(brow) == "jost"
     specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
-    assert _family(specs) is None
-    assert specs[6] == "sans"
+    assert _family(specs) == "jost"
+    assert specs[9] == "book"
+    assert specs[3] == 8.2
 
 
 def test_header_chrome_is_jost_book_via_jost_ramp():
@@ -112,7 +127,7 @@ def test_cover_honors_stub_ramp():
     ramp = StubRamp()
     plotter = RecordingPlotter()
     paint_cover(plotter, NOMAD, _cover(), ramp=ramp)
-    assert ramp.roles == ["cover_brow", "cover_year"]
+    assert ramp.roles == ["cover_brow", "cover_year", "cover_specs"]
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == 12
     assert year[9] == "book"
@@ -159,12 +174,22 @@ def test_header_honors_stub_ramp():
     assert _family(meta) == "jost"
 
 
+def test_face_bridge_keeps_face_bold():
+    ramp = JostRamp()
+    sans = ramp.faces.ink("sans", size=6.4)
+    assert sans == FaceInk(face="sans", bold=False, size=6.4)
+    serif = ramp.faces.ink("serif", bold=True, size=6.6)
+    assert serif == FaceInk(face="serif", bold=True, size=6.6)
+
+
 def test_fonts_package_does_not_import_plotter():
     import parch.fonts as fonts
 
     assert "parch.plotter" not in fonts.__dict__
     assert fonts.JostRamp is JostRamp
     assert fonts.TypeInk is TypeInk
+    assert fonts.FaceBridge is FaceBridge
+    assert fonts.FaceInk is FaceInk
     assert fonts.TypeFamily is TypeFamily
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog

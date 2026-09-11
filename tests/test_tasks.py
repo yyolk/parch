@@ -6,6 +6,7 @@ from parch.books import YearPlanner
 from parch.calendar import month_week_bands, short_date_range
 from parch.components import TasksIndex, TasksWeekPage
 from parch.devices.nomad import NOMAD
+from parch.fonts import JostRamp
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
@@ -221,7 +222,7 @@ def test_tasks_index_paint_month_headers_and_week_links():
     index = next(item for item in page.components if isinstance(item, TasksIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_tasks_index(plotter, well, index)
+    paint_tasks_index(plotter, well, index, ramp=JostRamp())
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "January" in texts
@@ -304,7 +305,7 @@ def test_task_paint_checklist_and_notes():
     )
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_task(plotter, well, dest)
+    paint_task(plotter, well, dest, ramp=JostRamp())
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Tasks") == 0
     assert texts.count("Notes") == 1
@@ -372,7 +373,7 @@ def test_task_rows_knob():
     assert dest.rows == 5
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_task(plotter, well, dest)
+    paint_task(plotter, well, dest, ramp=JostRamp())
     ticks = [
         op
         for op in plotter.ops
