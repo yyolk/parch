@@ -29,6 +29,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
+from parch.fonts.ramp import TypeRamp
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
@@ -59,6 +60,7 @@ def paint_header(
     meta: str,
     meta_dest: str | None = None,
     *,
+    ramp: TypeRamp,
     chip: str = "",
     chip_dest: str | None = None,
 ) -> None:
@@ -70,18 +72,42 @@ def paint_header(
     title_box = Rect(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
-    plotter.text(title_box, title, size=11, bold=True, face="serif", gray=PAPER, align="left")
+    title_ink = ramp.ink("page_title")
+    plotter.text(
+        title_box,
+        title,
+        size=title_ink.size,
+        family=title_ink.family,
+        weight=title_ink.weight,
+        gray=PAPER,
+        align="left",
+    )
+    chrome = ramp.ink("chrome")
     if chip:
         chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
         plotter.text(
-            chip_box, chip, size=7.4, face="sans", gray=SOFT, align="right", small_caps=True
+            chip_box,
+            chip,
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=SOFT,
+            align="right",
+            small_caps=True,
         )
         if chip_dest:
             plotter.link(chip_box, chip_dest)
     if meta:
         meta_box = Rect(device.page_width - gutter - meta_w, slab.y, meta_w, slab.h)
         plotter.text(
-            meta_box, meta, size=7.4, face="sans", gray=SOFT, align="right", small_caps=True
+            meta_box,
+            meta,
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=SOFT,
+            align="right",
+            small_caps=True,
         )
         if meta_dest:
             plotter.link(meta_box, meta_dest)
@@ -128,7 +154,7 @@ def paint_chrome(
     _ = (plotter, box, title, nav)
 
 
-def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
+def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
     # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
@@ -150,12 +176,27 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
     )
 
     brow = Rect(0.0, 38.0, device.page_width, 8.0)
+    brow_ink = ramp.ink("cover_brow")
     plotter.text(
-        brow, "Year Book", size=10, face="serif", gray=MUTED, small_caps=True, align="center"
+        brow,
+        "Year Book",
+        size=brow_ink.size,
+        family=brow_ink.family,
+        weight=brow_ink.weight,
+        gray=MUTED,
+        small_caps=True,
+        align="center",
     )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
+    year_ink = ramp.ink("cover_year")
     plotter.text(
-        year_box, str(cover.year), size=42, bold=True, face="serif", gray=INK, align="center"
+        year_box,
+        str(cover.year),
+        size=year_ink.size,
+        family=year_ink.family,
+        weight=year_ink.weight,
+        gray=INK,
+        align="center",
     )
     tap_w = 48.0
     plotter.link(
@@ -163,6 +204,7 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
         cover.cta_dest,
     )
     specs = Rect(device.writing_clearance, 84.0, device.page_width - 2 * device.writing_clearance, 6.5)
+    # ponytail: specs stay fully literal until a dedicated role exists — do not half-apply chrome
     plotter.text(
         specs,
         f"monday weeks  ·  {device.page_width:g} × {device.page_height:g} mm",
