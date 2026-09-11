@@ -46,13 +46,13 @@ _MEET_STRIP = (
     ("Quar", "quarter-2026-Q1"),
     ("Mon", "month-2026-01"),
     ("Habit", "month-2026-01-habits"),
+    ("Week", "week-2026-W01"),
+    ("Rev", "review-index-2026"),
+    ("Day", "2026-01-01"),
+    ("Notes", "2026-01-01-notes-1"),
     ("Proj", "projects-index-2026-01"),
     ("Meet", "meetings-index-2026"),
     ("Task", "tasks-index-2026-Q1"),
-    ("Rev", "review-index-2026"),
-    ("Week", "week-2026-W01"),
-    ("Day", "2026-01-01"),
-    ("Notes", "2026-01-01-notes-1"),
 )
 
 
@@ -207,7 +207,7 @@ def test_meeting_header_year_chip_and_meet_tab():
     assert "01" in texts
     assert "Projects" not in texts
     assert "Attendees" not in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Proj", "Meet", "Task", "Rev", "Week", "Day", "Notes"):
+    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
         assert label in texts
     assert texts.count("Notes") == 2
     assert "Action items" in texts

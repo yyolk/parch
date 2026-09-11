@@ -1,6 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Proj · Meet · Task · Rev · Week · Day · Notes.
-
-QUAR is provisional — may come out of the strip later.
+"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Rev · Day · Notes · Proj · Meet · Task.
 
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
@@ -84,17 +82,17 @@ def planner_nav(
         NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
         NavItem("Mon", mon),
         NavItem("Habit", spec.dest_for_habits(habit_month)),
-        NavItem("Proj", proj_dest or spec.projects_index_dest),
-        NavItem("Meet", meet_dest or spec.meetings_index_dest),
-        NavItem("Task", task_dest or spec.tasks_index_dest),
+        NavItem("Week", week_dest),
         NavItem("Rev", rev_dest or spec.review_index_dest),
+        NavItem("Day", spec.dest_for_day(landing)),
     ]
-    items.extend(
-        [
-            NavItem("Week", week_dest),
-            NavItem("Day", spec.dest_for_day(landing)),
-        ]
-    )
     if spec.notes_pages > 0:
         items.append(NavItem("Notes", spec.dest_for_notes(landing, 1)))
+    items.extend(
+        [
+            NavItem("Proj", proj_dest or spec.projects_index_dest),
+            NavItem("Meet", meet_dest or spec.meetings_index_dest),
+            NavItem("Task", task_dest or spec.tasks_index_dest),
+        ]
+    )
     return tuple(items)

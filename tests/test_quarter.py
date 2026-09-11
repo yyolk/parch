@@ -16,7 +16,7 @@ from parch.spec import Spec
 from parch.tracks import rows
 
 
-def test_quarter_page_and_provisional_nav():
+def test_quarter_page_and_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     assert [page.dest for page in pages[:4]] == [
@@ -49,13 +49,13 @@ def test_quarter_page_and_provisional_nav():
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
+        ("Week", "week-2026-W01"),
+        ("Rev", "review-index-2026"),
+        ("Day", "2026-01-01"),
+        ("Notes", "2026-01-01-notes-1"),
         ("Proj", "projects-index-2026-01"),
         ("Meet", "meetings-index-2026"),
         ("Task", "tasks-index-2026-Q1"),
-        ("Rev", "review-index-2026"),
-        ("Week", "week-2026-W01"),
-        ("Day", "2026-01-01"),
-        ("Notes", "2026-01-01-notes-1"),
     )
 
     grid = next(item for item in quarter.components if isinstance(item, QuarterGrid))

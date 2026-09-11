@@ -65,13 +65,13 @@ def test_week_dests_and_nav_strip():
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
+        ("Week", "week-2026-W01"),
+        ("Rev", "review-index-2026"),
+        ("Day", "2026-01-01"),
+        ("Notes", "2026-01-01-notes-1"),
         ("Proj", "projects-index-2026-01"),
         ("Meet", "meetings-index-2026"),
         ("Task", "tasks-index-2026-Q1"),
-        ("Rev", "review-index-2026"),
-        ("Week", "week-2026-W01"),
-        ("Day", "2026-01-01"),
-        ("Notes", "2026-01-01-notes-1"),
     )
     assert strip_active(month.kind) == "Mon"
 
