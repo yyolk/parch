@@ -7,7 +7,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import FontCatalog, JostBesleyRamp, JostRamp, TypeRamp, jost_catalog
+from parch.fonts import JostBesleyRamp, JostRamp, TypeRamp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -26,13 +26,6 @@ def _ramp_named(token: str) -> TypeRamp:
             raise ConfigError(f"unknown ramp {token!r}; known: jost, jost-besley")
 
 
-def _catalog_of(ramp: TypeRamp) -> FontCatalog:
-    catalog = getattr(ramp, "catalog", None)
-    if isinstance(catalog, FontCatalog):
-        return catalog
-    return jost_catalog()
-
-
 def press(
     spec: Spec,
     output: Path,
@@ -47,7 +40,7 @@ def press(
     device = get_device(spec.device)
     resolved = JostRamp() if ramp is None else ramp
     if plotter is None:
-        plotter = Fpdf2Plotter(device, catalog=_catalog_of(resolved))
+        plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
     YearPlanner(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output

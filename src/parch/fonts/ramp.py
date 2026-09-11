@@ -23,6 +23,8 @@ class TypeInk:
 
 
 class TypeRamp(Protocol):
+    catalog: FontCatalog
+
     def ink(self, role: TypeRole) -> TypeInk:
         """Resolve a closed type role to plotter-ready ink."""
         ...

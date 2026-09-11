@@ -3,12 +3,11 @@
 from pathlib import Path
 from typing import Literal, Protocol
 
+from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
 type TextFace = Literal["sans", "serif"]
-type TextFamily = Literal["jost", "besley"]
-type TextWeight = Literal["book", "medium", "bold", "heavy"]
 
 
 class Plotter(Protocol):
