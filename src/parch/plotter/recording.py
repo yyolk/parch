@@ -3,8 +3,9 @@
 from pathlib import Path
 from typing import override
 
+from parch.fonts.ramp import TypeInk
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import Plotter, TextAlign
 
 type Op = tuple[object, ...]
 
@@ -59,30 +60,12 @@ class RecordingPlotter(Plotter):
         box: Rect,
         content: str,
         *,
-        size: float = 10,
+        ink: TypeInk,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
     ) -> None:
-        self.ops.append(
-            (
-                "text",
-                box,
-                content,
-                size,
-                align,
-                bold,
-                face,
-                gray,
-                small_caps,
-                weight,
-                family,
-            )
-        )
+        self.ops.append(("text", box, content, ink, align, gray, small_caps))
 
     @override
     def link(self, box: Rect, dest: str) -> None:

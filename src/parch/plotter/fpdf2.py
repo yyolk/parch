@@ -7,22 +7,12 @@ from fpdf import FPDF
 
 from parch.devices.nomad import Device
 from parch.fonts.catalog import FontCatalog, jost_catalog
+from parch.fonts.ramp import TypeInk
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import Plotter, TextAlign
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
-
-
-def resolve_weight(
-    face: TextFace, bold: bool, weight: TextWeight | None
-) -> TextWeight:
-    """Map unmigrated face+bold defaults onto the curated Jost cuts."""
-    if weight is not None:
-        return weight
-    if face == "serif":
-        return "medium"
-    return "bold" if bold else "book"
 
 
 def _pt_mm(pt: float) -> float:
@@ -47,17 +37,8 @@ class Fpdf2Plotter(Plotter):
         self.pdf.set_text_color(0)
         self.pdf.set_draw_color(0)
 
-    def _register_name(
-        self,
-        face: TextFace,
-        bold: bool,
-        weight: TextWeight | None,
-        family: TextFamily | None,
-    ) -> str:
-        if family is not None:
-            cut = weight if weight is not None else ("bold" if bold else "book")
-            return self.catalog.register_name(family, cut)
-        return self.catalog.register_name("jost", resolve_weight(face, bold, weight))
+    def _register_name(self, ink: TypeInk) -> str:
+        return self.catalog.register_name(ink.family, ink.weight)
 
     def _ink(self, gray: float) -> None:
         level = _level(gray)
@@ -79,17 +60,13 @@ class Fpdf2Plotter(Plotter):
         box: Rect,
         content: str,
         *,
-        size: float,
+        ink: TypeInk,
         align: TextAlign,
-        bold: bool,
-        face: TextFace,
         gray: float,
-        weight: TextWeight | None,
-        family: TextFamily | None,
     ) -> None:
-        register_as = self._register_name(face, bold, weight, family)
-        tw = self._smcp_width(content, size, register_as)
-        cap = _pt_mm(size * SMCP_SCALE) * 0.72
+        register_as = self._register_name(ink)
+        tw = self._smcp_width(content, ink.size, register_as)
+        cap = _pt_mm(ink.size * SMCP_SCALE) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
         match align:
             case "center":
@@ -99,8 +76,8 @@ class Fpdf2Plotter(Plotter):
             case _:
                 tx = box.x
         self._ink(gray)
-        self.pdf.set_font(register_as, "", size * SMCP_SCALE)
-        track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
+        self.pdf.set_font(register_as, "", ink.size * SMCP_SCALE)
+        track = _pt_mm(ink.size * SMCP_SCALE) * SMCP_TRACK_EM
         chars = content.upper()
         last = len(chars) - 1
         cx = tx
@@ -166,34 +143,20 @@ class Fpdf2Plotter(Plotter):
         box: Rect,
         content: str,
         *,
-        size: float = 10,
+        ink: TypeInk,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
     ) -> None:
         if not content:
             return
         if small_caps:
-            self._draw_smcp(
-                box,
-                content,
-                size=size,
-                align=align,
-                bold=bold,
-                face=face,
-                gray=gray,
-                weight=weight,
-                family=family,
-            )
+            self._draw_smcp(box, content, ink=ink, align=align, gray=gray)
             return
-        register_as = self._register_name(face, bold, weight, family)
-        self.pdf.set_font(register_as, "", size)
+        register_as = self._register_name(ink)
+        self.pdf.set_font(register_as, "", ink.size)
         self._ink(gray)
-        cap = _pt_mm(size) * 0.72
+        cap = _pt_mm(ink.size) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
         tw = self.pdf.get_string_width(content)
         match align:

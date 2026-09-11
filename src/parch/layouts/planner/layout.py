@@ -66,8 +66,9 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    cover / header / nav paint. Other painters build ``TypeInk`` via ramp
+    roles (``body`` / ``emphasis`` / ``mark``). Dual-font ramps are future
+    work; ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
@@ -89,7 +90,9 @@ class PlannerLayout:
                     chip=_header_chip(page),
                     chip_dest=_header_chip_dest(page),
                 )
-                paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
+                paint_nav(
+                    plotter, device, strip_items(page), strip_active(page.kind), ramp=self.ramp
+                )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
 

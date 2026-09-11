@@ -429,8 +429,8 @@ def test_project_page_g_clone_and_index_chip():
     assert texts.count("Done") == 3
     assert "Doing" not in texts
     p_texts = [op for op in ink.ops if op[0] == "text" and op[2] == "P"]
-    assert all(op[7] == pytest.approx(MUTED) for op in p_texts)
-    assert all(op[3] == pytest.approx(CLONE_P_SIZE) for op in p_texts)
+    assert all(op[5] == pytest.approx(MUTED) for op in p_texts)
+    assert all(op[3].size == pytest.approx(CLONE_P_SIZE) for op in p_texts)
     ticks = [
         op
         for op in ink.ops

@@ -29,11 +29,19 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import TypeRamp
+from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRole
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
 from parch.tracks import columns, rows
+
+_ROLES = JostRamp()
+
+
+def _ink(role: TypeRole, size: float | None = None) -> TypeInk:
+    """Role→ink via the default Jost ramp. Size override when the role default does not fit."""
+    ink = _ROLES.ink(role)
+    return ink if size is None else ink.at(size)
 
 HAIR = 0.18
 RULE = 0.12
@@ -73,24 +81,14 @@ def paint_header(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
     title_ink = ramp.ink("page_title")
-    plotter.text(
-        title_box,
-        title,
-        size=title_ink.size,
-        family=title_ink.family,
-        weight=title_ink.weight,
-        gray=PAPER,
-        align="left",
-    )
+    plotter.text(title_box, title, ink=title_ink, gray=PAPER, align="left")
     chrome = ramp.ink("chrome")
     if chip:
         chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
         plotter.text(
             chip_box,
             chip,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            ink=chrome,
             gray=SOFT,
             align="right",
             small_caps=True,
@@ -102,9 +100,7 @@ def paint_header(
         plotter.text(
             meta_box,
             meta,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            ink=chrome,
             gray=SOFT,
             align="right",
             small_caps=True,
@@ -118,6 +114,8 @@ def paint_nav(
     device: Device,
     items: tuple[tuple[str, str], ...],
     active: str,
+    *,
+    ramp: TypeRamp,
 ) -> None:
     if not items:
         return
@@ -133,9 +131,7 @@ def paint_nav(
         plotter.text(
             hit,
             label,
-            size=7.6,
-            bold=on,
-            face="sans",
+            ink=ramp.ink("nav_on" if on else "nav"),
             gray=PAPER if on else INK,
             small_caps=True,
             align="center",
@@ -180,9 +176,7 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     plotter.text(
         brow,
         "Year Book",
-        size=brow_ink.size,
-        family=brow_ink.family,
-        weight=brow_ink.weight,
+        ink=brow_ink,
         gray=MUTED,
         small_caps=True,
         align="center",
@@ -192,9 +186,7 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     plotter.text(
         year_box,
         str(cover.year),
-        size=year_ink.size,
-        family=year_ink.family,
-        weight=year_ink.weight,
+        ink=year_ink,
         gray=INK,
         align="center",
     )
@@ -204,12 +196,10 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
         cover.cta_dest,
     )
     specs = Rect(device.writing_clearance, 84.0, device.page_width - 2 * device.writing_clearance, 6.5)
-    # ponytail: specs stay fully literal until a dedicated role exists — do not half-apply chrome
     plotter.text(
         specs,
         f"monday weeks  ·  {device.page_width:g} × {device.page_height:g} mm",
-        size=8.2,
-        face="sans",
+        ink=ramp.ink("cover_specs"),
         gray=MUTED,
         small_caps=True,
         align="center",
@@ -381,9 +371,7 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     plotter.text(
         mark,
         f"{ticket.number:02d}",
-        size=6.6,
-        bold=True,
-        face="serif",
+        ink=_ink("mark", 6.6),
         gray=INK,
         align="center",
     )
@@ -534,8 +522,7 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
     plotter.text(
         Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
         "P",
-        size=CLONE_P_SIZE,
-        face="sans",
+        ink=_ink("body", CLONE_P_SIZE),
         gray=MUTED,
         align="left",
         small_caps=True,
@@ -572,8 +559,7 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
         plotter.text(
             Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
             label,
-            size=5.4,
-            face="sans",
+            ink=_ink("body", 5.4),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -863,8 +849,7 @@ def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
     plotter.text(
         label_box,
         label,
-        size=6.4,
-        face="sans",
+        ink=_ink("body", 6.4),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -922,9 +907,7 @@ def _paint_meeting_index_stub(plotter: Plotter, stub: Rect, number: int) -> None
     plotter.text(
         mark,
         f"{number:02d}",
-        size=6.2,
-        bold=True,
-        face="serif",
+        ink=_ink("mark", 6.2),
         gray=INK,
         align="center",
     )
@@ -937,8 +920,7 @@ def _paint_meeting_index_date_cue(plotter: Plotter, box: Rect) -> None:
     plotter.text(
         Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H),
         "Date",
-        size=5.8,
-        face="sans",
+        ink=_ink("body", 5.8),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1018,9 +1000,7 @@ def paint_tasks_index(plotter: Plotter, box: Rect, index: TasksIndex) -> None:
         plotter.text(
             head,
             band.name,
-            size=6.4,
-            bold=True,
-            face="sans",
+            ink=_ink("emphasis", 6.4),
             gray=INK,
             small_caps=True,
             align="left",
@@ -1037,17 +1017,14 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
     plotter.text(
         stub,
         f"W{week.iso_week:02d}",
-        size=7.2,
-        bold=True,
-        face="serif",
+        ink=_ink("mark", 7.2),
         gray=INK,
         align="left",
     )
     plotter.text(
         dated,
         short_date_range(week.monday, week.sunday),
-        size=6.2,
-        face="sans",
+        ink=_ink("body", 6.2),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1157,9 +1134,7 @@ def paint_review_index(plotter: Plotter, box: Rect, index: ReviewIndex) -> None:
         plotter.text(
             stub,
             band.name,
-            size=6.2,
-            bold=True,
-            face="sans",
+            ink=_ink("emphasis", 6.2),
             gray=INK,
             small_caps=True,
             align="left",
@@ -1186,9 +1161,7 @@ def _paint_review_index_chip(plotter: Plotter, cell: Rect, week: ReviewWeek) -> 
     plotter.text(
         chip,
         f"W{week.iso_week:02d}",
-        size=7.0,
-        bold=True,
-        face="serif",
+        ink=_ink("mark", 7.0),
         gray=INK,
         align="center",
     )
@@ -1246,8 +1219,7 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
     plotter.text(
         dow,
         day.weekday_label,
-        size=5.6,
-        face="sans",
+        ink=_ink("body", 5.6),
         gray=MUTED,
         small_caps=True,
         align="center",
@@ -1255,9 +1227,7 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
     plotter.text(
         num,
         str(day.day.day),
-        size=9.2,
-        bold=True,
-        face="sans",
+        ink=_ink("emphasis", 9.2),
         gray=ink,
         align="center",
     )
@@ -1386,8 +1356,7 @@ def _paint_note_box(plotter: Plotter, box: Rect, *, label: str | None = None) ->
         plotter.text(
             Rect(box.x + 1.3, box.y + 0.7, box.w - 2.6, header_h),
             label,
-            size=6.4,
-            face="sans",
+            ink=_ink("body", 6.4),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1441,8 +1410,7 @@ def _paint_checklist_box(
         plotter.text(
             Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
             label,
-            size=6.4,
-            face="sans",
+            ink=_ink("body", 6.4),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1476,9 +1444,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
     plotter.text(
         title,
         month.name[:3],
-        size=6.4,
-        bold=pressed,
-        face="sans",
+        ink=_ink("emphasis" if pressed else "body", 6.4),
         gray=INK if pressed else MUTED,
         small_caps=True,
         align="left",
@@ -1492,8 +1458,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
         plotter.text(
             Rect(col.x, dow.y, col.w, dow.h),
             label[0],
-            size=4.3,
-            face="sans",
+            ink=_ink("body", 4.3),
             gray=GHOST,
             small_caps=True,
             align="center",
@@ -1518,9 +1483,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
                 plotter.text(
                     num,
                     str(cell.day),
-                    size=5.3,
-                    bold=True,
-                    face="sans",
+                    ink=_ink("emphasis", 5.3),
                     gray=PAPER,
                     align="center",
                 )
@@ -1530,9 +1493,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
             plotter.text(
                 num,
                 str(cell.day),
-                size=5.3,
-                bold=linked and cell.in_month,
-                face="sans",
+                ink=_ink("emphasis" if linked and cell.in_month else "body", 5.3),
                 gray=ink,
                 align="center",
             )
@@ -1569,8 +1530,7 @@ def paint_habit_grid_rows(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
     plotter.text(
         Rect(label.x, head.y, label.w, head.h),
         "Habit",
-        size=5.8,
-        face="sans",
+        ink=_ink("body", 5.8),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1580,8 +1540,7 @@ def paint_habit_grid_rows(plotter: Plotter, box: Rect, grid: HabitGrid) -> None:
         plotter.text(
             col,
             str(i + 1),
-            size=3.8,
-            face="sans",
+            ink=_ink("body", 3.8),
             gray=MUTED,
             align="center",
         )
@@ -1625,8 +1584,7 @@ def paint_habit_grid_weekday_zebra(plotter: Plotter, box: Rect, grid: HabitGrid)
     plotter.text(
         Rect(label.x, head.y, label.w, head.h),
         "Habit",
-        size=5.8,
-        face="sans",
+        ink=_ink("body", 5.8),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1638,16 +1596,14 @@ def paint_habit_grid_weekday_zebra(plotter: Plotter, box: Rect, grid: HabitGrid)
         plotter.text(
             Rect(col.x, col.y + 0.15, col.w, num_h),
             str(day_n),
-            size=3.5,
-            face="sans",
+            ink=_ink("body", 3.5),
             gray=MUTED,
             align="center",
         )
         plotter.text(
             Rect(col.x, col.y + num_h - 0.1, col.w, col.h - num_h),
             habit_dow_letter(grid.year, grid.month, day_n),
-            size=3.3,
-            face="sans",
+            ink=_ink("body", 3.3),
             gray=MUTED,
             align="center",
         )
@@ -1730,16 +1686,14 @@ def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) ->
         plotter.text(
             Rect(day_col.x, band.y, num_w - 0.6, band.h),
             str(day_n),
-            size=4.4,
-            face="sans",
+            ink=_ink("body", 4.4),
             gray=MUTED,
             align="right",
         )
         plotter.text(
             Rect(day_col.x + num_w, band.y, letter_w - 0.3, band.h),
             habit_dow_letter(grid.year, grid.month, day_n),
-            size=4.4,
-            face="sans",
+            ink=_ink("body", 4.4),
             gray=MUTED,
             align="left",
         )
@@ -1763,8 +1717,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
         plotter.text(
             Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
-            size=6.6,
-            face="sans",
+            ink=_ink("body", 6.6),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1780,8 +1733,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(box.x, band.y, gutter - 0.4, band.h),
                 f"W{iso:02d}",
-                size=5.8,
-                face="sans",
+                ink=_ink("body", 5.8),
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1796,9 +1748,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(cell.x + inset, cell.y + 0.7, cell.w - 2 * inset, 5.4),
                 str(day.day),
-                size=8.5,
-                bold=True,
-                face="sans",
+                ink=_ink("emphasis", 8.5),
                 gray=INK,
                 align="left",
             )
@@ -1822,8 +1772,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x, band.y + 0.45, 14.0, 5.0),
             day.weekday_label,
-            size=6.6,
-            face="sans",
+            ink=_ink("body", 6.6),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1831,9 +1780,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
-            size=11,
-            bold=True,
-            face="sans",
+            ink=_ink("emphasis", 11),
             gray=ink,
             align="left",
         )
@@ -1841,8 +1788,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
             plotter.text(
                 Rect(band.x + 26.0, band.y + 0.55, 22.0, 4.8),
                 MONTH_NAMES[day.day.month - 1][:3],
-                size=6.6,
-                face="sans",
+                ink=_ink("body", 6.6),
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1862,8 +1808,7 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
         schedule.label,
-        size=6.4,
-        face="sans",
+        ink=_ink("body", 6.4),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1874,8 +1819,7 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
         plotter.text(
             Rect(band.x, band.y, 10.0, band.h),
             f"{hour:2d}",
-            size=7,
-            face="sans",
+            ink=_ink("body", 7),
             gray=MUTED,
             align="left",
         )
@@ -1894,8 +1838,7 @@ def paint_notes(plotter: Plotter, box: Rect, notes: Notes) -> None:
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
         notes.label,
-        size=6.4,
-        face="sans",
+        ink=_ink("body", 6.4),
         gray=MUTED,
         small_caps=True,
         align="left",
