@@ -72,8 +72,7 @@ def press(
         parch press examples/mvp.toml --proof -o out.pdf
 
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
-    closed TypeStep ladder. Dual-font ramps are future work —
-    ``family`` stays on ``TypeInk``.
+    closed TypeStep ladder. ``family`` stays on ``TypeInk``.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
