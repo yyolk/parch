@@ -79,8 +79,7 @@ class PlannerLayout:
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
     ladder. Press may hand in an ``EffectiveRamp`` (defaults ⊕ toml ⊕
-    proof) at ``device.root_body``. Dual-font ramps are future work;
-    ``family`` stays on the resolved ink.
+    proof) at ``device.root_body``. ``family`` stays on the resolved ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:

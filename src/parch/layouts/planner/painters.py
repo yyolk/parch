@@ -296,7 +296,6 @@ TICKET_STRIP_GRAY = RULE_C
 
 # G (#215) symbol strip — same marks, size, and strip height.
 CLONE_ICON = 2.1
-CLONE_ICON_GAP = 0.85
 CLONE_STRIP_H = 2.8
 CLONE_STRIP_COL_GAP = 1.05
 CLONE_ICONS = (

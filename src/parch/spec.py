@@ -21,7 +21,7 @@ def _parse_typography(data: TomlTable) -> TypeOverlay:
 
     A present overlay table is validated (exact ``schema_version``, closed
     steps, Jost weights, size bands) before the spec is returned. Missing
-    ``[typography]`` keeps the identity overlay.
+    ``[typography]`` is the closed-table default (empty overlay).
     """
     raw = data.get("typography")
     if raw is None:
