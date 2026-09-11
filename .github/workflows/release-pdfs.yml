@@ -29,6 +29,8 @@ permissions:
 jobs:
   plan:
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.14"
     outputs:
       shards: ${{ steps.devices.outputs.shards }}
       max_parallel: ${{ steps.devices.outputs.max_parallel }}
@@ -39,6 +41,7 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: false
+          python-version: "3.14"
       - run: uv sync --group dev
       - id: devices
         run: |
@@ -79,10 +82,8 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.shards) }}
     env:
-      PARCH_TYPST: py
       DEVICE: ${{ matrix.device }}
-      HAND: ${{ matrix.hand }}
-      PAPER: ${{ matrix.paper }}
+      UV_PYTHON: "3.14"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -90,7 +91,8 @@ jobs:
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: false
-      - run: uv sync --extra typst-native --group dev
+          python-version: "3.14"
+      - run: uv sync --group dev
       - name: Resolve version and names
         id: meta
         run: |
@@ -104,15 +106,13 @@ jobs:
           else
             version="$(uv run python -c 'import tomllib, pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
           fi
-          pdf="parch-${version}-${DEVICE}-${PAPER}-${HAND}.pdf"
+          pdf="parch-${version}-${DEVICE}.pdf"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "pdf=$pdf" >> "$GITHUB_OUTPUT"
       - name: Press PDF
         run: |
-          uv run parch new --yes --force -d "$DEVICE" -o job.toml --hand "$HAND"
-          uv run python -c "from pathlib import Path; import os; from parch.services.release_pdfs import set_job_paper; set_job_paper(Path('job.toml'), os.environ['PAPER'])"
-          uv run parch press job.toml -o "${{ steps.meta.outputs.pdf }}" --hand "$HAND"
+          uv run parch press examples/mvp.toml -o "${{ steps.meta.outputs.pdf }}"
           test -s "${{ steps.meta.outputs.pdf }}"
       - name: Attach to Release
         if: github.event_name == 'release' || (inputs.release_tag != '' && inputs.device_set != 'all')

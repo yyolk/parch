@@ -76,6 +76,15 @@ _KNOWN = {
 }
 
 
+def known_device_ids() -> tuple[str, ...]:
+    """Canonical device ids (aliases omitted)."""
+    ids: list[str] = []
+    for device in _KNOWN.values():
+        if device.id not in ids:
+            ids.append(device.id)
+    return tuple(ids)
+
+
 def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:
