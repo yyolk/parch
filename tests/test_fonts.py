@@ -183,7 +183,11 @@ def test_header_honors_stub_ramp_resolve():
     ramp = StubRamp()
     plotter = RecordingPlotter(ramp=ramp)
     paint_header(plotter, NOMAD, "Projects", "2026", chip="01")
-    assert ramp.refs == [TypeRef(step="page_title"), TypeRef(step="chrome")]
+    assert ramp.refs == [
+        TypeRef(step="page_title"),
+        TypeRef(step="chrome"),
+        TypeRef(step="chrome"),
+    ]
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
     assert title[3] == 9
     assert _weight(title) == "bold"
