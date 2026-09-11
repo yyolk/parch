@@ -7,6 +7,7 @@ from parch.calendar import month_week_bands
 from parch.components import ReviewIndex, ReviewWeekPage
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
+from parch.fonts import JostBodyRamp
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
@@ -219,7 +220,7 @@ def test_review_index_paint_month_headers_hairlines_and_week_links():
     index = next(item for item in page.components if isinstance(item, ReviewIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_review_index(plotter, well, index)
+    paint_review_index(plotter, well, index, body=JostBodyRamp())
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     for name in (
@@ -344,7 +345,7 @@ def test_review_paint_day_cues_and_unlabeled_narrative():
     dest = next(item for item in page.components if isinstance(item, ReviewWeekPage))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_review(plotter, well, dest)
+    paint_review(plotter, well, dest, body=JostBodyRamp())
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Review") == 0

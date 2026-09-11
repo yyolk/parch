@@ -7,7 +7,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import JostRamp, TypeRamp
+from parch.fonts import BodyRamp, ChromeRamp, JostBodyRamp, JostChromeRamp, jost_ramps
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -19,19 +19,25 @@ def press(
     spec: Spec,
     output: Path,
     plotter: Plotter | None = None,
-    ramp: TypeRamp | None = None,
+    chrome: ChromeRamp | None = None,
+    body: BodyRamp | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. The ramp's catalog is handed to
-    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
-    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    Default ramps are ``JostChromeRamp`` + ``JostBodyRamp`` sharing one Jost
+    catalog, handed to ``Fpdf2Plotter``. Dual-font ramps are future work —
+    ``family`` stays on ``TypeInk`` / ``Plotter.text`` so they can land
+    without a signature change.
     """
     device = get_device(spec.device)
-    resolved = JostRamp() if ramp is None else ramp
+    if chrome is None and body is None:
+        resolved_chrome, resolved_body = jost_ramps()
+    else:
+        resolved_chrome = JostChromeRamp() if chrome is None else chrome
+        resolved_body = JostBodyRamp() if body is None else body
     if plotter is None:
-        plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+        plotter = Fpdf2Plotter(device, catalog=resolved_chrome.catalog)
+    YearPlanner(chrome=resolved_chrome, body=resolved_body).plot(spec, plotter)
     plotter.finish(output)
     return output
 

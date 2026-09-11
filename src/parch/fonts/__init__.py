@@ -1,16 +1,29 @@
-"""Vendored Jost (OFL-1.1) and the type ramp."""
+"""Vendored Jost (OFL-1.1) and the chrome / body type ramps."""
 
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, font_dir, jost_catalog
-from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRole
+from parch.fonts.ramp import (
+    BodyRamp,
+    BodyRole,
+    ChromeRamp,
+    ChromeRole,
+    JostBodyRamp,
+    JostChromeRamp,
+    TypeInk,
+    jost_ramps,
+)
 
 __all__ = [
+    "BodyRamp",
+    "BodyRole",
+    "ChromeRamp",
+    "ChromeRole",
     "FontCatalog",
-    "JostRamp",
+    "JostBodyRamp",
+    "JostChromeRamp",
     "TypeFamily",
     "TypeInk",
-    "TypeRamp",
-    "TypeRole",
     "TypeWeight",
     "font_dir",
     "jost_catalog",
+    "jost_ramps",
 ]

@@ -3,6 +3,7 @@ import pytest
 from parch.books import YearPlanner
 from parch.components import HabitGrid
 from parch.geom import Rect
+from parch.fonts import JostBodyRamp
 from parch.layouts.planner.painters import (
     HABIT_WASH,
     HABIT_WASH_CROSS,
@@ -70,7 +71,7 @@ def test_habit_paint_smoke_and_month_chip_link():
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-01-habits")
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     ink = RecordingPlotter()
-    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
+    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid, body=JostBodyRamp())
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
@@ -94,7 +95,7 @@ def test_habit_transposed_seat_and_paint():
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     ink = RecordingPlotter()
-    paint_habit_grid_transposed(ink, box, grid)
+    paint_habit_grid_transposed(ink, box, grid, body=JostBodyRamp())
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
@@ -119,7 +120,7 @@ def test_habit_paint_follows_spec_columns():
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     assert grid.rows == 8
     ink = RecordingPlotter()
-    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
+    paint_habit_grid(ink, Rect(4, 20, 110, 120), grid, body=JostBodyRamp())
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(cells) == 8 * 31
 
@@ -129,7 +130,7 @@ def test_habit_weekday_zebra_paint():
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     ink = RecordingPlotter()
-    paint_habit_grid_weekday_zebra(ink, Rect(4, 20, 110, 120), grid)
+    paint_habit_grid_weekday_zebra(ink, Rect(4, 20, 110, 120), grid, body=JostBodyRamp())
     cells = [op for op in ink.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(cells) == grid.rows * 31
     fills = [op for op in ink.ops if op[0] == "rect" and op[3] and not op[2]]
@@ -169,7 +170,7 @@ def test_habit_day_labels_link_to_dailies():
     box = Rect(4, 20, 110, 120)
     day_col, names, _bands = habit_seats_transposed(box, grid.days, grid.rows)
     ink = RecordingPlotter()
-    paint_habit_grid(ink, box, grid)
+    paint_habit_grid(ink, box, grid, body=JostBodyRamp())
     hits = [(op[1], op[2]) for op in ink.ops if op[0] == "link"]
     dests = [dest for _, dest in hits]
     assert dests.count("2026-07-01") == 1

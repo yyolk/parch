@@ -4,6 +4,7 @@ from parch.books import YearPlanner
 from parch.components import MeetingAgenda, MeetingIndex
 from parch.devices.nomad import NOMAD
 from parch.geom import Rect
+from parch.fonts import JostBodyRamp
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
@@ -138,7 +139,7 @@ def test_meeting_paint_template():
     agenda = MeetingAgenda(year=2026, agenda=4, action_items=3, index_dest="meetings-index-2026", number=1)
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_meeting(plotter, well, agenda)
+    paint_meeting(plotter, well, agenda, body=JostBodyRamp())
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Title") == 1
@@ -182,7 +183,7 @@ def test_meeting_paint_template():
 def test_meeting_knobs():
     agenda = MeetingAgenda(year=2026, agenda=3, action_items=2)
     plotter = RecordingPlotter()
-    paint_meeting(plotter, Rect(4, 20, 110, 90), agenda)
+    paint_meeting(plotter, Rect(4, 20, 110, 90), agenda, body=JostBodyRamp())
     ticks = [
         op
         for op in plotter.ops
@@ -257,7 +258,7 @@ def test_meeting_index_paint_date_cues_and_links():
     roster = next(item for item in page.components if isinstance(item, MeetingIndex))
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
-    paint_meetings_index(plotter, well, roster)
+    paint_meetings_index(plotter, well, roster, body=JostBodyRamp())
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Date") == 16
@@ -334,7 +335,7 @@ def test_meeting_rows_knob():
     assert dests[1:] == [f"meeting-2026-{slot:02d}" for slot in range(1, 13)]
     assert "meeting-2026-13" not in dests
     plotter = RecordingPlotter()
-    paint_meetings_index(plotter, well_rect(NOMAD), roster)
+    paint_meetings_index(plotter, well_rect(NOMAD), roster, body=JostBodyRamp())
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("Date") == 12
     for slot in range(1, 13):

@@ -2,7 +2,7 @@
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import BodyRamp, ChromeRamp, JostBodyRamp, JostChromeRamp, jost_ramps
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (
@@ -24,8 +24,18 @@ from parch.spec import Spec
 
 
 class YearPlanner:
-    def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+    def __init__(
+        self,
+        chrome: ChromeRamp | None = None,
+        body: BodyRamp | None = None,
+    ) -> None:
+        if chrome is None and body is None:
+            chrome, body = jost_ramps()
+        else:
+            chrome = JostChromeRamp() if chrome is None else chrome
+            body = JostBodyRamp() if body is None else body
+        self.chrome: ChromeRamp = chrome
+        self.body: BodyRamp = body
 
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)
@@ -56,7 +66,7 @@ class YearPlanner:
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
         device = get_device(spec.device)
-        layout = PlannerLayout(ramp=self.ramp)
+        layout = PlannerLayout(chrome=self.chrome, body=self.body)
         pages = self.pages(spec)
         for page in pages:
             plotter.reserve_dest(page.dest)
