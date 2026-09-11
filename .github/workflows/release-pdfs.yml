@@ -107,6 +107,7 @@ jobs:
           echo "pdf=$pdf" >> "$GITHUB_OUTPUT"
       - name: Press PDF
         run: |
+          test "$DEVICE" = supernote-nomad
           uv run parch press examples/mvp.toml -o "${{ steps.meta.outputs.pdf }}"
           test -s "${{ steps.meta.outputs.pdf }}"
       - name: Attach to Release
