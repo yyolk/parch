@@ -5,6 +5,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    HeaderChrome,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -66,8 +67,9 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    painters. Cover, header, year, month, week, daily, and projects index ask
+    each component for ``typography()``, resolve via the ramp, then draw.
+    Dual-font ramps are future work; ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
@@ -82,11 +84,13 @@ class PlannerLayout:
                 paint_header(
                     plotter,
                     device,
-                    page.title,
-                    _header_meta(page),
-                    _header_meta_dest(page),
+                    HeaderChrome(
+                        title=page.title,
+                        meta=_header_meta(page),
+                        chip=_header_chip(page),
+                    ),
                     ramp=self.ramp,
-                    chip=_header_chip(page),
+                    meta_dest=_header_meta_dest(page),
                     chip_dest=_header_chip_dest(page),
                 )
                 paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
@@ -96,9 +100,9 @@ class PlannerLayout:
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                paint_annual(plotter, well, _one(page, AnnualGrid), ramp=self.ramp)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=self.ramp)
             case "project":
                 paint_project(plotter, well, _one(page, ProjectsBoard))
             case "meetings_index":
@@ -116,11 +120,11 @@ class PlannerLayout:
             case "quarter":
                 paint_quarter(plotter, well, _one(page, QuarterGrid))
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=self.ramp)
             case "habits":
                 paint_habit_grid(plotter, well, _one(page, HabitGrid))
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), ramp=self.ramp)
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
@@ -129,12 +133,12 @@ class PlannerLayout:
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
                 prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
-                paint_priorities(plotter, prio_box, priorities)
-                paint_notes(plotter, notes_box, notes)
+                paint_schedule(plotter, sched_box, schedule, ramp=self.ramp)
+                _paint_mini_month(plotter, mini_box, mini, ramp=self.ramp)
+                paint_priorities(plotter, prio_box, priorities, ramp=self.ramp)
+                paint_notes(plotter, notes_box, notes, ramp=self.ramp)
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), ramp=self.ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 

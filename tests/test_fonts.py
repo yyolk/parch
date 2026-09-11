@@ -1,5 +1,5 @@
 import pytest
-from parch.components import CoverTitle
+from parch.components import CoverTitle, HeaderChrome
 from parch.devices.nomad import NOMAD
 from parch.fonts import FontCatalog, JostRamp, TypeFamily, TypeInk, TypeRole, font_dir, jost_catalog
 from parch.layouts.planner.painters import paint_cover, paint_header
@@ -42,6 +42,7 @@ def test_jost_ramp_role_map():
     ramp = JostRamp()
     assert ramp.ink("cover_year") == TypeInk(family="jost", weight="heavy", size=42)
     assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.ink("cover_spec") == TypeInk(family="jost", weight="book", size=8.2)
     assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
@@ -72,8 +73,9 @@ def test_cover_year_uses_jost_heavy_via_jost_ramp():
     assert brow[9] == "medium"
     assert _family(brow) == "jost"
     specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
-    assert _family(specs) is None
-    assert specs[6] == "sans"
+    assert specs[3] == 8.2
+    assert specs[9] == "book"
+    assert _family(specs) == "jost"
 
 
 def test_header_chrome_is_jost_book_via_jost_ramp():
@@ -81,9 +83,7 @@ def test_header_chrome_is_jost_book_via_jost_ramp():
     paint_header(
         plotter,
         NOMAD,
-        "Year",
-        "2026",
-        chip="01",
+        HeaderChrome(title="Year", meta="2026", chip="01"),
         ramp=JostRamp(),
     )
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year")
@@ -112,7 +112,7 @@ def test_cover_honors_stub_ramp():
     ramp = StubRamp()
     plotter = RecordingPlotter()
     paint_cover(plotter, NOMAD, _cover(), ramp=ramp)
-    assert ramp.roles == ["cover_brow", "cover_year"]
+    assert ramp.roles == ["cover_year", "cover_brow", "cover_spec"]
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == 12
     assert year[9] == "book"
@@ -139,9 +139,7 @@ def test_header_honors_stub_ramp():
     paint_header(
         plotter,
         NOMAD,
-        "Projects",
-        "2026",
-        chip="01",
+        HeaderChrome(title="Projects", meta="2026", chip="01"),
         ramp=ramp,
     )
     assert ramp.roles == ["page_title", "chrome"]

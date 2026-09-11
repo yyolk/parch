@@ -14,7 +14,7 @@ Python 3.14+ required (language features, not just the pin).
 Device → Component (data only) → Section (build Page) → Layout (chrome + seat) → Plotter → Press
 ```
 
-Painters live under `layouts/planner/` and take `plotter: Plotter`. Components do not draw. The only plotter backend is `Fpdf2Plotter`. Tests use `RecordingPlotter`.
+Painters live under `layouts/planner/` and take `plotter: Plotter`. Components do not draw. The only plotter backend is `Fpdf2Plotter`. Tests use `RecordingPlotter`. Cover, header, year, month, week, daily wells, and the projects ticket stub declare ink needs via `typography()` / frozen `TypoNeeds`; painters resolve through `JostRamp` and do not hardcode role names.
 
 ```
 src/parch/

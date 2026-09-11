@@ -8,6 +8,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    HeaderChrome,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -29,7 +30,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import TypeRamp
+from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
@@ -53,58 +54,72 @@ def paint_toolbar(_plotter: Plotter, _device: Device) -> None:
     """Nomad top 8 mm stays reserved and unmarked. No fill, no label."""
 
 
+def _ink_text(
+    plotter: Plotter,
+    box: Rect,
+    content: str,
+    ink: TypeInk,
+    *,
+    gray: float = INK,
+    align: str = "left",
+    small_caps: bool = False,
+) -> None:
+    """Draw with resolved ink. Geometry stays here; role names stay on the component."""
+    plotter.text(
+        box,
+        content,
+        size=ink.size,
+        family=ink.family,
+        weight=ink.weight,
+        gray=gray,
+        align=align,
+        small_caps=small_caps,
+    )
+
+
+def _ramp(ramp: TypeRamp | None) -> TypeRamp:
+    return JostRamp() if ramp is None else ramp
+
+
 def paint_header(
     plotter: Plotter,
     device: Device,
-    title: str,
-    meta: str,
-    meta_dest: str | None = None,
+    header: HeaderChrome,
     *,
     ramp: TypeRamp,
-    chip: str = "",
+    meta_dest: str | None = None,
     chip_dest: str | None = None,
 ) -> None:
+    ink = header.typography().resolve(ramp)
     slab = Rect(0.0, device.content_top, device.page_width, HEADER_H)
     plotter.rect(slab, stroke=False, fill=True, fill_gray=INK)
     gutter = device.writing_clearance
     meta_w = 18.0
-    chip_w = 16.0 if chip else 0.0
+    chip_w = 16.0 if header.chip else 0.0
     title_box = Rect(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
-    title_ink = ramp.ink("page_title")
-    plotter.text(
-        title_box,
-        title,
-        size=title_ink.size,
-        family=title_ink.family,
-        weight=title_ink.weight,
-        gray=PAPER,
-        align="left",
-    )
-    chrome = ramp.ink("chrome")
-    if chip:
+    _ink_text(plotter, title_box, header.title, ink.title, gray=PAPER, align="left")
+    if header.chip:
         chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
-        plotter.text(
+        _ink_text(
+            plotter,
             chip_box,
-            chip,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            header.chip,
+            ink.chrome,
             gray=SOFT,
             align="right",
             small_caps=True,
         )
         if chip_dest:
             plotter.link(chip_box, chip_dest)
-    if meta:
+    if header.meta:
         meta_box = Rect(device.page_width - gutter - meta_w, slab.y, meta_w, slab.h)
-        plotter.text(
+        _ink_text(
+            plotter,
             meta_box,
-            meta,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            header.meta,
+            ink.chrome,
             gray=SOFT,
             align="right",
             small_caps=True,
@@ -155,6 +170,7 @@ def paint_chrome(
 
 
 def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp) -> None:
+    ink = cover.typography().resolve(ramp)
     top = device.content_top
     outer, inner = 3.2, 4.6
     # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
@@ -176,50 +192,39 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     )
 
     brow = Rect(0.0, 38.0, device.page_width, 8.0)
-    brow_ink = ramp.ink("cover_brow")
-    plotter.text(
+    _ink_text(
+        plotter,
         brow,
         "Year Book",
-        size=brow_ink.size,
-        family=brow_ink.family,
-        weight=brow_ink.weight,
+        ink.brow,
         gray=MUTED,
         small_caps=True,
         align="center",
     )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
-    year_ink = ramp.ink("cover_year")
-    plotter.text(
-        year_box,
-        str(cover.year),
-        size=year_ink.size,
-        family=year_ink.family,
-        weight=year_ink.weight,
-        gray=INK,
-        align="center",
-    )
+    _ink_text(plotter, year_box, str(cover.year), ink.year, align="center")
     tap_w = 48.0
     plotter.link(
         Rect((device.page_width - tap_w) / 2, year_box.y, tap_w, year_box.h),
         cover.cta_dest,
     )
     specs = Rect(device.writing_clearance, 84.0, device.page_width - 2 * device.writing_clearance, 6.5)
-    # ponytail: specs stay fully literal until a dedicated role exists — do not half-apply chrome
-    plotter.text(
+    _ink_text(
+        plotter,
         specs,
         f"monday weeks  ·  {device.page_width:g} × {device.page_height:g} mm",
-        size=8.2,
-        face="sans",
+        ink.spec,
         gray=MUTED,
         small_caps=True,
         align="center",
     )
 
 
-def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
+def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid, *, ramp: TypeRamp | None = None) -> None:
+    resolved = _ramp(ramp)
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
-            _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+            _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=resolved)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -362,15 +367,21 @@ def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
     return (stub, *project_ticket_preview_cards(preview))
 
 
-def paint_projects_index(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+def paint_projects_index(
+    plotter: Plotter, box: Rect, index: ProjectsIndex, *, ramp: TypeRamp | None = None
+) -> None:
     """Thesis L — stub, raised write-in, G symbol strip, 3-card preview; stub + preview links."""
+    resolved = _ramp(ramp)
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
-        _paint_project_ticket(plotter, seat, ticket)
+        _paint_project_ticket(plotter, seat, ticket, ramp=resolved)
         for hit in project_ticket_link_hits(seat):
             plotter.link(hit, ticket.dest)
 
 
-def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) -> None:
+def _paint_project_ticket(
+    plotter: Plotter, box: Rect, ticket: ProjectTicket, *, ramp: TypeRamp | None = None
+) -> None:
+    ink = ticket.typography().resolve(_ramp(ramp))
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     stub, body = project_ticket_parts(box)
     name, preview = project_ticket_body_seats(body)
@@ -378,15 +389,7 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     mark_y = stub.y + (stub.h - TICKET_MARK) / 2
     mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(
-        mark,
-        f"{ticket.number:02d}",
-        size=6.6,
-        bold=True,
-        face="serif",
-        gray=INK,
-        align="center",
-    )
+    _ink_text(plotter, mark, f"{ticket.number:02d}", ink.stub, align="center")
     perf_x = stub.right + 0.55
     _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
     plotter.line(write.x, write.bottom, write.right, write.bottom, stroke_width=RULE, stroke_gray=RULE_C)
@@ -1428,25 +1431,41 @@ def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
     _paint_checklist_box(plotter, box, label="Focus", rows=FOCUS_ROWS)
 
 
-def paint_priorities(plotter: Plotter, box: Rect, priorities: Priorities) -> None:
-    _paint_checklist_box(plotter, box, label=priorities.label, rows=priorities.rows)
+def paint_priorities(
+    plotter: Plotter, box: Rect, priorities: Priorities, *, ramp: TypeRamp | None = None
+) -> None:
+    ink = priorities.typography().resolve(_ramp(ramp))
+    _paint_checklist_box(
+        plotter, box, label=priorities.label, rows=priorities.rows, label_ink=ink.label
+    )
 
 
 def _paint_checklist_box(
-    plotter: Plotter, box: Rect, *, rows: int, label: str | None = None
+    plotter: Plotter,
+    box: Rect,
+    *,
+    rows: int,
+    label: str | None = None,
+    label_ink: TypeInk | None = None,
 ) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     y = box.y + FOCUS_PAD_TOP
     if label:
-        plotter.text(
-            Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
-            label,
-            size=6.4,
-            face="sans",
-            gray=MUTED,
-            small_caps=True,
-            align="left",
-        )
+        label_box = Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H)
+        if label_ink is None:
+            plotter.text(
+                label_box,
+                label,
+                size=6.4,
+                face="sans",
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
+        else:
+            _ink_text(
+                plotter, label_box, label, label_ink, gray=MUTED, small_caps=True, align="left"
+            )
         y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
     x = box.x + 1.6
     right = box.right - 1.6
@@ -1468,17 +1487,19 @@ def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None
     )
 
 
-def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
+def _paint_mini_month(
+    plotter: Plotter, box: Rect, month: AnnualMonth, *, ramp: TypeRamp | None = None
+) -> None:
+    type_ink = month.typography().resolve(_ramp(ramp))
     pressed = month.dest is not None
     title_h = 3.5
     dow_h = 2.5
     title = Rect(box.x, box.y, box.w, title_h)
-    plotter.text(
+    _ink_text(
+        plotter,
         title,
         month.name[:3],
-        size=6.4,
-        bold=pressed,
-        face="sans",
+        type_ink.name_on if pressed else type_ink.name,
         gray=INK if pressed else MUTED,
         small_caps=True,
         align="left",
@@ -1489,11 +1510,11 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
     tracks = columns(box, 7)
     for i, label in enumerate(month.weekday_labels):
         col = tracks[i]
-        plotter.text(
+        _ink_text(
+            plotter,
             Rect(col.x, dow.y, col.w, dow.h),
             label[0],
-            size=4.3,
-            face="sans",
+            type_ink.dow,
             gray=GHOST,
             small_caps=True,
             align="center",
@@ -1515,27 +1536,12 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
             if here:
                 mark = num.inset(0.12, 0.18)
                 plotter.rect(mark, stroke=False, fill=True, fill_gray=INK)
-                plotter.text(
-                    num,
-                    str(cell.day),
-                    size=5.3,
-                    bold=True,
-                    face="sans",
-                    gray=PAPER,
-                    align="center",
-                )
+                _ink_text(plotter, num, str(cell.day), type_ink.day_on, gray=PAPER, align="center")
                 continue
             linked = cell.dest is not None
-            ink = MUTED if not cell.in_month else (INK if linked else MUTED)
-            plotter.text(
-                num,
-                str(cell.day),
-                size=5.3,
-                bold=linked and cell.in_month,
-                face="sans",
-                gray=ink,
-                align="center",
-            )
+            gray = MUTED if not cell.in_month else (INK if linked else MUTED)
+            day_ink = type_ink.day_on if linked and cell.in_month else type_ink.day
+            _ink_text(plotter, num, str(cell.day), day_ink, gray=gray, align="center")
             if linked:
                 plotter.link(num, cell.dest)
 
@@ -1750,7 +1756,10 @@ def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) ->
             plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
+def paint_month_grid(
+    plotter: Plotter, box: Rect, grid: MonthGrid, *, ramp: TypeRamp | None = None
+) -> None:
+    ink = grid.typography().resolve(_ramp(ramp))
     gutter = 8.0
     day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
     tracks = columns(day_grid, 7)
@@ -1760,11 +1769,11 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     inset = 0.5
     for i, label in enumerate(grid.weekday_labels):
         col = tracks[i]
-        plotter.text(
+        _ink_text(
+            plotter,
             Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
-            size=6.6,
-            face="sans",
+            ink.dow,
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1777,11 +1786,11 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
         monday = _week_monday(grid, week, r)
         if monday is not None:
             iso = monday.isocalendar().week
-            plotter.text(
+            _ink_text(
+                plotter,
                 Rect(box.x, band.y, gutter - 0.4, band.h),
                 f"W{iso:02d}",
-                size=5.8,
-                face="sans",
+                ink.week,
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1793,13 +1802,11 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
                 continue
             col = tracks[c]
             cell = Rect(col.x, band.y, col.w, band.h)
-            plotter.text(
+            _ink_text(
+                plotter,
                 Rect(cell.x + inset, cell.y + 0.7, cell.w - 2 * inset, 5.4),
                 str(day.day),
-                size=8.5,
-                bold=True,
-                face="sans",
-                gray=INK,
+                ink.day,
                 align="left",
             )
             if day.dest:
@@ -1816,33 +1823,34 @@ def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
     return None
 
 
-def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
+def paint_week(plotter: Plotter, box: Rect, week: WeekStrip, *, ramp: TypeRamp | None = None) -> None:
+    resolved = _ramp(ramp)
     for band, day in zip(rows(box, max(1, len(week.days))), week.days, strict=False):
-        ink = INK if day.in_month else MUTED
-        plotter.text(
+        ink = day.typography().resolve(resolved)
+        gray = INK if day.in_month else MUTED
+        _ink_text(
+            plotter,
             Rect(band.x, band.y + 0.45, 14.0, 5.0),
             day.weekday_label,
-            size=6.6,
-            face="sans",
+            ink.dow,
             gray=MUTED,
             small_caps=True,
             align="left",
         )
-        plotter.text(
+        _ink_text(
+            plotter,
             Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
-            size=11,
-            bold=True,
-            face="sans",
-            gray=ink,
+            ink.day,
+            gray=gray,
             align="left",
         )
         if not day.in_month or day.day.day == 1:
-            plotter.text(
+            _ink_text(
+                plotter,
                 Rect(band.x + 26.0, band.y + 0.55, 22.0, 4.8),
                 MONTH_NAMES[day.day.month - 1][:3],
-                size=6.6,
-                face="sans",
+                ink.month,
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1857,13 +1865,16 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.line(band.x, band.bottom, band.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
+def paint_schedule(
+    plotter: Plotter, box: Rect, schedule: Schedule, *, ramp: TypeRamp | None = None
+) -> None:
+    ink = schedule.typography().resolve(_ramp(ramp))
     header_h = 3.4
-    plotter.text(
+    _ink_text(
+        plotter,
         Rect(box.x, box.y, box.w, header_h),
         schedule.label,
-        size=6.4,
-        face="sans",
+        ink.label,
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1871,11 +1882,11 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
     body = Rect(box.x, box.y + header_h + 0.4, box.w, box.h - header_h - 0.4)
     hours = schedule.hours or (8,)
     for band, hour in zip(rows(body, len(hours)), hours, strict=True):
-        plotter.text(
+        _ink_text(
+            plotter,
             Rect(band.x, band.y, 10.0, band.h),
             f"{hour:2d}",
-            size=7,
-            face="sans",
+            ink.hour,
             gray=MUTED,
             align="left",
         )
@@ -1889,13 +1900,14 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
         )
 
 
-def paint_notes(plotter: Plotter, box: Rect, notes: Notes) -> None:
+def paint_notes(plotter: Plotter, box: Rect, notes: Notes, *, ramp: TypeRamp | None = None) -> None:
+    ink = notes.typography().resolve(_ramp(ramp))
     header_h = 3.4
-    plotter.text(
+    _ink_text(
+        plotter,
         Rect(box.x, box.y, box.w, header_h),
         notes.label,
-        size=6.4,
-        face="sans",
+        ink.label,
         gray=MUTED,
         small_caps=True,
         align="left",

@@ -1,6 +1,24 @@
-"""Projects board, ticket index, and per-ticket three-card pages — data only."""
+"""Projects board, ticket index, and per-ticket three-card pages — data + ink."""
 
 from dataclasses import dataclass
+
+from parch.fonts.ramp import TypeInk, TypeRamp, TypeRole
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectTicketTypoNeeds:
+    stub: TypeRole = "ticket_stub"
+
+    def roles(self) -> tuple[TypeRole, ...]:
+        return (self.stub,)
+
+    def resolve(self, ramp: TypeRamp) -> "ProjectTicketInk":
+        return ProjectTicketInk(stub=ramp.ink(self.stub))
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectTicketInk:
+    stub: TypeInk
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +39,9 @@ class ProjectTicket:
     number: int
     dest: str
 
+    def typography(self) -> ProjectTicketTypoNeeds:
+        return ProjectTicketTypoNeeds()
+
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
@@ -29,3 +50,6 @@ class ProjectsIndex:
     year: int
     dest: str
     tickets: tuple[ProjectTicket, ...]
+
+    def typography(self) -> ProjectTicketTypoNeeds:
+        return ProjectTicketTypoNeeds()
