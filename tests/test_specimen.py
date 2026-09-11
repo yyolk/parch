@@ -1,5 +1,6 @@
 """Specimen catalog: device listing, HTML index, dest → page map."""
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -125,6 +126,20 @@ def test_specimen_rejects_unknown_device_before_press(tmp_path: Path, capsys, mo
 def test_specimen_spec_rejects_unknown_device():
     with pytest.raises(ConfigError, match="unknown device"):
         specimen_spec("kindle-scribe")
+
+
+@pytest.mark.skipif(shutil.which("pdftoppm") is None, reason="pdftoppm (poppler-utils) required")
+def test_write_specimens_png_catalog(tmp_path: Path):
+    from parch.specimen import build_device_catalog
+
+    dest = build_device_catalog(tmp_path, "supernote-nomad")
+    assert (dest / "cover.png").stat().st_size > 0
+    assert (dest / "index.html").is_file()
+    assert list(dest.glob("*.pdf")) == []
+    html = (dest / "index.html").read_text(encoding="utf-8")
+    assert 'src="cover.png"' in html
+    for stem in SAMPLE_STEMS:
+        assert (dest / f"{stem}.png").is_file()
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):

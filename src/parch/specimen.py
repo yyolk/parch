@@ -127,7 +127,7 @@ def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> 
         + '<p><a href="../">specimens</a></p>\n'
         + "<section>\n"
         + "\n".join(figures)
-        + "</section>\n"
+        + "\n</section>\n"
     )
 
 
