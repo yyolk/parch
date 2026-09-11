@@ -21,18 +21,23 @@ changes family.
 ramp and passes it in. Overlay keys match ``ink()``'s step argument;
 emphasis is a weight variant of that step, not a second overlay axis.
 
-Today's four page-semantic roles map as:
+Press TOML may set ``[typography.overlay.<step>]`` size/weight. Merge
+order is ``defaults ⊕ device ⊕ toml`` (optional ``press(..., overlay=)``
+layers last). Overlay never changes family.
 
-- ``cover_year`` → ``display``
-- ``cover_brow`` → ``eyebrow``
-- ``page_title`` → ``title``
-- ``chrome`` → ``chrome`` (same token; now a scale step)
+``validate_overlay`` is pure — no I/O — and returns ``OverlayOk`` or a
+typed issue (unknown step, bad weight, bad size, version mismatch).
+``schema_version`` policy today: **exact match**. Press validates before
+``bind_ramp`` builds ``EffectiveRamp``. Old role names (``cover_year``,
+``cover_brow``, ``page_title``) are unknown steps.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal, Protocol
 
+from parch import ConfigError
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, jost_catalog
 
 type TypeStep = Literal[
@@ -59,6 +64,21 @@ TYPE_STEPS: tuple[TypeStep, ...] = (
 )
 
 _WEIGHTS: frozenset[str] = frozenset(("book", "medium", "bold", "heavy"))
+TYPE_WEIGHTS = _WEIGHTS
+TYPE_PATCH_KEYS: frozenset[str] = frozenset(("size", "weight"))
+
+OVERLAY_SCHEMA_VERSION = 1
+
+# Inclusive size bands (pt) per closed step. Nonpositive is a separate issue.
+OVERLAY_SIZE_RANGE: dict[str, tuple[float, float]] = {
+    "display": (18.0, 72.0),
+    "title": (8.0, 24.0),
+    "eyebrow": (6.0, 24.0),
+    "body": (6.0, 16.0),
+    "chrome": (5.0, 16.0),
+    "label": (4.0, 12.0),
+    "caption": (4.0, 10.0),
+}
 
 
 class MigratedSurface(StrEnum):
@@ -202,12 +222,14 @@ class TypePatch:
 class TypeOverlay:
     """Frozen partial overrides keyed by ``TypeStep``. Pure data — no I/O.
 
-    Each step is optional. A present ``TypePatch`` may set size, weight, or
-    both; ``None`` on a patch field keeps the closed default for that field.
-    A patch applies to both emphases of the step; an explicit weight
-    replaces the emphasis-derived cut.
+    ``schema_version`` version-locks the shape. Policy today: exact match of
+    ``OVERLAY_SCHEMA_VERSION``. Each step is optional. A present ``TypePatch``
+    may set size, weight, or both; ``None`` on a patch field keeps the closed
+    default for that field. A patch applies to both emphases of the step; an
+    explicit weight replaces the emphasis-derived cut.
     """
 
+    schema_version: int = OVERLAY_SCHEMA_VERSION
     display: TypePatch | None = None
     title: TypePatch | None = None
     eyebrow: TypePatch | None = None
@@ -218,6 +240,174 @@ class TypeOverlay:
 
     def patch(self, step: TypeStep) -> TypePatch | None:
         return getattr(self, step)
+
+    @classmethod
+    def from_mapping(cls, table: Mapping[str, object]) -> TypeOverlay:
+        """Parse a step→patch table (plus ``schema_version``). Typed issues fail."""
+        match validate_overlay(table, jost_defaults()):
+            case OverlayOk(overlay=ok):
+                return ok
+            case issue:
+                raise ValueError(str(issue))
+
+
+def jost_defaults() -> dict[TypeStep, ScaleCut]:
+    """Closed Jost scale table. Overlay validation keys off this map."""
+    return dict(JOST_SCALE)
+
+
+@dataclass(frozen=True, slots=True)
+class OverlayOk:
+    """Successful ``validate_overlay`` — ready to bind an ``EffectiveRamp``."""
+
+    overlay: TypeOverlay
+
+
+@dataclass(frozen=True, slots=True)
+class UnknownStep:
+    step: str
+
+    def __str__(self) -> str:
+        return f"unknown step {self.step!r}"
+
+
+@dataclass(frozen=True, slots=True)
+class BadWeight:
+    weight: object
+    step: str
+
+    def __str__(self) -> str:
+        return f"bad weight {self.weight!r} for step {self.step!r}"
+
+
+@dataclass(frozen=True, slots=True)
+class NonpositiveSize:
+    size: object
+    step: str
+
+    def __str__(self) -> str:
+        return f"nonpositive size {self.size!r} for step {self.step!r}"
+
+
+@dataclass(frozen=True, slots=True)
+class SizeOutOfRange:
+    size: float
+    step: str
+    lo: float
+    hi: float
+
+    def __str__(self) -> str:
+        return f"size {self.size} for step {self.step!r} not in [{self.lo:g}, {self.hi:g}]"
+
+
+@dataclass(frozen=True, slots=True)
+class VersionMismatch:
+    got: object
+    expected: int = OVERLAY_SCHEMA_VERSION
+
+    def __str__(self) -> str:
+        return (
+            f"schema_version {self.got!r} does not exactly match {self.expected} "
+            "(exact version match for now)"
+        )
+
+
+type OverlayIssue = UnknownStep | BadWeight | NonpositiveSize | SizeOutOfRange | VersionMismatch
+type OverlayResult = OverlayOk | OverlayIssue
+type OverlayData = TypeOverlay | Mapping[str, object]
+
+
+def _as_float(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _check_patch(step: str, size: object | None, weight: object | None) -> OverlayIssue | None:
+    if weight is not None and weight not in _WEIGHTS:
+        return BadWeight(weight=weight, step=step)
+    if size is None:
+        return None
+    parsed = _as_float(size)
+    if parsed is None:
+        return NonpositiveSize(size=size, step=step)
+    if parsed <= 0:
+        return NonpositiveSize(size=parsed, step=step)
+    lo, hi = OVERLAY_SIZE_RANGE[step]
+    if not lo <= parsed <= hi:
+        return SizeOutOfRange(size=parsed, step=step, lo=lo, hi=hi)
+    return None
+
+
+def _overlay_from_fields(
+    schema_version: int,
+    patches: Mapping[str, TypePatch | None],
+) -> TypeOverlay:
+    return TypeOverlay(
+        schema_version=schema_version,
+        **{step: patches.get(step) for step in TYPE_STEPS},
+    )
+
+
+def validate_overlay(overlay: OverlayData, defaults: Mapping[str, object]) -> OverlayResult:
+    """Pure overlay check. No I/O. ``defaults`` is the closed step table.
+
+    Accepts a ``TypeOverlay`` or a mapping (press TOML / future ``parch new``).
+    Mapping keys besides ``schema_version`` are step names — unknown names
+    (including old role keys like ``cover_year``) are ``UnknownStep``.
+    Version policy: exact match of ``OVERLAY_SCHEMA_VERSION``.
+    """
+    allowed = frozenset(defaults)
+    if isinstance(overlay, TypeOverlay):
+        if overlay.schema_version != OVERLAY_SCHEMA_VERSION:
+            return VersionMismatch(got=overlay.schema_version)
+        for step in TYPE_STEPS:
+            patch = overlay.patch(step)
+            if patch is None:
+                continue
+            if step not in allowed:
+                return UnknownStep(step=step)
+            issue = _check_patch(step, patch.size, patch.weight)
+            if issue is not None:
+                return issue
+        return OverlayOk(overlay=overlay)
+
+    if overlay.get("schema_version") != OVERLAY_SCHEMA_VERSION:
+        return VersionMismatch(got=overlay.get("schema_version"))
+
+    built: dict[str, TypePatch | None] = {}
+    for key, raw in overlay.items():
+        if key == "schema_version":
+            continue
+        if key not in allowed:
+            return UnknownStep(step=str(key))
+        if raw is None:
+            built[key] = None
+            continue
+        if not isinstance(raw, Mapping):
+            return UnknownStep(step=str(key))
+        extra = set(raw) - TYPE_PATCH_KEYS
+        if extra:
+            return UnknownStep(step=f"{key}.{next(iter(sorted(extra)))}")
+        size = raw.get("size")
+        weight = raw.get("weight")
+        issue = _check_patch(key, size, weight)
+        if issue is not None:
+            return issue
+        built[key] = TypePatch(
+            size=None if size is None else float(size),
+            weight=None if weight is None else weight,  # type: ignore[arg-type]
+        )
+    return OverlayOk(overlay=_overlay_from_fields(OVERLAY_SCHEMA_VERSION, built))
+
+
+def require_overlay(overlay: OverlayData, defaults: Mapping[str, object]) -> TypeOverlay:
+    """``validate_overlay`` then ``ConfigError`` — used by press/device/bind."""
+    match validate_overlay(overlay, defaults):
+        case OverlayOk(overlay=ok):
+            return ok
+        case issue:
+            raise ConfigError(f"type overlay: {issue}")
 
 
 def apply_overlay(base: TypeInk, patch: TypePatch | None) -> TypeInk:
@@ -306,8 +496,15 @@ class EffectiveRamp:
         return FaceBridge(self.catalog).resolve(face, bold, size, weight=weight)
 
 
-def bind_ramp(*, ramp: TypeRamp | None = None, overlay: TypeOverlay | None = None) -> TypeRamp:
-    """Explicit ``ramp`` wins. Otherwise ``EffectiveRamp(defaults ⊕ overlay)``."""
+def bind_ramp(
+    *,
+    ramp: TypeRamp | None = None,
+    overlay: OverlayData | None = None,
+    defaults: Mapping[str, object] | None = None,
+) -> TypeRamp:
+    """Explicit ``ramp`` wins. Otherwise validate, then ``EffectiveRamp``."""
     if ramp is not None:
         return ramp
-    return EffectiveRamp(overlay=TypeOverlay() if overlay is None else overlay)
+    table = JOST_SCALE if defaults is None else defaults
+    checked = require_overlay(TypeOverlay() if overlay is None else overlay, table)
+    return EffectiveRamp(overlay=checked)

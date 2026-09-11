@@ -61,30 +61,73 @@ weight axis today.
 
 ### Overlay
 
-`TypeOverlay` is frozen pure data: optional `TypePatch(size=, weight=)` per
-`TypeStep` — the same keys `ink()` takes. No I/O in validators. A patch
-applies to both emphases of that step; an explicit weight replaces the
-emphasis-derived cut.
+`TypeOverlay` is frozen pure data: `schema_version` plus optional
+`TypePatch(size=, weight=)` per closed `TypeStep` — the same keys `ink()`
+takes. No I/O in validators. A patch applies to both emphases of that
+step; an explicit weight replaces the emphasis-derived cut. Overlay never
+changes `family`.
 
-Merge (`defaults ⊕ overlay`, then later overlays):
+`validate_overlay(overlay, defaults)` is **pure**. `overlay` may be a
+`TypeOverlay` or a mapping (press TOML shape). Result is `OverlayOk` or a
+typed issue:
+
+| Issue | When |
+| --- | --- |
+| `UnknownStep` | key is not in `defaults` (closed TypeStep set; old roles fail) |
+| `BadWeight` | weight is not `book` / `medium` / `bold` / `heavy` |
+| `NonpositiveSize` | size ≤ 0 |
+| `SizeOutOfRange` | size outside the step's closed band |
+| `VersionMismatch` | `schema_version` is not exactly `OVERLAY_SCHEMA_VERSION` |
+
+**Version policy (today): exact match.** Current `OVERLAY_SCHEMA_VERSION` is
+`1`. Missing, older, or newer versions on a mapping fail. Typed
+`TypeOverlay()` defaults to `1`. No forward/backward compat yet.
+
+Size bands (pt, inclusive):
+
+| Step | Range |
+| --- | --- |
+| `display` | 18–72 |
+| `title` | 8–24 |
+| `eyebrow` | 6–24 |
+| `body` | 6–16 |
+| `chrome` | 5–16 |
+| `label` | 4–12 |
+| `caption` | 4–10 |
+
+Merge (`defaults ⊕ device ⊕ toml`, then an optional `press(..., overlay=)`):
 
 1. Missing step → keep previous ink.
 2. Present step, missing field → that field stays.
 3. Present step, explicit field → that field wins.
 4. Family is never overlaid.
 
+`get_device` and `press` call `require_overlay` **before** `bind_ramp`
+builds `EffectiveRamp`. A bad overlay raises `ConfigError` before paint.
+
 `EffectiveRamp` is the explicit merged object. Painters only call
 `ramp.ink(...)`. They never read the overlay.
 
-`press` builds `EffectiveRamp = defaults ⊕ device overlay ⊕ press overlay`
-and passes that one ramp to the book and the plotter. An explicit `ramp=`
-argument wins the whole object (no compose). `YearPlanner()` /
-`PlannerLayout()` with no args still use `JostRamp` (defaults, no overlay).
+The press job TOML is the yolk-facing knob:
+
+```toml
+[typography.overlay]
+schema_version = 1
+
+[typography.overlay.chrome]
+size = 9.6
+weight = "bold"
+```
+
+`examples/mvp.toml` has no typography table (identity / defaults). Side
+example: `examples/mvp-typo-overlay.toml`. `press` builds
+`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay`. An explicit
+`ramp=` argument wins the whole object. `YearPlanner()` / `PlannerLayout()`
+with no args still use `JostRamp` (defaults, no overlay).
 
 Nomad's `type_overlay` is **identity** (`TypeOverlay()`): no size/weight
 patches. The device hook is wired; a later profile can patch chrome
-without touching painters. `press(..., overlay=)` is a Python-only
-test/caller hook, not TOML.
+without touching painters.
 
 ### Strangler allowlist
 

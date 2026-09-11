@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,7 @@ from parch.fonts import (
     font_dir,
     jost_catalog,
     scale_ink,
+    validate_overlay,
 )
 from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
@@ -321,6 +323,7 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeOverlay is TypeOverlay
     assert fonts.TypePatch is TypePatch
     assert fonts.TYPE_STEPS is TYPE_STEPS
+    assert fonts.validate_overlay is validate_overlay
 
 
 def test_overlay_explicit_size_keeps_default_weight():
@@ -478,6 +481,51 @@ def test_press_overlay_reaches_header_roles(tmp_path: Path):
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
     assert brow[3] == 10
     assert brow[9] == "medium"
+
+
+def test_toml_overlay_reaches_cover_and_header():
+    spec = Spec.from_path(Path("examples/mvp-typo-overlay.toml"))
+    ramp = EffectiveRamp(overlay=spec.type_overlay)
+    header = RecordingPlotter()
+    paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
+    chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
+    assert chip[3] == 9.6
+    assert chip[9] == "bold"
+    assert _family(chip) == "jost"
+    title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
+    assert title[3] == 14
+    assert title[9] == "bold"
+    cover = RecordingPlotter()
+    paint_cover(cover, NOMAD, _cover(), ramp=ramp)
+    brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == 13
+    assert brow[9] == "bold"
+    year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
+    assert year[3] == 48
+    assert year[9] == "heavy"
+
+
+def test_press_loads_toml_overlay(tmp_path: Path):
+    spec = replace(
+        Spec.from_path(Path("examples/mvp-typo-overlay.toml")),
+        months=(1,),
+        notes_pages=0,
+        project_index_pages=1,
+    )
+    plotter = RecordingPlotter()
+    press(spec, tmp_path / "overlay.pdf", plotter=plotter)
+    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == 13
+    assert brow[9] == "bold"
+    assert _family(brow) == "jost"
+    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
+    assert year[3] == 48
+    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
+    assert chrome_meta[3] == 9.6
+    assert chrome_meta[9] == "bold"
+    sizes = {op[3] for op in plotter.ops if op[0] == "text" and op[2] == "2026"}
+    assert 48 in sizes
+    assert 14 in sizes
 
 
 def test_effective_ramp_owns_face_bridge():
