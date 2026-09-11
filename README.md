@@ -62,3 +62,5 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
 Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Painters pass a frozen `TypeRef` (step or role + optional emphasis + optional size). `Plotter.text(..., ref=)` asks the bound `JostRamp` to resolve `TypeInk`; `family="jost"` stays on the ink for a later dual-font ramp. Cover / header / nav / migrated wells do not unpack weights.
+
+Thesis N specimens (150 PPI, January dests): [`exp-typeramp-typeref-cover.png`](artifacts/mvp/exp-typeramp-typeref-cover.png), [`year`](artifacts/mvp/exp-typeramp-typeref-year.png), [`month`](artifacts/mvp/exp-typeramp-typeref-month.png), [`week`](artifacts/mvp/exp-typeramp-typeref-week.png), [`daily`](artifacts/mvp/exp-typeramp-typeref-daily.png), [`projects`](artifacts/mvp/exp-typeramp-typeref-projects.png).
