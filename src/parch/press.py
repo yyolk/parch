@@ -7,6 +7,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
+from parch.fonts import JostRamp, TypeRamp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -14,12 +15,23 @@ from parch.spec import Spec
 _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
 
 
-def press(spec: Spec, output: Path, plotter: Plotter | None = None) -> Path:
-    """Build the MVP book and write ``output``."""
+def press(
+    spec: Spec,
+    output: Path,
+    plotter: Plotter | None = None,
+    ramp: TypeRamp | None = None,
+) -> Path:
+    """Build the MVP book and write ``output``.
+
+    Default ramp is ``JostRamp``. The ramp's catalog is handed to
+    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
+    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    """
     device = get_device(spec.device)
+    resolved = JostRamp() if ramp is None else ramp
     if plotter is None:
-        plotter = Fpdf2Plotter(device)
-    YearPlanner().plot(spec, plotter)
+        plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
+    YearPlanner(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
 

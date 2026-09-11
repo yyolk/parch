@@ -3,11 +3,11 @@
 from pathlib import Path
 from typing import Literal, Protocol
 
+from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
 type TextFace = Literal["sans", "serif"]
-type TextWeight = Literal["book", "medium", "bold", "heavy"]
 
 
 class Plotter(Protocol):
@@ -56,11 +56,13 @@ class Plotter(Protocol):
         gray: float = 0.0,
         small_caps: bool = False,
         weight: TextWeight | None = None,
+        family: TextFamily | None = None,
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size).
 
-        ``weight`` selects a vendored Jost cut. When omitted, ``face`` + ``bold``
-        resolve to Book / Bold (sans) or Medium (serif).
+        Ramp path: ``family`` + ``weight`` select a catalog cut. When ``family``
+        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost for unmigrated
+        painters (Book / Bold / Medium / Heavy).
         """
 
     def link(self, box: Rect, dest: str) -> None:

@@ -1,4 +1,4 @@
-"""Single fpdf2-backed plotter. Jost weights, fake small-caps."""
+"""Single fpdf2-backed plotter. Catalog-driven families, fake small-caps."""
 
 from pathlib import Path
 from typing import override
@@ -6,32 +6,18 @@ from typing import override
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
-from parch.fonts import font_dir
+from parch.fonts.catalog import FontCatalog, jost_catalog
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextWeight
+from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
-
-# Closed Jost ladder. face+bold pick a default; weight= overrides.
-_WEIGHT_FILES: dict[TextWeight, str] = {
-    "book": "Jost-400-Book.ttf",
-    "medium": "Jost-500-Medium.ttf",
-    "bold": "Jost-700-Bold.ttf",
-    "heavy": "Jost-800-Heavy.ttf",
-}
-_WEIGHT_FAMILY: dict[TextWeight, str] = {
-    "book": "JostBook",
-    "medium": "JostMedium",
-    "bold": "JostBold",
-    "heavy": "JostHeavy",
-}
 
 
 def resolve_weight(
     face: TextFace, bold: bool, weight: TextWeight | None
 ) -> TextWeight:
-    """Map API defaults onto the curated Jost cuts."""
+    """Map unmigrated face+bold defaults onto the curated Jost cuts."""
     if weight is not None:
         return weight
     if face == "serif":
@@ -48,23 +34,30 @@ def _level(gray: float) -> int:
 
 
 class Fpdf2Plotter(Plotter):
-    def __init__(self, device: Device) -> None:
+    def __init__(self, device: Device, catalog: FontCatalog | None = None) -> None:
         self.device = device
+        self.catalog = jost_catalog() if catalog is None else catalog
         self.pdf = FPDF(unit="mm", format=(device.page_width, device.page_height))
         self.pdf.set_auto_page_break(auto=False, margin=0)
         self.pdf.set_margins(0, 0, 0)
         self.pdf.set_compression(True)
-        root = font_dir()
-        for cut, family in _WEIGHT_FAMILY.items():
-            self.pdf.add_font(family, "", str(root / _WEIGHT_FILES[cut]))
-        self.pdf.set_font(_WEIGHT_FAMILY["book"], size=10)
+        for (family, weight), path in self.catalog.cuts.items():
+            self.pdf.add_font(self.catalog.register_name(family, weight), "", str(path))
+        self.pdf.set_font(self.catalog.register_name("jost", "book"), size=10)
         self.pdf.set_text_color(0)
         self.pdf.set_draw_color(0)
 
-    def _family(
-        self, face: TextFace, bold: bool, weight: TextWeight | None
+    def _register_name(
+        self,
+        face: TextFace,
+        bold: bool,
+        weight: TextWeight | None,
+        family: TextFamily | None,
     ) -> str:
-        return _WEIGHT_FAMILY[resolve_weight(face, bold, weight)]
+        if family is not None:
+            cut = weight if weight is not None else ("bold" if bold else "book")
+            return self.catalog.register_name(family, cut)
+        return self.catalog.register_name("jost", resolve_weight(face, bold, weight))
 
     def _ink(self, gray: float) -> None:
         level = _level(gray)
@@ -73,11 +66,11 @@ class Fpdf2Plotter(Plotter):
     def _draw(self, gray: float) -> None:
         self.pdf.set_draw_color(_level(gray))
 
-    def _smcp_width(self, text: str, size: float, family: str) -> float:
+    def _smcp_width(self, text: str, size: float, register_as: str) -> float:
         chars = text.upper()
         if not chars:
             return 0.0
-        self.pdf.set_font(family, "", size * SMCP_SCALE)
+        self.pdf.set_font(register_as, "", size * SMCP_SCALE)
         track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
         return sum(self.pdf.get_string_width(ch) for ch in chars) + track * (len(chars) - 1)
 
@@ -92,9 +85,10 @@ class Fpdf2Plotter(Plotter):
         face: TextFace,
         gray: float,
         weight: TextWeight | None,
+        family: TextFamily | None,
     ) -> None:
-        family = self._family(face, bold, weight)
-        tw = self._smcp_width(content, size, family)
+        register_as = self._register_name(face, bold, weight, family)
+        tw = self._smcp_width(content, size, register_as)
         cap = _pt_mm(size * SMCP_SCALE) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
         match align:
@@ -105,7 +99,7 @@ class Fpdf2Plotter(Plotter):
             case _:
                 tx = box.x
         self._ink(gray)
-        self.pdf.set_font(family, "", size * SMCP_SCALE)
+        self.pdf.set_font(register_as, "", size * SMCP_SCALE)
         track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
         chars = content.upper()
         last = len(chars) - 1
@@ -179,6 +173,7 @@ class Fpdf2Plotter(Plotter):
         gray: float = 0.0,
         small_caps: bool = False,
         weight: TextWeight | None = None,
+        family: TextFamily | None = None,
     ) -> None:
         if not content:
             return
@@ -192,10 +187,11 @@ class Fpdf2Plotter(Plotter):
                 face=face,
                 gray=gray,
                 weight=weight,
+                family=family,
             )
             return
-        family = self._family(face, bold, weight)
-        self.pdf.set_font(family, "", size)
+        register_as = self._register_name(face, bold, weight, family)
+        self.pdf.set_font(register_as, "", size)
         self._ink(gray)
         cap = _pt_mm(size) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
