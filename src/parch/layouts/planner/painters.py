@@ -443,11 +443,6 @@ def _paint_perforation(
         walked = stop + gap
 
 
-def clone_icon_cluster_width(n: int = len(CLONE_ICONS)) -> float:
-    """Minimum packed width of the G icon set (spread uses the full strip seat)."""
-    return n * CLONE_ICON + max(n - 1, 0) * CLONE_ICON_GAP
-
-
 def clone_task_count(box: Rect) -> int:
     """Focus rows that fill ``box``, with clearance above the symbol strip."""
     usable = box.h - CLONE_TASK_TOP - CLONE_TASK_CLEAR

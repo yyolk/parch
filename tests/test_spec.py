@@ -44,7 +44,6 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_meeting(1) == "meeting-2026-01"
     assert spec.dest_for_meeting(16) == "meeting-2026-16"
     assert spec.dest_for_meetings_index_of(16) == "meetings-index-2026"
-    assert spec.day_dest == "2026-01-05"
     assert spec.dest_for_day(date(2026, 1, 15)) == "2026-01-15"
     assert spec.dest_for_week(date(2026, 1, 1)) == "week-2026-W01"
     assert spec.dest_for_week(date(2025, 12, 29)) == "week-2026-W01"
@@ -60,7 +59,6 @@ def test_dest_names_from_tstrings():
     assert spec.review_index_dest == "review-index-2026"
     assert spec.dest_for_review(date(2026, 1, 1)) == "review-2026-W01"
     assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
-    assert spec.notes_dest(1) == "2026-01-05-notes-1"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
 
 

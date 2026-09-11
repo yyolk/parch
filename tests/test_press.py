@@ -80,7 +80,7 @@ def test_press_year_pdf(tmp_path: Path):
 def test_cli_press_toml(tmp_path: Path):
     spec = tmp_path / "job.toml"
     spec.write_text(
-        'year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nday = 5\nnotes_pages = 1\n',
+        'year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nnotes_pages = 1\n',
         encoding="utf-8",
     )
     out = tmp_path / "job.pdf"
@@ -92,7 +92,7 @@ def test_cli_press_toml(tmp_path: Path):
 
 
 def test_cli_load_keeps_toml_overlay_under_month_flag():
-    spec = _load_spec("examples/mvp-typo-overlay.toml", year=None, month=1, day=None)
+    spec = _load_spec("examples/mvp-typo-overlay.toml", year=None, month=1)
     assert spec.months == (1,)
     assert spec.type_overlay.chrome == TypePatch(size=9.6, weight="bold")
     assert spec.type_overlay.display == TypePatch(size=48, weight="heavy")

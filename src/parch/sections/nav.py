@@ -45,7 +45,7 @@ REV dest (strip label **Rev**):
 WEEK dest: daily/notes → ISO week of that day; week page → self; year/month/quarter
 → first ISO week that touches the landing month.
 
-DAY / NOTES dests (no generation-time “today”, not spec.day):
+DAY / NOTES dests (no generation-time “today”):
 - daily / notes → that day (notes-1)
 - week → first pressed day in that week (a day that has a daily)
 - month / quarter → 1st of the landing month
@@ -59,7 +59,7 @@ from parch.spec import Spec
 
 
 def landing_day(spec: Spec, *, day: date | None = None, month: int | None = None) -> date:
-    """DAY/NOTES landing. ``spec.day`` is not a today seed."""
+    """DAY/NOTES landing. Not a generation-time “today” seed."""
     if day is not None:
         return day
     return date(spec.year, month if month is not None else spec.months[0], 1)
