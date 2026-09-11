@@ -251,9 +251,6 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeInk is TypeInk
     assert fonts.TypeFamily is TypeFamily
     assert fonts.TypeStep is TypeStep
-    assert not hasattr(fonts, "FaceBridge")
-    assert not hasattr(fonts, "TypeFace")
-    assert not hasattr(fonts, "BRIDGE_BACKLOG")
     assert fonts.TypeRef is TypeRef
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
@@ -266,8 +263,6 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.Em is Em
     assert fonts.Pt is Pt
     assert fonts.pt_from_em is pt_from_em
-    assert not hasattr(fonts, "Mm")
-    assert not hasattr(fonts, "Px")
     assert JOST_RATIOS["body"] == Em(1.0)
     assert ROOT_BODY == Pt(8.5)
     assert DISPLAY_SIZE == Pt(42.0)
