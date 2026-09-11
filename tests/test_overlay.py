@@ -246,6 +246,11 @@ def test_merge_press_overlay_is_device_then_toml_then_kwarg():
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=9.6)
     assert ramp.ink("title") == TypeInk(family="jost", weight="bold", size=14)
     assert ramp.ink("display") == JostRamp().ink("display")
+    proofed = merge_press_overlay(device, spec, proof=True)
+    proof_ramp = EffectiveRamp(overlay=proofed)
+    assert proof_ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=9.2)
+    assert proof_ramp.ink("title") == TypeInk(family="jost", weight="medium", size=13)
+    assert proof_ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
 
 
 def test_identity_device_and_empty_toml_stay_jost_defaults(tmp_path: Path):

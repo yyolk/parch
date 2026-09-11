@@ -79,8 +79,8 @@ class PlannerLayout:
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
     allowlisted painters (``ramp.ink(step)``). Habit / meeting / review /
     tasks stay on ``face`` + ``bold``; the plotter asks ``ramp.resolve_face``.
-    Press may hand in an ``EffectiveRamp`` (defaults ⊕ device ⊕ toml overlay).
-    Dual-font ramps are future work; ``family`` stays on the ink.
+    Press may hand in an ``EffectiveRamp`` (defaults ⊕ device ⊕ toml ⊕
+    proof). Dual-font ramps are future work; ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:

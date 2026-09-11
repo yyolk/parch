@@ -95,7 +95,7 @@ Size bands (pt, inclusive):
 | `label` | 4–12 |
 | `caption` | 4–10 |
 
-Merge (`defaults ⊕ device ⊕ toml`, then an optional `press(..., overlay=)`):
+Merge (`defaults ⊕ device ⊕ toml ⊕ proof`, then an optional `press(..., overlay=)`):
 
 1. Missing step → keep previous ink.
 2. Present step, missing field → that field stays.
@@ -121,13 +121,38 @@ weight = "bold"
 
 `examples/mvp.toml` has no typography table (identity / defaults). Side
 example: `examples/mvp-typo-overlay.toml`. `press` builds
-`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay`. An explicit
-`ramp=` argument wins the whole object. `YearPlanner()` / `PlannerLayout()`
-with no args still use `JostRamp` (defaults, no overlay).
+`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay ⊕ proof`. An
+explicit `ramp=` argument wins the whole object. `YearPlanner()` /
+`PlannerLayout()` with no args still use `JostRamp` (defaults, no overlay).
 
 Nomad's `type_overlay` is **identity** (`TypeOverlay()`): no size/weight
 patches. The device hook is wired; a later profile can patch chrome
 without touching painters.
+
+### ProofProfile
+
+A separate press-mode layer for on-screen review. Modest size bumps on
+TypeStep keys; `display` stays Heavy 42. Weights stay on the closed
+defaults. Family is never overlaid. Device overlay is not mutated.
+
+| Step | Default | Proof |
+| --- | --- | --- |
+| `chrome` | Book 7.4 | Book **9.2** |
+| `title` | Medium 11 | Medium **13** |
+| `eyebrow` | Medium 10 | Medium **12** |
+| `display` | Heavy 42 | unchanged |
+
+Invoke:
+
+```shell
+uv run parch proof examples/mvp.toml -o artifacts/mvp/exp-typeramp-proof.pdf
+# or
+uv run parch press examples/mvp.toml --proof -o artifacts/mvp/exp-typeramp-proof.pdf
+```
+
+API: `press(spec, out, proof=True)` or `press(spec, out, proof=ProofProfile())`.
+Allowlisted painters already call `ramp.ink(step)`; this PR does not sweep
+the FaceBridge backlog.
 
 ### Strangler allowlist
 
