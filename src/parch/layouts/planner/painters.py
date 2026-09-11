@@ -98,28 +98,29 @@ def paint_header(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
     _ink_text(plotter, title_box, title, ramp, "page_title", gray=PAPER, align="left")
-    if chip:
+    chrome = ramp.ink("chrome") if chip or meta else None
+    if chip and chrome is not None:
         chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
-        _ink_text(
-            plotter,
+        plotter.text(
             chip_box,
             chip,
-            ramp,
-            "chrome",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=SOFT,
             align="right",
             small_caps=True,
         )
         if chip_dest:
             plotter.link(chip_box, chip_dest)
-    if meta:
+    if meta and chrome is not None:
         meta_box = Rect(device.page_width - gutter - meta_w, slab.y, meta_w, slab.h)
-        _ink_text(
-            plotter,
+        plotter.text(
             meta_box,
             meta,
-            ramp,
-            "chrome",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=SOFT,
             align="right",
             small_caps=True,

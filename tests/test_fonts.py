@@ -244,7 +244,9 @@ def test_month_grid_resolves_via_roles():
     assert dow[9] == "book"
     assert _family(dow) == "jost"
     assert dow[5] is False
-    week = next(op for op in plotter.ops if op[0] == "text" and str(op[2]).startswith("W"))
+    week = next(
+        op for op in plotter.ops if op[0] == "text" and str(op[2]).startswith("W") and op[2][1:].isdigit()
+    )
     assert week[3] == 5.8
     assert week[9] == "book"
     assert _family(week) == "jost"
