@@ -61,8 +61,8 @@ class Plotter(Protocol):
         """Draw a single line of text inside ``box`` (pt size).
 
         Ramp path: ``family`` + ``weight`` select a catalog cut. When ``family``
-        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost for unmigrated
-        painters (Book / Bold / Medium / Heavy).
+        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost (Book / Bold /
+        Medium / Heavy) for any leftover call that has not picked a scale step.
         """
 
     def link(self, box: Rect, dest: str) -> None:
