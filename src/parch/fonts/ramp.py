@@ -7,15 +7,16 @@ itself. ``Plotter.text`` takes ``ink=`` or ``ref=`` resolved at the
 plotter edge via ``plotter.ramp``. They do not think in sans/serif slots
 or invent one-off page roles.
 
-Ratio-driven steps take size from ``root_body × JOST_RATIOS[step]``.
-``display`` is a fixed-pt exception (cover year) and does not track root.
-Root lives on ``Device.root_body`` and on the ramp (``JostRamp`` /
-``EffectiveRamp``). Press constructs the ramp with the device root.
+Ratio-driven steps take size from ``pt_from_em(root_body, JOST_RATIOS[step])``.
+``JOST_RATIOS`` values are ``Em`` (multiples of ``root_body``). ``display`` is
+a fixed-``Pt`` exception (cover year) and does not track root. Root lives on
+``Device.root_body: Pt`` and on the ramp (``JostRamp`` / ``EffectiveRamp``).
+Press constructs the ramp with the device root.
 
-**Overlay size is an absolute override for that step.** It does not
+**Overlay size is an absolute ``Pt`` override for that step.** It does not
 change ``root_body`` and does not rescale sibling steps. A chrome
 ``size=9.6`` patch leaves title / body / micro at their em-derived
-sizes. ``TypeRef.size`` is a per-call absolute override and wins over
+sizes. ``TypeRef.size`` is a per-call absolute ``Pt`` override and wins over
 both the em size and an overlay size.
 
 ``family`` stays on the ink so a later dual-font ramp can pick another
@@ -45,10 +46,21 @@ typed issue (unknown step, bad weight, bad size, version mismatch).
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, Protocol
+from typing import Literal, NewType, Protocol
 
 from parch import ConfigError
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, jost_catalog
+
+# Thin size tags at the ramp / device / overlay / ink boundary.
+# Em = multiple of root_body; Pt = absolute PDF point. No Mm/Px, no operators.
+Em = NewType("Em", float)
+Pt = NewType("Pt", float)
+
+
+def pt_from_em(root: Pt, em: Em) -> Pt:
+    """Resolve an em multiple against an absolute root. Pure."""
+    return Pt(float(root) * float(em))
+
 
 type TypeStep = Literal[
     "display",
@@ -136,20 +148,21 @@ class TypeInk:
 
     family: TypeFamily
     weight: TypeWeight
-    size: float
+    size: Pt
 
 
 @dataclass(frozen=True, slots=True)
 class TypeRef:
     """Painter-facing type request. ``TypeStep`` vocabulary only.
 
-    No family, no weight. Optional ``emphasis`` and ``size``. ``size``
-    overrides the step default (and an overlay size) for that one call.
+    No family, no weight. Optional ``emphasis`` and ``size``. ``size`` is
+    an absolute ``Pt`` override of the step default (and an overlay size)
+    for that one call.
     """
 
     step: TypeStep
     emphasis: TypeEmphasis = "regular"
-    size: float | None = None
+    size: Pt | None = None
 
     def __post_init__(self) -> None:
         if self.step not in TYPE_STEPS:
@@ -162,30 +175,30 @@ class TypeRef:
 
 @dataclass(frozen=True, slots=True)
 class ScaleCut:
-    """One closed step: a size plus the regular / strong Jost cuts."""
+    """One closed step: a resolved ``Pt`` plus the regular / strong Jost cuts."""
 
-    size: float
+    size: Pt
     regular: TypeWeight
     strong: TypeWeight
 
 
-# Default / Nomad body. Ratio-driven steps are ``root_body × JOST_RATIOS``.
-ROOT_BODY = 8.5
-DISPLAY_SIZE = 42.0
+# Default / Nomad body. Ratio-driven steps are ``pt_from_em(root_body, JOST_RATIOS)``.
+ROOT_BODY = Pt(8.5)
+DISPLAY_SIZE = Pt(42.0)
 
 # Target sizes at ``ROOT_BODY``. ``display`` is the fixed-pt exception.
-_STEP_AT_ROOT: dict[TypeStep, float] = {
-    "title": 11,
-    "eyebrow": 10,
-    "body": 8.5,
-    "chrome": 7.4,
-    "label": 6.4,
-    "caption": 5.4,
-    "micro": 4.3,
+_STEP_AT_ROOT: dict[TypeStep, Pt] = {
+    "title": Pt(11),
+    "eyebrow": Pt(10),
+    "body": Pt(8.5),
+    "chrome": Pt(7.4),
+    "label": Pt(6.4),
+    "caption": Pt(5.4),
+    "micro": Pt(4.3),
 }
 
-JOST_RATIOS: dict[TypeStep, float] = {
-    step: size / ROOT_BODY for step, size in _STEP_AT_ROOT.items()
+JOST_RATIOS: dict[TypeStep, Em] = {
+    step: Em(float(size) / float(ROOT_BODY)) for step, size in _STEP_AT_ROOT.items()
 }
 
 _STEP_WEIGHTS: dict[TypeStep, tuple[TypeWeight, TypeWeight]] = {
@@ -200,20 +213,20 @@ _STEP_WEIGHTS: dict[TypeStep, tuple[TypeWeight, TypeWeight]] = {
 }
 
 
-def step_size(step: TypeStep, root_body: float = ROOT_BODY) -> float:
+def step_size(step: TypeStep, root_body: Pt = ROOT_BODY) -> Pt:
     """Em-derived size, or the fixed display exception."""
     if step == "display":
         return DISPLAY_SIZE
-    return root_body * JOST_RATIOS[step]
+    return pt_from_em(root_body, JOST_RATIOS[step])
 
 
-def scale_cut(step: TypeStep, root_body: float = ROOT_BODY) -> ScaleCut:
+def scale_cut(step: TypeStep, root_body: Pt = ROOT_BODY) -> ScaleCut:
     """One closed step at ``root_body`` (display ignores root)."""
     regular, strong = _STEP_WEIGHTS[step]
     return ScaleCut(size=step_size(step, root_body), regular=regular, strong=strong)
 
 
-def jost_scale(root_body: float = ROOT_BODY) -> dict[TypeStep, ScaleCut]:
+def jost_scale(root_body: Pt = ROOT_BODY) -> dict[TypeStep, ScaleCut]:
     """Closed scale table at ``root_body``. Overlay validation keys off the steps."""
     return {step: scale_cut(step, root_body) for step in TYPE_STEPS}
 
@@ -242,14 +255,14 @@ def resolve_ref(ramp: TypeRamp, ref: TypeRef) -> TypeInk:
     ink = ramp.ink(ref.step, ref.emphasis)
     if ref.size is None:
         return ink
-    return TypeInk(family=ink.family, weight=ink.weight, size=ref.size)
+    return TypeInk(family=ink.family, weight=ink.weight, size=Pt(float(ref.size)))
 
 
 def scale_ink(
     step: TypeStep,
     emphasis: TypeEmphasis = "regular",
     *,
-    root_body: float = ROOT_BODY,
+    root_body: Pt = ROOT_BODY,
 ) -> TypeInk:
     """Look up the closed Jost scale at ``root_body``. Raises ``KeyError`` on an unknown step."""
     cut = scale_cut(step, root_body)
@@ -261,7 +274,7 @@ def scale_ink(
 class TypePatch:
     """Partial ink override. Missing fields keep the default. No I/O."""
 
-    size: float | None = None
+    size: Pt | None = None
     weight: TypeWeight | None = None
 
     def __post_init__(self) -> None:
@@ -280,7 +293,7 @@ class TypeOverlay:
     may set size, weight, or both; ``None`` on a patch field keeps the closed
     default for that field. A patch applies to both emphases of the step; an
     explicit weight replaces the emphasis-derived cut. Overlay size is an
-    absolute override for that step — it does not change ``root_body``.
+    absolute ``Pt`` override for that step — it does not change ``root_body``.
     """
 
     schema_version: int = OVERLAY_SCHEMA_VERSION
@@ -450,7 +463,7 @@ def validate_overlay(overlay: OverlayData, defaults: Mapping[str, object]) -> Ov
         if issue is not None:
             return issue
         built[key] = TypePatch(
-            size=None if size is None else float(size),
+            size=None if size is None else Pt(float(size)),
             weight=None if weight is None else weight,  # type: ignore[arg-type]
         )
     return OverlayOk(overlay=_overlay_from_fields(OVERLAY_SCHEMA_VERSION, built))
@@ -472,7 +485,7 @@ def apply_overlay(base: TypeInk, patch: TypePatch | None) -> TypeInk:
     return TypeInk(
         family=base.family,
         weight=base.weight if patch.weight is None else patch.weight,
-        size=base.size if patch.size is None else patch.size,
+        size=base.size if patch.size is None else Pt(float(patch.size)),
     )
 
 
@@ -504,24 +517,24 @@ def _resolve_step(
     step: TypeStep,
     emphasis: TypeEmphasis,
     overlay: TypeOverlay,
-    root_body: float,
+    root_body: Pt,
 ) -> TypeInk:
     ink = apply_overlay(scale_ink(step, emphasis, root_body=root_body), overlay.patch(step))
     catalog.path(ink.family, ink.weight)
     return ink
 
 
-def _require_root_body(root_body: float) -> float:
+def _require_root_body(root_body: Pt) -> Pt:
     if root_body <= 0:
         raise ValueError(f"root_body must be > 0, not {root_body}")
-    return root_body
+    return Pt(float(root_body))
 
 
 @dataclass(frozen=True, slots=True)
 class JostRamp:
     """Single-family Jost scale. Sizes from ``root_body ×`` ratios (display fixed)."""
 
-    root_body: float = ROOT_BODY
+    root_body: Pt = ROOT_BODY
     catalog: FontCatalog = field(default_factory=jost_catalog)
 
     def __post_init__(self) -> None:
@@ -539,11 +552,11 @@ class EffectiveRamp:
     """Closed Jost scale at ``root_body`` ⊕ overlay.
 
     Painters call ``ink`` / pass refs; they never read the overlay.
-    Overlay size is an absolute override for that step only.
+    Overlay size is an absolute ``Pt`` override for that step only.
     """
 
     overlay: TypeOverlay = field(default_factory=TypeOverlay)
-    root_body: float = ROOT_BODY
+    root_body: Pt = ROOT_BODY
     catalog: FontCatalog = field(default_factory=jost_catalog)
 
     def __post_init__(self) -> None:
@@ -561,7 +574,7 @@ def bind_ramp(
     ramp: TypeRamp | None = None,
     overlay: OverlayData | None = None,
     defaults: Mapping[str, object] | None = None,
-    root_body: float | None = None,
+    root_body: Pt | None = None,
 ) -> TypeRamp:
     """Explicit ``ramp`` wins. Otherwise validate, then ``EffectiveRamp`` at ``root_body``."""
     if ramp is not None:
@@ -577,9 +590,9 @@ def bind_ramp(
 # Slightly larger chrome / title / eyebrow than the closed scale — on-screen
 # review. Device overlay stays a separate layer and is not mutated here.
 # Keys are TypeStep names (not the old page-semantic roles).
-PROOF_CHROME_SIZE = 9.2
-PROOF_TITLE_SIZE = 13.0
-PROOF_EYEBROW_SIZE = 12.0
+PROOF_CHROME_SIZE = Pt(9.2)
+PROOF_TITLE_SIZE = Pt(13.0)
+PROOF_EYEBROW_SIZE = Pt(12.0)
 
 
 @dataclass(frozen=True, slots=True)

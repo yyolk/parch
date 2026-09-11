@@ -13,13 +13,16 @@ from parch.fonts import (
     ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
+    Em,
     JostRamp,
+    Pt,
     TypeInk,
     TypeOverlay,
     TypePatch,
     TypeRef,
     bind_ramp,
     compose_overlays,
+    pt_from_em,
     validate_overlay,
 )
 from parch.layouts.planner.painters import (
@@ -44,9 +47,32 @@ def _one(page, typ):
     raise TypeError(f"{page.kind} missing {typ.__name__}")
 
 
+def test_em_and_pt_are_distinct_newtypes():
+    from typing import NewType
+
+    assert isinstance(Em, NewType)
+    assert isinstance(Pt, NewType)
+    assert Em is not Pt
+    assert Em.__name__ == "Em"
+    assert Pt.__name__ == "Pt"
+    assert Em.__supertype__ is float
+    assert Pt.__supertype__ is float
+    assert ROOT_BODY == Pt(8.5)
+    assert DISPLAY_SIZE == Pt(42.0)
+    assert NOMAD.root_body == Pt(8.5)
+    assert JOST_RATIOS["body"] == Em(1.0)
+    assert JOST_RATIOS["title"] == Em(11 / 8.5)
+    assert JOST_RATIOS["micro"] == Em(4.3 / 8.5)
+    assert "display" not in JOST_RATIOS
+    assert pt_from_em(Pt(8.5), Em(1.0)) == Pt(8.5)
+    assert pt_from_em(ROOT_BODY, JOST_RATIOS["title"]) == pytest.approx(11)
+    assert pt_from_em(Pt(12.0), JOST_RATIOS["body"]) == Pt(12.0)
+    assert pt_from_em(Pt(12.0), JOST_RATIOS["micro"]) == pytest.approx(12.0 * 4.3 / 8.5)
+
+
 def test_ratios_at_nomad_root_land_on_presnap_cuts():
     ramp = JostRamp(root_body=ROOT_BODY)
-    assert ramp.ink("display").size == DISPLAY_SIZE == 42
+    assert ramp.ink("display").size == DISPLAY_SIZE == Pt(42.0)
     assert ramp.ink("title").size == pytest.approx(11)
     assert ramp.ink("eyebrow").size == pytest.approx(10)
     assert ramp.ink("body").size == pytest.approx(8.5)
@@ -54,20 +80,20 @@ def test_ratios_at_nomad_root_land_on_presnap_cuts():
     assert ramp.ink("label").size == pytest.approx(6.4)
     assert ramp.ink("caption").size == pytest.approx(5.4)
     assert ramp.ink("micro").size == pytest.approx(4.3)
-    assert JOST_RATIOS["body"] == pytest.approx(1.0)
-    assert JOST_RATIOS["title"] == pytest.approx(11 / 8.5)
-    assert JOST_RATIOS["micro"] == pytest.approx(4.3 / 8.5)
+    assert JOST_RATIOS["body"] == Em(1.0)
+    assert JOST_RATIOS["title"] == Em(11 / 8.5)
+    assert JOST_RATIOS["micro"] == Em(4.3 / 8.5)
     assert "display" not in JOST_RATIOS
 
 
 def test_root_bump_rescales_ratio_steps_display_stays_42():
-    base = JostRamp(root_body=8.5)
-    bumped = JostRamp(root_body=12.0)
+    base = JostRamp(root_body=Pt(8.5))
+    bumped = JostRamp(root_body=Pt(12.0))
     factor = 12.0 / 8.5
     for step in TYPE_STEPS:
         if step == "display":
-            assert base.ink(step).size == 42
-            assert bumped.ink(step).size == 42
+            assert base.ink(step).size == Pt(42.0)
+            assert bumped.ink(step).size == Pt(42.0)
             continue
         assert bumped.ink(step).size == pytest.approx(base.ink(step).size * factor)
         assert bumped.ink(step).weight == base.ink(step).weight
@@ -75,23 +101,23 @@ def test_root_bump_rescales_ratio_steps_display_stays_42():
     assert bumped.ink("title").size == pytest.approx(12.0 * 11 / 8.5)
     assert bumped.ink("micro").size == pytest.approx(12.0 * 4.3 / 8.5)
     with pytest.raises(ValueError, match="root_body"):
-        JostRamp(root_body=0)
+        JostRamp(root_body=Pt(0))
 
 
 def test_overlay_size_is_absolute_override_not_root():
     """Overlay size patches that step only; siblings keep em-derived sizes."""
     over = EffectiveRamp(
-        overlay=TypeOverlay(chrome=TypePatch(size=9.0)),
-        root_body=12.0,
+        overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))),
+        root_body=Pt(12.0),
     )
-    bumped = JostRamp(root_body=12.0)
-    assert over.ink("chrome") == TypeInk(family="jost", weight="book", size=9.0)
-    assert over.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=9.0)
+    bumped = JostRamp(root_body=Pt(12.0))
+    assert over.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.0))
+    assert over.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=Pt(9.0))
     assert over.ink("body").size == pytest.approx(12.0)
     assert over.ink("title").size == pytest.approx(bumped.ink("title").size)
     assert over.ink("micro").size == pytest.approx(bumped.ink("micro").size)
-    assert over.ink("display").size == 42
-    identity = EffectiveRamp(root_body=12.0)
+    assert over.ink("display").size == Pt(42.0)
+    identity = EffectiveRamp(root_body=Pt(12.0))
     assert identity.ink("chrome").size == pytest.approx(bumped.ink("chrome").size)
 
 
@@ -105,14 +131,14 @@ def test_overlay_still_validates_with_micro():
         table,
     )
     assert isinstance(ok, OverlayOk)
-    assert ok.overlay.micro == TypePatch(size=3.8, weight="book")
+    assert ok.overlay.micro == TypePatch(size=Pt(3.8), weight="book")
     ramp = EffectiveRamp(overlay=ok.overlay)
-    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=3.8)
+    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(3.8))
     assert ramp.ink("body").size == pytest.approx(8.5)
 
 
 def test_header_and_month_honor_bumped_root():
-    bumped = JostRamp(root_body=12.0)
+    bumped = JostRamp(root_body=Pt(12.0))
     header = RecordingPlotter(ramp=bumped)
     paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=bumped)
     title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
@@ -226,10 +252,10 @@ def test_press_mvp_toml_identity_and_overlay_compose(tmp_path: Path):
 
 
 def test_typeref_size_wins_over_em_and_overlay():
-    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.1)), root_body=12.0)
-    assert over.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
-        family="jost", weight="book", size=7.6
+    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1))), root_body=Pt(12.0))
+    assert over.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
+        family="jost", weight="book", size=Pt(7.6)
     )
     assert over.resolve(TypeRef(step="micro")) == over.ink("micro")
-    assert over.resolve(TypeRef(step="display")).size == 42
+    assert over.resolve(TypeRef(step="display")).size == Pt(42.0)
     assert over.ink("micro").size == pytest.approx(12.0 * 4.3 / 8.5)

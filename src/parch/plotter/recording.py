@@ -73,7 +73,7 @@ class RecordingPlotter(Plotter):
                 "text",
                 box,
                 content,
-                resolved.size,
+                float(resolved.size),
                 align,
                 False,
                 "sans",

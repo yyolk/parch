@@ -3,6 +3,7 @@
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, font_dir, jost_catalog
 from parch.fonts.ramp import (
     DISPLAY_SIZE,
+    Em,
     JOST_RATIOS,
     JOST_SCALE,
     MIGRATED_SURFACES,
@@ -23,6 +24,7 @@ from parch.fonts.ramp import (
     NonpositiveSize,
     OverlayOk,
     ProofProfile,
+    Pt,
     ScaleCut,
     SizeOutOfRange,
     TypeEmphasis,
@@ -39,6 +41,7 @@ from parch.fonts.ramp import (
     compose_overlays,
     jost_defaults,
     jost_scale,
+    pt_from_em,
     require_overlay,
     resolve_ref,
     scale_cut,
@@ -49,6 +52,7 @@ from parch.fonts.ramp import (
 
 __all__ = [
     "DISPLAY_SIZE",
+    "Em",
     "JOST_RATIOS",
     "OVERLAY_SCHEMA_VERSION",
     "OVERLAY_SIZE_RANGE",
@@ -69,6 +73,7 @@ __all__ = [
     "NonpositiveSize",
     "OverlayOk",
     "ProofProfile",
+    "Pt",
     "ScaleCut",
     "SizeOutOfRange",
     "TYPE_STEPS",
@@ -90,6 +95,7 @@ __all__ = [
     "jost_catalog",
     "jost_defaults",
     "jost_scale",
+    "pt_from_em",
     "require_overlay",
     "resolve_ref",
     "scale_cut",
