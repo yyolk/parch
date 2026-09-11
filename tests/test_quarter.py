@@ -16,7 +16,7 @@ from parch.spec import Spec
 from parch.tracks import rows
 
 
-def test_quarter_page_and_provisional_nav():
+def test_quarter_page_and_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     assert [page.dest for page in pages[:4]] == [

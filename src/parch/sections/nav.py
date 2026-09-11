@@ -1,7 +1,5 @@
 """Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Rev · Day · Notes · Proj · Meet · Task.
 
-QUAR is provisional — may come out of the strip later.
-
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
 QUAR dest: quarter page → self; month/week/day/notes → quarter containing the
