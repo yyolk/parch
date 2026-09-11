@@ -118,12 +118,15 @@ def paint_nav(
     device: Device,
     items: tuple[tuple[str, str], ...],
     active: str,
+    *,
+    ramp: TypeRamp,
 ) -> None:
     if not items:
         return
     y = device.page_height - NAV_H
     slot = device.page_width / len(items)
     plotter.rect(Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH)
+    chrome = ramp.ink("chrome")
     for i, (label, dest) in enumerate(items):
         x = i * slot
         hit = Rect(x, y, slot, NAV_H)
@@ -133,9 +136,9 @@ def paint_nav(
         plotter.text(
             hit,
             label,
-            size=7.6,
-            bold=on,
-            face="sans",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=PAPER if on else INK,
             small_caps=True,
             align="center",
@@ -216,10 +219,10 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     )
 
 
-def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
+def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid, *, ramp: TypeRamp) -> None:
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
-            _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+            _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -362,15 +365,19 @@ def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
     return (stub, *project_ticket_preview_cards(preview))
 
 
-def paint_projects_index(plotter: Plotter, box: Rect, index: ProjectsIndex) -> None:
+def paint_projects_index(
+    plotter: Plotter, box: Rect, index: ProjectsIndex, *, ramp: TypeRamp | None = None
+) -> None:
     """Thesis L — stub, raised write-in, G symbol strip, 3-card preview; stub + preview links."""
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
-        _paint_project_ticket(plotter, seat, ticket)
+        _paint_project_ticket(plotter, seat, ticket, ramp=ramp)
         for hit in project_ticket_link_hits(seat):
             plotter.link(hit, ticket.dest)
 
 
-def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) -> None:
+def _paint_project_ticket(
+    plotter: Plotter, box: Rect, ticket: ProjectTicket, *, ramp: TypeRamp | None = None
+) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     stub, body = project_ticket_parts(box)
     name, preview = project_ticket_body_seats(body)
@@ -378,15 +385,27 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     mark_y = stub.y + (stub.h - TICKET_MARK) / 2
     mark = Rect(stub.x + (stub.w - TICKET_MARK) / 2, mark_y, TICKET_MARK, TICKET_MARK)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-    plotter.text(
-        mark,
-        f"{ticket.number:02d}",
-        size=6.6,
-        bold=True,
-        face="serif",
-        gray=INK,
-        align="center",
-    )
+    if ramp is not None:
+        chrome = ramp.ink("chrome")
+        plotter.text(
+            mark,
+            f"{ticket.number:02d}",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=INK,
+            align="center",
+        )
+    else:
+        plotter.text(
+            mark,
+            f"{ticket.number:02d}",
+            size=6.6,
+            bold=True,
+            face="serif",
+            gray=INK,
+            align="center",
+        )
     perf_x = stub.right + 0.55
     _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
     plotter.line(write.x, write.bottom, write.right, write.bottom, stroke_width=RULE, stroke_gray=RULE_C)
@@ -489,7 +508,9 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
     return spine, name_h, name_field, tasks, notes, strip
 
 
-def paint_project(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
+def paint_project(
+    plotter: Plotter, box: Rect, board: ProjectsBoard, *, ramp: TypeRamp | None = None
+) -> None:
     """G #215 clone well — spine, soft P + name box, ticks, 2.8 mm dots, strip, status rail."""
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
@@ -501,7 +522,7 @@ def paint_project(plotter: Plotter, box: Rect, board: ProjectsBoard) -> None:
         _paint_clone_tasks(plotter, tasks)
         _paint_clone_dot_grid(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
-        _paint_clone_status_track(plotter, rail)
+        _paint_clone_status_track(plotter, rail, ramp=ramp)
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
@@ -559,25 +580,41 @@ def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> Non
         y += FOCUS_PITCH
 
 
-def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
+def _paint_clone_status_track(
+    plotter: Plotter, box: Rect, *, ramp: TypeRamp | None = None
+) -> None:
     """Vertical Todo → In Progress → Done. Squares stand in for circles."""
     track_h = min(CLONE_TRACK_H, box.h - 2.0)
     track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
     inset = track.inset(1.4, 0.6)
     marks: list[Rect] = []
+    chrome = ramp.ink("chrome") if ramp is not None else None
     for slot, label in zip(rows(inset, 3, gap=CLONE_RAIL_SLOT_GAP), CLONE_STATUS_LABELS, strict=True):
         mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
         mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
         plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
-        plotter.text(
-            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
-            label,
-            size=5.4,
-            face="sans",
-            gray=MUTED,
-            small_caps=True,
-            align="left",
-        )
+        label_box = Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h)
+        if chrome is not None:
+            plotter.text(
+                label_box,
+                label,
+                size=chrome.size,
+                family=chrome.family,
+                weight=chrome.weight,
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
+        else:
+            plotter.text(
+                label_box,
+                label,
+                size=5.4,
+                face="sans",
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
         marks.append(mark)
     cx = marks[0].x + marks[0].w / 2
     for above, below in zip(marks, marks[1:]):
@@ -1428,25 +1465,48 @@ def _paint_focus_box(plotter: Plotter, box: Rect) -> None:
     _paint_checklist_box(plotter, box, label="Focus", rows=FOCUS_ROWS)
 
 
-def paint_priorities(plotter: Plotter, box: Rect, priorities: Priorities) -> None:
-    _paint_checklist_box(plotter, box, label=priorities.label, rows=priorities.rows)
+def paint_priorities(
+    plotter: Plotter, box: Rect, priorities: Priorities, *, ramp: TypeRamp | None = None
+) -> None:
+    _paint_checklist_box(
+        plotter, box, label=priorities.label, rows=priorities.rows, ramp=ramp
+    )
 
 
 def _paint_checklist_box(
-    plotter: Plotter, box: Rect, *, rows: int, label: str | None = None
+    plotter: Plotter,
+    box: Rect,
+    *,
+    rows: int,
+    label: str | None = None,
+    ramp: TypeRamp | None = None,
 ) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     y = box.y + FOCUS_PAD_TOP
     if label:
-        plotter.text(
-            Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
-            label,
-            size=6.4,
-            face="sans",
-            gray=MUTED,
-            small_caps=True,
-            align="left",
-        )
+        label_box = Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H)
+        if ramp is not None:
+            chrome = ramp.ink("chrome")
+            plotter.text(
+                label_box,
+                label,
+                size=chrome.size,
+                family=chrome.family,
+                weight=chrome.weight,
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
+        else:
+            plotter.text(
+                label_box,
+                label,
+                size=6.4,
+                face="sans",
+                gray=MUTED,
+                small_caps=True,
+                align="left",
+            )
         y = box.y + FOCUS_PAD_TOP + FOCUS_LABEL_H + FOCUS_PAD_MID
     x = box.x + 1.6
     right = box.right - 1.6
@@ -1468,21 +1528,36 @@ def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None
     )
 
 
-def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
+def _paint_mini_month(
+    plotter: Plotter, box: Rect, month: AnnualMonth, *, ramp: TypeRamp | None = None
+) -> None:
     pressed = month.dest is not None
     title_h = 3.5
     dow_h = 2.5
     title = Rect(box.x, box.y, box.w, title_h)
-    plotter.text(
-        title,
-        month.name[:3],
-        size=6.4,
-        bold=pressed,
-        face="sans",
-        gray=INK if pressed else MUTED,
-        small_caps=True,
-        align="left",
-    )
+    if ramp is not None:
+        chrome = ramp.ink("chrome")
+        plotter.text(
+            title,
+            month.name[:3],
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=INK if pressed else MUTED,
+            small_caps=True,
+            align="left",
+        )
+    else:
+        plotter.text(
+            title,
+            month.name[:3],
+            size=6.4,
+            bold=pressed,
+            face="sans",
+            gray=INK if pressed else MUTED,
+            small_caps=True,
+            align="left",
+        )
     if month.dest:
         plotter.link(title, month.dest)
     dow = Rect(box.x, box.y + title_h, box.w, dow_h)
@@ -1750,7 +1825,7 @@ def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) ->
             plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
+def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid, *, ramp: TypeRamp) -> None:
     gutter = 8.0
     day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
     tracks = columns(day_grid, 7)
@@ -1758,13 +1833,15 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     header = Rect(day_grid.x, box.y, day_grid.w, dow_h)
     # Shared inset + left align for weekday letters and day numerals.
     inset = 0.5
+    chrome = ramp.ink("chrome")
     for i, label in enumerate(grid.weekday_labels):
         col = tracks[i]
         plotter.text(
             Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
-            size=6.6,
-            face="sans",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1780,8 +1857,9 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(box.x, band.y, gutter - 0.4, band.h),
                 f"W{iso:02d}",
-                size=5.8,
-                face="sans",
+                size=chrome.size,
+                family=chrome.family,
+                weight=chrome.weight,
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1816,14 +1894,17 @@ def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
     return None
 
 
-def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
+def paint_week(plotter: Plotter, box: Rect, week: WeekStrip, *, ramp: TypeRamp) -> None:
+    chrome = ramp.ink("chrome")
+    title = ramp.ink("page_title")
     for band, day in zip(rows(box, max(1, len(week.days))), week.days, strict=False):
         ink = INK if day.in_month else MUTED
         plotter.text(
             Rect(band.x, band.y + 0.45, 14.0, 5.0),
             day.weekday_label,
-            size=6.6,
-            face="sans",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1831,9 +1912,9 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
-            size=11,
-            bold=True,
-            face="sans",
+            size=title.size,
+            family=title.family,
+            weight=title.weight,
             gray=ink,
             align="left",
         )
@@ -1841,8 +1922,9 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
             plotter.text(
                 Rect(band.x + 26.0, band.y + 0.55, 22.0, 4.8),
                 MONTH_NAMES[day.day.month - 1][:3],
-                size=6.6,
-                face="sans",
+                size=chrome.size,
+                family=chrome.family,
+                weight=chrome.weight,
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1857,13 +1939,15 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.line(band.x, band.bottom, band.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
+def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule, *, ramp: TypeRamp) -> None:
     header_h = 3.4
+    chrome = ramp.ink("chrome")
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
         schedule.label,
-        size=6.4,
-        face="sans",
+        size=chrome.size,
+        family=chrome.family,
+        weight=chrome.weight,
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1889,17 +1973,30 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
         )
 
 
-def paint_notes(plotter: Plotter, box: Rect, notes: Notes) -> None:
+def paint_notes(plotter: Plotter, box: Rect, notes: Notes, *, ramp: TypeRamp | None = None) -> None:
     header_h = 3.4
-    plotter.text(
-        Rect(box.x, box.y, box.w, header_h),
-        notes.label,
-        size=6.4,
-        face="sans",
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
+    if ramp is not None:
+        chrome = ramp.ink("chrome")
+        plotter.text(
+            Rect(box.x, box.y, box.w, header_h),
+            notes.label,
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+    else:
+        plotter.text(
+            Rect(box.x, box.y, box.w, header_h),
+            notes.label,
+            size=6.4,
+            face="sans",
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
     body = Rect(box.x, box.y + header_h + 0.4, box.w, box.h - header_h - 0.4)
     pitch = 4.15
     y = body.y + pitch

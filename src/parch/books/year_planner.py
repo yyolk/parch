@@ -2,7 +2,7 @@
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import JostRamp, OverlayStack, TypeOverlay, TypeRamp, bind_ramp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (
@@ -24,8 +24,18 @@ from parch.spec import Spec
 
 
 class YearPlanner:
-    def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+    def __init__(
+        self,
+        ramp: TypeRamp | None = None,
+        overlay: TypeOverlay | None = None,
+        stack: OverlayStack | None = None,
+    ) -> None:
+        # No-arg stays on JostRamp (closed defaults). Overlay/stack/ramp must be explicit.
+        self.ramp: TypeRamp = (
+            JostRamp()
+            if ramp is None and overlay is None and stack is None
+            else bind_ramp(ramp=ramp, stack=stack, overlay=overlay)
+        )
 
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)

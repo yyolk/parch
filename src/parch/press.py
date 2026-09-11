@@ -7,7 +7,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import JostRamp, TypeRamp
+from parch.fonts import OverlayStack, PRESS_TYPE_OVERLAY, TypeOverlay, TypeRamp, bind_ramp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -20,15 +20,32 @@ def press(
     output: Path,
     plotter: Plotter | None = None,
     ramp: TypeRamp | None = None,
+    *,
+    house: TypeOverlay | None = None,
+    overlay: TypeOverlay | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. The ramp's catalog is handed to
-    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
-    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    When ``ramp`` is omitted, press builds one ``EffectiveRamp`` from an
+    ordered overlay stack (bottom → top):
+
+    1. in-code TypeRole defaults
+    2. device overlay (Nomad chrome)
+    3. optional house/style overlay (``house=``; skipped when ``None``)
+    4. press/job overlay (``overlay=``, default ``PRESS_TYPE_OVERLAY``)
+
+    CLI type overlay is omitted — ``--year`` / ``--month`` / ``--day`` overlay
+    spec fields, not type. An explicit ``ramp`` wins the whole object
+    (stack args are ignored). Painters never read the stack. The ramp's
+    catalog is handed to ``Fpdf2Plotter``.
     """
     device = get_device(spec.device)
-    resolved = JostRamp() if ramp is None else ramp
+    stack = OverlayStack(
+        device=device.type_overlay,
+        house=house,
+        press=PRESS_TYPE_OVERLAY if overlay is None else overlay,
+    )
+    resolved = bind_ramp(ramp=ramp, stack=stack)
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
     YearPlanner(ramp=resolved).plot(spec, plotter)

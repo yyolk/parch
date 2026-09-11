@@ -62,3 +62,5 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
 Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+
+**Thesis Q (this branch, do not merge):** `press()` builds an ordered overlay stack — defaults ⊕ device ⊕ optional house ⊕ press/job — and passes one `EffectiveRamp`. Nomad bumps chrome; the press overlay bumps `page_title`. Painters only call `ramp.ink`. Specimens: [`artifacts/mvp/exp-typeramp-stack-year.png`](artifacts/mvp/exp-typeramp-stack-year.png) and [`artifacts/mvp/exp-typeramp-stack-override.png`](artifacts/mvp/exp-typeramp-stack-override.png).
