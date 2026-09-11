@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pypdf import PdfReader
 
-from parch.fonts import TypePatch
+from parch.fonts import PROOF_PROFILE, TypePatch
 from parch.press import _load_spec, main, press
 from parch.spec import Spec
 
@@ -133,3 +133,64 @@ def test_cli_version_mismatch_fails(tmp_path: Path, capsys):
     )
     assert main(["press", str(spec), "-o", str(tmp_path / "ver.pdf")]) == 2
     assert "schema_version" in capsys.readouterr().err
+
+
+def test_cli_proof_verb_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "proof.pdf"
+    assert main(["proof", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+
+
+def test_cli_press_proof_flag_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "flag.pdf"
+    assert main(["press", "supernote-nomad", "--proof", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+
+
+def test_cli_press_without_proof_stays_device_only(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "plain.pdf"
+    assert main(["press", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is False
+
+
+def test_cli_proof_verb_plus_flag_stays_true(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "both.pdf"
+    assert main(["proof", "supernote-nomad", "--proof", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+    assert PROOF_PROFILE.overlay.display is None

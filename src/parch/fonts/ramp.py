@@ -16,14 +16,19 @@ catalog family without ripping out the plotter kwarg. Today every step
 and every face bridge resolves to ``family="jost"``. Overlay never
 changes family.
 
-``EffectiveRamp`` is closed Jost scale defaults ⊕ a frozen ``TypeOverlay``
-(optional size/weight per ``TypeStep``). Press / device wiring builds one
-ramp and passes it in. Overlay keys match ``ink()``'s step argument;
-emphasis is a weight variant of that step, not a second overlay axis.
+``EffectiveRamp`` is closed Jost scale defaults ⊕ stacked frozen
+``TypeOverlay`` layers (optional size/weight per ``TypeStep``). Press
+builds
+
+    EffectiveRamp = defaults ⊕ device ⊕ toml ⊕ proof (if on)
+
+and passes that one object in. Overlay keys match ``ink()``'s step
+argument; emphasis is a weight variant of that step, not a second
+overlay axis. Overlay never changes family.
 
 Press TOML may set ``[typography.overlay.<step>]`` size/weight. Merge
-order is ``defaults ⊕ device ⊕ toml`` (optional ``press(..., overlay=)``
-layers last). Overlay never changes family.
+order is ``defaults ⊕ device ⊕ toml ⊕ proof`` (optional
+``press(..., overlay=)`` layers last). Overlay never changes family.
 
 ``validate_overlay`` is pure — no I/O — and returns ``OverlayOk`` or a
 typed issue (unknown step, bad weight, bad size, version mismatch).
@@ -508,3 +513,32 @@ def bind_ramp(
     table = JOST_SCALE if defaults is None else defaults
     checked = require_overlay(TypeOverlay() if overlay is None else overlay, table)
     return EffectiveRamp(overlay=checked)
+
+
+# Slightly larger chrome / title / eyebrow than the closed scale — on-screen
+# review. Device overlay stays a separate layer and is not mutated here.
+# Keys are TypeStep names (not the old page-semantic roles).
+PROOF_CHROME_SIZE = 9.2
+PROOF_TITLE_SIZE = 13.0
+PROOF_EYEBROW_SIZE = 12.0
+
+
+@dataclass(frozen=True, slots=True)
+class ProofProfile:
+    """Press-mode overlay for proofs / specimens (on-screen review).
+
+    Selected by ``press(..., proof=True)`` or ``parch proof``. Composition is
+    ``defaults ⊕ device ⊕ toml ⊕ proof``. Does not change Nomad's identity
+    device overlay. ``display`` (cover year) is not patched.
+    """
+
+    overlay: TypeOverlay = field(
+        default_factory=lambda: TypeOverlay(
+            chrome=TypePatch(size=PROOF_CHROME_SIZE),
+            title=TypePatch(size=PROOF_TITLE_SIZE),
+            eyebrow=TypePatch(size=PROOF_EYEBROW_SIZE),
+        )
+    )
+
+
+PROOF_PROFILE = ProofProfile()

@@ -6,11 +6,16 @@ from parch.components import CoverTitle
 from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY
 from parch.fonts import (
     JOST_SCALE,
+    PROOF_CHROME_SIZE,
+    PROOF_EYEBROW_SIZE,
+    PROOF_PROFILE,
+    PROOF_TITLE_SIZE,
     TYPE_STEPS,
     EffectiveRamp,
     FaceBridge,
     FontCatalog,
     JostRamp,
+    ProofProfile,
     TypeEmphasis,
     TypeFace,
     TypeFamily,
@@ -31,7 +36,7 @@ from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter
-from parch.press import press
+from parch.press import _proof_overlay, press
 from parch.spec import Spec
 
 
@@ -324,6 +329,8 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypePatch is TypePatch
     assert fonts.TYPE_STEPS is TYPE_STEPS
     assert fonts.validate_overlay is validate_overlay
+    assert fonts.ProofProfile is ProofProfile
+    assert fonts.PROOF_PROFILE is PROOF_PROFILE
 
 
 def test_overlay_explicit_size_keeps_default_weight():
@@ -534,3 +541,123 @@ def test_effective_ramp_owns_face_bridge():
     assert ramp.resolve_face("serif", True, 10, weight="heavy") == TypeInk(
         family="jost", weight="heavy", size=10
     )
+
+
+def test_proof_profile_is_slightly_larger_chrome_and_title():
+    assert isinstance(PROOF_PROFILE, ProofProfile)
+    ramp = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=PROOF_CHROME_SIZE)
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=PROOF_EYEBROW_SIZE)
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert PROOF_PROFILE.overlay.display is None
+    assert PROOF_CHROME_SIZE == pytest.approx(JostRamp().ink("chrome").size + 1.8)
+    assert PROOF_TITLE_SIZE == pytest.approx(JostRamp().ink("title").size + 2)
+    assert PROOF_EYEBROW_SIZE == pytest.approx(JostRamp().ink("eyebrow").size + 2)
+
+
+def test_proof_stacks_on_device_without_mutating_device_overlay():
+    device = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"))
+    before = device.chrome
+    merged = compose_overlays(device, PROOF_PROFILE.overlay)
+    assert device.chrome is before
+    assert device.chrome is not None
+    assert device.chrome.size == 8.6
+    assert merged.chrome is not None
+    assert merged.chrome.size == PROOF_CHROME_SIZE
+    assert merged.chrome.weight == "medium"
+    assert NOMAD.type_overlay == TypeOverlay()
+
+
+def test_proof_stacks_after_device_and_toml():
+    device = TypeOverlay(chrome=TypePatch(size=8.0, weight="medium"))
+    toml = TypeOverlay(chrome=TypePatch(size=8.5), title=TypePatch(size=12.0))
+    merged = compose_overlays(device, toml, PROOF_PROFILE.overlay)
+    ramp = EffectiveRamp(overlay=merged)
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=PROOF_CHROME_SIZE)
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+
+
+def test_proof_overlay_reaches_header_and_cover():
+    ramp = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
+    header = RecordingPlotter()
+    paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
+    chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
+    assert chip[3] == PROOF_CHROME_SIZE
+    assert chip[9] == "book"
+    assert _family(chip) == "jost"
+    title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
+    assert title[3] == PROOF_TITLE_SIZE
+    assert title[9] == "medium"
+    cover = RecordingPlotter()
+    paint_cover(cover, NOMAD, _cover(), ramp=ramp)
+    brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == PROOF_EYEBROW_SIZE
+    assert brow[9] == "medium"
+    year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
+    assert year[3] == 42
+    assert year[9] == "heavy"
+
+
+def test_press_proof_flag_applies_proof_profile(tmp_path: Path):
+    plotter = RecordingPlotter()
+    press(
+        Spec(months=(1,), notes_pages=0, project_index_pages=1),
+        tmp_path / "proof.pdf",
+        plotter=plotter,
+        proof=True,
+    )
+    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == PROOF_EYEBROW_SIZE
+    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
+    assert chrome_meta[3] == PROOF_CHROME_SIZE
+    page_title = next(
+        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == PROOF_TITLE_SIZE
+    )
+    assert page_title[9] == "medium"
+    cover_year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 42)
+    assert cover_year[9] == "heavy"
+
+
+def test_press_proof_profile_instance(tmp_path: Path):
+    custom = ProofProfile(overlay=TypeOverlay(chrome=TypePatch(size=10.5)))
+    plotter = RecordingPlotter()
+    press(
+        Spec(months=(1,), notes_pages=0, project_index_pages=1),
+        tmp_path / "custom.pdf",
+        plotter=plotter,
+        proof=custom,
+    )
+    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
+    assert chrome_meta[3] == 10.5
+    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == 10
+
+
+def test_press_proof_stacks_after_real_toml_overlay(tmp_path: Path):
+    spec = replace(
+        Spec.from_path(Path("examples/mvp-typo-overlay.toml")),
+        months=(1,),
+        notes_pages=0,
+        project_index_pages=1,
+    )
+    plotter = RecordingPlotter()
+    press(spec, tmp_path / "toml-proof.pdf", plotter=plotter, proof=True)
+    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[3] == PROOF_EYEBROW_SIZE
+    assert brow[9] == "bold"
+    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
+    assert chrome_meta[3] == PROOF_CHROME_SIZE
+    assert chrome_meta[9] == "bold"
+    page_title = next(
+        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == PROOF_TITLE_SIZE
+    )
+    assert page_title[9] == "bold"
+    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 48)
+    assert year[9] == "heavy"
+
+
+def test_press_proof_rejects_unknown_type():
+    with pytest.raises(TypeError, match="proof must be bool or ProofProfile"):
+        _proof_overlay("yes")  # type: ignore[arg-type]

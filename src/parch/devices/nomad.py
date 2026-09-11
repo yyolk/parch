@@ -57,8 +57,9 @@ class Device:
 
 
 # Identity overlay — no size/weight patches. Press still builds
-# EffectiveRamp = defaults ⊕ this overlay so the device hook is wired
-# without a visual chrome bump vs greenfield tip.
+# EffectiveRamp = defaults ⊕ this overlay (⊕ toml if present ⊕ proof if on)
+# so the device hook is wired without a visual chrome bump vs greenfield tip.
+# ProofProfile is a separate press-mode layer; it does not mutate this overlay.
 NOMAD_TYPE_OVERLAY = TypeOverlay()
 
 # 1404×1872 @ 300 PPI → 118.87×158.50 mm. Toolbar top 8 mm.
