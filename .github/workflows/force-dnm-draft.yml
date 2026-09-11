@@ -30,6 +30,8 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
+          ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
         run: |
           set -euo pipefail
 
@@ -54,26 +56,61 @@ jobs:
             gh label create "$name" --color "$color" --description "$desc"
           }
 
-          title_hit=false
-          if has_dnm "$TITLE"; then
-            title_hit=true
-          fi
-
-          # Title is source of truth for the exact "DO NOT MERGE" label.
-          if [[ "$title_hit" == true ]]; then
+          ensure_dnm_label_on() {
             ensure_label "$DNM_LABEL" "b60205" "Do not merge; workflow forces this PR to draft on the default branch"
             if has_exact_label "$LABELS"; then
               echo "${DNM_LABEL} label already present"
             else
               gh pr edit "$PR" --add-label "$DNM_LABEL"
+              LABELS="${LABELS:+${LABELS},}${DNM_LABEL}"
               echo "Added ${DNM_LABEL} label"
             fi
+          }
+
+          prefix_dnm_title() {
+            if has_dnm "$TITLE"; then
+              title_hit=true
+              echo "Title already matches DNM; skip prefix"
+              return
+            fi
+            local new
+            if [[ -z "$TITLE" ]]; then
+              new="$DNM_LABEL"
+            else
+              new="${DNM_LABEL}: ${TITLE}"
+            fi
+            gh pr edit "$PR" --title "$new"
+            TITLE="$new"
+            title_hit=true
+            echo "Prefixed title to ${new}"
+          }
+
+          title_hit=false
+          if has_dnm "$TITLE"; then
+            title_hit=true
+          fi
+
+          # Title is the durable DNM marker. Action distinguishes
+          # label-only apply (prefix title) from a title clear (drop label).
+          if [[ "$title_hit" == true ]]; then
+            ensure_dnm_label_on
           elif has_exact_label "$LABELS"; then
-            gh pr edit "$PR" --remove-label "$DNM_LABEL"
-            echo "Removed ${DNM_LABEL} label"
+            case "$ACTION" in
+              labeled|opened|reopened|unlabeled)
+                echo "Label-only DNM on ${ACTION} (label=${EVENT_LABEL:-none}); prefixing title"
+                prefix_dnm_title
+                ;;
+              *)
+                gh pr edit "$PR" --remove-label "$DNM_LABEL"
+                echo "Title cleared DNM on ${ACTION}; removed ${DNM_LABEL} label"
+                ;;
+            esac
           fi
 
           LABELS=$(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(",")')
+          if has_dnm "$TITLE"; then
+            title_hit=true
+          fi
           label_hit=false
           if has_dnm "$LABELS"; then
             label_hit=true
@@ -94,7 +131,7 @@ jobs:
           warning_body="$(printf '%s\n' \
             "⚠️ Forced this pull request to **draft** because the ${reason}." \
             '' \
-            'Drafts cannot be merged. Remove the marker from the title/label, then click **Ready for review**.' \
+            'Drafts cannot be merged. Remove DO NOT MERGE from the title, then click **Ready for review**.' \
             "${MARKER}")"
 
           waiting_body="$(printf '%s\n' \
