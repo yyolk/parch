@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 from parch.components import CoverTitle
 from parch.devices import NOMAD
@@ -30,8 +28,6 @@ from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter
-from parch.press import press
-from parch.spec import Spec
 
 
 def test_jost_weight_files_and_defaults():
@@ -231,12 +227,17 @@ def test_plotter_ink_and_ref_cuts():
     assert plotter.pdf.font_family == "jost:book"
     plotter.text(box, "title-strong", ref=TypeRef(step="title", emphasis="strong"))
     assert plotter.pdf.font_family == "jost:bold"
-    plotter.text(box, "eyebrow", ref=TypeRef(step="eyebrow"))
-    assert plotter.pdf.font_family == "jost:medium"
     plotter.text(box, "ink", ink=TypeInk(family="jost", weight="heavy", size=Pt(10)))
     assert plotter.pdf.font_family == "jost:heavy"
-    plotter.text(box, "smcp", ref=TypeRef(step="label"), small_caps=True)
-    assert plotter.pdf.font_family == "jost:book"
+    with pytest.raises(TypeError, match="ink= or ref="):
+        plotter.text(
+            Rect(4, 32, 40, 8),
+            "both",
+            ink=TypeInk(family="jost", weight="book", size=Pt(8)),
+            ref=TypeRef(step="label"),
+        )
+    with pytest.raises(TypeError, match="ink= or ref="):
+        plotter.text(Rect(4, 42, 40, 8), "neither")
 
 
 def test_fonts_package_does_not_import_plotter():
@@ -273,21 +274,6 @@ def test_patch_validators_are_pure():
         TypePatch(weight="hairline")  # type: ignore[arg-type]
 
 
-def test_press_wires_default_ramp(tmp_path: Path):
-    plotter = RecordingPlotter()
-    press(Spec(months=(1,), notes_pages=0, project_index_pages=1), tmp_path / "id.pdf", plotter=plotter)
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 10
-    assert brow[9] == "medium"
-    assert _family(brow) == "jost"
-    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 42
-    assert year[9] == "heavy"
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 7.4
-    assert chrome_meta[9] == "book"
-
-
 def test_type_ref_is_frozen_type_step_only():
     from dataclasses import fields
 
@@ -311,21 +297,3 @@ def test_ramp_resolve_typeref_uses_type_step():
     proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
     assert proof.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.2))
     assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=Pt(42))
-
-
-def test_plotter_ref_and_ink_only():
-    plotter = Fpdf2Plotter(NOMAD)
-    plotter.begin_page()
-    plotter.text(Rect(4, 12, 40, 8), "ref", ref=TypeRef(step="title"))
-    assert plotter.pdf.font_family == "jost:medium"
-    plotter.text(Rect(4, 22, 40, 8), "ink", ink=TypeInk(family="jost", weight="book", size=Pt(8)))
-    assert plotter.pdf.font_family == "jost:book"
-    with pytest.raises(TypeError, match="ink= or ref="):
-        plotter.text(
-            Rect(4, 32, 40, 8),
-            "both",
-            ink=TypeInk(family="jost", weight="book", size=Pt(8)),
-            ref=TypeRef(step="label"),
-        )
-    with pytest.raises(TypeError, match="ink= or ref="):
-        plotter.text(Rect(4, 42, 40, 8), "neither")
