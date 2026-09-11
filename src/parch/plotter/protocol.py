@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
+from parch.fonts.ramp import TypeFace as TextFace
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
-type TextFace = Literal["sans", "serif"]
 
 
 class Plotter(Protocol):
@@ -60,9 +60,13 @@ class Plotter(Protocol):
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size).
 
-        Ramp path: ``family`` + ``weight`` select a catalog cut. When ``family``
-        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost for unmigrated
-        painters (Book / Bold / Medium / Heavy).
+        Dual path, both owned by the ramp:
+
+        * Role path — ``family`` + ``weight`` from ``ramp.ink(role)``. Cover
+          and header already paint this way.
+        * Face path — when ``family`` is omitted, ``Fpdf2Plotter`` asks
+          ``ramp.resolve_face(face, bold, size)`` (``FaceBridge``). Other
+          painters may keep ``face`` + ``bold``; that is intentional.
         """
 
     def link(self, box: Rect, dest: str) -> None:

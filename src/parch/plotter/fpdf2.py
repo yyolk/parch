@@ -6,23 +6,13 @@ from typing import override
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
-from parch.fonts.catalog import FontCatalog, jost_catalog
+from parch.fonts.catalog import FontCatalog
+from parch.fonts.ramp import JostRamp, TypeRamp
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
-
-
-def resolve_weight(
-    face: TextFace, bold: bool, weight: TextWeight | None
-) -> TextWeight:
-    """Map unmigrated face+bold defaults onto the curated Jost cuts."""
-    if weight is not None:
-        return weight
-    if face == "serif":
-        return "medium"
-    return "bold" if bold else "book"
 
 
 def _pt_mm(pt: float) -> float:
@@ -34,9 +24,18 @@ def _level(gray: float) -> int:
 
 
 class Fpdf2Plotter(Plotter):
-    def __init__(self, device: Device, catalog: FontCatalog | None = None) -> None:
+    def __init__(
+        self,
+        device: Device,
+        catalog: FontCatalog | None = None,
+        ramp: TypeRamp | None = None,
+    ) -> None:
         self.device = device
-        self.catalog = jost_catalog() if catalog is None else catalog
+        if ramp is None:
+            self.ramp: TypeRamp = JostRamp() if catalog is None else JostRamp(catalog=catalog)
+        else:
+            self.ramp = ramp
+        self.catalog = catalog if catalog is not None else self.ramp.catalog
         self.pdf = FPDF(unit="mm", format=(device.page_width, device.page_height))
         self.pdf.set_auto_page_break(auto=False, margin=0)
         self.pdf.set_margins(0, 0, 0)
@@ -53,11 +52,13 @@ class Fpdf2Plotter(Plotter):
         bold: bool,
         weight: TextWeight | None,
         family: TextFamily | None,
+        size: float,
     ) -> str:
         if family is not None:
             cut = weight if weight is not None else ("bold" if bold else "book")
             return self.catalog.register_name(family, cut)
-        return self.catalog.register_name("jost", resolve_weight(face, bold, weight))
+        ink = self.ramp.resolve_face(face, bold, size, weight=weight)
+        return self.catalog.register_name(ink.family, ink.weight)
 
     def _ink(self, gray: float) -> None:
         level = _level(gray)
@@ -87,7 +88,7 @@ class Fpdf2Plotter(Plotter):
         weight: TextWeight | None,
         family: TextFamily | None,
     ) -> None:
-        register_as = self._register_name(face, bold, weight, family)
+        register_as = self._register_name(face, bold, weight, family, size)
         tw = self._smcp_width(content, size, register_as)
         cap = _pt_mm(size * SMCP_SCALE) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
@@ -190,7 +191,7 @@ class Fpdf2Plotter(Plotter):
                 family=family,
             )
             return
-        register_as = self._register_name(face, bold, weight, family)
+        register_as = self._register_name(face, bold, weight, family, size)
         self.pdf.set_font(register_as, "", size)
         self._ink(gray)
         cap = _pt_mm(size) * 0.72

@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Cover/header roles resolve through `JostRamp.ink` / `EffectiveRamp`; unmigrated `face`+`bold` goes through the same ramp's `FaceBridge` (`resolve_face`). Device/press may supply a `TypeOverlay` (size/weight only; Nomad is identity). `family="jost"` stays on the ink for a later dual-font ramp.
