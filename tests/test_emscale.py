@@ -145,7 +145,9 @@ def test_restored_presnap_sizes_via_recording_plotter():
     paint_month_grid(month_ink, well, _one(month, MonthGrid), ramp=ramp)
     day = next(op for op in month_ink.ops if op[0] == "text" and op[2] == "15")
     assert day[3] == pytest.approx(8.5)
-    week_chip = next(op for op in month_ink.ops if op[0] == "text" and str(op[2]).startswith("W"))
+    week_chip = next(
+        op for op in month_ink.ops if op[0] == "text" and str(op[2]).startswith("W") and str(op[2])[1:].isdigit()
+    )
     assert week_chip[3] == pytest.approx(5.8)
 
     habit = next(p for p in pages if p.kind == "habits")
