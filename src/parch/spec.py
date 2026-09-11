@@ -1,6 +1,5 @@
 """Tiny press spec — TOML or defaults."""
 
-import calendar
 import tomllib
 from dataclasses import dataclass, field
 from datetime import date
@@ -83,8 +82,6 @@ class Spec:
     device: str = "supernote-nomad"
     week_start: str = "monday"
     months: tuple[int, ...] = tuple(range(1, 13))
-    # Unused by nav. TOML/CLI leftover — not a generation-time “today”.
-    day: int = 5
     title: str = "Year planner"
     schedule_from: int = 7
     schedule_to: int = 16
@@ -111,9 +108,6 @@ class Spec:
             if month in seen:
                 raise ConfigError(f"duplicate month {month}")
             seen.add(month)
-        last = calendar.monthrange(self.year, self.month)[1]
-        if not 1 <= self.day <= last:
-            raise ConfigError(f"day {self.day} is not in {self.year}-{self.month:02d}")
         if not 0 <= self.schedule_from <= self.schedule_to <= 23:
             raise ConfigError("schedule hours must be 0–23 and from ≤ to")
         if self.notes_pages < 0:
@@ -150,10 +144,6 @@ class Spec:
     def presses_day(self, day: date) -> bool:
         """True when ``day`` is in this spec’s year and a pressed month."""
         return day.year == self.year and self.presses(day.month)
-
-    @property
-    def date(self) -> date:
-        return date(self.year, self.month, self.day)
 
     @property
     def cover_dest(self) -> str:
@@ -241,10 +231,6 @@ class Spec:
                 seen.append(quarter)
         return tuple(seen)
 
-    @property
-    def day_dest(self) -> str:
-        return self.date.isoformat()
-
     def dest_for_day(self, day: date) -> str:
         return day.isoformat()
 
@@ -294,9 +280,6 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
-    def notes_dest(self, index: int) -> str:
-        return self.dest_for_notes(self.date, index)
-
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -320,7 +303,6 @@ class Spec:
             device=str(data.get("device", "supernote-nomad")),
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
-            day=int(data.get("day", 5)),
             title=str(data.get("title", "Year planner")),
             schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),
             schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),

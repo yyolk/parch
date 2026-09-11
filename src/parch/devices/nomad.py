@@ -7,8 +7,6 @@ from parch import ConfigError
 from parch.fonts.ramp import ROOT_BODY, Pt
 from parch.geom import Rect
 
-MM_PER_INCH = 25.4
-
 type ToolbarEdge = Literal["top", "none"]
 
 

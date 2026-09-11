@@ -99,7 +99,7 @@ def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
             raise TypeError(f"proof must be bool or ProofProfile, not {type(proof)!r}")
 
 
-def _load_spec(token: str | None, *, year: int | None, month: int | None, day: int | None) -> Spec:
+def _load_spec(token: str | None, *, year: int | None, month: int | None) -> Spec:
     match token:
         case None:
             spec = Spec()
@@ -114,8 +114,6 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
         updates["year"] = year
     if month is not None:
         updates["months"] = (month,)
-    if day is not None:
-        updates["day"] = day
     return replace(spec, **updates) if updates else spec
 
 
@@ -147,7 +145,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-w", "--workdir", help="Also write workdir/index.pdf.")
     parser.add_argument("--year", type=int, help="Overlay planner year.")
     parser.add_argument("--month", type=int, help="MVP month (1–12).")
-    parser.add_argument("--day", type=int, help="MVP daily page day-of-month.")
     parser.add_argument(
         "--proof",
         action="store_true",
@@ -162,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
         raw = raw[1:]
     args = parser.parse_args(raw)
     try:
-        spec = _load_spec(args.spec, year=args.year, month=args.month, day=args.day)
+        spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
         first = press(spec, outputs[0], proof=proof_verb or args.proof)
         for extra in outputs[1:]:
