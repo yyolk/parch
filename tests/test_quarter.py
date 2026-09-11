@@ -2,6 +2,7 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import QuarterGrid
+from parch.fonts import JostRamp
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
     FOCUS_ROWS,
@@ -162,14 +163,14 @@ def test_quarter_a_note_boxes_and_c_paint():
     )
     well = Rect(4, 20, 110, 120)
     a = RecordingPlotter()
-    paint_quarter_a_note_boxes(a, well, grid)
+    paint_quarter_a_note_boxes(a, well, grid, ramp=JostRamp())
     texts = [op[2] for op in a.ops if op[0] == "text"]
     assert "Jan" in texts and "Feb" in texts and "Mar" in texts
     boxes = [op for op in a.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(boxes) == 3
 
     c = RecordingPlotter()
-    paint_quarter_c_stack_notes(c, well, grid)
+    paint_quarter_c_stack_notes(c, well, grid, ramp=JostRamp())
     c_texts = [op[2] for op in c.ops if op[0] == "text"]
     assert "Jan" in c_texts and "Feb" in c_texts and "Mar" in c_texts
     assert "Notes" in c_texts
@@ -221,7 +222,7 @@ def test_quarter_a_and_c_focus_notes_paint():
     well = Rect(4, 20, 110, 120)
     for paint in (paint_quarter_a_focus_notes, paint_quarter_c_focus_notes):
         plotter = RecordingPlotter()
-        paint(plotter, well, grid)
+        paint(plotter, well, grid, ramp=JostRamp())
         texts = [op[2] for op in plotter.ops if op[0] == "text"]
         assert "Jan" in texts and "Feb" in texts and "Mar" in texts
         assert "Focus" in texts
