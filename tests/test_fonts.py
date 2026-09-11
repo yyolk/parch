@@ -1,13 +1,17 @@
+import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
 from parch.fonts import (
     JostBesleyRamp,
     JostRamp,
+    MartianBesleyRamp,
     TypeInk,
     TypeRole,
     font_dir,
     jost_besley_catalog,
+    jost_besley_martian_catalog,
     jost_catalog,
+    martian_besley_catalog,
 )
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
@@ -75,6 +79,41 @@ def test_jost_besley_ramp_role_map():
     assert ("besley", "heavy") not in ramp.catalog.cuts
 
 
+def test_martian_files_are_curated_not_maximal():
+    root = font_dir() / "martian-grotesk"
+    assert (root / "MartianGrotesk-Regular.ttf").is_file()
+    assert (root / "MartianGrotesk-Bold.ttf").is_file()
+    assert (root / "OFL.txt").is_file()
+    assert (root / "AUTHORS.txt").is_file()
+    assert not (root / "MartianGrotesk-Medium.ttf").exists()
+    assert not (root / "MartianGrotesk-Heavy.ttf").exists()
+    trio = martian_besley_catalog()
+    assert jost_besley_martian_catalog is martian_besley_catalog
+    assert ("martian", "book") in trio.cuts
+    assert ("martian", "bold") in trio.cuts
+    assert ("martian", "medium") not in trio.cuts
+    assert ("martian", "heavy") not in trio.cuts
+    assert ("jost", "book") in trio.cuts
+    assert ("besley", "bold") in trio.cuts
+    assert ("martian", "book") not in jost_catalog().cuts
+    assert ("martian", "book") not in jost_besley_catalog().cuts
+    with pytest.raises(KeyError, match="family='martian' weight='medium'"):
+        trio.path("martian", "medium")
+    with pytest.raises(KeyError, match="family='martian' weight='heavy'"):
+        trio.path("martian", "heavy")
+    Fpdf2Plotter(NOMAD, catalog=trio)
+
+
+def test_martian_besley_ramp_role_map():
+    ramp = MartianBesleyRamp()
+    assert ramp.ink("cover_year") == TypeInk(family="besley", weight="bold", size=42)
+    assert ramp.ink("cover_brow") == TypeInk(family="besley", weight="book", size=10)
+    assert ramp.ink("page_title") == TypeInk(family="besley", weight="bold", size=11)
+    assert ramp.ink("chrome") == TypeInk(family="martian", weight="book", size=7.4)
+    assert ("martian", "heavy") not in ramp.catalog.cuts
+    assert set(ramp.catalog.cuts) == set(martian_besley_catalog().cuts)
+
+
 def _cover() -> CoverTitle:
     return CoverTitle(
         year=2026,
@@ -114,6 +153,42 @@ def test_cover_year_uses_besley_bold_via_jost_besley_ramp():
     specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
     assert _family(specs) is None
     assert specs[6] == "sans"
+
+
+def test_cover_year_uses_besley_bold_via_martian_besley_ramp():
+    plotter = RecordingPlotter()
+    paint_cover(plotter, NOMAD, _cover(), ramp=MartianBesleyRamp())
+    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
+    assert year[3] == 42
+    assert year[9] == "bold"
+    assert _family(year) == "besley"
+    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
+    assert brow[9] == "book"
+    assert _family(brow) == "besley"
+
+
+def test_header_chrome_is_martian_book_via_martian_besley_ramp():
+    plotter = RecordingPlotter()
+    paint_header(
+        plotter,
+        NOMAD,
+        "Year",
+        "2026",
+        chip="01",
+        ramp=MartianBesleyRamp(),
+    )
+    title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year")
+    assert title[3] == 11
+    assert title[9] == "bold"
+    assert _family(title) == "besley"
+    chip = next(op for op in plotter.ops if op[0] == "text" and op[2] == "01")
+    assert chip[3] == 7.4
+    assert chip[9] == "book"
+    assert _family(chip) == "martian"
+    meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
+    assert meta[3] == 7.4
+    assert meta[9] == "book"
+    assert _family(meta) == "martian"
 
 
 def test_cover_honors_stub_ramp():
@@ -180,4 +255,6 @@ def test_fonts_package_does_not_import_plotter():
 
     assert "parch.plotter" not in fonts.__dict__
     assert fonts.JostBesleyRamp is JostBesleyRamp
+    assert fonts.MartianBesleyRamp is MartianBesleyRamp
     assert fonts.TypeInk is TypeInk
+    assert fonts.martian_besley_catalog is martian_besley_catalog

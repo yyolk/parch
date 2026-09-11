@@ -7,23 +7,25 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import JostBesleyRamp, JostRamp, TypeRamp
+from parch.fonts import JostBesleyRamp, JostRamp, MartianBesleyRamp, TypeRamp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
-_RAMP_TOKENS = {"jost", "jost-besley"}
+_RAMP_TOKENS = {"jost", "jost-besley", "martian-besley"}
 
 
 def _ramp_named(token: str) -> TypeRamp:
     match token:
         case "jost-besley":
             return JostBesleyRamp()
+        case "martian-besley":
+            return MartianBesleyRamp()
         case "jost":
             return JostRamp()
         case _:
-            raise ConfigError(f"unknown ramp {token!r}; known: jost, jost-besley")
+            raise ConfigError(f"unknown ramp {token!r}; known: jost, jost-besley, martian-besley")
 
 
 def press(
@@ -34,8 +36,9 @@ def press(
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. Pass ``JostBesleyRamp`` (or ``--ramp jost-besley``)
-    for the dual-font specimen. The ramp's catalog is handed to ``Fpdf2Plotter``.
+    Default ramp is ``JostRamp``. Pass ``JostBesleyRamp`` (``--ramp jost-besley``)
+    or ``MartianBesleyRamp`` (``--ramp martian-besley``) for dual-font specimens.
+    The ramp's catalog is handed to ``Fpdf2Plotter``.
     """
     device = get_device(spec.device)
     resolved = JostRamp() if ramp is None else ramp
@@ -117,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         "--ramp",
         choices=sorted(_RAMP_TOKENS),
         default="jost",
-        help="Type ramp: jost (default) or jost-besley (dual-font specimen).",
+        help="Type ramp: jost (default), jost-besley, or martian-besley.",
     )
     # Accept a leading `press` verb so `parch press` and `python -m parch press` match.
     raw = list(sys.argv[1:] if argv is None else argv)

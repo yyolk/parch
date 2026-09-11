@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from pypdf import PdfReader
 
-from parch.fonts import JostBesleyRamp
+from parch.fonts import JostBesleyRamp, MartianBesleyRamp
 from parch.press import main, press
 from parch.spec import Spec
 
@@ -108,6 +108,29 @@ def test_cli_press_jost_besley_ramp(tmp_path: Path):
 def test_press_accepts_jost_besley_ramp(tmp_path: Path):
     out = tmp_path / "dual.pdf"
     press(Spec(months=(1,), day=1, notes_pages=0), out, ramp=JostBesleyRamp())
+    assert out.is_file() and out.stat().st_size > 0
+    dests = _named_dests(PdfReader(out))
+    assert "cover" in dests
+    assert "year-2026" in dests
+
+
+def test_cli_press_martian_besley_ramp(tmp_path: Path):
+    spec = tmp_path / "job.toml"
+    spec.write_text(
+        'year = 2026\ndevice = "supernote-nomad"\nmonth = 1\nday = 5\nnotes_pages = 1\n',
+        encoding="utf-8",
+    )
+    out = tmp_path / "job.pdf"
+    assert main(["press", str(spec), "-o", str(out), "--ramp", "martian-besley"]) == 0
+    assert out.is_file()
+    dests = _named_dests(PdfReader(out))
+    assert "cover" in dests
+    assert "year-2026" in dests
+
+
+def test_press_accepts_martian_besley_ramp(tmp_path: Path):
+    out = tmp_path / "trio.pdf"
+    press(Spec(months=(1,), day=1, notes_pages=0), out, ramp=MartianBesleyRamp())
     assert out.is_file() and out.stat().st_size > 0
     dests = _named_dests(PdfReader(out))
     assert "cover" in dests

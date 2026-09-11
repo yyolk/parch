@@ -66,8 +66,9 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Dual-font is ``JostBesleyRamp``. Other painters still
-    hardcode face policy — spike scope.
+    cover / header paint. Dual-font is ``JostBesleyRamp`` or
+    ``MartianBesleyRamp``. Other painters still hardcode face policy — spike
+    scope.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:

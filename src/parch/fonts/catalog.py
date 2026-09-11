@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Mapping
 
-type TypeFamily = Literal["jost", "besley"]
+type TypeFamily = Literal["jost", "besley", "martian"]
 type TypeWeight = Literal["book", "medium", "bold", "heavy"]
 
 
@@ -52,3 +52,19 @@ def jost_besley_catalog(root: Path | None = None) -> FontCatalog:
             ("besley", "bold"): base / "Besley-Bold.ttf",
         }
     )
+
+
+def martian_besley_catalog(root: Path | None = None) -> FontCatalog:
+    """Jost + Besley plus Martian Regular (book) and Bold. No Martian medium/heavy files."""
+    base = font_dir() if root is None else root
+    return FontCatalog(
+        {
+            **jost_besley_catalog(base).cuts,
+            ("martian", "book"): base / "martian-grotesk" / "MartianGrotesk-Regular.ttf",
+            ("martian", "bold"): base / "martian-grotesk" / "MartianGrotesk-Bold.ttf",
+        }
+    )
+
+
+# Alias: same three-family map. Unmigrated painters still need the Jost ladder.
+jost_besley_martian_catalog = martian_besley_catalog

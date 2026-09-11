@@ -26,6 +26,17 @@ Upstream: https://github.com/indestructible-type/Besley (`fonts/ttf/`)
 Specimen: https://indestructibletype.com/Besley.html
 SIL OFL 1.1 — `LICENSE-Besley` / `AUTHORS-Besley`.
 
+## Martian Grotesk
+
+Regular + Bold only (normal width). `book` maps to Regular; `bold` maps to
+Bold. There is no Martian Medium or Heavy file — do not invent those keys.
+
+- `martian-grotesk/MartianGrotesk-Regular.ttf` — weight `book` — role `chrome` on `MartianBesleyRamp`
+- `martian-grotesk/MartianGrotesk-Bold.ttf` — weight `bold`
+
+Upstream: https://github.com/evilmartians/grotesk
+SIL OFL 1.1 — `martian-grotesk/OFL.txt` / `martian-grotesk/AUTHORS.txt`.
+
 ## Type ramp
 
 `TypeInk` is `family` + `weight` + `size`. Painters call `ramp.ink(role)` and
@@ -39,8 +50,13 @@ and handed to `Fpdf2Plotter` at press time.
 | --- | --- | --- | --- | --- |
 | `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
 | `JostBesleyRamp` | Jost Book | Besley Regular | Besley Bold | Besley Bold |
+| `MartianBesleyRamp` | Martian Regular | Besley Regular | Besley Bold | Besley Bold |
 
-Swap at press: `parch press … --ramp jost` (default) or `--ramp jost-besley`.
-Or `PlannerLayout(ramp=JostBesleyRamp())` / `press(..., ramp=JostBesleyRamp())`.
+`MartianBesleyRamp` mirrors `JostBesleyRamp` with Martian replacing Jost as
+chrome. Titles stay Besley so the dual-serif cover story is unchanged.
+
+Swap at press: `parch press … --ramp jost` (default), `--ramp jost-besley`,
+or `--ramp martian-besley`.
+Or `PlannerLayout(ramp=MartianBesleyRamp())` / `press(..., ramp=MartianBesleyRamp())`.
 
 Cover and header painters take the ramp. Cover specs stay fully literal.
