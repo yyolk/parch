@@ -29,7 +29,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import TypeRamp
+from parch.fonts.ramp import JostRamp, TypeRamp
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
@@ -216,10 +216,10 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     )
 
 
-def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
+def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid, *, ramp: TypeRamp) -> None:
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
-            _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+            _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -1272,9 +1272,9 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
     )
 
 
-def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter(plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp) -> None:
     """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
-    paint_quarter_a_focus_notes(plotter, box, grid)
+    paint_quarter_a_focus_notes(plotter, box, grid, ramp=ramp)
 
 
 def quarter_seats_a_shortband(box: Rect) -> tuple[Rect, Rect, Rect]:
@@ -1310,26 +1310,34 @@ def quarter_seats_c_stack_notes(box: Rect) -> tuple[tuple[Rect, Rect, Rect], Rec
     return rows(left, 3, gap=3.4), right
 
 
-def paint_quarter_a_shortband(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_a_shortband(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     for cell, month in zip(quarter_seats_a_shortband(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+        _paint_mini_month(plotter, cell, month, ramp=ramp)
 
 
-def paint_quarter_a_note_boxes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_a_note_boxes(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     for (cal, notes), month in zip(quarter_seats_a_note_boxes(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cal, month)
+        _paint_mini_month(plotter, cal, month, ramp=ramp)
         _paint_note_box(plotter, notes)
 
 
-def paint_quarter_b_stack(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_b_stack(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     for cell, month in zip(quarter_seats_b_stack(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+        _paint_mini_month(plotter, cell, month, ramp=ramp)
 
 
-def paint_quarter_c_stack_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_c_stack_notes(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     months, notes = quarter_seats_c_stack_notes(box)
     for cell, month in zip(months, grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+        _paint_mini_month(plotter, cell, month, ramp=ramp)
     paint_notes(plotter, notes, Notes(label="Notes"))
 
 
@@ -1361,18 +1369,22 @@ def _stack_focus_notes(stack: Rect) -> tuple[Rect, Rect]:
     return focus, notes
 
 
-def paint_quarter_c_focus_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_c_focus_notes(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     months, focus, notes = quarter_seats_c_focus_notes(box)
     for cell, month in zip(months, grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+        _paint_mini_month(plotter, cell, month, ramp=ramp)
     _paint_focus_box(plotter, focus)
     paint_notes(plotter, notes, Notes(label="Notes"))
 
 
-def paint_quarter_a_focus_notes(plotter: Plotter, box: Rect, grid: QuarterGrid) -> None:
+def paint_quarter_a_focus_notes(
+    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
+) -> None:
     months, focus, notes = quarter_seats_a_focus_notes(box)
     for cell, month in zip(months, grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month)
+        _paint_mini_month(plotter, cell, month, ramp=ramp)
     _paint_focus_box(plotter, focus)
     _paint_note_box(plotter, notes, label="Notes")
 
@@ -1468,7 +1480,10 @@ def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None
     )
 
 
-def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
+def _paint_mini_month(
+    plotter: Plotter, box: Rect, month: AnnualMonth, *, ramp: TypeRamp | None = None
+) -> None:
+    body_ink = (JostRamp() if ramp is None else ramp).ink("body")
     pressed = month.dest is not None
     title_h = 3.5
     dow_h = 2.5
@@ -1518,9 +1533,9 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
                 plotter.text(
                     num,
                     str(cell.day),
-                    size=5.3,
-                    bold=True,
-                    face="sans",
+                    size=body_ink.size,
+                    family=body_ink.family,
+                    weight="bold",
                     gray=PAPER,
                     align="center",
                 )
@@ -1530,9 +1545,9 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
             plotter.text(
                 num,
                 str(cell.day),
-                size=5.3,
-                bold=linked and cell.in_month,
-                face="sans",
+                size=body_ink.size,
+                family=body_ink.family,
+                weight="bold" if linked and cell.in_month else body_ink.weight,
                 gray=ink,
                 align="center",
             )
@@ -1750,7 +1765,8 @@ def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) ->
             plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
+def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid, *, ramp: TypeRamp) -> None:
+    body_ink = ramp.ink("body")
     gutter = 8.0
     day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
     tracks = columns(day_grid, 7)
@@ -1796,9 +1812,9 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(cell.x + inset, cell.y + 0.7, cell.w - 2 * inset, 5.4),
                 str(day.day),
-                size=8.5,
-                bold=True,
-                face="sans",
+                size=body_ink.size,
+                family=body_ink.family,
+                weight="bold",
                 gray=INK,
                 align="left",
             )
@@ -1816,7 +1832,8 @@ def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
     return None
 
 
-def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
+def paint_week(plotter: Plotter, box: Rect, week: WeekStrip, *, ramp: TypeRamp) -> None:
+    body_ink = ramp.ink("body")
     for band, day in zip(rows(box, max(1, len(week.days))), week.days, strict=False):
         ink = INK if day.in_month else MUTED
         plotter.text(
@@ -1831,9 +1848,9 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
-            size=11,
-            bold=True,
-            face="sans",
+            size=body_ink.size,
+            family=body_ink.family,
+            weight="bold",
             gray=ink,
             align="left",
         )
@@ -1857,7 +1874,8 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.line(band.x, band.bottom, band.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
+def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule, *, ramp: TypeRamp) -> None:
+    body_ink = ramp.ink("body")
     header_h = 3.4
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
@@ -1874,8 +1892,9 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
         plotter.text(
             Rect(band.x, band.y, 10.0, band.h),
             f"{hour:2d}",
-            size=7,
-            face="sans",
+            size=body_ink.size,
+            family=body_ink.family,
+            weight=body_ink.weight,
             gray=MUTED,
             align="left",
         )

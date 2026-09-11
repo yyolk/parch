@@ -62,3 +62,5 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
 Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+
+Thesis I (this branch, do not merge): `PlannerLayout` owns a `TypeContext` stack. Painters call `ramp.ink(role)` on a bound snapshot; the role map merges over the current context. Daily body is slightly smaller than week body via push — same `body` role. Specimens: `artifacts/mvp/exp-typeramp-cascade-*.png`.

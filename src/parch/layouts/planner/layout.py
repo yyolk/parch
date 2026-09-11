@@ -1,4 +1,12 @@
-"""Planner layout: device chrome + seat, then painters."""
+"""Planner layout: device chrome + seat, then painters.
+
+Owns an explicit ``TypeContext`` stack (push / pop / context manager).
+Painters receive a bound ramp whose ``ink(role)`` merges the role map over
+the frozen snapshot at bind time. No threadlocals, no contextvars.
+"""
+
+from contextlib import contextmanager
+from collections.abc import Iterator
 
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
@@ -22,7 +30,14 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import (
+    BoundRamp,
+    JostRamp,
+    ROOT_CONTEXT,
+    TypeContext,
+    TypePatch,
+    TypeRamp,
+)
 from parch.geom import Rect
 from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
@@ -61,42 +76,80 @@ DAILY_MINI_GAP = 2.2
 DAILY_COL_WEIGHTS = (0.34, 0.66)
 DAILY_PRIO_GAP = 2.2
 
+# Page / section pushes — same body role, different sizes. Daily is slightly
+# smaller than week; mini-month is a density override inside the daily well.
+WEEK_BODY = TypeContext(body=TypePatch(size=11.0))
+DAILY_BODY = TypeContext(body=TypePatch(size=7.6))
+MINI_BODY = TypeContext(body=TypePatch(size=5.3))
+
 
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and a ``TypeContext``
+    stack. Cover / header / body painters receive ``self.bound()`` — a frozen
+    snapshot — and call ``ramp.ink(role)``. Dual-font ramps are future work;
+    ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
         self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self._stack: list[TypeContext] = [ROOT_CONTEXT]
+
+    def snapshot(self) -> TypeContext:
+        """Frozen merge of the stack (root, then each push)."""
+        return self._stack[-1]
+
+    def bound(self) -> BoundRamp:
+        """Painter-facing ramp pinned to the current frozen snapshot."""
+        return self.ramp.bind(self.snapshot())
+
+    def push(self, frame: TypeContext) -> TypeContext:
+        """Overlay ``frame`` on the current snapshot and push the merge."""
+        merged = self.snapshot().overlay(frame)
+        self._stack.append(merged)
+        return merged
+
+    def pop(self) -> TypeContext:
+        if len(self._stack) <= 1:
+            raise IndexError("cannot pop the root TypeContext")
+        return self._stack.pop()
+
+    @contextmanager
+    def context(self, frame: TypeContext) -> Iterator[TypeContext]:
+        snap = self.push(frame)
+        try:
+            yield snap
+        finally:
+            self.pop()
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         paint_toolbar(plotter, device)
-        match page.kind:
-            case "cover":
-                paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case _:
-                paint_header(
-                    plotter,
-                    device,
-                    page.title,
-                    _header_meta(page),
-                    _header_meta_dest(page),
-                    ramp=self.ramp,
-                    chip=_header_chip(page),
-                    chip_dest=_header_chip_dest(page),
-                )
-                paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
-                well = well_rect(device)
-                self._paint_well(page, plotter, well)
+        with self.context(_page_context(page.kind)):
+            ramp = self.bound()
+            match page.kind:
+                case "cover":
+                    paint_cover(plotter, device, _one(page, CoverTitle), ramp=ramp)
+                case _:
+                    paint_header(
+                        plotter,
+                        device,
+                        page.title,
+                        _header_meta(page),
+                        _header_meta_dest(page),
+                        ramp=ramp,
+                        chip=_header_chip(page),
+                        chip_dest=_header_chip_dest(page),
+                    )
+                    paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
+                    well = well_rect(device)
+                    self._paint_well(page, plotter, well)
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                with self.context(MINI_BODY):
+                    paint_annual(plotter, well, _one(page, AnnualGrid), ramp=self.bound())
             case "projects_index":
                 paint_projects_index(plotter, well, _one(page, ProjectsIndex))
             case "project":
@@ -114,13 +167,14 @@ class PlannerLayout:
             case "review":
                 paint_review(plotter, well, _one(page, ReviewWeekPage))
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                with self.context(MINI_BODY):
+                    paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=self.bound())
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=self.bound())
             case "habits":
                 paint_habit_grid(plotter, well, _one(page, HabitGrid))
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), ramp=self.bound())
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
@@ -129,14 +183,26 @@ class PlannerLayout:
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
                 prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
+                paint_schedule(plotter, sched_box, schedule, ramp=self.bound())
+                with self.context(MINI_BODY):
+                    _paint_mini_month(plotter, mini_box, mini, ramp=self.bound())
                 paint_priorities(plotter, prio_box, priorities)
                 paint_notes(plotter, notes_box, notes)
             case "daily_notes":
                 paint_notes(plotter, well, _one(page, Notes))
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
+
+
+def _page_context(kind: str) -> TypeContext:
+    """Page-level defaults. Daily body is slightly smaller than week body."""
+    match kind:
+        case "weekly":
+            return WEEK_BODY
+        case "daily" | "daily_notes":
+            return DAILY_BODY
+        case _:
+            return TypeContext()
 
 
 def daily_left_seats(left: Rect) -> tuple[Rect, Rect]:

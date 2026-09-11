@@ -1,7 +1,19 @@
 import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
-from parch.fonts import FontCatalog, JostRamp, TypeFamily, TypeInk, TypeRole, font_dir, jost_catalog
+from parch.fonts import (
+    BoundRamp,
+    FontCatalog,
+    JostRamp,
+    ROOT_CONTEXT,
+    TypeContext,
+    TypeFamily,
+    TypeInk,
+    TypePatch,
+    TypeRole,
+    font_dir,
+    jost_catalog,
+)
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter, resolve_weight
@@ -44,6 +56,7 @@ def test_jost_ramp_role_map():
     assert ramp.ink("cover_brow") == TypeInk(family="jost", weight="medium", size=10)
     assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.5)
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
 
 
@@ -166,5 +179,9 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.JostRamp is JostRamp
     assert fonts.TypeInk is TypeInk
     assert fonts.TypeFamily is TypeFamily
+    assert fonts.TypeContext is TypeContext
+    assert fonts.TypePatch is TypePatch
+    assert fonts.BoundRamp is BoundRamp
+    assert fonts.ROOT_CONTEXT is ROOT_CONTEXT
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
