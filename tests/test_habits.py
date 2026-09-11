@@ -2,10 +2,13 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import HabitGrid
+from parch.devices import NOMAD
 from parch.geom import Rect
+from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
     HABIT_WASH,
     HABIT_WASH_CROSS,
+    HEADER_H,
     habit_dow_letter,
     habit_seats,
     paint_habit_grid,
@@ -50,7 +53,7 @@ def test_habit_pages_follow_each_month():
     assert feb_grid.days == 28
 
 
-def test_habit_paint_smoke_and_month_chip_link():
+def test_habit_paint_smoke_and_nav_link():
     plotter = RecordingPlotter()
     YearPlanner().plot(Spec(notes_pages=1), plotter)
     dests = plotter.dests()
@@ -60,7 +63,8 @@ def test_habit_paint_smoke_and_month_chip_link():
     assert "month-2026-01-habits" in links
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Habits · July 2026" in texts
-    assert "Habits" in texts
+    assert "Habits" not in texts
+    assert "Month" not in texts
     assert "Habit" in texts
     assert "31" in texts
 
@@ -76,6 +80,42 @@ def test_habit_paint_smoke_and_month_chip_link():
     labels = [op[2] for op in ink.ops if op[0] == "text"]
     assert "1" in labels and "31" in labels
     assert "W" in labels
+
+
+def _header_ops(ops: list) -> tuple[list[str], list[str]]:
+    top = NOMAD.content_top + HEADER_H
+    texts = [op[2] for op in ops if op[0] == "text" and op[1].y < top]
+    links = [op[2] for op in ops if op[0] == "link" and op[1].y < top]
+    return texts, links
+
+
+def test_month_and_habits_headers_drop_reciprocal_chips():
+    spec = Spec(notes_pages=1)
+    pages = YearPlanner().pages(spec)
+    month = next(p for p in pages if p.dest == "month-2026-07")
+    habits = next(p for p in pages if p.dest == "month-2026-01-habits")
+
+    month_ink = RecordingPlotter()
+    month_ink.begin_page()
+    PlannerLayout().paint(month, month_ink, NOMAD)
+    month_texts, month_links = _header_ops(month_ink.ops)
+    assert "July 2026" in month_texts
+    assert "Q3" in month_texts
+    assert "Habits" not in month_texts
+    assert "Month" not in month_texts
+    assert month_links == ["quarter-2026-Q3"]
+    assert dict(strip_items(month))["Habit"] == "month-2026-07-habits"
+
+    habits_ink = RecordingPlotter()
+    habits_ink.begin_page()
+    PlannerLayout().paint(habits, habits_ink, NOMAD)
+    habits_texts, habits_links = _header_ops(habits_ink.ops)
+    assert "Habits · January 2026" in habits_texts
+    assert "Q1" in habits_texts
+    assert "Habits" not in habits_texts
+    assert "Month" not in habits_texts
+    assert habits_links == ["quarter-2026-Q1"]
+    assert dict(strip_items(habits))["Mon"] == "month-2026-01"
 
 
 def test_habit_seat_and_paint():
