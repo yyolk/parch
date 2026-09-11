@@ -58,6 +58,10 @@ Thesis B index + Thesis E dest (in the year walk, after Tasks): multi-column Rev
 uv run pytest
 ```
 
+## Releasing
+
+Ship steps live in [Releasing](RELEASING.md). Hero planner PDFs attach from `release-pdfs.yml` (not Pages, not a PyPI gate).
+
 ## License / Credits
 
 MIT — see [LICENSE](LICENSE).
