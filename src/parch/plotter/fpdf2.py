@@ -6,17 +6,10 @@ from typing import override
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
-from parch.fonts.catalog import FontCatalog
+from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
 from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
-from parch.plotter.protocol import (
-    Plotter,
-    TextAlign,
-    TextFace,
-    TextFamily,
-    TextWeight,
-    resolve_text_ink,
-)
+from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
@@ -53,19 +46,8 @@ class Fpdf2Plotter(Plotter):
         self.pdf.set_text_color(0)
         self.pdf.set_draw_color(0)
 
-    def _register_name(
-        self,
-        face: TextFace,
-        bold: bool,
-        weight: TextWeight | None,
-        family: TextFamily | None,
-        size: float,
-    ) -> str:
-        if family is not None:
-            cut = weight if weight is not None else ("bold" if bold else "book")
-            return self.catalog.register_name(family, cut)
-        ink = self.ramp.resolve_face(face, bold, size, weight=weight)
-        return self.catalog.register_name(ink.family, ink.weight)
+    def _register_name(self, family: TypeFamily, weight: TypeWeight) -> str:
+        return self.catalog.register_name(family, weight)
 
     def _ink(self, gray: float) -> None:
         level = _level(gray)
@@ -89,13 +71,11 @@ class Fpdf2Plotter(Plotter):
         *,
         size: float,
         align: TextAlign,
-        bold: bool,
-        face: TextFace,
         gray: float,
-        weight: TextWeight | None,
-        family: TextFamily | None,
+        family: TypeFamily,
+        weight: TypeWeight,
     ) -> None:
-        register_as = self._register_name(face, bold, weight, family, size)
+        register_as = self._register_name(family, weight)
         tw = self._smcp_width(content, size, register_as)
         cap = _pt_mm(size * SMCP_SCALE) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
@@ -176,41 +156,28 @@ class Fpdf2Plotter(Plotter):
         *,
         ink: TypeInk | None = None,
         ref: TypeRef | None = None,
-        size: float = 10,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
     ) -> None:
         if not content:
             return
         resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
-        if resolved is not None:
-            family = resolved.family
-            weight = resolved.weight
-            size = resolved.size
-            bold = False
-            face = "sans"
         if small_caps:
             self._draw_smcp(
                 box,
                 content,
-                size=size,
+                size=resolved.size,
                 align=align,
-                bold=bold,
-                face=face,
                 gray=gray,
-                weight=weight,
-                family=family,
+                family=resolved.family,
+                weight=resolved.weight,
             )
             return
-        register_as = self._register_name(face, bold, weight, family, size)
-        self.pdf.set_font(register_as, "", size)
+        register_as = self._register_name(resolved.family, resolved.weight)
+        self.pdf.set_font(register_as, "", resolved.size)
         self._ink(gray)
-        cap = _pt_mm(size) * 0.72
+        cap = _pt_mm(resolved.size) * 0.72
         baseline = box.y + (box.h + cap) / 2.0 - 0.12
         tw = self.pdf.get_string_width(content)
         match align:

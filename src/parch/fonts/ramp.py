@@ -1,22 +1,15 @@
 """Typographic scale: painters pick a step, not a page name.
 
 Explicit object — no ambient container, no signature injection, no globals.
-``TypeInk`` carries family + weight + size. Migrated painters pass a frozen
+``TypeInk`` carries family + weight + size. Painters pass a frozen
 ``TypeRef`` (``TypeStep`` + optional emphasis + optional size) or the ink
-itself. ``Plotter.text`` takes ``ink=`` and/or ``ref=`` resolved at the
+itself. ``Plotter.text`` takes ``ink=`` or ``ref=`` resolved at the
 plotter edge via ``plotter.ramp``. They do not think in sans/serif slots
 or invent one-off page roles.
 
-Unmigrated painters still pass ``face`` + ``bold``. That path is not a
-plotter secret: ``FaceBridge`` (owned by the ramp) maps
-``(face, bold, size)`` → ``TypeInk``. ``Fpdf2Plotter`` asks
-``ramp.resolve_face(...)`` when ``family`` is omitted. Dual path is
-intentional until those painters adopt steps.
-
 ``family`` stays on the ink so a later dual-font ramp can pick another
-catalog family without ripping out the plotter kwarg. Today every step
-and every face bridge resolves to ``family="jost"``. Overlay never
-changes family.
+catalog family without ripping out the plotter path. Today every step
+resolves to ``family="jost"``. Overlay never changes family.
 
 ``EffectiveRamp`` is closed Jost scale defaults ⊕ stacked frozen
 ``TypeOverlay`` layers (optional size/weight per ``TypeStep``). Press
@@ -57,7 +50,6 @@ type TypeStep = Literal[
     "caption",
 ]
 type TypeEmphasis = Literal["regular", "strong"]
-type TypeFace = Literal["sans", "serif"]
 
 # Closed ladder, largest → smallest. Every step is used by a painter.
 TYPE_STEPS: tuple[TypeStep, ...] = (
@@ -98,23 +90,31 @@ class MigratedSurface(StrEnum):
     MONTH = "paint_month_grid"
     WEEK = "paint_week"
     DAILY = "paint_daily"
+    DAILY_NOTES = "paint_notes"
+    SCHEDULE = "paint_schedule"
+    PRIORITIES = "paint_priorities"
     PROJECTS_INDEX = "paint_projects_index"
+    PROJECT = "paint_project"
+    QUARTER = "paint_quarter"
+    QUARTER_A_SHORTBAND = "paint_quarter_a_shortband"
+    QUARTER_A_NOTE_BOXES = "paint_quarter_a_note_boxes"
+    QUARTER_B_STACK = "paint_quarter_b_stack"
+    QUARTER_C_STACK_NOTES = "paint_quarter_c_stack_notes"
+    QUARTER_C_FOCUS_NOTES = "paint_quarter_c_focus_notes"
+    QUARTER_A_FOCUS_NOTES = "paint_quarter_a_focus_notes"
+    HABIT = "paint_habit_grid"
+    HABIT_ROWS = "paint_habit_grid_rows"
+    HABIT_WEEKDAY_ZEBRA = "paint_habit_grid_weekday_zebra"
+    HABIT_TRANSPOSED = "paint_habit_grid_transposed"
+    MEETINGS_INDEX = "paint_meetings_index"
+    MEETING = "paint_meeting"
+    REVIEW_INDEX = "paint_review_index"
+    REVIEW = "paint_review"
+    TASKS_INDEX = "paint_tasks_index"
+    TASK = "paint_task"
 
 
 MIGRATED_SURFACES: frozenset[MigratedSurface] = frozenset(MigratedSurface)
-
-# Habit / meeting / review / tasks stay on FaceBridge this cut.
-BRIDGE_BACKLOG: frozenset[str] = frozenset(
-    {
-        "paint_habit_grid",
-        "paint_meetings_index",
-        "paint_meeting",
-        "paint_review_index",
-        "paint_review",
-        "paint_tasks_index",
-        "paint_task",
-    }
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,8 +157,8 @@ class ScaleCut:
 
 
 # Audit of painter sizes, snapped to seven steps. Nearby one-offs collapse
-# onto the nearest cut (6.2/6.6 → label 6.4; 7.0/7.6 → chrome 7.4;
-# 5.2–5.8 → caption 5.4; 8.5 → body 8.2; 9.2 → title 11). No unused steps.
+# onto the nearest cut (6.2/6.6 → label 6.4; 7.0/7.2/7.6 → chrome 7.4;
+# 3.3–5.8 → caption 5.4; 8.5 → body 8.2; 9.2 → title 11). No unused steps.
 JOST_SCALE: dict[TypeStep, ScaleCut] = {
     "display": ScaleCut(size=42, regular="heavy", strong="heavy"),
     "title": ScaleCut(size=11, regular="medium", strong="bold"),
@@ -170,42 +170,6 @@ JOST_SCALE: dict[TypeStep, ScaleCut] = {
 }
 
 
-# Unmigrated face+bold → curated Jost cut. Weight override is not in the
-# table — ``FaceBridge.resolve`` applies it before lookup. Size is carried
-# onto the ink; it is not a weight axis today.
-_FACE: dict[tuple[TypeFace, bool], TypeWeight] = {
-    ("serif", False): "medium",
-    ("serif", True): "medium",
-    ("sans", False): "book",
-    ("sans", True): "bold",
-}
-
-
-@dataclass(frozen=True, slots=True)
-class FaceBridge:
-    """Explicit ``(face, bold, size)`` → ``TypeInk``. Same catalog as the ramp.
-
-    Pure table + catalog lookup. No I/O, no ambient container. Serif maps
-    to Medium (the old Liberation Serif stand-in); sans regular is Book;
-    sans bold is Bold. An explicit ``weight`` wins over face+bold.
-    """
-
-    catalog: FontCatalog = field(default_factory=jost_catalog)
-
-    def resolve(
-        self,
-        face: TypeFace,
-        bold: bool,
-        size: float,
-        *,
-        weight: TypeWeight | None = None,
-    ) -> TypeInk:
-        cut = weight if weight is not None else _FACE[(face, bold)]
-        ink = TypeInk(family="jost", weight=cut, size=size)
-        self.catalog.path(ink.family, ink.weight)
-        return ink
-
-
 class TypeRamp(Protocol):
     catalog: FontCatalog
 
@@ -215,17 +179,6 @@ class TypeRamp(Protocol):
 
     def resolve(self, ref: TypeRef) -> TypeInk:
         """Resolve a painter ``TypeRef`` to plotter-ready ink."""
-        ...
-
-    def resolve_face(
-        self,
-        face: TypeFace,
-        bold: bool,
-        size: float,
-        *,
-        weight: TypeWeight | None = None,
-    ) -> TypeInk:
-        """Resolve an unmigrated face+bold path to plotter-ready ink."""
         ...
 
 
@@ -500,7 +453,7 @@ def _resolve_step(
 
 @dataclass(frozen=True, slots=True)
 class JostRamp:
-    """Single-family Jost scale + face bridge. Closed default table."""
+    """Single-family Jost scale. Closed default table."""
 
     catalog: FontCatalog = field(default_factory=jost_catalog)
 
@@ -509,16 +462,6 @@ class JostRamp:
 
     def resolve(self, ref: TypeRef) -> TypeInk:
         return resolve_ref(self, ref)
-
-    def resolve_face(
-        self,
-        face: TypeFace,
-        bold: bool,
-        size: float,
-        *,
-        weight: TypeWeight | None = None,
-    ) -> TypeInk:
-        return FaceBridge(self.catalog).resolve(face, bold, size, weight=weight)
 
 
 @dataclass(frozen=True, slots=True)
@@ -533,16 +476,6 @@ class EffectiveRamp:
 
     def resolve(self, ref: TypeRef) -> TypeInk:
         return resolve_ref(self, ref)
-
-    def resolve_face(
-        self,
-        face: TypeFace,
-        bold: bool,
-        size: float,
-        *,
-        weight: TypeWeight | None = None,
-    ) -> TypeInk:
-        return FaceBridge(self.catalog).resolve(face, bold, size, weight=weight)
 
 
 def bind_ramp(

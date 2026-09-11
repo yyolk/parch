@@ -2,7 +2,6 @@
 
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, font_dir, jost_catalog
 from parch.fonts.ramp import (
-    BRIDGE_BACKLOG,
     JOST_SCALE,
     MIGRATED_SURFACES,
     OVERLAY_SCHEMA_VERSION,
@@ -16,7 +15,6 @@ from parch.fonts.ramp import (
     TYPE_WEIGHTS,
     BadWeight,
     EffectiveRamp,
-    FaceBridge,
     JostRamp,
     MigratedSurface,
     NonpositiveSize,
@@ -25,7 +23,6 @@ from parch.fonts.ramp import (
     ScaleCut,
     SizeOutOfRange,
     TypeEmphasis,
-    TypeFace,
     TypeInk,
     TypeOverlay,
     TypePatch,
@@ -45,7 +42,6 @@ from parch.fonts.ramp import (
 )
 
 __all__ = [
-    "BRIDGE_BACKLOG",
     "OVERLAY_SCHEMA_VERSION",
     "OVERLAY_SIZE_RANGE",
     "PROOF_CHROME_SIZE",
@@ -56,7 +52,6 @@ __all__ = [
     "TYPE_WEIGHTS",
     "BadWeight",
     "EffectiveRamp",
-    "FaceBridge",
     "FontCatalog",
     "JOST_SCALE",
     "JostRamp",
@@ -69,7 +64,6 @@ __all__ = [
     "SizeOutOfRange",
     "TYPE_STEPS",
     "TypeEmphasis",
-    "TypeFace",
     "TypeFamily",
     "TypeInk",
     "TypeOverlay",

@@ -3,8 +3,7 @@
 from pathlib import Path
 from typing import Literal, Protocol
 
-from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
-from parch.fonts.ramp import TypeFace as TextFace, TypeInk, TypeRamp, TypeRef, resolve_ref
+from parch.fonts.ramp import TypeInk, TypeRamp, TypeRef, resolve_ref
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
@@ -15,21 +14,22 @@ def resolve_text_ink(
     *,
     ink: TypeInk | None,
     ref: TypeRef | None,
-) -> TypeInk | None:
-    """Migrated path: exactly one of ``ink`` or ``ref``. Otherwise ``None`` (face path)."""
+) -> TypeInk:
+    """Exactly one of ``ink`` or ``ref``. A ref resolves through ``ramp``."""
     if ink is not None and ref is not None:
-        raise TypeError("Plotter.text migrated path takes ink= or ref=, not both")
+        raise TypeError("Plotter.text takes ink= or ref=, not both")
     if ref is not None:
         return resolve_ref(ramp, ref)
-    return ink
+    if ink is not None:
+        return ink
+    raise TypeError("Plotter.text requires ink= or ref=")
 
 
 class Plotter(Protocol):
     """Drawing surface. ``ramp`` is bound by ``PlannerLayout`` / press.
 
-    Migrated path: ``text(..., ink=)`` or ``text(..., ref=TypeRef(...))``.
-    A ref is resolved once at the edge via ``resolve_ref(plotter.ramp, ref)``.
-    Face / bold stay for the FaceBridge backlog only.
+    ``text(..., ink=)`` or ``text(..., ref=TypeRef(...))``. A ref is
+    resolved once at the edge via ``resolve_ref(plotter.ramp, ref)``.
     """
 
     ramp: TypeRamp
@@ -74,21 +74,14 @@ class Plotter(Protocol):
         *,
         ink: TypeInk | None = None,
         ref: TypeRef | None = None,
-        size: float = 10,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
     ) -> None:
         """Draw a single line of text inside ``box``.
 
-        * Migrated — ``ink: TypeInk`` and/or ``ref=`` (``TypeStep`` vocabulary).
-          ``ref`` resolves through ``plotter.ramp``.
-        * FaceBridge backlog — omit both; ``face`` + ``bold`` + ``size`` stay
-          for habit / meeting / review / tasks.
+        Exactly one of ``ink: TypeInk`` or ``ref=`` (``TypeStep`` vocabulary).
+        ``ref`` resolves through ``plotter.ramp``.
         """
 
     def link(self, box: Rect, dest: str) -> None:
