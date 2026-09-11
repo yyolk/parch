@@ -2,7 +2,8 @@
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.packs import TypeRamp
+from parch.fonts.ramp import JostRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (

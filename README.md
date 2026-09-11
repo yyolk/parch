@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. **Thesis D (this branch, do not merge):** each section declares a frozen StylePack of named `TypeInk` fields. `PlannerLayout` builds packs from `JostRamp` / the Jost catalog and passes the pack in — painters never see `face` / `bold` or a global role enum. Shared header + nav live on `BaseChrome`, composed into well packs. Specimens: `artifacts/mvp/exp-typeramp-stylepack-{cover,year,month,week,daily,projects}.png`.

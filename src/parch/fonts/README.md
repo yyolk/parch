@@ -5,27 +5,25 @@ Vendored static TTF subsets (fpdf2 cannot load variable fonts). Weights stay
 
 ## Jost 3.7
 
-- `Jost-400-Book.ttf` — weight `book` — role `chrome`
-- `Jost-500-Medium.ttf` — weight `medium` — roles `cover_brow` / `page_title`
+- `Jost-400-Book.ttf` — weight `book`
+- `Jost-500-Medium.ttf` — weight `medium`
 - `Jost-700-Bold.ttf` — weight `bold`
-- `Jost-800-Heavy.ttf` — weight `heavy` — role `cover_year`
+- `Jost-800-Heavy.ttf` — weight `heavy`
 
 Upstream: https://github.com/indestructible-type/Jost
 Specimen: https://indestructibletype.com/Jost.html
 SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 
-## Type ramp
+## StylePacks (thesis D)
 
-`TypeInk` is `family` + `weight` + `size`. Painters call `ramp.ink(role)` and
-pass those fields to `Plotter.text`. `family` is a closed key
-(`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can pick
-another catalog family without ripping out the plotter kwarg.
+`TypeInk` is `family` + `weight` + `size`. Each section declares a frozen
+`StylePack` of the named inks it needs (`CoverPack.year`, `MonthPack.day`,
+…). `JostRamp.packs()` stamps every pack from the Jost catalog. 
+`PlannerLayout` passes the pack into that section’s painters.
 
-`FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
-and handed to `Fpdf2Plotter` at press time.
+Painters never see `face` / `bold` or a global role enum — only
+`pack.body`-style fields. Shared header + nav live on `BaseChrome`,
+composed into every well pack. Cover skips chrome.
 
-| Ramp | chrome | cover_brow | page_title | cover_year |
-| --- | --- | --- | --- | --- |
-| `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
-
-Cover and header painters take the ramp. Cover specs stay fully literal.
+`FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the
+ramp and handed to `Fpdf2Plotter` at press time. Catalog is Jost-only.

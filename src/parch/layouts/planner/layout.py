@@ -22,7 +22,8 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.packs import PlannerPacks, TypeRamp
+from parch.fonts.ramp import JostRamp
 from parch.geom import Rect
 from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
@@ -65,76 +66,119 @@ DAILY_PRIO_GAP = 2.2
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    Holds an explicit ``TypeRamp`` (default ``JostRamp``). Builds frozen
+    StylePacks once and passes the section pack into that page's painters.
+    Painters never see face/bold or a role enum.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
         self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.packs: PlannerPacks = self.ramp.packs()
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         paint_toolbar(plotter, device)
         match page.kind:
             case "cover":
-                paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+                paint_cover(plotter, device, _one(page, CoverTitle), pack=self.packs.cover)
             case _:
+                chrome = self._chrome(page.kind)
                 paint_header(
                     plotter,
                     device,
                     page.title,
                     _header_meta(page),
                     _header_meta_dest(page),
-                    ramp=self.ramp,
+                    pack=chrome,
                     chip=_header_chip(page),
                     chip_dest=_header_chip_dest(page),
                 )
-                paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
+                paint_nav(
+                    plotter,
+                    device,
+                    strip_items(page),
+                    strip_active(page.kind),
+                    pack=chrome.nav,
+                )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
+
+    def _chrome(self, kind: str):
+        return self._section_pack(kind).chrome
+
+    def _section_pack(self, kind: str):
+        match kind:
+            case "annual":
+                return self.packs.annual
+            case "projects_index" | "project":
+                return self.packs.projects
+            case "meetings_index" | "meeting":
+                return self.packs.meeting
+            case "tasks_index" | "task":
+                return self.packs.tasks
+            case "review_index" | "review":
+                return self.packs.review
+            case "quarter":
+                return self.packs.quarter
+            case "month":
+                return self.packs.month
+            case "habits":
+                return self.packs.habit
+            case "weekly":
+                return self.packs.week
+            case "daily" | "daily_notes":
+                return self.packs.daily
+            case _:
+                raise ValueError(f"unknown page kind {kind!r}")
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                paint_annual(plotter, well, _one(page, AnnualGrid), pack=self.packs.annual)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(
+                    plotter, well, _one(page, ProjectsIndex), pack=self.packs.projects
+                )
             case "project":
-                paint_project(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard), pack=self.packs.projects)
             case "meetings_index":
-                paint_meetings_index(plotter, well, _one(page, MeetingIndex))
+                paint_meetings_index(
+                    plotter, well, _one(page, MeetingIndex), pack=self.packs.meeting
+                )
             case "meeting":
-                paint_meeting(plotter, well, _one(page, MeetingAgenda))
+                paint_meeting(plotter, well, _one(page, MeetingAgenda), pack=self.packs.meeting)
             case "tasks_index":
-                paint_tasks_index(plotter, well, _one(page, TasksIndex))
+                paint_tasks_index(plotter, well, _one(page, TasksIndex), pack=self.packs.tasks)
             case "task":
-                paint_task(plotter, well, _one(page, TasksWeekPage))
+                paint_task(plotter, well, _one(page, TasksWeekPage), pack=self.packs.tasks)
             case "review_index":
-                paint_review_index(plotter, well, _one(page, ReviewIndex))
+                paint_review_index(
+                    plotter, well, _one(page, ReviewIndex), pack=self.packs.review
+                )
             case "review":
-                paint_review(plotter, well, _one(page, ReviewWeekPage))
+                paint_review(plotter, well, _one(page, ReviewWeekPage), pack=self.packs.review)
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                paint_quarter(plotter, well, _one(page, QuarterGrid), pack=self.packs.quarter)
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), pack=self.packs.month)
             case "habits":
-                paint_habit_grid(plotter, well, _one(page, HabitGrid))
+                paint_habit_grid(plotter, well, _one(page, HabitGrid), pack=self.packs.habit)
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), pack=self.packs.week)
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
                 mini = _one(page, AnnualMonth)
                 priorities = _one(page, Priorities)
+                daily = self.packs.daily
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
                 prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
-                paint_priorities(plotter, prio_box, priorities)
-                paint_notes(plotter, notes_box, notes)
+                paint_schedule(plotter, sched_box, schedule, pack=daily)
+                _paint_mini_month(plotter, mini_box, mini, pack=daily.mini)
+                paint_priorities(plotter, prio_box, priorities, pack=daily)
+                paint_notes(plotter, notes_box, notes, pack=daily)
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), pack=self.packs.daily)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 
