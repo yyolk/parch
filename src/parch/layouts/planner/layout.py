@@ -66,8 +66,8 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    every year-walk painter. Dual-font ramps are future work; ``family``
+    stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
@@ -89,38 +89,41 @@ class PlannerLayout:
                     chip=_header_chip(page),
                     chip_dest=_header_chip_dest(page),
                 )
-                paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
+                paint_nav(
+                    plotter, device, strip_items(page), strip_active(page.kind), ramp=self.ramp
+                )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+        ramp = self.ramp
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=ramp)
             case "project":
-                paint_project(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
             case "meetings_index":
-                paint_meetings_index(plotter, well, _one(page, MeetingIndex))
+                paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=ramp)
             case "meeting":
-                paint_meeting(plotter, well, _one(page, MeetingAgenda))
+                paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=ramp)
             case "tasks_index":
-                paint_tasks_index(plotter, well, _one(page, TasksIndex))
+                paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=ramp)
             case "task":
-                paint_task(plotter, well, _one(page, TasksWeekPage))
+                paint_task(plotter, well, _one(page, TasksWeekPage), ramp=ramp)
             case "review_index":
-                paint_review_index(plotter, well, _one(page, ReviewIndex))
+                paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=ramp)
             case "review":
-                paint_review(plotter, well, _one(page, ReviewWeekPage))
+                paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=ramp)
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
             case "habits":
-                paint_habit_grid(plotter, well, _one(page, HabitGrid))
+                paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=ramp)
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
@@ -129,12 +132,12 @@ class PlannerLayout:
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
                 prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
-                paint_priorities(plotter, prio_box, priorities)
-                paint_notes(plotter, notes_box, notes)
+                paint_schedule(plotter, sched_box, schedule, ramp=ramp)
+                _paint_mini_month(plotter, mini_box, mini, ramp=ramp)
+                paint_priorities(plotter, prio_box, priorities, ramp=ramp)
+                paint_notes(plotter, notes_box, notes, ramp=ramp)
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 

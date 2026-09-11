@@ -5,9 +5,9 @@ Vendored static TTF subsets (fpdf2 cannot load variable fonts). Weights stay
 
 ## Jost 3.7
 
-- `Jost-400-Book.ttf` — weight `book` — role `chrome`
-- `Jost-500-Medium.ttf` — weight `medium` — roles `cover_brow` / `page_title`
-- `Jost-700-Bold.ttf` — weight `bold`
+- `Jost-400-Book.ttf` — weight `book` — `chrome`, `nav`, `label`, `cue`, …
+- `Jost-500-Medium.ttf` — weight `medium` — `cover_brow`, `page_title`, stubs
+- `Jost-700-Bold.ttf` — weight `bold` — `nav_on`, day numerals, `cal_month`
 - `Jost-800-Heavy.ttf` — weight `heavy` — role `cover_year`
 
 Upstream: https://github.com/indestructible-type/Jost
@@ -24,8 +24,13 @@ another catalog family without ripping out the plotter kwarg.
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
 and handed to `Fpdf2Plotter` at press time.
 
-| Ramp | chrome | cover_brow | page_title | cover_year |
-| --- | --- | --- | --- | --- |
-| `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
+Thesis J froze 28 roles from a RecordingPlotter audit of the MVP press
+(see `AUDIT.md`). `JostRamp.ink(role)` is the only type table. Cover
+specs, nav, wells, and chrome all paint by role.
 
-Cover and header painters take the ramp. Cover specs stay fully literal.
+| weight | roles |
+| --- | --- |
+| Heavy | `cover_year` |
+| Medium | `cover_brow` `page_title` `tasks_week` `review_week` `project_stub` `meeting_stub` |
+| Bold | `week_day` `review_day` `month_day` `nav_on` `cal_month` `index_month` `cal_day_on` |
+| Book | `cover_spec` `nav` `chrome` `hour` `weekday` `label` `week_range` `cue` `review_dow` `status` `cal_day` `priority_mark` `habit_day` `cal_dow` |
