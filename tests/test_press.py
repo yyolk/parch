@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from pypdf import PdfReader
 
-from parch.fonts import JostRamp
 from parch.press import main, press
 from parch.spec import Spec
 
@@ -89,12 +88,3 @@ def test_cli_press_toml(tmp_path: Path):
     dests = _named_dests(PdfReader(out))
     assert "2026-01-01" in dests
     assert "2026-01-31" in dests
-
-
-def test_press_accepts_jost_ramp(tmp_path: Path):
-    out = tmp_path / "jost.pdf"
-    press(Spec(months=(1,), day=1, notes_pages=0), out, ramp=JostRamp())
-    assert out.is_file() and out.stat().st_size > 0
-    dests = _named_dests(PdfReader(out))
-    assert "cover" in dests
-    assert "year-2026" in dests

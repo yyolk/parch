@@ -49,4 +49,6 @@ class JostRamp:
     catalog: FontCatalog = field(default_factory=jost_catalog)
 
     def ink(self, role: TypeRole) -> TypeInk:
-        return _JOST[role]
+        ink = _JOST[role]
+        self.catalog.path(ink.family, ink.weight)
+        return ink

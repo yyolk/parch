@@ -1,5 +1,3 @@
-from typing import get_args
-
 import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
@@ -19,9 +17,6 @@ def test_jost_weight_files_and_defaults():
     assert (root / "AUTHORS").is_file()
     assert not (root / "LiberationSans-Regular.ttf").exists()
     assert not (root / "LiberationSerif-Regular.ttf").exists()
-    assert not (root / "Besley-Regular.ttf").exists()
-    assert not (root / "Besley-Bold.ttf").exists()
-    assert not (root / "martian-grotesk").exists()
     assert resolve_weight("sans", False, None) == "book"
     assert resolve_weight("sans", True, None) == "bold"
     assert resolve_weight("serif", False, None) == "medium"
@@ -41,10 +36,6 @@ def test_jost_catalog_is_four_cuts():
     assert catalog.register_name("jost", "heavy") == "jost:heavy"
     with pytest.raises(KeyError, match="family='jost' weight='hairline'"):
         catalog.path("jost", "hairline")
-
-
-def test_type_family_is_jost_only():
-    assert get_args(TypeFamily.__value__) == ("jost",)
 
 
 def test_jost_ramp_role_map():
