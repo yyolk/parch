@@ -29,11 +29,11 @@ jobs:
           test -s out/nomad.pdf
 
   # One Nomad catalog path. PR events stay test-only. workflow_dispatch uploads
-  # one dry-run artifact; push to master deploys Pages. No product-PDF upload.
+  # one dry-run artifact; push to the default branch deploys Pages. No product-PDF upload.
   pages:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/master')
+      (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
     needs: [test]
     runs-on: ubuntu-latest
     permissions:
@@ -63,14 +63,14 @@ jobs:
           path: out/specimens
           if-no-files-found: error
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
         with:
           path: out/specimens
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
     needs: [pages]
     runs-on: ubuntu-latest
     permissions:
