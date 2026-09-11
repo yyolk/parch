@@ -27,8 +27,6 @@ from parch.fonts import (
 )
 from parch.layouts.planner.painters import (
     paint_habit_grid,
-    paint_habit_grid_rows,
-    paint_habit_grid_weekday_zebra,
     paint_header,
     paint_month_grid,
     paint_nav,
@@ -184,20 +182,6 @@ def test_restored_presnap_sizes_via_recording_plotter():
     assert day_one[3] == pytest.approx(4.4)
     dow = next(op for op in transposed.ops if op[0] == "text" and op[2] == "T")
     assert dow[3] == pytest.approx(4.4)
-
-    rows_ink = RecordingPlotter(ramp=ramp)
-    paint_habit_grid_rows(rows_ink, well, grid, ramp=ramp)
-    habit_label = next(op for op in rows_ink.ops if op[0] == "text" and op[2] == "Habit")
-    assert habit_label[3] == pytest.approx(5.8)
-    rows_day = next(op for op in rows_ink.ops if op[0] == "text" and op[2] == "1")
-    assert rows_day[3] == pytest.approx(3.8)
-
-    zebra = RecordingPlotter(ramp=ramp)
-    paint_habit_grid_weekday_zebra(zebra, well, grid, ramp=ramp)
-    zebra_day = next(op for op in zebra.ops if op[0] == "text" and op[2] == "1")
-    assert zebra_day[3] == pytest.approx(3.5)
-    zebra_dow = next(op for op in zebra.ops if op[0] == "text" and op[2] == "T")
-    assert zebra_dow[3] == pytest.approx(3.3)
 
     review = next(p for p in pages if p.kind == "review")
     review_ink = RecordingPlotter(ramp=ramp)

@@ -162,17 +162,4 @@ uv run parch press examples/mvp.toml --proof -o artifacts/mvp/exp-typeramp-proof
 ```
 
 API: `press(spec, out, proof=True)` or `press(spec, out, proof=ProofProfile())`.
-Every text-emitting painter is on the allowlist and speaks steps.
-
-### Strangler allowlist
-
-`MigratedSurface` / `MIGRATED_SURFACES` lists every text-emitting painter
-entrypoint. Each must pass `TypeRef` / ink and emit `family` + `weight` +
-`size`. `RecordingPlotter.face_only_text()` fails CI if a listed painter
-still emits text without a resolved family.
-
-Layout wells (cover, header, nav, annual, quarter, month, week, daily,
-daily notes, projects index/dest, habit, meetings, review, tasks) and
-comparison variants (`paint_habit_grid_*`, `paint_quarter_*`) are listed.
-Shared helpers (`_paint_mini_month`, `_paint_note_box`,
-`_paint_checklist_box`, clone tracks) always ink.
+Painters pass `TypeRef` / ink on the closed ladder.

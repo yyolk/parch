@@ -32,7 +32,7 @@ from parch.devices.nomad import Device
 from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
-from parch.sections.page import NavItem, Page
+from parch.sections.page import Page
 from parch.tracks import columns, rows
 
 HAIR = 0.18
@@ -165,13 +165,6 @@ def paint_nav(
             prev_on = items[i - 1][0] == active
             if not prev_on:
                 plotter.line(x, y + 1.8, x, y + NAV_H - 1.8, stroke_width=HAIR, stroke_gray=SOFT)
-
-
-def paint_chrome(
-    plotter: Plotter, box: Rect, title: str, nav: tuple[NavItem, ...]
-) -> None:
-    """Legacy header+chips path — unused after the black-slab / strip nav."""
-    _ = (plotter, box, title, nav)
 
 
 def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp) -> None:
@@ -1315,91 +1308,19 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
 def paint_quarter(
     plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Default quarter seat is A″ — year-density minis, content-height Focus over flex Notes."""
-    paint_quarter_a_focus_notes(plotter, box, grid, ramp=ramp)
-
-
-def quarter_seats_a_shortband(box: Rect) -> tuple[Rect, Rect, Rect]:
-    """Older A: top band ≈ well.h/4, three mini-months, leftover empty."""
-    band = rows(box, 4)[0]
-    jan, feb, mar = columns(band, 3, gap=4.0)
-    return jan, feb, mar
-
-
-def quarter_seats_a_note_boxes(box: Rect) -> tuple[tuple[Rect, Rect], ...]:
-    """A′: three columns; each is (compact mini-month, leftover note box)."""
-    cal_h = rows(box, 4, gap=2.6)[0].h
-    gap = 2.6
-    seats: list[tuple[Rect, Rect]] = []
-    for col in columns(box, 3, gap=4.0):
-        cal, rest = col.split_top(cal_h)
-        notes = Rect(rest.x, rest.y + gap, rest.w, rest.h - gap)
-        seats.append((cal, notes))
-    return tuple(seats)
-
-
-def quarter_seats_b_stack(box: Rect) -> tuple[Rect, Rect, Rect]:
-    """Comparison B: top Jan|Feb, bottom Mar at the same cell width, left-aligned."""
-    top, bottom = rows(box, 2, gap=4.0)
-    jan, feb = columns(top, 2, gap=4.0)
-    mar = Rect(bottom.x, bottom.y, jan.w, bottom.h)
-    return jan, feb, mar
-
-
-def quarter_seats_c_stack_notes(box: Rect) -> tuple[tuple[Rect, Rect, Rect], Rect]:
-    """Comparison C: left stacked minis, right shared notes well."""
-    left, right = columns(box, 2, gap=3.4, weights=(0.4, 0.6))
-    return rows(left, 3, gap=3.4), right
-
-
-def paint_quarter_a_shortband(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
+    """Year-density minis, content-height Focus over flex Notes."""
     ramp = _bound_ramp(plotter, ramp)
-    for cell, month in zip(quarter_seats_a_shortband(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month, ramp=ramp)
-
-
-def paint_quarter_a_note_boxes(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    ramp = _bound_ramp(plotter, ramp)
-    for (cal, notes), month in zip(quarter_seats_a_note_boxes(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cal, month, ramp=ramp)
-        _paint_note_box(plotter, notes, ramp=ramp)
-
-
-def paint_quarter_b_stack(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    ramp = _bound_ramp(plotter, ramp)
-    for cell, month in zip(quarter_seats_b_stack(box), grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month, ramp=ramp)
-
-
-def paint_quarter_c_stack_notes(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    ramp = _bound_ramp(plotter, ramp)
-    months, notes = quarter_seats_c_stack_notes(box)
+    months, focus, notes = quarter_seats(box)
     for cell, month in zip(months, grid.months, strict=True):
         _paint_mini_month(plotter, cell, month, ramp=ramp)
-    paint_notes(plotter, notes, Notes(label="Notes"), ramp=ramp)
+    _paint_focus_box(plotter, focus, ramp=ramp)
+    _paint_note_box(plotter, notes, label="Notes", ramp=ramp)
 
 
-def quarter_seats_c_focus_notes(
+def quarter_seats(
     box: Rect,
 ) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """C′: left stacked minis; right content-height Focus over flex Notes."""
-    left, right = columns(box, 2, gap=3.4, weights=(0.4, 0.6))
-    focus, notes = _stack_focus_notes(right)
-    return rows(left, 3, gap=3.4), focus, notes
-
-
-def quarter_seats_a_focus_notes(
-    box: Rect,
-) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """A″: short year-density month band; leftover is Focus over flex Notes."""
+    """Short year-density month band; leftover is Focus over flex Notes."""
     cal_h = rows(box, 4, gap=2.6)[0].h
     cal_band, rest = box.split_top(cal_h)
     leftover = Rect(rest.x, rest.y + 2.6, rest.w, rest.h - 2.6)
@@ -1413,28 +1334,6 @@ def _stack_focus_notes(stack: Rect) -> tuple[Rect, Rect]:
     focus, rest = stack.split_top(focus_content_height())
     notes = Rect(rest.x, rest.y + gap, rest.w, rest.h - gap)
     return focus, notes
-
-
-def paint_quarter_c_focus_notes(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    ramp = _bound_ramp(plotter, ramp)
-    months, focus, notes = quarter_seats_c_focus_notes(box)
-    for cell, month in zip(months, grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month, ramp=ramp)
-    _paint_focus_box(plotter, focus, ramp=ramp)
-    paint_notes(plotter, notes, Notes(label="Notes"), ramp=ramp)
-
-
-def paint_quarter_a_focus_notes(
-    plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    ramp = _bound_ramp(plotter, ramp)
-    months, focus, notes = quarter_seats_a_focus_notes(box)
-    for cell, month in zip(months, grid.months, strict=True):
-        _paint_mini_month(plotter, cell, month, ramp=ramp)
-    _paint_focus_box(plotter, focus, ramp=ramp)
-    _paint_note_box(plotter, notes, label="Notes", ramp=ramp)
 
 
 def _paint_note_box(
@@ -1624,9 +1523,6 @@ def _paint_mini_month(
                 plotter.link(num, cell.dest)
 
 
-HABIT_LABEL_W = 28.0
-HABIT_HEAD_H = 4.2
-HABIT_HEAD_DOW_H = 7.6
 HABIT_DAY_W = 13.0
 HABIT_DOW_W = 5.2
 HABIT_NAME_H = 16.0
@@ -1640,61 +1536,7 @@ def habit_dow_letter(year: int, month: int, day: int) -> str:
     return WEEKDAY_LABELS[date(year, month, day).weekday()][0]
 
 
-def paint_habit_grid(
-    plotter: Plotter, box: Rect, grid: HabitGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    """Locked default: days left with weekday, habit columns, pale zebra."""
-    paint_habit_grid_transposed(plotter, box, grid, ramp=ramp)
-
-
-def paint_habit_grid_rows(
-    plotter: Plotter, box: Rect, grid: HabitGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    """Habits as rows, days across. Comparison only — not the default."""
-    _bound_ramp(plotter, ramp)
-    label, rest = box.split_left(HABIT_LABEL_W)
-    matrix = Rect(rest.x + 1.6, rest.y, rest.w - 1.6, rest.h)
-    head = Rect(box.x, box.y, box.w, HABIT_HEAD_H)
-    _ink_text(
-        plotter,
-        Rect(label.x, head.y, label.w, head.h),
-        "Habit",
-        TypeRef(step="caption", size=5.8),
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
-    day_heads = columns(Rect(matrix.x, head.y, matrix.w, head.h), grid.days)
-    for i, col in enumerate(day_heads):
-        _ink_text(
-            plotter,
-            col,
-            str(i + 1),
-            TypeRef(step="micro", size=3.8),
-            gray=MUTED,
-            align="center",
-        )
-        if i < len(grid.day_dests) and grid.day_dests[i]:
-            plotter.link(col, grid.day_dests[i])
-    plotter.line(box.x, head.bottom, box.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
-    body = Rect(box.x, head.bottom + 0.5, box.w, box.h - HABIT_HEAD_H - 0.5)
-    bands = rows(body, max(1, grid.rows))
-    day_tracks = columns(Rect(matrix.x, body.y, matrix.w, body.h), grid.days)
-    for band in bands:
-        plotter.line(
-            label.x,
-            band.bottom - 0.55,
-            label.right - 0.6,
-            band.bottom - 0.55,
-            stroke_width=RULE,
-            stroke_gray=RULE_C,
-        )
-        for col in day_tracks:
-            cell = Rect(col.x, band.y, col.w, band.h).inset(0.16, 0.4)
-            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-
-
-def habit_seats_transposed(
+def habit_seats(
     box: Rect, days: int, habits: int
 ) -> tuple[Rect, tuple[Rect, ...], tuple[Rect, ...]]:
     """Day labels left, habit name slots across the top. ``habits`` comes from the spec."""
@@ -1704,66 +1546,6 @@ def habit_seats_transposed(
     names = columns(name_band, habits, gap=0.4)
     bands = rows(body, max(1, days), gap=0.15)
     return day_col, names, bands
-
-
-def paint_habit_grid_weekday_zebra(
-    plotter: Plotter, box: Rect, grid: HabitGrid, *, ramp: TypeRamp | None = None
-) -> None:
-    """Habits as rows, days across. Stacked day+weekday + row zebra. Comparison only."""
-    _bound_ramp(plotter, ramp)
-    label, rest = box.split_left(HABIT_LABEL_W)
-    matrix = Rect(rest.x + 1.6, rest.y, rest.w - 1.6, rest.h)
-    head = Rect(box.x, box.y, box.w, HABIT_HEAD_DOW_H)
-    _ink_text(
-        plotter,
-        Rect(label.x, head.y, label.w, head.h),
-        "Habit",
-        TypeRef(step="caption", size=5.8),
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
-    day_heads = columns(Rect(matrix.x, head.y, matrix.w, head.h), grid.days)
-    num_h = 3.8
-    for i, col in enumerate(day_heads):
-        day_n = i + 1
-        _ink_text(
-            plotter,
-            Rect(col.x, col.y + 0.15, col.w, num_h),
-            str(day_n),
-            TypeRef(step="micro", size=3.5),
-            gray=MUTED,
-            align="center",
-        )
-        _ink_text(
-            plotter,
-            Rect(col.x, col.y + num_h - 0.1, col.w, col.h - num_h),
-            habit_dow_letter(grid.year, grid.month, day_n),
-            TypeRef(step="micro", size=3.3),
-            gray=MUTED,
-            align="center",
-        )
-        if i < len(grid.day_dests) and grid.day_dests[i]:
-            plotter.link(col, grid.day_dests[i])
-    plotter.line(box.x, head.bottom, box.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
-    body = Rect(box.x, head.bottom + 0.5, box.w, box.h - HABIT_HEAD_DOW_H - 0.5)
-    bands = rows(body, max(1, grid.rows))
-    day_tracks = columns(Rect(matrix.x, body.y, matrix.w, body.h), grid.days)
-    for i, band in enumerate(bands):
-        if i % 2:
-            y0, y1 = _stripe_span(bands, i, axis="y", end=box.bottom)
-            _wash(plotter, Rect(box.x, y0, box.w, y1 - y0), HABIT_WASH)
-        plotter.line(
-            label.x,
-            band.bottom - 0.55,
-            label.right - 0.6,
-            band.bottom - 0.55,
-            stroke_width=RULE,
-            stroke_gray=RULE_C,
-        )
-        for col in day_tracks:
-            cell = Rect(col.x, band.y, col.w, band.h).inset(0.16, 0.4)
-            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
 def _wash(plotter: Plotter, box: Rect, gray: float) -> None:
@@ -1782,13 +1564,13 @@ def _stripe_span(tracks: tuple[Rect, ...], index: int, *, axis: str, end: float)
     return start, stop
 
 
-def paint_habit_grid_transposed(
+def paint_habit_grid(
     plotter: Plotter, box: Rect, grid: HabitGrid, *, ramp: TypeRamp | None = None
 ) -> None:
     """Days down the left (``1 W``), habit name slots across the top, pale zebra."""
     _bound_ramp(plotter, ramp)
     habits = max(1, grid.rows)
-    day_col, names, bands = habit_seats_transposed(box, grid.days, habits)
+    day_col, names, bands = habit_seats(box, grid.days, habits)
     matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
     day_tracks = columns(matrix, habits, gap=0.4)
     for i, _band in enumerate(bands):

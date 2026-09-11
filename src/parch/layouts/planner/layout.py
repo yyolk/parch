@@ -212,10 +212,6 @@ def _header_meta_dest(page: Page) -> str | None:
 
 def _header_chip(page: Page) -> str:
     match page.kind:
-        case "month":
-            return "Habits"
-        case "habits":
-            return "Month"
         case "project":
             number = _one(page, ProjectsBoard).number
             return f"{number:02d}" if number else ""
@@ -234,10 +230,6 @@ def _header_chip(page: Page) -> str:
 
 def _header_chip_dest(page: Page) -> str | None:
     match page.kind:
-        case "month":
-            return _one(page, MonthGrid).habits_dest
-        case "habits":
-            return _one(page, HabitGrid).month_dest
         case "project":
             return _one(page, ProjectsBoard).index_dest or None
         case "meeting":
