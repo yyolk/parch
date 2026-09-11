@@ -7,7 +7,7 @@ from parch.layouts.planner.painters import (
     HABIT_WASH,
     HABIT_WASH_CROSS,
     habit_dow_letter,
-    habit_seats_transposed,
+    habit_seats,
     paint_habit_grid,
     strip_active,
     strip_items,
@@ -78,9 +78,9 @@ def test_habit_paint_smoke_and_month_chip_link():
     assert "W" in labels
 
 
-def test_habit_transposed_seat_and_paint():
+def test_habit_seat_and_paint():
     box = Rect(4, 20, 110, 120)
-    day_col, names, bands = habit_seats_transposed(box, 31, 10)
+    day_col, names, bands = habit_seats(box, 31, 10)
     assert len(names) == 10
     assert len(bands) == 31
     assert day_col.x == pytest.approx(box.x)
@@ -147,7 +147,7 @@ def test_habit_day_labels_link_to_dailies():
     page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     box = Rect(4, 20, 110, 120)
-    day_col, names, _bands = habit_seats_transposed(box, grid.days, grid.rows)
+    day_col, names, _bands = habit_seats(box, grid.days, grid.rows)
     ink = RecordingPlotter()
     paint_habit_grid(ink, box, grid)
     hits = [(op[1], op[2]) for op in ink.ops if op[0] == "link"]

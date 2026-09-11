@@ -7,7 +7,7 @@ from parch.layouts.planner.painters import (
     FOCUS_ROWS,
     focus_content_height,
     paint_quarter,
-    quarter_seats_a_focus_notes,
+    quarter_seats,
     strip_active,
     strip_items,
 )
@@ -91,9 +91,9 @@ def test_quarter_links_from_year_and_month_meta():
     assert "Notes" in texts
 
 
-def test_quarter_seat_a_focus_notes_under_short_band():
+def test_quarter_seats_focus_over_notes():
     box = Rect(4, 20, 110, 90)
-    months, focus, notes = quarter_seats_a_focus_notes(box)
+    months, focus, notes = quarter_seats(box)
     jan, feb, mar = months
     year_band = rows(box, 4, gap=2.6)[0].h
     assert jan.h == pytest.approx(year_band)
@@ -110,7 +110,7 @@ def test_quarter_seat_a_focus_notes_under_short_band():
     assert focus.h == pytest.approx(focus_content_height())
 
 
-def test_quarter_a_focus_notes_paint():
+def test_quarter_paint():
     spec = Spec(notes_pages=1)
     grid = next(
         item

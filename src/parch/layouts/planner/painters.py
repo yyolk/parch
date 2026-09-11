@@ -1308,19 +1308,19 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
 def paint_quarter(
     plotter: Plotter, box: Rect, grid: QuarterGrid, *, ramp: TypeRamp | None = None
 ) -> None:
-    """A″ — year-density minis, content-height Focus over flex Notes."""
+    """Year-density minis, content-height Focus over flex Notes."""
     ramp = _bound_ramp(plotter, ramp)
-    months, focus, notes = quarter_seats_a_focus_notes(box)
+    months, focus, notes = quarter_seats(box)
     for cell, month in zip(months, grid.months, strict=True):
         _paint_mini_month(plotter, cell, month, ramp=ramp)
     _paint_focus_box(plotter, focus, ramp=ramp)
     _paint_note_box(plotter, notes, label="Notes", ramp=ramp)
 
 
-def quarter_seats_a_focus_notes(
+def quarter_seats(
     box: Rect,
 ) -> tuple[tuple[Rect, Rect, Rect], Rect, Rect]:
-    """A″: short year-density month band; leftover is Focus over flex Notes."""
+    """Short year-density month band; leftover is Focus over flex Notes."""
     cal_h = rows(box, 4, gap=2.6)[0].h
     cal_band, rest = box.split_top(cal_h)
     leftover = Rect(rest.x, rest.y + 2.6, rest.w, rest.h - 2.6)
@@ -1536,7 +1536,7 @@ def habit_dow_letter(year: int, month: int, day: int) -> str:
     return WEEKDAY_LABELS[date(year, month, day).weekday()][0]
 
 
-def habit_seats_transposed(
+def habit_seats(
     box: Rect, days: int, habits: int
 ) -> tuple[Rect, tuple[Rect, ...], tuple[Rect, ...]]:
     """Day labels left, habit name slots across the top. ``habits`` comes from the spec."""
@@ -1570,7 +1570,7 @@ def paint_habit_grid(
     """Days down the left (``1 W``), habit name slots across the top, pale zebra."""
     _bound_ramp(plotter, ramp)
     habits = max(1, grid.rows)
-    day_col, names, bands = habit_seats_transposed(box, grid.days, habits)
+    day_col, names, bands = habit_seats(box, grid.days, habits)
     matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
     day_tracks = columns(matrix, habits, gap=0.4)
     for i, _band in enumerate(bands):
