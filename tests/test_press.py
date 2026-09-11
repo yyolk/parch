@@ -88,3 +88,48 @@ def test_cli_press_toml(tmp_path: Path):
     dests = _named_dests(PdfReader(out))
     assert "2026-01-01" in dests
     assert "2026-01-31" in dests
+
+
+def test_cli_proof_verb_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "proof.pdf"
+    assert main(["proof", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+
+
+def test_cli_press_proof_flag_selects_proof_profile(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "flag.pdf"
+    assert main(["press", "supernote-nomad", "--proof", "-o", str(out)]) == 0
+    assert seen["proof"] is True
+
+
+def test_cli_press_without_proof_stays_device_only(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "plain.pdf"
+    assert main(["press", "supernote-nomad", "-o", str(out)]) == 0
+    assert seen["proof"] is False
