@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
+from parch.fonts.ramp import TypeRamp, TypeRef
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
@@ -11,6 +12,15 @@ type TextFace = Literal["sans", "serif"]
 
 
 class Plotter(Protocol):
+    """Drawing surface. ``ramp`` is bound by ``PlannerLayout`` / press.
+
+    Preferred text path: ``text(..., ref=TypeRef(...))``. The plotter asks
+    ``self.ramp.resolve(ref)`` — painters never see weights. Legacy
+    ``face`` + ``bold`` stay for unmigrated wells only.
+    """
+
+    ramp: TypeRamp
+
     def begin_page(self) -> None:
         """Start a new page. Destinations bind to the current page."""
 
@@ -49,6 +59,7 @@ class Plotter(Protocol):
         box: Rect,
         content: str,
         *,
+        ref: TypeRef | None = None,
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
@@ -60,9 +71,11 @@ class Plotter(Protocol):
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size).
 
-        Ramp path: ``family`` + ``weight`` select a catalog cut. When ``family``
-        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost for unmigrated
-        painters (Book / Bold / Medium / Heavy).
+        Two-phase path: pass ``ref``. The plotter resolves it through
+        ``self.ramp`` and ignores ``face`` / ``bold`` / ``family`` /
+        ``weight`` / ``size``. Unmigrated painters omit ``ref`` and keep
+        ``face`` + ``bold`` (Jost Book / Bold / Medium / Heavy via
+        ``resolve_weight``).
         """
 
     def link(self, box: Rect, dest: str) -> None:

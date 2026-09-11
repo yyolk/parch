@@ -29,7 +29,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import TypeRamp
+from parch.fonts.ramp import TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter
 from parch.sections.page import NavItem, Page
@@ -60,7 +60,6 @@ def paint_header(
     meta: str,
     meta_dest: str | None = None,
     *,
-    ramp: TypeRamp,
     chip: str = "",
     chip_dest: str | None = None,
 ) -> None:
@@ -72,25 +71,19 @@ def paint_header(
     title_box = Rect(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
-    title_ink = ramp.ink("page_title")
     plotter.text(
         title_box,
         title,
-        size=title_ink.size,
-        family=title_ink.family,
-        weight=title_ink.weight,
+        ref=TypeRef(step="page_title"),
         gray=PAPER,
         align="left",
     )
-    chrome = ramp.ink("chrome")
     if chip:
         chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
         plotter.text(
             chip_box,
             chip,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            ref=TypeRef(step="chrome"),
             gray=SOFT,
             align="right",
             small_caps=True,
@@ -102,9 +95,7 @@ def paint_header(
         plotter.text(
             meta_box,
             meta,
-            size=chrome.size,
-            family=chrome.family,
-            weight=chrome.weight,
+            ref=TypeRef(step="chrome"),
             gray=SOFT,
             align="right",
             small_caps=True,
@@ -133,9 +124,11 @@ def paint_nav(
         plotter.text(
             hit,
             label,
-            size=7.6,
-            bold=on,
-            face="sans",
+            ref=TypeRef(
+                step="chrome",
+                emphasis="strong" if on else "regular",
+                size=7.6,
+            ),
             gray=PAPER if on else INK,
             small_caps=True,
             align="center",
@@ -154,7 +147,7 @@ def paint_chrome(
     _ = (plotter, box, title, nav)
 
 
-def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp) -> None:
+def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
     # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
@@ -176,25 +169,19 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     )
 
     brow = Rect(0.0, 38.0, device.page_width, 8.0)
-    brow_ink = ramp.ink("cover_brow")
     plotter.text(
         brow,
         "Year Book",
-        size=brow_ink.size,
-        family=brow_ink.family,
-        weight=brow_ink.weight,
+        ref=TypeRef(step="cover_brow"),
         gray=MUTED,
         small_caps=True,
         align="center",
     )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
-    year_ink = ramp.ink("cover_year")
     plotter.text(
         year_box,
         str(cover.year),
-        size=year_ink.size,
-        family=year_ink.family,
-        weight=year_ink.weight,
+        ref=TypeRef(step="cover_year"),
         gray=INK,
         align="center",
     )
@@ -204,12 +191,10 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
         cover.cta_dest,
     )
     specs = Rect(device.writing_clearance, 84.0, device.page_width - 2 * device.writing_clearance, 6.5)
-    # ponytail: specs stay fully literal until a dedicated role exists — do not half-apply chrome
     plotter.text(
         specs,
         f"monday weeks  ·  {device.page_width:g} × {device.page_height:g} mm",
-        size=8.2,
-        face="sans",
+        ref=TypeRef(step="cover_specs"),
         gray=MUTED,
         small_caps=True,
         align="center",
@@ -381,9 +366,7 @@ def _paint_project_ticket(plotter: Plotter, box: Rect, ticket: ProjectTicket) ->
     plotter.text(
         mark,
         f"{ticket.number:02d}",
-        size=6.6,
-        bold=True,
-        face="serif",
+        ref=TypeRef(step="title", size=6.6),
         gray=INK,
         align="center",
     )
@@ -534,8 +517,7 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
     plotter.text(
         Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
         "P",
-        size=CLONE_P_SIZE,
-        face="sans",
+        ref=TypeRef(step="caption", size=CLONE_P_SIZE),
         gray=MUTED,
         align="left",
         small_caps=True,
@@ -572,8 +554,7 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
         plotter.text(
             Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
             label,
-            size=5.4,
-            face="sans",
+            ref=TypeRef(step="caption"),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1386,8 +1367,7 @@ def _paint_note_box(plotter: Plotter, box: Rect, *, label: str | None = None) ->
         plotter.text(
             Rect(box.x + 1.3, box.y + 0.7, box.w - 2.6, header_h),
             label,
-            size=6.4,
-            face="sans",
+            ref=TypeRef(step="label"),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1441,8 +1421,7 @@ def _paint_checklist_box(
         plotter.text(
             Rect(box.x + 1.3, box.y + FOCUS_PAD_TOP, box.w - 2.6, FOCUS_LABEL_H),
             label,
-            size=6.4,
-            face="sans",
+            ref=TypeRef(step="label"),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1476,9 +1455,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
     plotter.text(
         title,
         month.name[:3],
-        size=6.4,
-        bold=pressed,
-        face="sans",
+        ref=TypeRef(step="label", emphasis="strong" if pressed else "regular"),
         gray=INK if pressed else MUTED,
         small_caps=True,
         align="left",
@@ -1492,8 +1469,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
         plotter.text(
             Rect(col.x, dow.y, col.w, dow.h),
             label[0],
-            size=4.3,
-            face="sans",
+            ref=TypeRef(step="caption", size=4.3),
             gray=GHOST,
             small_caps=True,
             align="center",
@@ -1518,9 +1494,7 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
                 plotter.text(
                     num,
                     str(cell.day),
-                    size=5.3,
-                    bold=True,
-                    face="sans",
+                    ref=TypeRef(step="caption", emphasis="strong", size=5.3),
                     gray=PAPER,
                     align="center",
                 )
@@ -1530,9 +1504,11 @@ def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
             plotter.text(
                 num,
                 str(cell.day),
-                size=5.3,
-                bold=linked and cell.in_month,
-                face="sans",
+                ref=TypeRef(
+                    step="caption",
+                    emphasis="strong" if linked and cell.in_month else "regular",
+                    size=5.3,
+                ),
                 gray=ink,
                 align="center",
             )
@@ -1763,8 +1739,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
         plotter.text(
             Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
-            size=6.6,
-            face="sans",
+            ref=TypeRef(step="label", size=6.6),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1780,8 +1755,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(box.x, band.y, gutter - 0.4, band.h),
                 f"W{iso:02d}",
-                size=5.8,
-                face="sans",
+                ref=TypeRef(step="caption", size=5.8),
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1796,9 +1770,7 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
             plotter.text(
                 Rect(cell.x + inset, cell.y + 0.7, cell.w - 2 * inset, 5.4),
                 str(day.day),
-                size=8.5,
-                bold=True,
-                face="sans",
+                ref=TypeRef(step="body", emphasis="strong", size=8.5),
                 gray=INK,
                 align="left",
             )
@@ -1822,8 +1794,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x, band.y + 0.45, 14.0, 5.0),
             day.weekday_label,
-            size=6.6,
-            face="sans",
+            ref=TypeRef(step="label", size=6.6),
             gray=MUTED,
             small_caps=True,
             align="left",
@@ -1831,9 +1802,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
         plotter.text(
             Rect(band.x + 14.0, band.y + 0.1, 12.0, 5.8),
             str(day.day.day),
-            size=11,
-            bold=True,
-            face="sans",
+            ref=TypeRef(step="title", emphasis="strong"),
             gray=ink,
             align="left",
         )
@@ -1841,8 +1810,7 @@ def paint_week(plotter: Plotter, box: Rect, week: WeekStrip) -> None:
             plotter.text(
                 Rect(band.x + 26.0, band.y + 0.55, 22.0, 4.8),
                 MONTH_NAMES[day.day.month - 1][:3],
-                size=6.6,
-                face="sans",
+                ref=TypeRef(step="label", size=6.6),
                 gray=MUTED,
                 small_caps=True,
                 align="left",
@@ -1862,8 +1830,7 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
         schedule.label,
-        size=6.4,
-        face="sans",
+        ref=TypeRef(step="label"),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1874,8 +1841,7 @@ def paint_schedule(plotter: Plotter, box: Rect, schedule: Schedule) -> None:
         plotter.text(
             Rect(band.x, band.y, 10.0, band.h),
             f"{hour:2d}",
-            size=7,
-            face="sans",
+            ref=TypeRef(step="chrome", size=7),
             gray=MUTED,
             align="left",
         )
@@ -1894,8 +1860,7 @@ def paint_notes(plotter: Plotter, box: Rect, notes: Notes) -> None:
     plotter.text(
         Rect(box.x, box.y, box.w, header_h),
         notes.label,
-        size=6.4,
-        face="sans",
+        ref=TypeRef(step="label"),
         gray=MUTED,
         small_caps=True,
         align="left",

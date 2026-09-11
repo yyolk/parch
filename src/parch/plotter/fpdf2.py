@@ -6,7 +6,7 @@ from typing import override
 from fpdf import FPDF
 
 from parch.devices.nomad import Device
-from parch.fonts.catalog import FontCatalog, jost_catalog
+from parch.fonts.ramp import JostRamp, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
 
@@ -34,9 +34,10 @@ def _level(gray: float) -> int:
 
 
 class Fpdf2Plotter(Plotter):
-    def __init__(self, device: Device, catalog: FontCatalog | None = None) -> None:
+    def __init__(self, device: Device, ramp: TypeRamp | None = None) -> None:
         self.device = device
-        self.catalog = jost_catalog() if catalog is None else catalog
+        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.catalog = self.ramp.catalog
         self.pdf = FPDF(unit="mm", format=(device.page_width, device.page_height))
         self.pdf.set_auto_page_break(auto=False, margin=0)
         self.pdf.set_margins(0, 0, 0)
@@ -166,6 +167,7 @@ class Fpdf2Plotter(Plotter):
         box: Rect,
         content: str,
         *,
+        ref: TypeRef | None = None,
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
@@ -177,6 +179,13 @@ class Fpdf2Plotter(Plotter):
     ) -> None:
         if not content:
             return
+        if ref is not None:
+            ink = self.ramp.resolve(ref)
+            family = ink.family
+            weight = ink.weight
+            size = ink.size
+            bold = False
+            face = "sans"
         if small_caps:
             self._draw_smcp(
                 box,
