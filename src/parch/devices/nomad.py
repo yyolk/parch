@@ -11,6 +11,10 @@ MM_PER_INCH = 25.4
 type ToolbarEdge = Literal["top", "none"]
 
 
+# Planner body in pt. Type ramp 1em. Live source is ``Device.root_body``.
+ROOT_BODY = 8.5
+
+
 @dataclass(frozen=True, slots=True)
 class Device:
     """Physical page. Toolbar slab is reserved; it is not a writing well."""
@@ -25,6 +29,7 @@ class Device:
     toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
+    root_body: float
 
     @property
     def content_top(self) -> float:
@@ -66,6 +71,7 @@ NOMAD = Device(
     toolbar_edge="top",
     toolbar_clearance=8.0,
     writing_clearance=4.0,
+    root_body=ROOT_BODY,
 )
 
 _KNOWN = {

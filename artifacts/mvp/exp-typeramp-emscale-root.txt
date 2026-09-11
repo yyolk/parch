@@ -1,0 +1,18 @@
+Thesis P — em-relative scale specimens
+
+root used: 8.5pt  (NOMAD.Device.root_body / parch.devices.ROOT_BODY)
+JostRamp(root_body=8.5)
+
+display  42pt  fixed exception (cover year; does not track root)
+title    11.05pt  = 8.5 * 1.3
+brow     10pt  = 8.5 * (10/8.5)
+body     8.5pt  = 8.5 * 1.0
+chrome   7.395pt  = 8.5 * 0.87
+caption  6.375pt  = 8.5 * 0.75
+cell     5.27pt  = 8.5 * 0.62
+micro    4.335pt  = 8.5 * 0.51
+
+PNGs at 150 PPI: cover, year, month, week, daily, projects
+Bumped-root pair (12pt): exp-typeramp-emscale-root12-cover.png,
+exp-typeramp-emscale-root12-month.png — title/chrome/body/caption scale;
+display year numeral stays 42pt.

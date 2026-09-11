@@ -25,7 +25,7 @@ from parch.spec import Spec
 
 class YearPlanner:
     def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.ramp: TypeRamp | None = ramp
 
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)
@@ -56,7 +56,8 @@ class YearPlanner:
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
         device = get_device(spec.device)
-        layout = PlannerLayout(ramp=self.ramp)
+        ramp = self.ramp if self.ramp is not None else JostRamp(root_body=device.root_body)
+        layout = PlannerLayout(ramp=ramp)
         pages = self.pages(spec)
         for page in pages:
             plotter.reserve_dest(page.dest)

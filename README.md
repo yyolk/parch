@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Closed `TypeStep` values resolve through `JostRamp(root_body=device.root_body)` (Nomad 8.5pt); size is `root * ratio` except `display` (fixed 42pt). `family="jost"` stays on the ink for a later dual-font ramp. Thesis P specimens: [`artifacts/mvp/exp-typeramp-emscale-cover.png`](artifacts/mvp/exp-typeramp-emscale-cover.png) · year · month · week · daily · projects, plus a 12pt-root pair and [`artifacts/mvp/exp-typeramp-emscale-root.txt`](artifacts/mvp/exp-typeramp-emscale-root.txt).

@@ -65,19 +65,24 @@ DAILY_PRIO_GAP = 2.2
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    Holds an explicit ``TypeRamp``. Default is ``JostRamp(root_body=device.root_body)``
+    resolved at paint time. Cover, header, nav, and migrated wells (year / month /
+    week / daily / projects) take the ramp. Dual-font ramps are future work;
+    ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.ramp: TypeRamp | None = ramp
+
+    def _ramp(self, device: Device) -> TypeRamp:
+        return self.ramp if self.ramp is not None else JostRamp(root_body=device.root_body)
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         paint_toolbar(plotter, device)
+        ramp = self._ramp(device)
         match page.kind:
             case "cover":
-                paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+                paint_cover(plotter, device, _one(page, CoverTitle), ramp=ramp)
             case _:
                 paint_header(
                     plotter,
@@ -85,22 +90,28 @@ class PlannerLayout:
                     page.title,
                     _header_meta(page),
                     _header_meta_dest(page),
-                    ramp=self.ramp,
+                    ramp=ramp,
                     chip=_header_chip(page),
                     chip_dest=_header_chip_dest(page),
                 )
-                paint_nav(plotter, device, strip_items(page), strip_active(page.kind))
+                paint_nav(
+                    plotter,
+                    device,
+                    strip_items(page),
+                    strip_active(page.kind),
+                    ramp=ramp,
+                )
                 well = well_rect(device)
-                self._paint_well(page, plotter, well)
+                self._paint_well(page, plotter, well, ramp)
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+    def _paint_well(self, page: Page, plotter: Plotter, well: Rect, ramp: TypeRamp) -> None:
         match page.kind:
             case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid))
+                paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex))
+                paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=ramp)
             case "project":
-                paint_project(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
             case "meetings_index":
                 paint_meetings_index(plotter, well, _one(page, MeetingIndex))
             case "meeting":
@@ -114,13 +125,13 @@ class PlannerLayout:
             case "review":
                 paint_review(plotter, well, _one(page, ReviewWeekPage))
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
             case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid))
+                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
             case "habits":
                 paint_habit_grid(plotter, well, _one(page, HabitGrid))
             case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip))
+                paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
             case "daily":
                 schedule = _one(page, Schedule)
                 notes = _one(page, Notes)
@@ -129,12 +140,12 @@ class PlannerLayout:
                 left, right = columns(well, 2, gap=COL_GAP, weights=DAILY_COL_WEIGHTS)
                 sched_box, mini_box = daily_left_seats(left)
                 prio_box, notes_box = daily_right_seats(right, priorities.rows)
-                paint_schedule(plotter, sched_box, schedule)
-                _paint_mini_month(plotter, mini_box, mini)
-                paint_priorities(plotter, prio_box, priorities)
-                paint_notes(plotter, notes_box, notes)
+                paint_schedule(plotter, sched_box, schedule, ramp=ramp)
+                _paint_mini_month(plotter, mini_box, mini, ramp=ramp)
+                paint_priorities(plotter, prio_box, priorities, ramp=ramp)
+                paint_notes(plotter, notes_box, notes, ramp=ramp)
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 

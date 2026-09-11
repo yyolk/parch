@@ -1,4 +1,5 @@
-from parch.devices import NOMAD, get_device
+from parch.devices import NOMAD, ROOT_BODY, get_device
+from parch.fonts.ramp import DEFAULT_ROOT_BODY
 from parch import ConfigError
 import pytest
 
@@ -13,6 +14,9 @@ def test_nomad_geometry():
     assert NOMAD.toolbar_edge == "top"
     assert NOMAD.toolbar_clearance == 8.0
     assert NOMAD.writing_clearance == 4.0
+    assert NOMAD.root_body == 8.5
+    assert ROOT_BODY == 8.5
+    assert NOMAD.root_body == DEFAULT_ROOT_BODY
 
 
 def test_toolbar_is_not_the_well():

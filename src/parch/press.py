@@ -23,12 +23,13 @@ def press(
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. The ramp's catalog is handed to
-    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
-    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    Default ramp is ``JostRamp(root_body=device.root_body)``. The ramp's
+    catalog is handed to ``Fpdf2Plotter``. Dual-font ramps are future work —
+    ``family`` stays on ``TypeInk`` / ``Plotter.text`` so they can land
+    without a signature change.
     """
     device = get_device(spec.device)
-    resolved = JostRamp() if ramp is None else ramp
+    resolved = JostRamp(root_body=device.root_body) if ramp is None else ramp
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
     YearPlanner(ramp=resolved).plot(spec, plotter)

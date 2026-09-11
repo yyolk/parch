@@ -3,6 +3,7 @@ import pytest
 from parch.books import YearPlanner
 from parch.components import ProjectsBoard, ProjectsIndex
 from parch.devices.nomad import NOMAD
+from parch.fonts import JostRamp
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
@@ -11,7 +12,6 @@ from parch.layouts.planner.painters import (
     CLONE_ICON,
     CLONE_ICONS,
     CLONE_P_PAD,
-    CLONE_P_SIZE,
     CLONE_RAIL_SLOT_GAP,
     CLONE_SPINE_W,
     CLONE_STATUS_LABELS,
@@ -430,7 +430,7 @@ def test_project_page_g_clone_and_index_chip():
     assert "Doing" not in texts
     p_texts = [op for op in ink.ops if op[0] == "text" and op[2] == "P"]
     assert all(op[7] == pytest.approx(MUTED) for op in p_texts)
-    assert all(op[3] == pytest.approx(CLONE_P_SIZE) for op in p_texts)
+    assert all(op[3] == pytest.approx(JostRamp().ink("cell").size) for op in p_texts)
     ticks = [
         op
         for op in ink.ops
