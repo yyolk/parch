@@ -16,11 +16,12 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 
 ## Type ramp
 
-`TypeInk` is `family` + `weight` + `size`. Migrated painters call
-`ramp.ink(step, emphasis="regular")` and pass those fields to `Plotter.text`.
-`family` is a closed key (`TypeFamily = Literal["jost"]` today) so a later
-dual-font ramp can pick another catalog family without ripping out the plotter
-kwarg.
+`TypeRef` is a frozen `TypeStep` + optional `emphasis` + optional `size`.
+No family, no weight on the ref. Migrated painters pass `ref=` (or `ink=`).
+`Plotter.text` resolves a ref once at the edge via `plotter.ramp`.
+`TypeInk` is the resolved `family` + `weight` + `size`. `family` is a closed
+key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can
+pick another catalog family without ripping out the plotter path.
 
 The closed ladder is **design tokens**, not page-semantic roles. Painters pick
 from `display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`.
@@ -105,8 +106,8 @@ Merge (`defaults ⊕ device ⊕ toml ⊕ proof`, then an optional `press(..., ov
 `get_device` and `press` call `require_overlay` **before** `bind_ramp`
 builds `EffectiveRamp`. A bad overlay raises `ConfigError` before paint.
 
-`EffectiveRamp` is the explicit merged object. Painters only call
-`ramp.ink(...)`. They never read the overlay.
+`EffectiveRamp` is the explicit merged object. Painters call
+`ramp.ink(...)` or pass `TypeRef`; they never read the overlay.
 
 The press job TOML is the yolk-facing knob:
 
@@ -157,7 +158,7 @@ the FaceBridge backlog.
 ### Strangler allowlist
 
 `MigratedSurface` / `MIGRATED_SURFACES` lists painter entrypoints that
-**must** call `ramp.ink(step)` and emit `family` + `weight` + `size`.
+**must** pass `TypeRef` / ink and emit `family` + `weight` + `size`.
 `RecordingPlotter.face_only_text()` fails CI if a listed painter still
 emits face-only text.
 

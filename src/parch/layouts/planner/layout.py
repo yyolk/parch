@@ -76,17 +76,19 @@ __all__ = [
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    allowlisted painters (``ramp.ink(step)``). Habit / meeting / review /
-    tasks stay on ``face`` + ``bold``; the plotter asks ``ramp.resolve_face``.
-    Press may hand in an ``EffectiveRamp`` (defaults ⊕ device ⊕ toml ⊕
-    proof). Dual-font ramps are future work; ``family`` stays on the ink.
+    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and binds it onto
+    the plotter. Allowlisted painters pass ``TypeRef`` / ink. Habit /
+    meeting / review / tasks stay on ``face`` + ``bold``; the plotter asks
+    ``ramp.resolve_face``. Press may hand in an ``EffectiveRamp``
+    (defaults ⊕ device ⊕ toml ⊕ proof). Dual-font ramps are future work;
+    ``family`` stays on the resolved ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
         self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
+        plotter.ramp = self.ramp
         paint_toolbar(plotter, device)
         match page.kind:
             case "cover":

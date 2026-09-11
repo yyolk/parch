@@ -4,13 +4,36 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeight
-from parch.fonts.ramp import TypeFace as TextFace
+from parch.fonts.ramp import TypeFace as TextFace, TypeInk, TypeRamp, TypeRef, resolve_ref
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
 
 
+def resolve_text_ink(
+    ramp: TypeRamp,
+    *,
+    ink: TypeInk | None,
+    ref: TypeRef | None,
+) -> TypeInk | None:
+    """Migrated path: exactly one of ``ink`` or ``ref``. Otherwise ``None`` (face path)."""
+    if ink is not None and ref is not None:
+        raise TypeError("Plotter.text migrated path takes ink= or ref=, not both")
+    if ref is not None:
+        return resolve_ref(ramp, ref)
+    return ink
+
+
 class Plotter(Protocol):
+    """Drawing surface. ``ramp`` is bound by ``PlannerLayout`` / press.
+
+    Migrated path: ``text(..., ink=)`` or ``text(..., ref=TypeRef(...))``.
+    A ref is resolved once at the edge via ``resolve_ref(plotter.ramp, ref)``.
+    Face / bold stay for the FaceBridge backlog only.
+    """
+
+    ramp: TypeRamp
+
     def begin_page(self) -> None:
         """Start a new page. Destinations bind to the current page."""
 
@@ -49,6 +72,8 @@ class Plotter(Protocol):
         box: Rect,
         content: str,
         *,
+        ink: TypeInk | None = None,
+        ref: TypeRef | None = None,
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
@@ -58,17 +83,12 @@ class Plotter(Protocol):
         weight: TextWeight | None = None,
         family: TextFamily | None = None,
     ) -> None:
-        """Draw a single line of text inside ``box`` (pt size).
+        """Draw a single line of text inside ``box``.
 
-        Dual path, both owned by the ramp:
-
-        * Step path — ``family`` + ``weight`` from ``ramp.ink(step)``.
-          Allowlisted painters (cover, header, nav, year, month, week,
-          daily, projects index) paint this way.
-        * Face path — when ``family`` is omitted, ``Fpdf2Plotter`` asks
-          ``ramp.resolve_face(face, bold, size)`` (``FaceBridge``). Habit /
-          meeting / review / tasks may keep ``face`` + ``bold``; that is
-          intentional.
+        * Migrated — ``ink: TypeInk`` and/or ``ref=`` (``TypeStep`` vocabulary).
+          ``ref`` resolves through ``plotter.ramp``.
+        * FaceBridge backlog — omit both; ``face`` + ``bold`` + ``size`` stay
+          for habit / meeting / review / tasks.
         """
 
     def link(self, box: Rect, dest: str) -> None:

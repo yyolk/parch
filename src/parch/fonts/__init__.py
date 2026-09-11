@@ -30,6 +30,7 @@ from parch.fonts.ramp import (
     TypeOverlay,
     TypePatch,
     TypeRamp,
+    TypeRef,
     TypeStep,
     UnknownStep,
     VersionMismatch,
@@ -38,6 +39,7 @@ from parch.fonts.ramp import (
     compose_overlays,
     jost_defaults,
     require_overlay,
+    resolve_ref,
     scale_ink,
     validate_overlay,
 )
@@ -73,6 +75,7 @@ __all__ = [
     "TypeOverlay",
     "TypePatch",
     "TypeRamp",
+    "TypeRef",
     "TypeStep",
     "TypeWeight",
     "UnknownStep",
@@ -84,6 +87,7 @@ __all__ = [
     "jost_catalog",
     "jost_defaults",
     "require_overlay",
+    "resolve_ref",
     "scale_ink",
     "validate_overlay",
 ]
