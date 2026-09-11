@@ -66,8 +66,10 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    cover / header paint. Other painters still pass ``face`` + ``bold``; the
+    plotter asks ``ramp.resolve_face``. Press may hand in an
+    ``EffectiveRamp`` (defaults ⊕ device overlay). Dual-font ramps are
+    future work; ``family`` stays on the ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
