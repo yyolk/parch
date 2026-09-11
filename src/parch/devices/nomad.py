@@ -1,9 +1,10 @@
 """SuperNote Nomad — the only MVP device."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from parch import ConfigError
+from parch.fonts.ramp import TypeOverlay, TypePatch
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
@@ -25,6 +26,7 @@ class Device:
     toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
+    type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     @property
     def content_top(self) -> float:
@@ -54,6 +56,17 @@ class Device:
         )
 
 
+# Device-owned scale layer — Nomad bumps chrome and cover brow without
+# editing painters. Defaults stay in fonts.ramp._JOST.
+NOMAD_CHROME_SIZE = 8.6
+NOMAD_CHROME_WEIGHT = "medium"
+NOMAD_COVER_BROW_SIZE = 12.0
+
+NOMAD_TYPE_OVERLAY = TypeOverlay(
+    chrome=TypePatch(size=NOMAD_CHROME_SIZE, weight=NOMAD_CHROME_WEIGHT),
+    cover_brow=TypePatch(size=NOMAD_COVER_BROW_SIZE),
+)
+
 # 1404×1872 @ 300 PPI → 118.87×158.50 mm. Toolbar top 8 mm.
 NOMAD = Device(
     id="supernote-nomad",
@@ -66,6 +79,7 @@ NOMAD = Device(
     toolbar_edge="top",
     toolbar_clearance=8.0,
     writing_clearance=4.0,
+    type_overlay=NOMAD_TYPE_OVERLAY,
 )
 
 _KNOWN = {

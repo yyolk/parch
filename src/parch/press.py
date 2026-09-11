@@ -7,7 +7,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.fonts import JostRamp, TypeRamp
+from parch.fonts import TypeOverlay, TypeRamp, bind_ramp, compose_overlays
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -20,15 +20,22 @@ def press(
     output: Path,
     plotter: Plotter | None = None,
     ramp: TypeRamp | None = None,
+    overlay: TypeOverlay | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. The ramp's catalog is handed to
+    When ``ramp`` is omitted, press builds ``EffectiveRamp = defaults ⊕
+    device overlay ⊕ press overlay`` and passes that explicit object in.
+    An explicit ``ramp`` wins the whole object (overlay args are ignored).
+    Painters never read the overlay. The ramp's catalog is handed to
     ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
     ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
     """
     device = get_device(spec.device)
-    resolved = JostRamp() if ramp is None else ramp
+    resolved = bind_ramp(
+        ramp=ramp,
+        overlay=compose_overlays(device.type_overlay, overlay),
+    )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
     YearPlanner(ramp=resolved).plot(spec, plotter)
