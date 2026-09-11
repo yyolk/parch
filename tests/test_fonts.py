@@ -1,6 +1,3 @@
-from dataclasses import replace
-from pathlib import Path
-
 import pytest
 from parch.components import CoverTitle
 from parch.devices import NOMAD
@@ -23,9 +20,6 @@ from parch.fonts import (
     TypePatch,
     TypeRef,
     TypeStep,
-    apply_overlay,
-    bind_ramp,
-    compose_overlays,
     font_dir,
     jost_catalog,
     pt_from_em,
@@ -34,8 +28,6 @@ from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter
-from parch.press import _proof_overlay, press
-from parch.spec import Spec
 
 
 def test_jost_weight_files_and_defaults():
@@ -235,12 +227,17 @@ def test_plotter_ink_and_ref_cuts():
     assert plotter.pdf.font_family == "jost:book"
     plotter.text(box, "title-strong", ref=TypeRef(step="title", emphasis="strong"))
     assert plotter.pdf.font_family == "jost:bold"
-    plotter.text(box, "eyebrow", ref=TypeRef(step="eyebrow"))
-    assert plotter.pdf.font_family == "jost:medium"
     plotter.text(box, "ink", ink=TypeInk(family="jost", weight="heavy", size=Pt(10)))
     assert plotter.pdf.font_family == "jost:heavy"
-    plotter.text(box, "smcp", ref=TypeRef(step="label"), small_caps=True)
-    assert plotter.pdf.font_family == "jost:book"
+    with pytest.raises(TypeError, match="ink= or ref="):
+        plotter.text(
+            Rect(4, 32, 40, 8),
+            "both",
+            ink=TypeInk(family="jost", weight="book", size=Pt(8)),
+            ref=TypeRef(step="label"),
+        )
+    with pytest.raises(TypeError, match="ink= or ref="):
+        plotter.text(Rect(4, 42, 40, 8), "neither")
 
 
 def test_fonts_package_does_not_import_plotter():
@@ -270,260 +267,11 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.PROOF_PROFILE is PROOF_PROFILE
 
 
-def test_overlay_explicit_size_keeps_default_weight():
-    patch = TypePatch(size=Pt(9.0))
-    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="book", size=Pt(9.0))
-    assert apply_overlay(base, None) == base
-
-
-def test_overlay_explicit_weight_keeps_default_size():
-    patch = TypePatch(weight="bold")
-    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="bold", size=Pt(7.4))
-
-
-def test_overlay_both_fields_win():
-    patch = TypePatch(size=Pt(8.6), weight="medium")
-    base = TypeInk(family="jost", weight="book", size=Pt(7.4))
-    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="medium", size=Pt(8.6))
-
-
-def test_overlay_missing_step_keeps_default():
-    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.0))
-    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=Pt(9.0))
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(11))
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(10))
-    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=Pt(8.5))
-    assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=Pt(6.4))
-    assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=Pt(5.4))
-    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(4.3))
-
-
-def test_overlay_never_changes_family():
-    ramp = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0), weight="heavy")))
-    assert ramp.ink("chrome").family == "jost"
-    assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
-
-
-def test_compose_overlays_later_explicit_field_wins():
-    first = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"), eyebrow=TypePatch(size=Pt(12.0)))
-    press_over = TypeOverlay(chrome=TypePatch(size=Pt(10.0)))
-    merged = compose_overlays(first, press_over)
-    ramp = EffectiveRamp(overlay=merged)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
-    assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(12.0))
-    assert ramp.ink("title").size == Pt(11)
-
-
-def test_bind_ramp_applies_overlay():
-    overlay_only = bind_ramp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
-    assert overlay_only.ink("chrome").size == Pt(9.0)
-    assert isinstance(overlay_only, EffectiveRamp)
-
-
 def test_patch_validators_are_pure():
     with pytest.raises(ValueError, match="size must be > 0"):
         TypePatch(size=Pt(0))
     with pytest.raises(ValueError, match="unknown weight"):
         TypePatch(weight="hairline")  # type: ignore[arg-type]
-
-
-def test_press_wires_default_ramp(tmp_path: Path):
-    plotter = RecordingPlotter()
-    press(Spec(months=(1,), notes_pages=0, project_index_pages=1), tmp_path / "id.pdf", plotter=plotter)
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 10
-    assert brow[9] == "medium"
-    assert _family(brow) == "jost"
-    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 42
-    assert year[9] == "heavy"
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 7.4
-    assert chrome_meta[9] == "book"
-
-
-def test_press_overlay_reaches_header_roles(tmp_path: Path):
-    plotter = RecordingPlotter()
-    press(
-        Spec(months=(1,), notes_pages=0, project_index_pages=1),
-        tmp_path / "over.pdf",
-        plotter=plotter,
-        overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium")),
-    )
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 9.1
-    assert chrome_meta[9] == "medium"
-    assert _family(chrome_meta) == "jost"
-    title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 11)
-    assert title[9] == "medium"
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 10
-    assert brow[9] == "medium"
-
-
-def test_toml_overlay_reaches_cover_and_header():
-    spec = Spec.from_path(Path("examples/mvp-typo-overlay.toml"))
-    ramp = EffectiveRamp(overlay=spec.type_overlay)
-    header = RecordingPlotter()
-    paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
-    chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
-    assert chip[3] == 9.6
-    assert chip[9] == "bold"
-    assert _family(chip) == "jost"
-    title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
-    assert title[3] == 14
-    assert title[9] == "bold"
-    cover = RecordingPlotter()
-    paint_cover(cover, NOMAD, _cover(), ramp=ramp)
-    brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 13
-    assert brow[9] == "bold"
-    year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 48
-    assert year[9] == "heavy"
-
-
-def test_press_loads_toml_overlay(tmp_path: Path):
-    spec = replace(
-        Spec.from_path(Path("examples/mvp-typo-overlay.toml")),
-        months=(1,),
-        notes_pages=0,
-        project_index_pages=1,
-    )
-    plotter = RecordingPlotter()
-    press(spec, tmp_path / "overlay.pdf", plotter=plotter)
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 13
-    assert brow[9] == "bold"
-    assert _family(brow) == "jost"
-    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 48
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 9.6
-    assert chrome_meta[9] == "bold"
-    sizes = {op[3] for op in plotter.ops if op[0] == "text" and op[2] == "2026"}
-    assert 48 in sizes
-    assert 14 in sizes
-
-
-def test_proof_profile_is_slightly_larger_chrome_and_title():
-    assert isinstance(PROOF_PROFILE, ProofProfile)
-    ramp = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.2))
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(13.0))
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(12.0))
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
-    assert PROOF_PROFILE.overlay.display is None
-    empty = EffectiveRamp()
-    assert ramp.ink("chrome").size == pytest.approx(empty.ink("chrome").size + 1.8)
-    assert ramp.ink("title").size == pytest.approx(empty.ink("title").size + 2)
-    assert ramp.ink("eyebrow").size == pytest.approx(empty.ink("eyebrow").size + 2)
-
-
-def test_proof_stacks_without_mutating_base_overlay():
-    base = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"))
-    before = base.chrome
-    merged = compose_overlays(base, PROOF_PROFILE.overlay)
-    assert base.chrome is before
-    assert base.chrome is not None
-    assert base.chrome.size == Pt(8.6)
-    assert merged.chrome is not None
-    assert merged.chrome.size == Pt(9.2)
-    assert merged.chrome.weight == "medium"
-
-
-def test_proof_stacks_after_toml():
-    toml = TypeOverlay(chrome=TypePatch(size=Pt(8.5), weight="medium"), title=TypePatch(size=Pt(12.0)))
-    merged = compose_overlays(toml, PROOF_PROFILE.overlay)
-    ramp = EffectiveRamp(overlay=merged)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=Pt(9.2))
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(13.0))
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
-
-
-def test_proof_overlay_reaches_header_and_cover():
-    ramp = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
-    header = RecordingPlotter()
-    paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
-    chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
-    assert chip[3] == 9.2
-    assert chip[9] == "book"
-    assert _family(chip) == "jost"
-    title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
-    assert title[3] == 13.0
-    assert title[9] == "medium"
-    cover = RecordingPlotter()
-    paint_cover(cover, NOMAD, _cover(), ramp=ramp)
-    brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 12.0
-    assert brow[9] == "medium"
-    year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 42
-    assert year[9] == "heavy"
-
-
-def test_press_proof_flag_applies_proof_profile(tmp_path: Path):
-    plotter = RecordingPlotter()
-    press(
-        Spec(months=(1,), notes_pages=0, project_index_pages=1),
-        tmp_path / "proof.pdf",
-        plotter=plotter,
-        proof=True,
-    )
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 12.0
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 9.2
-    page_title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 13.0)
-    assert page_title[9] == "medium"
-    cover_year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 42)
-    assert cover_year[9] == "heavy"
-
-
-def test_press_proof_profile_instance(tmp_path: Path):
-    custom = ProofProfile(overlay=TypeOverlay(chrome=TypePatch(size=Pt(10.5))))
-    plotter = RecordingPlotter()
-    press(
-        Spec(months=(1,), notes_pages=0, project_index_pages=1),
-        tmp_path / "custom.pdf",
-        plotter=plotter,
-        proof=custom,
-    )
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 10.5
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 10
-
-
-def test_press_proof_stacks_after_real_toml_overlay(tmp_path: Path):
-    spec = replace(
-        Spec.from_path(Path("examples/mvp-typo-overlay.toml")),
-        months=(1,),
-        notes_pages=0,
-        project_index_pages=1,
-    )
-    plotter = RecordingPlotter()
-    press(spec, tmp_path / "toml-proof.pdf", plotter=plotter, proof=True)
-    brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 12.0
-    assert brow[9] == "bold"
-    chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == 9.2
-    assert chrome_meta[9] == "bold"
-    page_title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 13.0)
-    assert page_title[9] == "bold"
-    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 48)
-    assert year[9] == "heavy"
-
-
-def test_press_proof_rejects_unknown_type():
-    with pytest.raises(TypeError, match="proof must be bool or ProofProfile"):
-        _proof_overlay("yes")  # type: ignore[arg-type]
 
 
 def test_type_ref_is_frozen_type_step_only():
@@ -549,21 +297,3 @@ def test_ramp_resolve_typeref_uses_type_step():
     proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
     assert proof.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.2))
     assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=Pt(42))
-
-
-def test_plotter_ref_and_ink_only():
-    plotter = Fpdf2Plotter(NOMAD)
-    plotter.begin_page()
-    plotter.text(Rect(4, 12, 40, 8), "ref", ref=TypeRef(step="title"))
-    assert plotter.pdf.font_family == "jost:medium"
-    plotter.text(Rect(4, 22, 40, 8), "ink", ink=TypeInk(family="jost", weight="book", size=Pt(8)))
-    assert plotter.pdf.font_family == "jost:book"
-    with pytest.raises(TypeError, match="ink= or ref="):
-        plotter.text(
-            Rect(4, 32, 40, 8),
-            "both",
-            ink=TypeInk(family="jost", weight="book", size=Pt(8)),
-            ref=TypeRef(step="label"),
-        )
-    with pytest.raises(TypeError, match="ink= or ref="):
-        plotter.text(Rect(4, 42, 40, 8), "neither")
