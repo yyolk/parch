@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import override
 
-from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
+from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
 
@@ -12,7 +12,7 @@ type Op = tuple[object, ...]
 
 class RecordingPlotter(Plotter):
     def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
         self.ops: list[Op] = []
         self.page = 0
 

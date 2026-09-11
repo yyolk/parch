@@ -29,7 +29,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
+from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
@@ -55,7 +55,7 @@ DAILY_PRIO_GAP = 2.2
 
 
 def _bound_ramp(plotter: Plotter, ramp: TypeRamp | None) -> TypeRamp:
-    resolved = JostRamp() if ramp is None else ramp
+    resolved = EffectiveRamp() if ramp is None else ramp
     plotter.ramp = resolved
     return resolved
 
@@ -150,7 +150,7 @@ def paint_nav(
         on = label == active
         if on:
             plotter.rect(hit, stroke=False, fill=True, fill_gray=INK)
-        chrome = TypeRef(step="chrome", emphasis="strong" if on else "regular", size=7.6)
+        chrome = TypeRef(step="chrome", emphasis="strong" if on else "regular")
         _ink_text(
             plotter,
             hit,
@@ -323,7 +323,6 @@ CLONE_RAIL_SLOT_GAP = 1.8
 CLONE_STATUS_LABELS = ("Todo", "In Progress", "Done")
 CLONE_P_PAD = 0.40
 CLONE_P_CORNER = (2.15, 1.85)
-CLONE_P_SIZE = 5.2
 CLONE_NAME_GAP = 1.4
 CLONE_TASK_TOP = 0.4
 CLONE_TASK_CLEAR = 0.55
@@ -554,7 +553,7 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
         plotter,
         Rect(mark.x + CLONE_P_PAD, mark.y + CLONE_P_PAD, cw, ch),
         "P",
-        TypeRef(step="caption", size=CLONE_P_SIZE),
+        TypeRef(step="caption"),
         gray=MUTED,
         align="left",
         small_caps=True,
@@ -950,7 +949,7 @@ def _paint_meeting_index_stub(plotter: Plotter, stub: Rect, number: int) -> None
         plotter,
         mark,
         f"{number:02d}",
-        TypeRef(step="label", emphasis="strong", size=6.2),
+        TypeRef(step="label", emphasis="strong"),
         gray=INK,
         align="center",
     )
@@ -964,7 +963,7 @@ def _paint_meeting_index_date_cue(plotter: Plotter, box: Rect) -> None:
         plotter,
         Rect(tag.x, rule_y - MEET_WRITE_LABEL_H, tag.w, MEET_WRITE_LABEL_H),
         "Date",
-        TypeRef(step="caption", size=5.8),
+        TypeRef(step="caption"),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1066,7 +1065,7 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
         plotter,
         stub,
         f"W{week.iso_week:02d}",
-        TypeRef(step="chrome", emphasis="strong", size=7.2),
+        TypeRef(step="chrome", emphasis="strong"),
         gray=INK,
         align="left",
     )
@@ -1074,7 +1073,7 @@ def _paint_tasks_index_week(plotter: Plotter, row: Rect, week: TaskWeek) -> None
         plotter,
         dated,
         short_date_range(week.monday, week.sunday),
-        TypeRef(step="label", size=6.2),
+        TypeRef(step="label"),
         gray=MUTED,
         small_caps=True,
         align="left",
@@ -1191,7 +1190,7 @@ def paint_review_index(
             plotter,
             stub,
             band.name,
-            TypeRef(step="label", emphasis="strong", size=6.2),
+            TypeRef(step="label", emphasis="strong"),
             gray=INK,
             small_caps=True,
             align="left",
@@ -1219,7 +1218,7 @@ def _paint_review_index_chip(plotter: Plotter, cell: Rect, week: ReviewWeek) -> 
         plotter,
         chip,
         f"W{week.iso_week:02d}",
-        TypeRef(step="chrome", emphasis="strong", size=7.0),
+        TypeRef(step="chrome", emphasis="strong"),
         gray=INK,
         align="center",
     )
@@ -1281,7 +1280,7 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
         plotter,
         dow,
         day.weekday_label,
-        TypeRef(step="caption", size=5.6),
+        TypeRef(step="caption"),
         gray=MUTED,
         small_caps=True,
         align="center",
@@ -1290,7 +1289,7 @@ def _paint_review_day_cue(plotter: Plotter, cue: Rect, day: ReviewDay) -> None:
         plotter,
         num,
         str(day.day.day),
-        TypeRef(step="body", emphasis="strong", size=9.2),
+        TypeRef(step="eyebrow", emphasis="strong"),
         gray=ink,
         align="center",
     )
@@ -1500,7 +1499,7 @@ def _paint_mini_month(
                     plotter,
                     num,
                     str(cell.day),
-                    TypeRef(step="caption", emphasis="strong", size=5.3),
+                    TypeRef(step="caption", emphasis="strong"),
                     gray=PAPER,
                     align="center",
                 )
@@ -1514,7 +1513,6 @@ def _paint_mini_month(
                 TypeRef(
                     step="caption",
                     emphasis="strong" if linked and cell.in_month else "regular",
-                    size=5.3,
                 ),
                 gray=ink,
                 align="center",
@@ -1608,7 +1606,7 @@ def paint_habit_grid(
             plotter,
             Rect(day_col.x, band.y, num_w - 0.6, band.h),
             str(day_n),
-            TypeRef(step="micro", size=4.4),
+            TypeRef(step="micro"),
             gray=MUTED,
             align="right",
         )
@@ -1616,7 +1614,7 @@ def paint_habit_grid(
             plotter,
             Rect(day_col.x + num_w, band.y, letter_w - 0.3, band.h),
             habit_dow_letter(grid.year, grid.month, day_n),
-            TypeRef(step="micro", size=4.4),
+            TypeRef(step="micro"),
             gray=MUTED,
             align="left",
         )
@@ -1654,7 +1652,7 @@ def paint_month_grid(
 
     body = Rect(box.x, header.bottom + 0.6, box.w, box.bottom - header.bottom - 0.6)
     bands = rows(body, max(1, len(grid.weeks)))
-    week_num = TypeRef(step="caption", size=5.8)
+    week_num = TypeRef(step="caption")
     day_num = TypeRef(step="body", emphasis="strong")
     for r, (band, week) in enumerate(zip(bands, grid.weeks, strict=False)):
         monday = _week_monday(grid, week, r)
@@ -1761,7 +1759,7 @@ def paint_schedule(
     )
     body = Rect(box.x, box.y + header_h + 0.4, box.w, box.h - header_h - 0.4)
     hours = schedule.hours or (8,)
-    hour_ink = TypeRef(step="chrome", size=7.0)
+    hour_ink = TypeRef(step="chrome")
     for band, hour in zip(rows(body, len(hours)), hours, strict=True):
         slot = Rect(band.x, band.y, 10.0, band.h)
         _ink_text(plotter, slot, f"{hour:2d}", hour_ink, gray=MUTED, align="left")

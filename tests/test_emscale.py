@@ -1,4 +1,4 @@
-"""Em-relative TypeStep ladder: root × ratios, fixed display, restored pre-snap sizes."""
+"""Em-relative TypeStep ladder: root × ratios, fixed display, closed-table sizes."""
 
 from pathlib import Path
 
@@ -10,18 +10,17 @@ from parch.devices import NOMAD
 from parch.fonts import (
     DISPLAY_SIZE,
     JOST_RATIOS,
+    JOST_SCALE,
     ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
     Em,
-    JostRamp,
     Pt,
     TypeInk,
     TypeOverlay,
     TypePatch,
     TypeRef,
     bind_ramp,
-    compose_overlays,
     pt_from_em,
     validate_overlay,
 )
@@ -69,7 +68,7 @@ def test_em_and_pt_are_distinct_newtypes():
 
 
 def test_ratios_at_nomad_root_land_on_presnap_cuts():
-    ramp = JostRamp(root_body=ROOT_BODY)
+    ramp = EffectiveRamp(root_body=ROOT_BODY)
     assert ramp.ink("display").size == DISPLAY_SIZE == Pt(42.0)
     assert ramp.ink("title").size == pytest.approx(11)
     assert ramp.ink("eyebrow").size == pytest.approx(10)
@@ -85,8 +84,8 @@ def test_ratios_at_nomad_root_land_on_presnap_cuts():
 
 
 def test_root_bump_rescales_ratio_steps_display_stays_42():
-    base = JostRamp(root_body=Pt(8.5))
-    bumped = JostRamp(root_body=Pt(12.0))
+    base = EffectiveRamp(root_body=Pt(8.5))
+    bumped = EffectiveRamp(root_body=Pt(12.0))
     factor = 12.0 / 8.5
     for step in TYPE_STEPS:
         if step == "display":
@@ -99,7 +98,7 @@ def test_root_bump_rescales_ratio_steps_display_stays_42():
     assert bumped.ink("title").size == pytest.approx(12.0 * 11 / 8.5)
     assert bumped.ink("micro").size == pytest.approx(12.0 * 4.3 / 8.5)
     with pytest.raises(ValueError, match="root_body"):
-        JostRamp(root_body=Pt(0))
+        EffectiveRamp(root_body=Pt(0))
 
 
 def test_overlay_size_is_absolute_override_not_root():
@@ -108,7 +107,7 @@ def test_overlay_size_is_absolute_override_not_root():
         overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))),
         root_body=Pt(12.0),
     )
-    bumped = JostRamp(root_body=Pt(12.0))
+    bumped = EffectiveRamp(root_body=Pt(12.0))
     assert over.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.0))
     assert over.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=Pt(9.0))
     assert over.ink("body").size == pytest.approx(12.0)
@@ -120,23 +119,16 @@ def test_overlay_size_is_absolute_override_not_root():
 
 
 def test_overlay_still_validates_with_micro():
-    from parch.fonts import OverlayOk, jost_defaults
-
-    table = jost_defaults()
-    assert "micro" in table
-    ok = validate_overlay(
-        {"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}},
-        table,
-    )
-    assert isinstance(ok, OverlayOk)
-    assert ok.overlay.micro == TypePatch(size=Pt(3.8), weight="book")
-    ramp = EffectiveRamp(overlay=ok.overlay)
+    ok = validate_overlay({"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}})
+    assert ok.micro == TypePatch(size=Pt(3.8), weight="book")
+    ramp = EffectiveRamp(overlay=ok)
     assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(3.8))
     assert ramp.ink("body").size == pytest.approx(8.5)
+    assert "micro" in JOST_SCALE
 
 
 def test_header_and_month_honor_bumped_root():
-    bumped = JostRamp(root_body=Pt(12.0))
+    bumped = EffectiveRamp(root_body=Pt(12.0))
     header = RecordingPlotter(ramp=bumped)
     paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=bumped)
     title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
@@ -153,16 +145,16 @@ def test_header_and_month_honor_bumped_root():
     assert day[3] == pytest.approx(12.0)
 
 
-def test_restored_presnap_sizes_via_recording_plotter():
+def test_painters_use_closed_ladder_sizes():
     spec = Spec(months=(1,), notes_pages=0, project_index_pages=1)
     pages = YearPlanner().pages(spec)
     well = well_rect(NOMAD)
-    ramp = JostRamp()
+    ramp = EffectiveRamp()
 
     nav = RecordingPlotter(ramp=ramp)
     paint_nav(nav, NOMAD, (("Year", "year-2026"), ("Mon", "month-2026-01")), "Year", ramp=ramp)
     nav_sizes = {op[3] for op in nav.ops if op[0] == "text"}
-    assert nav_sizes == {7.6}
+    assert nav_sizes == {7.4}
 
     month = next(p for p in pages if p.kind == "month")
     month_ink = RecordingPlotter(ramp=ramp)
@@ -172,16 +164,16 @@ def test_restored_presnap_sizes_via_recording_plotter():
     week_chip = next(
         op for op in month_ink.ops if op[0] == "text" and str(op[2]).startswith("W") and str(op[2])[1:].isdigit()
     )
-    assert week_chip[3] == pytest.approx(5.8)
+    assert week_chip[3] == pytest.approx(5.4)
 
     habit = next(p for p in pages if p.kind == "habits")
     grid = _one(habit, HabitGrid)
     transposed = RecordingPlotter(ramp=ramp)
     paint_habit_grid(transposed, well, grid, ramp=ramp)
     day_one = next(op for op in transposed.ops if op[0] == "text" and op[2] == "1")
-    assert day_one[3] == pytest.approx(4.4)
+    assert day_one[3] == pytest.approx(4.3)
     dow = next(op for op in transposed.ops if op[0] == "text" and op[2] == "T")
-    assert dow[3] == pytest.approx(4.4)
+    assert dow[3] == pytest.approx(4.3)
 
     review = next(p for p in pages if p.kind == "review")
     review_ink = RecordingPlotter(ramp=ramp)
@@ -191,33 +183,32 @@ def test_restored_presnap_sizes_via_recording_plotter():
         for op in review_ink.ops
         if op[0] == "text" and op[2] in {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
     )
-    assert weekday[3] == pytest.approx(5.6)
+    assert weekday[3] == pytest.approx(5.4)
     review_day = next(op for op in review_ink.ops if op[0] == "text" and op[2] == "1")
-    assert review_day[3] == pytest.approx(9.2)
+    assert review_day[3] == pytest.approx(10)
 
 
 def test_mini_month_and_clone_caption_cues(tmp_path: Path):
     spec = Spec(months=(1,), notes_pages=0, project_index_pages=1)
     plotter = RecordingPlotter()
     press(spec, tmp_path / "cues.pdf", plotter=plotter)
-    # Mini-month dow letters on the annual grid (micro 4.3); day nums 5.3.
     annual_dow = next(
         op
         for op in plotter.ops
         if op[0] == "text" and op[2] in {"M", "T", "W", "F", "S"} and op[3] == pytest.approx(4.3)
     )
     assert annual_dow[9] == "book"
-    mini_day = next(op for op in plotter.ops if op[0] == "text" and op[2] == "15" and op[3] == pytest.approx(5.3))
+    mini_day = next(op for op in plotter.ops if op[0] == "text" and op[2] == "15" and op[3] == pytest.approx(5.4))
     assert mini_day[9] in {"book", "bold"}
     clone_p = next(op for op in plotter.ops if op[0] == "text" and op[2] == "P")
-    assert clone_p[3] == pytest.approx(5.2)
+    assert clone_p[3] == pytest.approx(5.4)
     date_cue = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Date")
-    assert date_cue[3] == pytest.approx(5.8)
-    nav = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year" and op[3] == pytest.approx(7.6))
+    assert date_cue[3] == pytest.approx(5.4)
+    nav = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year" and op[3] == pytest.approx(7.4))
     assert nav[9] in {"book", "bold"}
 
 
-def test_press_mvp_toml_identity_and_overlay_compose(tmp_path: Path):
+def test_press_mvp_toml_and_overlay_compose(tmp_path: Path):
     spec = Spec.from_path(Path("examples/mvp.toml"))
     plotter = RecordingPlotter()
     press(
@@ -229,17 +220,15 @@ def test_press_mvp_toml_identity_and_overlay_compose(tmp_path: Path):
     assert year[9] == "heavy"
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
     assert brow[3] == 10
-    bound = bind_ramp(overlay=compose_overlays(NOMAD.type_overlay, spec.type_overlay), root_body=NOMAD.root_body)
+    bound = bind_ramp(overlay=spec.type_overlay, root_body=NOMAD.root_body)
     assert bound.ink("body").size == pytest.approx(8.5)
     assert bound.ink("micro").size == pytest.approx(4.3)
     assert bound.ink("display").size == 42
 
 
-def test_typeref_size_wins_over_em_and_overlay():
+def test_typeref_resolve_is_ink():
     over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1))), root_body=Pt(12.0))
-    assert over.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
-        family="jost", weight="book", size=Pt(7.6)
-    )
+    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.1))
     assert over.resolve(TypeRef(step="micro")) == over.ink("micro")
     assert over.resolve(TypeRef(step="display")).size == Pt(42.0)
     assert over.ink("micro").size == pytest.approx(12.0 * 4.3 / 8.5)

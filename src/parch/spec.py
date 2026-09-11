@@ -9,7 +9,7 @@ from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
 from parch.calendar import iso_monday, month_touching_weeks, quarter_of
-from parch.fonts.ramp import TypeOverlay, jost_defaults, require_overlay
+from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
@@ -38,7 +38,7 @@ def _parse_typography(data: TomlTable) -> TypeOverlay:
         return TypeOverlay()
     if not isinstance(overlay, dict):
         raise ConfigError("typography.overlay must be a TOML table")
-    return require_overlay(overlay, jost_defaults())
+    return require_overlay(overlay)
 
 
 def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:

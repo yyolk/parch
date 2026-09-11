@@ -16,9 +16,9 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 
 ## Type ramp
 
-`TypeRef` is a frozen `TypeStep` + optional `emphasis` + optional `size`.
-No family, no weight on the ref. Painters pass `ref=` (or `ink=`).
-`Plotter.text` resolves a ref once at the edge via `plotter.ramp`.
+`TypeRef` is a frozen `TypeStep` + optional `emphasis`.
+No family, no weight, no per-call size on the ref. Painters pass `ref=` (or `ink=`).
+`Plotter.text` resolves a ref once at the edge via `plotter.ramp.ink`.
 `TypeInk` is the resolved `family` + `weight` + `size`. `family` is a closed
 key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can
 pick another catalog family without ripping out the plotter path.
@@ -54,11 +54,10 @@ At Nomad `root_body` 8.5pt:
 | `micro` | 4.3/8.5 | 4.3 | Book | Bold | Mini-month dow; habit day nums |
 
 A root bump rescales every ratio-driven step together; `display` stays 42.
-True one-offs (nav 7.6, schedule hours 7.0, review day 9.2, habit denser
-cuts) use `TypeRef.size` as an absolute per-call override — last resort,
-not new semantic roles.
+Painters stay on the closed ladder — no per-call size snowflakes.
 
 Overlay may change size and/or weight. Overlay never changes `family`.
+Absolute `Pt` overrides live only on overlay `TypePatch`.
 
 `Plotter.text` is ink|ref only. There is no `face` / `bold` path and no
 `FaceBridge`.
@@ -74,19 +73,14 @@ changes `family`.
 **Overlay size is an absolute `Pt` override for that step.** It does not
 change `root_body` and does not rescale sibling steps. A chrome
 `size=9.6` patch leaves title / body / micro at their em-derived sizes.
-`TypeRef.size` wins over both the em size and an overlay size.
 
-`validate_overlay(overlay, defaults)` is **pure**. `overlay` may be a
-`TypeOverlay` or a mapping (press TOML shape). Result is `OverlayOk` or a
-typed issue:
+`require_overlay(overlay)` is **pure**. `overlay` may be a `TypeOverlay` or
+a mapping (press TOML shape). Bad input raises `ConfigError`:
 
-| Issue | When |
-| --- | --- |
-| `UnknownStep` | key is not in `defaults` (closed TypeStep set; old roles fail) |
-| `BadWeight` | weight is not `book` / `medium` / `bold` / `heavy` |
-| `NonpositiveSize` | size ≤ 0 |
-| `SizeOutOfRange` | size outside the step's closed band |
-| `VersionMismatch` | `schema_version` is not exactly `OVERLAY_SCHEMA_VERSION` |
+- unknown step (closed TypeStep set; old roles fail)
+- weight is not `book` / `medium` / `bold` / `heavy`
+- size ≤ 0 or outside the step's closed band
+- `schema_version` is not exactly `OVERLAY_SCHEMA_VERSION`
 
 **Version policy (today): exact match.** Current `OVERLAY_SCHEMA_VERSION` is
 `1`. Missing, older, or newer versions on a mapping fail. Typed
@@ -105,18 +99,19 @@ Size bands (pt, inclusive):
 | `caption` | 4–10 |
 | `micro` | 2.5–8 |
 
-Merge (`defaults ⊕ device ⊕ toml ⊕ proof`, then an optional `press(..., overlay=)`):
+Merge (`defaults ⊕ toml ⊕ proof`, then an optional `press(..., overlay=)`):
 
 1. Missing step → keep previous ink.
 2. Present step, missing field → that field stays.
 3. Present step, explicit field → that field wins.
 4. Family is never overlaid.
 
-`get_device` and `press` call `require_overlay` **before** `bind_ramp`
-builds `EffectiveRamp`. A bad overlay raises `ConfigError` before paint.
+`press` calls `require_overlay` **before** `bind_ramp` builds
+`EffectiveRamp`. A bad overlay raises `ConfigError` before paint.
 
-`EffectiveRamp` is the explicit merged object. Painters call
-`ramp.ink(...)` or pass `TypeRef`; they never read the overlay.
+`EffectiveRamp` is the one concrete ramp (closed table ⊕ overlay; default
+overlay is empty). Painters call `ramp.ink(...)` or pass `TypeRef`; they
+never read the overlay.
 
 The press job TOML is the yolk-facing knob:
 
@@ -131,20 +126,19 @@ weight = "bold"
 
 `examples/mvp.toml` has no typography table (identity / defaults). Side
 example: `examples/mvp-typo-overlay.toml`. `press` builds
-`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay ⊕ proof` at
+`EffectiveRamp = defaults ⊕ spec.type_overlay ⊕ proof` at
 `device.root_body`. An explicit `ramp=` argument wins the whole object.
-`YearPlanner()` / `PlannerLayout()` with no args still use `JostRamp`
-(default root 8.5, no overlay).
+`YearPlanner()` / `PlannerLayout()` with no args use `EffectiveRamp`
+(default root 8.5, empty overlay).
 
-Nomad's `type_overlay` is **identity** (`TypeOverlay()`): no size/weight
-patches. Nomad `root_body` is 8.5pt. The device hook is wired; a later
-profile can patch chrome or bump root without touching painters.
+Nomad `root_body` is 8.5pt. Overlay arrives from toml / proof / an
+optional `press(..., overlay=)` kwarg — not from the device.
 
 ### ProofProfile
 
 A separate press-mode layer for on-screen review. Modest size bumps on
 TypeStep keys; `display` stays Heavy 42. Weights stay on the closed
-defaults. Family is never overlaid. Device overlay is not mutated.
+defaults. Family is never overlaid.
 
 | Step | Default | Proof |
 | --- | --- | --- |

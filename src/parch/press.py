@@ -7,7 +7,7 @@ from pathlib import Path
 
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
-from parch.devices import Device, get_device
+from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
     ProofProfile,
@@ -15,8 +15,9 @@ from parch.fonts import (
     TypeRamp,
     bind_ramp,
     compose_overlays,
+    require_overlay,
 )
-from parch.fonts.ramp import OverlayData, jost_defaults, require_overlay
+from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -25,28 +26,22 @@ _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
 
 
 def merge_press_overlay(
-    device: Device,
     spec: Spec,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
 ) -> TypeOverlay:
-    """``defaults ⊕ device ⊕ toml ⊕ proof ⊕ press kwarg`` — later explicit fields win.
+    """``toml ⊕ proof ⊕ press kwarg`` — later explicit fields win.
 
     Each layer is validated (exact ``schema_version``, closed TypeSteps, Jost
     weights, size bands) before compose. Defaults live in ``EffectiveRamp``.
     This returns the composed overlay only. ``proof=True`` selects
     ``PROOF_PROFILE``; ``proof=ProofProfile(...)`` uses that instance.
     """
-    defaults = jost_defaults()
-    device_overlay = require_overlay(device.type_overlay, defaults)
-    toml_overlay = require_overlay(spec.type_overlay, defaults)
+    toml_overlay = require_overlay(spec.type_overlay)
     proof_layer = _proof_overlay(proof)
-    proof_overlay = TypeOverlay() if proof_layer is None else require_overlay(proof_layer, defaults)
-    press_overlay = TypeOverlay() if overlay is None else require_overlay(overlay, defaults)
-    return require_overlay(
-        compose_overlays(device_overlay, toml_overlay, proof_overlay, press_overlay),
-        defaults,
-    )
+    proof_overlay = TypeOverlay() if proof_layer is None else require_overlay(proof_layer)
+    press_overlay = TypeOverlay() if overlay is None else require_overlay(overlay)
+    return require_overlay(compose_overlays(toml_overlay, proof_overlay, press_overlay))
 
 
 def press(
@@ -59,18 +54,18 @@ def press(
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    When ``ramp`` is omitted, press **validates** device ⊕ spec TOML ⊕ proof
-    ⊕ press overlay (pure ``validate_overlay``, exact ``schema_version``
+    When ``ramp`` is omitted, press **validates** spec TOML ⊕ proof ⊕
+    press overlay (pure ``require_overlay``, exact ``schema_version``
     match) before ``bind_ramp`` builds
 
-        EffectiveRamp = defaults ⊕ device ⊕ toml ⊕ proof (if on)
+        EffectiveRamp = defaults ⊕ toml ⊕ proof (if on)
 
     at ``device.root_body``. Overlay size is an absolute override for
     that step; it does not change root or sibling steps.
 
     A bad overlay raises ``ConfigError`` before paint. ``proof=True``
     selects ``PROOF_PROFILE``. ``proof=ProofProfile(...)`` uses that
-    instance. Nomad's device overlay stays identity.
+    instance.
 
     Invoke::
 
@@ -88,7 +83,7 @@ def press(
         ramp
         if ramp is not None
         else bind_ramp(
-            overlay=merge_press_overlay(device, spec, overlay, proof),
+            overlay=merge_press_overlay(spec, overlay, proof),
             root_body=device.root_body,
         )
     )
@@ -166,7 +161,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
     # Accept a leading `press` or `proof` verb. `parch proof` is the historical
-    # on-screen path; it selects ProofProfile without changing the device overlay.
+    # on-screen path; it selects ProofProfile.
     raw = list(sys.argv[1:] if argv is None else argv)
     proof_verb = False
     if raw and raw[0] in {"press", "proof"}:

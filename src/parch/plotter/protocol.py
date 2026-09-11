@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal, Protocol
 
-from parch.fonts.ramp import TypeInk, TypeRamp, TypeRef, resolve_ref
+from parch.fonts.ramp import TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
@@ -19,7 +19,7 @@ def resolve_text_ink(
     if ink is not None and ref is not None:
         raise TypeError("Plotter.text takes ink= or ref=, not both")
     if ref is not None:
-        return resolve_ref(ramp, ref)
+        return ramp.ink(ref.step, ref.emphasis)
     if ink is not None:
         return ink
     raise TypeError("Plotter.text requires ink= or ref=")
@@ -29,7 +29,7 @@ class Plotter(Protocol):
     """Drawing surface. ``ramp`` is bound by ``PlannerLayout`` / press.
 
     ``text(..., ink=)`` or ``text(..., ref=TypeRef(...))``. A ref is
-    resolved once at the edge via ``resolve_ref(plotter.ramp, ref)``.
+    resolved once at the edge via ``plotter.ramp.ink``.
     """
 
     ramp: TypeRamp

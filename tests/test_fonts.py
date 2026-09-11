@@ -3,21 +3,17 @@ from pathlib import Path
 
 import pytest
 from parch.components import CoverTitle
-from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY
+from parch.devices import NOMAD
 from parch.fonts import (
     DISPLAY_SIZE,
     JOST_RATIOS,
     JOST_SCALE,
-    PROOF_CHROME_SIZE,
-    PROOF_EYEBROW_SIZE,
     PROOF_PROFILE,
-    PROOF_TITLE_SIZE,
     ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
     Em,
     FontCatalog,
-    JostRamp,
     Pt,
     ProofProfile,
     TypeEmphasis,
@@ -33,7 +29,6 @@ from parch.fonts import (
     font_dir,
     jost_catalog,
     pt_from_em,
-    scale_ink,
     validate_overlay,
 )
 from parch.geom import Rect
@@ -89,13 +84,12 @@ def test_jost_scale_table_invariants():
     assert len(set(sizes)) == len(sizes)
 
     catalog = jost_catalog()
-    ramp = JostRamp()
+    ramp = EffectiveRamp()
     rank = {"book": 0, "medium": 1, "bold": 2, "heavy": 3}
     for step in TYPE_STEPS:
         regular = ramp.ink(step)
         strong = ramp.ink(step, "strong")
         assert regular == ramp.ink(step, emphasis="regular")
-        assert regular == scale_ink(step)
         assert regular.family == "jost"
         assert strong.family == "jost"
         assert regular.size == strong.size == JOST_SCALE[step].size
@@ -136,7 +130,7 @@ def _family(op: tuple[object, ...]) -> object:
 
 def test_cover_uses_display_eyebrow_body_steps():
     plotter = RecordingPlotter()
-    paint_cover(plotter, NOMAD, _cover(), ramp=JostRamp())
+    paint_cover(plotter, NOMAD, _cover(), ramp=EffectiveRamp())
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == 42
     assert year[9] == "heavy"
@@ -159,7 +153,7 @@ def test_header_uses_title_and_chrome_steps():
         "Year",
         "2026",
         chip="01",
-        ramp=JostRamp(),
+        ramp=EffectiveRamp(),
     )
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year")
     assert title[3] == 11
@@ -254,17 +248,17 @@ def test_fonts_package_does_not_import_plotter():
     import parch.fonts as fonts
 
     assert "parch.plotter" not in fonts.__dict__
-    assert fonts.JostRamp is JostRamp
+    assert fonts.EffectiveRamp is EffectiveRamp
     assert fonts.TypeInk is TypeInk
     assert fonts.TypeFamily is TypeFamily
     assert fonts.TypeStep is TypeStep
     assert not hasattr(fonts, "FaceBridge")
     assert not hasattr(fonts, "TypeFace")
     assert not hasattr(fonts, "BRIDGE_BACKLOG")
+    assert not hasattr(fonts, "JostRamp")
     assert fonts.TypeRef is TypeRef
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
-    assert fonts.EffectiveRamp is EffectiveRamp
     assert fonts.TypeOverlay is TypeOverlay
     assert fonts.TypePatch is TypePatch
     assert fonts.TYPE_STEPS is TYPE_STEPS
@@ -323,22 +317,14 @@ def test_overlay_never_changes_family():
 
 
 def test_compose_overlays_later_explicit_field_wins():
-    device = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"), eyebrow=TypePatch(size=Pt(12.0)))
+    first = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"), eyebrow=TypePatch(size=Pt(12.0)))
     press_over = TypeOverlay(chrome=TypePatch(size=Pt(10.0)))
-    merged = compose_overlays(device, press_over)
+    merged = compose_overlays(first, press_over)
     ramp = EffectiveRamp(overlay=merged)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
     assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="medium", size=Pt(10.0))
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(12.0))
     assert ramp.ink("title").size == Pt(11)
-
-
-def test_empty_effective_ramp_matches_jost_defaults():
-    empty = EffectiveRamp()
-    jost = JostRamp()
-    for step in TYPE_STEPS:
-        assert empty.ink(step) == jost.ink(step)
-        assert empty.ink(step, "strong") == jost.ink(step, "strong")
 
 
 def test_bind_ramp_explicit_wins_over_overlay():
@@ -354,6 +340,7 @@ def test_bind_ramp_explicit_wins_over_overlay():
     assert bound.ink("chrome").size == Pt(3)
     overlay_only = bind_ramp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
     assert overlay_only.ink("chrome").size == Pt(9.0)
+    assert isinstance(overlay_only, EffectiveRamp)
 
 
 def test_patch_validators_are_pure():
@@ -363,38 +350,7 @@ def test_patch_validators_are_pure():
         TypePatch(weight="hairline")  # type: ignore[arg-type]
 
 
-def test_nomad_overlay_is_identity():
-    assert NOMAD_TYPE_OVERLAY == TypeOverlay()
-    assert NOMAD.type_overlay == TypeOverlay()
-    ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
-    jost = JostRamp()
-    for step in TYPE_STEPS:
-        assert ramp.ink(step) == jost.ink(step)
-        assert ramp.ink(step, "strong") == jost.ink(step, "strong")
-
-
-def test_identity_effective_ramp_reaches_cover_and_header():
-    ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
-    header = RecordingPlotter()
-    paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
-    chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
-    assert chip[3] == 7.4
-    assert chip[9] == "book"
-    assert _family(chip) == "jost"
-    title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
-    assert title[3] == 11
-    assert title[9] == "medium"
-    cover = RecordingPlotter()
-    paint_cover(cover, NOMAD, _cover(), ramp=ramp)
-    brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == 10
-    assert brow[9] == "medium"
-    year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
-    assert year[3] == 42
-    assert year[9] == "heavy"
-
-
-def test_press_wires_identity_effective_ramp(tmp_path: Path):
+def test_press_wires_default_ramp(tmp_path: Path):
     plotter = RecordingPlotter()
     press(Spec(months=(1,), notes_pages=0, project_index_pages=1), tmp_path / "id.pdf", plotter=plotter)
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
@@ -407,10 +363,6 @@ def test_press_wires_identity_effective_ramp(tmp_path: Path):
     chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
     assert chrome_meta[3] == 7.4
     assert chrome_meta[9] == "book"
-    device_ramp = bind_ramp(overlay=compose_overlays(NOMAD.type_overlay, None))
-    assert isinstance(device_ramp, EffectiveRamp)
-    assert device_ramp.ink("chrome") == JostRamp().ink("chrome")
-    assert device_ramp.ink("title") == JostRamp().ink("title")
 
 
 def test_press_overlay_reaches_header_roles(tmp_path: Path):
@@ -480,36 +432,35 @@ def test_press_loads_toml_overlay(tmp_path: Path):
 def test_proof_profile_is_slightly_larger_chrome_and_title():
     assert isinstance(PROOF_PROFILE, ProofProfile)
     ramp = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=PROOF_CHROME_SIZE)
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
-    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=PROOF_EYEBROW_SIZE)
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.2))
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(13.0))
+    assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(12.0))
     assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
     assert PROOF_PROFILE.overlay.display is None
-    assert PROOF_CHROME_SIZE == pytest.approx(JostRamp().ink("chrome").size + 1.8)
-    assert PROOF_TITLE_SIZE == pytest.approx(JostRamp().ink("title").size + 2)
-    assert PROOF_EYEBROW_SIZE == pytest.approx(JostRamp().ink("eyebrow").size + 2)
+    empty = EffectiveRamp()
+    assert ramp.ink("chrome").size == pytest.approx(empty.ink("chrome").size + 1.8)
+    assert ramp.ink("title").size == pytest.approx(empty.ink("title").size + 2)
+    assert ramp.ink("eyebrow").size == pytest.approx(empty.ink("eyebrow").size + 2)
 
 
-def test_proof_stacks_on_device_without_mutating_device_overlay():
-    device = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"))
-    before = device.chrome
-    merged = compose_overlays(device, PROOF_PROFILE.overlay)
-    assert device.chrome is before
-    assert device.chrome is not None
-    assert device.chrome.size == Pt(8.6)
+def test_proof_stacks_without_mutating_base_overlay():
+    base = TypeOverlay(chrome=TypePatch(size=Pt(8.6), weight="medium"))
+    before = base.chrome
+    merged = compose_overlays(base, PROOF_PROFILE.overlay)
+    assert base.chrome is before
+    assert base.chrome is not None
+    assert base.chrome.size == Pt(8.6)
     assert merged.chrome is not None
-    assert merged.chrome.size == PROOF_CHROME_SIZE
+    assert merged.chrome.size == Pt(9.2)
     assert merged.chrome.weight == "medium"
-    assert NOMAD.type_overlay == TypeOverlay()
 
 
-def test_proof_stacks_after_device_and_toml():
-    device = TypeOverlay(chrome=TypePatch(size=Pt(8.0), weight="medium"))
-    toml = TypeOverlay(chrome=TypePatch(size=Pt(8.5)), title=TypePatch(size=Pt(12.0)))
-    merged = compose_overlays(device, toml, PROOF_PROFILE.overlay)
+def test_proof_stacks_after_toml():
+    toml = TypeOverlay(chrome=TypePatch(size=Pt(8.5), weight="medium"), title=TypePatch(size=Pt(12.0)))
+    merged = compose_overlays(toml, PROOF_PROFILE.overlay)
     ramp = EffectiveRamp(overlay=merged)
-    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=PROOF_CHROME_SIZE)
-    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=PROOF_TITLE_SIZE)
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=Pt(9.2))
+    assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(13.0))
     assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=Pt(42))
 
 
@@ -518,16 +469,16 @@ def test_proof_overlay_reaches_header_and_cover():
     header = RecordingPlotter()
     paint_header(header, NOMAD, "Year", "2026", chip="01", ramp=ramp)
     chip = next(op for op in header.ops if op[0] == "text" and op[2] == "01")
-    assert chip[3] == PROOF_CHROME_SIZE
+    assert chip[3] == 9.2
     assert chip[9] == "book"
     assert _family(chip) == "jost"
     title = next(op for op in header.ops if op[0] == "text" and op[2] == "Year")
-    assert title[3] == PROOF_TITLE_SIZE
+    assert title[3] == 13.0
     assert title[9] == "medium"
     cover = RecordingPlotter()
     paint_cover(cover, NOMAD, _cover(), ramp=ramp)
     brow = next(op for op in cover.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == PROOF_EYEBROW_SIZE
+    assert brow[3] == 12.0
     assert brow[9] == "medium"
     year = next(op for op in cover.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == 42
@@ -543,12 +494,10 @@ def test_press_proof_flag_applies_proof_profile(tmp_path: Path):
         proof=True,
     )
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == PROOF_EYEBROW_SIZE
+    assert brow[3] == 12.0
     chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == PROOF_CHROME_SIZE
-    page_title = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == PROOF_TITLE_SIZE
-    )
+    assert chrome_meta[3] == 9.2
+    page_title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 13.0)
     assert page_title[9] == "medium"
     cover_year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 42)
     assert cover_year[9] == "heavy"
@@ -579,14 +528,12 @@ def test_press_proof_stacks_after_real_toml_overlay(tmp_path: Path):
     plotter = RecordingPlotter()
     press(spec, tmp_path / "toml-proof.pdf", plotter=plotter, proof=True)
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
-    assert brow[3] == PROOF_EYEBROW_SIZE
+    assert brow[3] == 12.0
     assert brow[9] == "bold"
     chrome_meta = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
-    assert chrome_meta[3] == PROOF_CHROME_SIZE
+    assert chrome_meta[3] == 9.2
     assert chrome_meta[9] == "bold"
-    page_title = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == PROOF_TITLE_SIZE
-    )
+    page_title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 13.0)
     assert page_title[9] == "bold"
     year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 48)
     assert year[9] == "heavy"
@@ -601,7 +548,7 @@ def test_type_ref_is_frozen_type_step_only():
     from dataclasses import fields
 
     names = {item.name for item in fields(TypeRef)}
-    assert names == {"step", "emphasis", "size"}
+    assert names == {"step", "emphasis"}
     ref = TypeRef(step="chrome", emphasis="strong")
     assert ref.step == "chrome"
     with pytest.raises(AttributeError):
@@ -609,29 +556,16 @@ def test_type_ref_is_frozen_type_step_only():
     assert TypeRef(step="micro").step == "micro"
     with pytest.raises(ValueError, match="unknown type step"):
         TypeRef(step="cover_year")  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="size must be > 0"):
-        TypeRef(step="chrome", size=Pt(0))
 
 
 def test_ramp_resolve_typeref_uses_type_step():
-    ramp = JostRamp()
+    ramp = EffectiveRamp()
     assert ramp.resolve(TypeRef(step="display")) == ramp.ink("display")
     assert ramp.resolve(TypeRef(step="title", emphasis="strong")) == ramp.ink("title", "strong")
-    assert ramp.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
-        family="jost", weight="book", size=Pt(7.6)
-    )
     over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium")))
     assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="medium", size=Pt(9.1))
-    assert over.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
-        family="jost", weight="medium", size=Pt(7.6)
-    )
     proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
-    assert proof.resolve(TypeRef(step="chrome")) == TypeInk(
-        family="jost", weight="book", size=PROOF_CHROME_SIZE
-    )
-    assert proof.resolve(TypeRef(step="chrome", size=Pt(7.6))) == TypeInk(
-        family="jost", weight="book", size=Pt(7.6)
-    )
+    assert proof.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.2))
     assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=Pt(42))
 
 

@@ -39,7 +39,7 @@ uv sync --group dev
 uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
 # or
 uv run python -m parch press supernote-nomad -o parch.pdf
-# ProofProfile (on-screen review; Nomad device overlay stays identity):
+# ProofProfile (on-screen review):
 uv run parch proof examples/mvp.toml -o artifacts/mvp/exp-typeramp-proof.pdf
 # or: parch press examples/mvp.toml --proof -o …
 ```
@@ -64,4 +64,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Painters pass a frozen `TypeRef` (`TypeStep` + optional emphasis + optional size) or `TypeInk`; `Plotter.text` takes `ink=` or `ref=` resolved through the bound ramp on a closed TypeStep scale (`display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption` / `micro` × optional emphasis). Ratio-driven sizes are `root_body ×` em (`Device.root_body`, Nomad 8.5pt); `display` stays fixed 42pt. Overlay size is an absolute override for that step — it does not change root or sibling steps. Device/press may supply a `TypeOverlay` keyed by those steps (size/weight only; Nomad is identity). Press TOML `[typography.overlay.<step>]` parses to that overlay and merges `defaults ⊕ device ⊕ toml ⊕ proof` after `validate_overlay` (exact `schema_version`, closed TypeSteps, Jost weights, size bands) — fail before paint. Side example: `examples/mvp-typo-overlay.toml`. `parch proof` / `press --proof` / `press(..., proof=True)` stacks **ProofProfile** (`chrome`/`title`/`eyebrow` +~2pt; `display` unchanged) after device and toml. `family="jost"` stays on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Painters pass a frozen `TypeRef` (`TypeStep` + optional emphasis) or `TypeInk`; `Plotter.text` takes `ink=` or `ref=` resolved through the bound ramp on a closed TypeStep scale (`display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption` / `micro` × optional emphasis). Ratio-driven sizes are `root_body ×` em (`Device.root_body`, Nomad 8.5pt); `display` stays fixed 42pt. Overlay size is an absolute override for that step — it does not change root or sibling steps. Press TOML `[typography.overlay.<step>]` parses to that overlay and merges `defaults ⊕ toml ⊕ proof` after `require_overlay` (exact `schema_version`, closed TypeSteps, Jost weights, size bands) — fail before paint. Side example: `examples/mvp-typo-overlay.toml`. `parch proof` / `press --proof` / `press(..., proof=True)` stacks **ProofProfile** (`chrome`/`title`/`eyebrow` +~2pt; `display` unchanged) after toml. `family="jost"` stays on the ink for a later dual-font ramp.

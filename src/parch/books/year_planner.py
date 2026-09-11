@@ -2,7 +2,7 @@
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (
@@ -25,7 +25,7 @@ from parch.spec import Spec
 
 class YearPlanner:
     def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)

@@ -7,7 +7,7 @@ from fpdf import FPDF
 
 from parch.devices.nomad import Device
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
-from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
+from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
 
@@ -32,7 +32,7 @@ class Fpdf2Plotter(Plotter):
     ) -> None:
         self.device = device
         if ramp is None:
-            self.ramp: TypeRamp = JostRamp() if catalog is None else JostRamp(catalog=catalog)
+            self.ramp: TypeRamp = EffectiveRamp() if catalog is None else EffectiveRamp(catalog=catalog)
         else:
             self.ramp = ramp
         self.catalog = catalog if catalog is not None else self.ramp.catalog
