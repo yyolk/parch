@@ -197,6 +197,8 @@ _STEP_AT_ROOT: dict[TypeStep, Pt] = {
     "micro": Pt(4.3),
 }
 
+# ``size`` and ``ROOT_BODY`` are ``Pt``; peel tags → divide as bare float → wrap ``Em``.
+# Same boundary as ``pt_from_em``. Avoid reading Pt/Pt as still points.
 JOST_RATIOS: dict[TypeStep, Em] = {
     step: Em(float(size) / float(ROOT_BODY)) for step, size in _STEP_AT_ROOT.items()
 }
