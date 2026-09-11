@@ -38,9 +38,10 @@ jobs:
           test -s out/nomad/index.pdf
           test -s out/nomad.pdf
 
-  # Fresh fpdf2 press of the Nomad MVP, uploaded as an Actions artifact.
-  # Runs on push to the greenfield tip and on workflow_dispatch. Skipped on
-  # pull_request so PR status stays the existing `test` job.
+  # Fresh fpdf2 press of the Nomad MVP, uploaded as a GitHub Actions
+  # artifact only (out/, never artifacts/). Runs on push to the greenfield
+  # tip and on workflow_dispatch. Skipped on pull_request so PR status
+  # stays the existing `test` job.
   press-artifact:
     if: >
       github.event_name == 'workflow_dispatch' ||
@@ -61,10 +62,11 @@ jobs:
       - run: uv sync --group dev
       - name: Press Nomad MVP
         run: |
-          uv run parch press examples/mvp.toml -o artifacts/mvp/nomad-2026.pdf
-          test -s artifacts/mvp/nomad-2026.pdf
+          uv run parch press examples/mvp.toml -w out/nomad -o out/nomad-2026.pdf
+          test -s out/nomad/index.pdf
+          test -s out/nomad-2026.pdf
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: mvp-nomad-2026
-          path: artifacts/mvp/
+          path: out/nomad-2026.pdf
           if-no-files-found: error
