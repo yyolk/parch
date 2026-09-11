@@ -1,4 +1,5 @@
-from parch.devices import NOMAD, get_device
+from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY, get_device
+from parch.fonts import EffectiveRamp, JOST_FAMILY_OVERLAY, TypeInk, TypeOverlay
 from parch import ConfigError
 import pytest
 
@@ -30,3 +31,23 @@ def test_nomad_alias():
     assert get_device("nomad") is NOMAD
     with pytest.raises(ConfigError):
         get_device("kindle-scribe")
+
+
+def test_nomad_supplies_jost_family_overlay():
+    assert NOMAD.type_overlay is NOMAD_TYPE_OVERLAY
+    assert NOMAD.type_overlay is JOST_FAMILY_OVERLAY
+    assert isinstance(NOMAD.type_overlay, TypeOverlay)
+    for role_patch in (
+        NOMAD.type_overlay.cover_year,
+        NOMAD.type_overlay.cover_brow,
+        NOMAD.type_overlay.page_title,
+        NOMAD.type_overlay.chrome,
+    ):
+        assert role_patch is not None
+        assert role_patch.family == "jost"
+        assert role_patch.size is None
+        assert role_patch.weight is None
+    ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
+    assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
+    assert ramp.ink("cover_year") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.ink("page_title") == TypeInk(family="jost", weight="medium", size=11)

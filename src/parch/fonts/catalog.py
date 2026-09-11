@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Mapping
 
-# More families later; today the catalog is Jost only.
+# Closed catalog key. Overlay accepts family= as a string so a later
+# dual-font map can register more pairs without a TypePatch change.
+# Widen this Literal when those files land — do not add Besley/Martian here.
 type TypeFamily = Literal["jost"]
 type TypeWeight = Literal["book", "medium", "bold", "heavy"]
 
@@ -20,6 +22,7 @@ class FontCatalog:
     cuts: Mapping[tuple[str, str], Path]
 
     def path(self, family: str, weight: str) -> Path:
+        """Resolve a cut. Unknown family or weight raises — do not invent files."""
         try:
             return self.cuts[(family, weight)]
         except KeyError as exc:

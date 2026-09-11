@@ -22,7 +22,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import JostRamp, TypeOverlay, TypeRamp, bind_ramp
 from parch.geom import Rect
 from parch.tracks import columns, rows
 from parch.layouts.planner.painters import (
@@ -65,13 +65,18 @@ DAILY_PRIO_GAP = 2.2
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and passes it into
-    cover / header paint. Other painters still hardcode face policy — spike
-    scope. Dual-font ramps are future work; ``family`` stays on the ink.
+    Holds an explicit ``TypeRamp``. No-arg default is ``JostRamp`` (closed
+    defaults, no overlay). Pass ``overlay=`` or an ``EffectiveRamp`` to
+    apply device/press patches, including optional ``family``. Painters
+    call ``ramp.ink(...)`` and already pass ``family=`` through; they
+    never read the overlay. A later dual-font catalog plugs in at the
+    catalog — no painter changes.
     """
 
-    def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+    def __init__(self, ramp: TypeRamp | None = None, overlay: TypeOverlay | None = None) -> None:
+        self.ramp: TypeRamp = (
+            JostRamp() if ramp is None and overlay is None else bind_ramp(ramp=ramp, overlay=overlay)
+        )
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         paint_toolbar(plotter, device)
