@@ -1,7 +1,7 @@
 import pytest
 
 from parch import ConfigError
-from parch.devices import NOMAD, get_device, known_device_ids
+from parch.devices import NOMAD, get_device
 from parch.fonts import ROOT_BODY, Pt
 
 
@@ -34,8 +34,3 @@ def test_nomad_alias():
     assert get_device("supernote-nomad") is NOMAD
     with pytest.raises(ConfigError):
         get_device("kindle-scribe")
-
-
-def test_known_device_ids_are_canonical():
-    assert known_device_ids() == ("supernote-nomad",)
-    assert "nomad" not in known_device_ids()

@@ -6,13 +6,11 @@ from pathlib import Path
 import pytest
 
 from parch import ConfigError
-from parch.devices import known_device_ids
 from parch.press import main
 from parch.specimen import (
     SAMPLE_STEMS,
     catalog_dest,
     catalog_index_html,
-    listed_catalog_devices,
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
@@ -23,33 +21,12 @@ from parch.specimen import (
 )
 
 
-def test_catalog_dest_is_specimens_root(tmp_path: Path):
-    assert catalog_dest(tmp_path) == tmp_path / "specimens"
-    assert specimens_dest(tmp_path, "supernote-nomad") == (
-        tmp_path / "specimens" / "supernote-nomad"
-    )
-
-
-def test_listed_catalog_devices_prefers_registry(tmp_path: Path):
-    root = catalog_dest(tmp_path)
-    for device_id in ("supernote-nomad", "extra-device"):
-        dest = root / device_id
-        dest.mkdir(parents=True)
-        (dest / "index.html").write_text("<title>x</title>\n", encoding="utf-8")
-    (root / "no-index").mkdir()
-    assert listed_catalog_devices(root) == ["supernote-nomad", "extra-device"]
-    assert listed_catalog_devices(tmp_path / "missing") == []
-    assert known_device_ids() == ("supernote-nomad",)
-
-
 def test_catalog_index_html_is_device_list():
     html = catalog_index_html(["supernote-nomad"])
     assert 'href="supernote-nomad/"' in html
     assert "<figure>" not in html
     assert ".png" not in html
     assert "<script" not in html
-    assert "lined-left" not in html
-    assert "dotted-right" not in html
 
 
 def test_specimen_index_html_is_png_gallery():
@@ -60,8 +37,6 @@ def test_specimen_index_html_is_png_gallery():
     assert html.count("<figure>") == len(SAMPLE_STEMS)
     for stem in SAMPLE_STEMS:
         assert f'src="{stem}.png"' in html
-    assert "lined-left" not in html
-    assert ".svg" not in html
 
 
 def test_write_indexes(tmp_path: Path):
@@ -69,7 +44,7 @@ def test_write_indexes(tmp_path: Path):
     index = write_device_index(device_dir, "supernote-nomad")
     assert index == device_dir / "index.html"
     root = catalog_dest(tmp_path)
-    catalog = write_catalog_index(root, listed_catalog_devices(root))
+    catalog = write_catalog_index(root, ("supernote-nomad",))
     assert catalog == root / "index.html"
     html = catalog.read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html

@@ -76,11 +76,6 @@ _KNOWN = {
 }
 
 
-def known_device_ids() -> tuple[str, ...]:
-    """Canonical registry ids for CI matrix / catalog. Aliases are omitted."""
-    return (NOMAD.id,)
-
-
 def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:

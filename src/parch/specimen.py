@@ -5,8 +5,6 @@ permutations. Catalog layout is ``<workdir>/specimens/<device-id>/``.
 The product PDF is not part of the catalog.
 """
 
-from __future__ import annotations
-
 import argparse
 import shutil
 import subprocess
@@ -18,7 +16,7 @@ from pathlib import Path
 
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
-from parch.devices import get_device, known_device_ids
+from parch.devices import get_device
 from parch.spec import Spec
 
 SAMPLE_STEMS = (
@@ -51,17 +49,6 @@ def catalog_dest(workdir: str | Path) -> Path:
 def specimens_dest(workdir: str | Path, device_id: str) -> Path:
     """Per-device dir: ``<workdir>/specimens/<device-id>/``."""
     return catalog_dest(workdir) / device_id
-
-
-def listed_catalog_devices(root: Path) -> list[str]:
-    """Device folders under the catalog root that have an index.html."""
-    if not root.is_dir():
-        return []
-    found = {p.name for p in root.iterdir() if p.is_dir() and (p / "index.html").is_file()}
-    known = known_device_ids()
-    preferred = [device_id for device_id in known if device_id in found]
-    extras = sorted(found - set(known))
-    return preferred + extras
 
 
 def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
