@@ -22,7 +22,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.nomad import Device
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
     COL_GAP,
@@ -76,15 +76,15 @@ __all__ = [
 class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
-    Holds an explicit ``TypeRamp`` (default ``JostRamp``) and binds it onto
-    the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
-    ladder. Press may hand in an ``EffectiveRamp`` (defaults ⊕ device ⊕
-    toml ⊕ proof) at ``device.root_body``. Dual-font ramps are future
-    work; ``family`` stays on the resolved ink.
+    Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
+    onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
+    ladder. Press may hand in an ``EffectiveRamp`` (defaults ⊕ toml ⊕
+    proof) at ``device.root_body``. Dual-font ramps are future work;
+    ``family`` stays on the resolved ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
+        self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp

@@ -1,10 +1,10 @@
 """SuperNote Nomad — the only MVP device."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 from parch import ConfigError
-from parch.fonts.ramp import ROOT_BODY, Pt, TypeOverlay, jost_defaults, require_overlay
+from parch.fonts.ramp import ROOT_BODY, Pt
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
@@ -26,7 +26,6 @@ class Device:
     toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
-    type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
     root_body: Pt = ROOT_BODY
 
     @property
@@ -57,13 +56,6 @@ class Device:
         )
 
 
-# Identity overlay — no size/weight patches. Press still builds
-# EffectiveRamp = defaults ⊕ this overlay (⊕ toml if present ⊕ proof if on)
-# at ``root_body`` (``Pt``). Overlay size is an absolute ``Pt`` step override;
-# it does not change root. ProofProfile is a separate press-mode layer; it
-# does not mutate this overlay.
-NOMAD_TYPE_OVERLAY = TypeOverlay()
-
 # 1404×1872 @ 300 PPI → 118.87×158.50 mm. Toolbar top 8 mm.
 # Body root 8.5pt: month day nums land on pre-snap 8.5; ratios follow.
 NOMAD = Device(
@@ -77,7 +69,6 @@ NOMAD = Device(
     toolbar_edge="top",
     toolbar_clearance=8.0,
     writing_clearance=4.0,
-    type_overlay=NOMAD_TYPE_OVERLAY,
     root_body=ROOT_BODY,
 )
 
@@ -91,6 +82,4 @@ def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:
         raise ConfigError(f"unknown device {spec!r}; MVP knows supernote-nomad")
-    device = _KNOWN[key]
-    require_overlay(device.type_overlay, jost_defaults())
-    return device
+    return _KNOWN[key]

@@ -1,31 +1,19 @@
 """Overlay schema + TOML knobs keyed by closed TypeSteps. Fail press before paint."""
 
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from parch import ConfigError
-from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY
 from parch.fonts import (
     OVERLAY_SCHEMA_VERSION,
     TYPE_STEPS,
-    BadWeight,
     EffectiveRamp,
-    JostRamp,
-    NonpositiveSize,
-    OverlayOk,
-    SizeOutOfRange,
     TypeInk,
     TypeOverlay,
     TypePatch,
-    UnknownStep,
-    VersionMismatch,
     bind_ramp,
-    compose_overlays,
-    jost_defaults,
     require_overlay,
-    validate_overlay,
 )
 from parch.plotter import RecordingPlotter
 from parch.press import merge_press_overlay, press
@@ -33,148 +21,92 @@ from parch.spec import Spec
 
 
 def test_accepts_identity_and_example_overlay():
-    defaults = jost_defaults()
-    identity = validate_overlay(TypeOverlay(), defaults)
-    assert isinstance(identity, OverlayOk)
-    assert identity.overlay == TypeOverlay()
+    identity = require_overlay(TypeOverlay())
+    assert identity == TypeOverlay()
     mapping = {
         "schema_version": OVERLAY_SCHEMA_VERSION,
         "chrome": {"size": 9.6, "weight": "bold"},
         "eyebrow": {"size": 13, "weight": "bold"},
     }
-    result = validate_overlay(mapping, defaults)
-    assert isinstance(result, OverlayOk)
-    assert result.overlay.schema_version == OVERLAY_SCHEMA_VERSION
-    assert result.overlay.chrome == TypePatch(size=9.6, weight="bold")
-    assert result.overlay.eyebrow == TypePatch(size=13, weight="bold")
-    assert result.overlay.display is None
-    ramp = EffectiveRamp(overlay=result.overlay)
+    result = require_overlay(mapping)
+    assert result.schema_version == OVERLAY_SCHEMA_VERSION
+    assert result.chrome == TypePatch(size=9.6, weight="bold")
+    assert result.eyebrow == TypePatch(size=13, weight="bold")
+    assert result.display is None
+    ramp = EffectiveRamp(overlay=result)
+    empty = EffectiveRamp()
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="bold", size=9.6)
     assert ramp.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=9.6)
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="bold", size=13)
-    assert ramp.ink("display") == JostRamp().ink("display")
-    assert ramp.ink("title") == JostRamp().ink("title")
+    assert ramp.ink("display") == empty.ink("display")
+    assert ramp.ink("title") == empty.ink("title")
 
 
 def test_rejects_unknown_step_including_old_roles():
-    defaults = jost_defaults()
-    result = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 48}},
-        defaults,
-    )
-    assert result == UnknownStep(step="cover_year")
-    hero = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "hero": {"weight": "book"}},
-        defaults,
-    )
-    assert isinstance(hero, UnknownStep)
-    assert hero.step == "hero"
-    page_title = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "page_title": {"size": 14}},
-        defaults,
-    )
-    assert page_title == UnknownStep(step="page_title")
+    with pytest.raises(ConfigError, match="unknown step 'cover_year'"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 48}})
+    with pytest.raises(ConfigError, match="unknown step 'hero'"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "hero": {"weight": "book"}})
+    with pytest.raises(ConfigError, match="unknown step 'page_title'"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "page_title": {"size": 14}})
 
 
 def test_closed_typesteps_are_known():
-    defaults = jost_defaults()
-    assert set(defaults) == set(TYPE_STEPS)
     for step in TYPE_STEPS:
-        result = validate_overlay(
-            {"schema_version": OVERLAY_SCHEMA_VERSION, step: {"weight": "book"}},
-            defaults,
-        )
-        assert isinstance(result, OverlayOk), step
+        result = require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, step: {"weight": "book"}})
+        assert result.patch(step) == TypePatch(weight="book")
 
 
 def test_rejects_bad_weight():
-    defaults = jost_defaults()
-    result = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"weight": "hairline"}},
-        defaults,
-    )
-    assert result == BadWeight(weight="hairline", step="chrome")
-    black = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "title": {"weight": "black"}},
-        defaults,
-    )
-    assert isinstance(black, BadWeight)
-    assert black.weight == "black"
+    with pytest.raises(ConfigError, match="bad weight 'hairline'"):
+        require_overlay(
+            {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"weight": "hairline"}}
+        )
+    with pytest.raises(ConfigError, match="bad weight 'black'"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "title": {"weight": "black"}})
 
 
 def test_rejects_nonpositive_size():
-    defaults = jost_defaults()
-    zero = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}},
-        defaults,
-    )
-    assert zero == NonpositiveSize(size=0.0, step="chrome")
-    negative = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "eyebrow": {"size": -1.5}},
-        defaults,
-    )
-    assert negative == NonpositiveSize(size=-1.5, step="eyebrow")
+    with pytest.raises(ConfigError, match="nonpositive size"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}})
+    with pytest.raises(ConfigError, match="nonpositive size"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "eyebrow": {"size": -1.5}})
 
 
 def test_rejects_size_out_of_range():
-    defaults = jost_defaults()
-    huge_chrome = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 42}},
-        defaults,
-    )
-    assert isinstance(huge_chrome, SizeOutOfRange)
-    assert huge_chrome.step == "chrome"
-    tiny_display = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "display": {"size": 10}},
-        defaults,
-    )
-    assert isinstance(tiny_display, SizeOutOfRange)
-    assert tiny_display.step == "display"
-    typed = validate_overlay(TypeOverlay(chrome=TypePatch(size=16.1)), defaults)
-    assert isinstance(typed, SizeOutOfRange)
-    tiny_micro = validate_overlay(
-        {"schema_version": OVERLAY_SCHEMA_VERSION, "micro": {"size": 2.0}},
-        defaults,
-    )
-    assert isinstance(tiny_micro, SizeOutOfRange)
-    assert tiny_micro.step == "micro"
+    with pytest.raises(ConfigError, match="not in"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 42}})
+    with pytest.raises(ConfigError, match="not in"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "display": {"size": 10}})
+    with pytest.raises(ConfigError, match="not in"):
+        require_overlay(TypeOverlay(chrome=TypePatch(size=16.1)))
+    with pytest.raises(ConfigError, match="not in"):
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "micro": {"size": 2.0}})
 
 
 def test_version_mismatch_is_exact_match():
     """Policy: exact schema_version match. No older/newer compat yet."""
-    defaults = jost_defaults()
-    missing = validate_overlay({"chrome": {"size": 8.6}}, defaults)
-    assert missing == VersionMismatch(got=None, expected=OVERLAY_SCHEMA_VERSION)
-    old = validate_overlay(
-        {"schema_version": 0, "chrome": {"size": 8.6}},
-        defaults,
-    )
-    assert old == VersionMismatch(got=0, expected=1)
-    new = validate_overlay(
-        TypeOverlay(schema_version=2, chrome=TypePatch(size=8.6)),
-        defaults,
-    )
-    assert new == VersionMismatch(got=2, expected=1)
-    assert "exact version match" in str(new)
+    with pytest.raises(ConfigError, match="schema_version"):
+        require_overlay({"chrome": {"size": 8.6}})
+    with pytest.raises(ConfigError, match="schema_version 0"):
+        require_overlay({"schema_version": 0, "chrome": {"size": 8.6}})
+    with pytest.raises(ConfigError, match="exact version match"):
+        require_overlay(TypeOverlay(schema_version=2, chrome=TypePatch(size=8.6)))
 
 
-def test_validate_overlay_is_pure():
-    defaults = jost_defaults()
+def test_require_overlay_is_pure():
     data = {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 8.6}}
-    first = validate_overlay(data, defaults)
-    second = validate_overlay(data, defaults)
+    first = require_overlay(data)
+    second = require_overlay(data)
     assert first == second
     assert data == {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 8.6}}
     typed = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"))
-    assert validate_overlay(typed, defaults) == validate_overlay(typed, defaults)
+    assert require_overlay(typed) == require_overlay(typed)
 
 
 def test_require_overlay_raises_config_error():
     with pytest.raises(ConfigError, match="unknown step"):
-        require_overlay(
-            {"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 42}},
-            jost_defaults(),
-        )
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 42}})
 
 
 def test_bind_ramp_validates_before_effective_ramp():
@@ -182,9 +114,9 @@ def test_bind_ramp_validates_before_effective_ramp():
         bind_ramp(
             overlay={"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"weight": "hairline"}}
         )
-    bound = bind_ramp(overlay=NOMAD_TYPE_OVERLAY)
+    bound = bind_ramp()
     assert isinstance(bound, EffectiveRamp)
-    assert bound.ink("chrome") == JostRamp().ink("chrome")
+    assert bound.ink("chrome") == EffectiveRamp().ink("chrome")
 
 
 def test_press_rejects_bad_overlay_before_paint(tmp_path: Path):
@@ -239,27 +171,24 @@ def test_press_rejects_size_out_of_range_before_paint(tmp_path: Path):
     assert plotter.ops == []
 
 
-def test_merge_press_overlay_is_device_then_toml_then_kwarg():
-    device = replace(
-        NOMAD,
-        type_overlay=TypeOverlay(chrome=TypePatch(size=8.6, weight="medium")),
-    )
+def test_merge_press_overlay_is_toml_then_proof_then_kwarg():
     spec = Spec(
-        type_overlay=TypeOverlay(chrome=TypePatch(size=9.6), title=TypePatch(size=14)),
+        type_overlay=TypeOverlay(chrome=TypePatch(size=9.6, weight="medium"), title=TypePatch(size=14)),
     )
-    merged = merge_press_overlay(device, spec, TypeOverlay(title=TypePatch(weight="bold")))
+    merged = merge_press_overlay(spec, TypeOverlay(title=TypePatch(weight="bold")))
     ramp = EffectiveRamp(overlay=merged)
+    empty = EffectiveRamp()
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=9.6)
     assert ramp.ink("title") == TypeInk(family="jost", weight="bold", size=14)
-    assert ramp.ink("display") == JostRamp().ink("display")
-    proofed = merge_press_overlay(device, spec, proof=True)
+    assert ramp.ink("display") == empty.ink("display")
+    proofed = merge_press_overlay(spec, proof=True)
     proof_ramp = EffectiveRamp(overlay=proofed)
     assert proof_ramp.ink("chrome") == TypeInk(family="jost", weight="medium", size=9.2)
     assert proof_ramp.ink("title") == TypeInk(family="jost", weight="medium", size=13)
     assert proof_ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
 
 
-def test_identity_device_and_empty_toml_stay_jost_defaults(tmp_path: Path):
+def test_empty_toml_stays_jost_defaults(tmp_path: Path):
     plotter = RecordingPlotter()
     press(Spec(months=(1,), notes_pages=0, project_index_pages=1), tmp_path / "id.pdf", plotter=plotter)
     assert plotter.ops
@@ -269,6 +198,4 @@ def test_identity_device_and_empty_toml_stay_jost_defaults(tmp_path: Path):
     chrome = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
     assert chrome[3] == 7.4
     assert chrome[9] == "book"
-    merged = compose_overlays(NOMAD.type_overlay, Spec().type_overlay)
-    assert validate_overlay(merged, jost_defaults()) == OverlayOk(overlay=merged)
-    assert NOMAD_TYPE_OVERLAY == TypeOverlay()
+    assert require_overlay(Spec().type_overlay) == TypeOverlay()
