@@ -76,9 +76,9 @@ def press(
         parch press examples/mvp.toml --proof -o out.pdf
 
     An explicit ``ramp`` wins the whole object (overlay args are ignored).
-    Painters never read the overlay. Allowlisted painters paint by
-    ``ramp.ink(step)``; unmigrated painters keep face+bold and the plotter
-    asks ``ramp.resolve_face``. Dual-font ramps are future work —
+    Painters never read the overlay. Allowlisted painters pass ``TypeRef``
+    / ink; unmigrated painters keep face+bold and the plotter asks
+    ``ramp.resolve_face``. Dual-font ramps are future work —
     ``family`` stays on ``TypeInk`` / ``Plotter.text``.
     """
     device = get_device(spec.device)

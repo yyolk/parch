@@ -3,14 +3,23 @@
 from pathlib import Path
 from typing import override
 
+from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import (
+    Plotter,
+    TextAlign,
+    TextFace,
+    TextFamily,
+    TextWeight,
+    resolve_text_ink,
+)
 
 type Op = tuple[object, ...]
 
 
 class RecordingPlotter(Plotter):
-    def __init__(self) -> None:
+    def __init__(self, ramp: TypeRamp | None = None) -> None:
+        self.ramp: TypeRamp = JostRamp() if ramp is None else ramp
         self.ops: list[Op] = []
         self.page = 0
 
@@ -59,6 +68,8 @@ class RecordingPlotter(Plotter):
         box: Rect,
         content: str,
         *,
+        ink: TypeInk | None = None,
+        ref: TypeRef | None = None,
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
@@ -68,6 +79,13 @@ class RecordingPlotter(Plotter):
         weight: TextWeight | None = None,
         family: TextFamily | None = None,
     ) -> None:
+        resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
+        if resolved is not None:
+            size = resolved.size
+            weight = resolved.weight
+            family = resolved.family
+            bold = False
+            face = "sans"
         self.ops.append(
             (
                 "text",

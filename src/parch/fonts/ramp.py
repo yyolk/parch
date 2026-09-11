@@ -1,9 +1,11 @@
 """Typographic scale: painters pick a step, not a page name.
 
 Explicit object — no ambient container, no signature injection, no globals.
-``TypeInk`` carries family + weight + size. Migrated painters call
-``ramp.ink(step, emphasis="regular")`` and pass those fields through; they do
-not think in sans/serif slots or invent one-off page roles.
+``TypeInk`` carries family + weight + size. Migrated painters pass a frozen
+``TypeRef`` (``TypeStep`` + optional emphasis + optional size) or the ink
+itself. ``Plotter.text`` takes ``ink=`` and/or ``ref=`` resolved at the
+plotter edge via ``plotter.ramp``. They do not think in sans/serif slots
+or invent one-off page roles.
 
 Unmigrated painters still pass ``face`` + ``bold``. That path is not a
 plotter secret: ``FaceBridge`` (owned by the ramp) maps
@@ -87,7 +89,7 @@ OVERLAY_SIZE_RANGE: dict[str, tuple[float, float]] = {
 
 
 class MigratedSurface(StrEnum):
-    """Painter entrypoints that must call ``ramp.ink`` — no face-only text."""
+    """Painter entrypoints that must pass ``TypeRef`` / ink — no face-only text."""
 
     COVER = "paint_cover"
     HEADER = "paint_header"
@@ -122,6 +124,27 @@ class TypeInk:
     family: TypeFamily
     weight: TypeWeight
     size: float
+
+
+@dataclass(frozen=True, slots=True)
+class TypeRef:
+    """Painter-facing type request. ``TypeStep`` vocabulary only.
+
+    No family, no weight. Optional ``emphasis`` and ``size``. ``size``
+    overrides the step default (and an overlay size) for that one call.
+    """
+
+    step: TypeStep
+    emphasis: TypeEmphasis = "regular"
+    size: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.step not in TYPE_STEPS:
+            raise ValueError(f"unknown type step {self.step!r}")
+        if self.emphasis not in ("regular", "strong"):
+            raise ValueError(f"unknown emphasis {self.emphasis!r}")
+        if self.size is not None and self.size <= 0:
+            raise ValueError(f"size must be > 0, not {self.size}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +213,10 @@ class TypeRamp(Protocol):
         """Resolve a closed scale step (+ optional emphasis) to plotter ink."""
         ...
 
+    def resolve(self, ref: TypeRef) -> TypeInk:
+        """Resolve a painter ``TypeRef`` to plotter-ready ink."""
+        ...
+
     def resolve_face(
         self,
         face: TypeFace,
@@ -200,6 +227,17 @@ class TypeRamp(Protocol):
     ) -> TypeInk:
         """Resolve an unmigrated face+bold path to plotter-ready ink."""
         ...
+
+
+def resolve_ref(ramp: TypeRamp, ref: TypeRef) -> TypeInk:
+    """``ramp.ink(step, emphasis)``, then an explicit ``TypeRef.size`` wins.
+
+    Uses ``ink()`` so stub ramps that only implement ``ink`` still work.
+    """
+    ink = ramp.ink(ref.step, ref.emphasis)
+    if ref.size is None:
+        return ink
+    return TypeInk(family=ink.family, weight=ink.weight, size=ref.size)
 
 
 def scale_ink(step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
@@ -469,6 +507,9 @@ class JostRamp:
     def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
         return _resolve_step(self.catalog, step, emphasis, TypeOverlay())
 
+    def resolve(self, ref: TypeRef) -> TypeInk:
+        return resolve_ref(self, ref)
+
     def resolve_face(
         self,
         face: TypeFace,
@@ -482,13 +523,16 @@ class JostRamp:
 
 @dataclass(frozen=True, slots=True)
 class EffectiveRamp:
-    """Closed Jost scale ⊕ overlay. Painters call ``ink``; they never read the overlay."""
+    """Closed Jost scale ⊕ overlay. Painters call ``ink`` / pass refs; they never read the overlay."""
 
     overlay: TypeOverlay = field(default_factory=TypeOverlay)
     catalog: FontCatalog = field(default_factory=jost_catalog)
 
     def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
         return _resolve_step(self.catalog, step, emphasis, self.overlay)
+
+    def resolve(self, ref: TypeRef) -> TypeInk:
+        return resolve_ref(self, ref)
 
     def resolve_face(
         self,

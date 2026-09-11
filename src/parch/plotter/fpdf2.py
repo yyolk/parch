@@ -7,9 +7,16 @@ from fpdf import FPDF
 
 from parch.devices.nomad import Device
 from parch.fonts.catalog import FontCatalog
-from parch.fonts.ramp import JostRamp, TypeRamp
+from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import (
+    Plotter,
+    TextAlign,
+    TextFace,
+    TextFamily,
+    TextWeight,
+    resolve_text_ink,
+)
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
@@ -167,6 +174,8 @@ class Fpdf2Plotter(Plotter):
         box: Rect,
         content: str,
         *,
+        ink: TypeInk | None = None,
+        ref: TypeRef | None = None,
         size: float = 10,
         align: TextAlign = "left",
         bold: bool = False,
@@ -178,6 +187,13 @@ class Fpdf2Plotter(Plotter):
     ) -> None:
         if not content:
             return
+        resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
+        if resolved is not None:
+            family = resolved.family
+            weight = resolved.weight
+            size = resolved.size
+            bold = False
+            face = "sans"
         if small_caps:
             self._draw_smcp(
                 box,

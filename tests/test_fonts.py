@@ -22,6 +22,7 @@ from parch.fonts import (
     TypeInk,
     TypeOverlay,
     TypePatch,
+    TypeRef,
     TypeStep,
     TypeWeight,
     apply_overlay,
@@ -237,7 +238,7 @@ def test_header_honors_stub_ramp():
         chip="01",
         ramp=ramp,
     )
-    assert [step for step, _emphasis in ramp.calls] == ["title", "chrome"]
+    assert [step for step, _emphasis in ramp.calls] == ["title", "chrome", "chrome"]
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
     assert title[3] == 9
     assert title[9] == "bold"
@@ -322,6 +323,7 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeFamily is TypeFamily
     assert fonts.TypeFace is TypeFace
     assert fonts.TypeStep is TypeStep
+    assert fonts.TypeRef is TypeRef
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
     assert fonts.EffectiveRamp is EffectiveRamp
@@ -661,3 +663,68 @@ def test_press_proof_stacks_after_real_toml_overlay(tmp_path: Path):
 def test_press_proof_rejects_unknown_type():
     with pytest.raises(TypeError, match="proof must be bool or ProofProfile"):
         _proof_overlay("yes")  # type: ignore[arg-type]
+
+
+def test_type_ref_is_frozen_type_step_only():
+    from dataclasses import fields
+
+    names = {item.name for item in fields(TypeRef)}
+    assert names == {"step", "emphasis", "size"}
+    ref = TypeRef(step="chrome", emphasis="strong")
+    assert ref.step == "chrome"
+    with pytest.raises(AttributeError):
+        ref.step = "title"  # type: ignore[misc]
+    with pytest.raises(ValueError, match="unknown type step"):
+        TypeRef(step="cover_year")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="size must be > 0"):
+        TypeRef(step="chrome", size=0)
+
+
+def test_ramp_resolve_typeref_uses_type_step():
+    ramp = JostRamp()
+    assert ramp.resolve(TypeRef(step="display")) == ramp.ink("display")
+    assert ramp.resolve(TypeRef(step="title", emphasis="strong")) == ramp.ink("title", "strong")
+    assert ramp.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
+        family="jost", weight="book", size=7.6
+    )
+    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=9.1, weight="medium")))
+    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="medium", size=9.1)
+    assert over.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
+        family="jost", weight="medium", size=7.6
+    )
+    proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
+    assert proof.resolve(TypeRef(step="chrome")) == TypeInk(
+        family="jost", weight="book", size=PROOF_CHROME_SIZE
+    )
+    assert proof.resolve(TypeRef(step="chrome", size=7.6)) == TypeInk(
+        family="jost", weight="book", size=7.6
+    )
+    assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=42)
+
+
+def test_plotter_ref_and_ink_skip_face_bridge():
+    class Spy(JostRamp):
+        def __init__(self) -> None:
+            super().__init__()
+            self.faces: list[object] = []
+
+        def resolve_face(self, face, bold, size, *, weight=None):  # type: ignore[override]
+            self.faces.append((face, bold, size, weight))
+            return TypeInk(family="jost", weight="heavy", size=size)
+
+    ramp = Spy()
+    plotter = Fpdf2Plotter(NOMAD, ramp=ramp)
+    plotter.begin_page()
+    plotter.text(Rect(4, 12, 40, 8), "ref", ref=TypeRef(step="title"))
+    assert ramp.faces == []
+    assert plotter.pdf.font_family == "jost:medium"
+    plotter.text(Rect(4, 22, 40, 8), "ink", ink=TypeInk(family="jost", weight="book", size=8))
+    assert ramp.faces == []
+    assert plotter.pdf.font_family == "jost:book"
+    with pytest.raises(TypeError, match="ink= or ref="):
+        plotter.text(
+            Rect(4, 32, 40, 8),
+            "both",
+            ink=TypeInk(family="jost", weight="book", size=8),
+            ref=TypeRef(step="label"),
+        )
