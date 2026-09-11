@@ -12,7 +12,6 @@ from parch.fonts import (
     PROOF_PROFILE,
     ProofProfile,
     TypeOverlay,
-    TypeRamp,
     bind_ramp,
     compose_overlays,
     require_overlay,
@@ -48,15 +47,14 @@ def press(
     spec: Spec,
     output: Path,
     plotter: Plotter | None = None,
-    ramp: TypeRamp | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    When ``ramp`` is omitted, press **validates** spec TOML ⊕ proof ⊕
-    press overlay (pure ``require_overlay``, exact ``schema_version``
-    match) before ``bind_ramp`` builds
+    Press **validates** spec TOML ⊕ proof ⊕ press overlay (pure
+    ``require_overlay``, exact ``schema_version`` match) before
+    ``bind_ramp`` builds
 
         EffectiveRamp = defaults ⊕ toml ⊕ proof (if on)
 
@@ -73,19 +71,14 @@ def press(
         parch proof examples/mvp.toml -o out.pdf
         parch press examples/mvp.toml --proof -o out.pdf
 
-    An explicit ``ramp`` wins the whole object (overlay args are ignored).
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. Dual-font ramps are future work —
     ``family`` stays on ``TypeInk``.
     """
     device = get_device(spec.device)
-    resolved = (
-        ramp
-        if ramp is not None
-        else bind_ramp(
-            overlay=merge_press_overlay(spec, overlay, proof),
-            root_body=device.root_body,
-        )
+    resolved = bind_ramp(
+        overlay=merge_press_overlay(spec, overlay, proof),
+        root_body=device.root_body,
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)

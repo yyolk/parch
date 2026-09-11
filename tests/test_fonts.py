@@ -29,7 +29,6 @@ from parch.fonts import (
     font_dir,
     jost_catalog,
     pt_from_em,
-    validate_overlay,
 )
 from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
@@ -255,7 +254,6 @@ def test_fonts_package_does_not_import_plotter():
     assert not hasattr(fonts, "FaceBridge")
     assert not hasattr(fonts, "TypeFace")
     assert not hasattr(fonts, "BRIDGE_BACKLOG")
-    assert not hasattr(fonts, "JostRamp")
     assert fonts.TypeRef is TypeRef
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
@@ -268,7 +266,6 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.Em is Em
     assert fonts.Pt is Pt
     assert fonts.pt_from_em is pt_from_em
-    assert fonts.validate_overlay is validate_overlay
     assert not hasattr(fonts, "Mm")
     assert not hasattr(fonts, "Px")
     assert JOST_RATIOS["body"] == Em(1.0)
@@ -327,17 +324,7 @@ def test_compose_overlays_later_explicit_field_wins():
     assert ramp.ink("title").size == Pt(11)
 
 
-def test_bind_ramp_explicit_wins_over_overlay():
-    class StubRamp:
-        catalog = jost_catalog()
-
-        def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
-            return TypeInk(family="jost", weight="book", size=Pt(3))
-
-    stub = StubRamp()
-    bound = bind_ramp(ramp=stub, overlay=TypeOverlay(chrome=TypePatch(size=Pt(99))))
-    assert bound is stub
-    assert bound.ink("chrome").size == Pt(3)
+def test_bind_ramp_applies_overlay():
     overlay_only = bind_ramp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.0))))
     assert overlay_only.ink("chrome").size == Pt(9.0)
     assert isinstance(overlay_only, EffectiveRamp)

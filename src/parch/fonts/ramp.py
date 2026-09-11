@@ -366,10 +366,6 @@ def require_overlay(overlay: OverlayData) -> TypeOverlay:
     return _overlay_from_fields(OVERLAY_SCHEMA_VERSION, built)
 
 
-# Toml / tests that still say ``validate_overlay``.
-validate_overlay = require_overlay
-
-
 def _require_root_body(root_body: Pt) -> Pt:
     if root_body <= 0:
         raise ValueError(f"root_body must be > 0, not {root_body}")
@@ -403,13 +399,10 @@ class EffectiveRamp:
 
 def bind_ramp(
     *,
-    ramp: TypeRamp | None = None,
     overlay: OverlayData | None = None,
     root_body: Pt | None = None,
 ) -> TypeRamp:
-    """Explicit ``ramp`` wins. Otherwise validate, then ``EffectiveRamp`` at ``root_body``."""
-    if ramp is not None:
-        return ramp
+    """Validate overlay, then ``EffectiveRamp`` at ``root_body``."""
     return EffectiveRamp(
         overlay=require_overlay(TypeOverlay() if overlay is None else overlay),
         root_body=ROOT_BODY if root_body is None else root_body,

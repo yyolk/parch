@@ -14,7 +14,6 @@ from parch.fonts import (
     TypePatch,
     bind_ramp,
     require_overlay,
-    validate_overlay,
 )
 from parch.plotter import RecordingPlotter
 from parch.press import merge_press_overlay, press
@@ -22,14 +21,14 @@ from parch.spec import Spec
 
 
 def test_accepts_identity_and_example_overlay():
-    identity = validate_overlay(TypeOverlay())
+    identity = require_overlay(TypeOverlay())
     assert identity == TypeOverlay()
     mapping = {
         "schema_version": OVERLAY_SCHEMA_VERSION,
         "chrome": {"size": 9.6, "weight": "bold"},
         "eyebrow": {"size": 13, "weight": "bold"},
     }
-    result = validate_overlay(mapping)
+    result = require_overlay(mapping)
     assert result.schema_version == OVERLAY_SCHEMA_VERSION
     assert result.chrome == TypePatch(size=9.6, weight="bold")
     assert result.eyebrow == TypePatch(size=13, weight="bold")
@@ -45,64 +44,64 @@ def test_accepts_identity_and_example_overlay():
 
 def test_rejects_unknown_step_including_old_roles():
     with pytest.raises(ConfigError, match="unknown step 'cover_year'"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 48}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "cover_year": {"size": 48}})
     with pytest.raises(ConfigError, match="unknown step 'hero'"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "hero": {"weight": "book"}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "hero": {"weight": "book"}})
     with pytest.raises(ConfigError, match="unknown step 'page_title'"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "page_title": {"size": 14}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "page_title": {"size": 14}})
 
 
 def test_closed_typesteps_are_known():
     for step in TYPE_STEPS:
-        result = validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, step: {"weight": "book"}})
+        result = require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, step: {"weight": "book"}})
         assert result.patch(step) == TypePatch(weight="book")
 
 
 def test_rejects_bad_weight():
     with pytest.raises(ConfigError, match="bad weight 'hairline'"):
-        validate_overlay(
+        require_overlay(
             {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"weight": "hairline"}}
         )
     with pytest.raises(ConfigError, match="bad weight 'black'"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "title": {"weight": "black"}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "title": {"weight": "black"}})
 
 
 def test_rejects_nonpositive_size():
     with pytest.raises(ConfigError, match="nonpositive size"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}})
     with pytest.raises(ConfigError, match="nonpositive size"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "eyebrow": {"size": -1.5}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "eyebrow": {"size": -1.5}})
 
 
 def test_rejects_size_out_of_range():
     with pytest.raises(ConfigError, match="not in"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 42}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 42}})
     with pytest.raises(ConfigError, match="not in"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "display": {"size": 10}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "display": {"size": 10}})
     with pytest.raises(ConfigError, match="not in"):
-        validate_overlay(TypeOverlay(chrome=TypePatch(size=16.1)))
+        require_overlay(TypeOverlay(chrome=TypePatch(size=16.1)))
     with pytest.raises(ConfigError, match="not in"):
-        validate_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "micro": {"size": 2.0}})
+        require_overlay({"schema_version": OVERLAY_SCHEMA_VERSION, "micro": {"size": 2.0}})
 
 
 def test_version_mismatch_is_exact_match():
     """Policy: exact schema_version match. No older/newer compat yet."""
     with pytest.raises(ConfigError, match="schema_version"):
-        validate_overlay({"chrome": {"size": 8.6}})
+        require_overlay({"chrome": {"size": 8.6}})
     with pytest.raises(ConfigError, match="schema_version 0"):
-        validate_overlay({"schema_version": 0, "chrome": {"size": 8.6}})
+        require_overlay({"schema_version": 0, "chrome": {"size": 8.6}})
     with pytest.raises(ConfigError, match="exact version match"):
-        validate_overlay(TypeOverlay(schema_version=2, chrome=TypePatch(size=8.6)))
+        require_overlay(TypeOverlay(schema_version=2, chrome=TypePatch(size=8.6)))
 
 
-def test_validate_overlay_is_pure():
+def test_require_overlay_is_pure():
     data = {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 8.6}}
-    first = validate_overlay(data)
-    second = validate_overlay(data)
+    first = require_overlay(data)
+    second = require_overlay(data)
     assert first == second
     assert data == {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 8.6}}
     typed = TypeOverlay(chrome=TypePatch(size=8.6, weight="medium"))
-    assert validate_overlay(typed) == validate_overlay(typed)
+    assert require_overlay(typed) == require_overlay(typed)
 
 
 def test_require_overlay_raises_config_error():
@@ -199,4 +198,4 @@ def test_empty_toml_stays_jost_defaults(tmp_path: Path):
     chrome = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Q1–Q4")
     assert chrome[3] == 7.4
     assert chrome[9] == "book"
-    assert validate_overlay(Spec().type_overlay) == TypeOverlay()
+    assert require_overlay(Spec().type_overlay) == TypeOverlay()

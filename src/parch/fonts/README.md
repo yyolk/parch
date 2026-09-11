@@ -127,7 +127,7 @@ weight = "bold"
 `examples/mvp.toml` has no typography table (identity / defaults). Side
 example: `examples/mvp-typo-overlay.toml`. `press` builds
 `EffectiveRamp = defaults ⊕ spec.type_overlay ⊕ proof` at
-`device.root_body`. An explicit `ramp=` argument wins the whole object.
+`device.root_body`.
 `YearPlanner()` / `PlannerLayout()` with no args use `EffectiveRamp`
 (default root 8.5, empty overlay).
 

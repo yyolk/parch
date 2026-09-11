@@ -22,7 +22,7 @@ from parch.fonts import (
     TypeRef,
     bind_ramp,
     pt_from_em,
-    validate_overlay,
+    require_overlay,
 )
 from parch.layouts.planner.painters import (
     paint_habit_grid,
@@ -119,7 +119,7 @@ def test_overlay_size_is_absolute_override_not_root():
 
 
 def test_overlay_still_validates_with_micro():
-    ok = validate_overlay({"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}})
+    ok = require_overlay({"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}})
     assert ok.micro == TypePatch(size=Pt(3.8), weight="book")
     ramp = EffectiveRamp(overlay=ok)
     assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(3.8))

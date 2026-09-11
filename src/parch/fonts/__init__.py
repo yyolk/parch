@@ -26,7 +26,6 @@ from parch.fonts.ramp import (
     compose_overlays,
     pt_from_em,
     require_overlay,
-    validate_overlay,
 )
 
 __all__ = [
@@ -59,5 +58,4 @@ __all__ = [
     "jost_catalog",
     "pt_from_em",
     "require_overlay",
-    "validate_overlay",
 ]
