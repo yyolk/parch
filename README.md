@@ -62,3 +62,5 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
 Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Painters pick a closed scale step (`display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`) through `JostRamp.ink`; `family="jost"` is on the ink for a later dual-font ramp. Page-semantic `TypeRole` names are gone.
+
+Thesis C scale-token proof (this spike): [`artifacts/mvp/exp-typeramp-scale.pdf`](artifacts/mvp/exp-typeramp-scale.pdf) plus [`cover`](artifacts/mvp/exp-typeramp-scale-cover.png), [`year`](artifacts/mvp/exp-typeramp-scale-year.png), [`month`](artifacts/mvp/exp-typeramp-scale-month.png), [`week`](artifacts/mvp/exp-typeramp-scale-week.png), [`daily`](artifacts/mvp/exp-typeramp-scale-daily.png), [`projects`](artifacts/mvp/exp-typeramp-scale-projects.png), [`tasks-index`](artifacts/mvp/exp-typeramp-scale-tasks-index.png), [`review-index`](artifacts/mvp/exp-typeramp-scale-review-index.png).
