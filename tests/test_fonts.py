@@ -1,7 +1,19 @@
 import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
-from parch.fonts import FontCatalog, JostRamp, TypeFamily, TypeInk, TypeRole, font_dir, jost_catalog
+from parch.fonts import (
+    EffectiveRamp,
+    FontCatalog,
+    JostRamp,
+    TypeFamily,
+    TypeInk,
+    TypeOverlay,
+    TypePatch,
+    TypeRole,
+    apply_overlay,
+    font_dir,
+    jost_catalog,
+)
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter, resolve_weight
@@ -168,3 +180,21 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeFamily is TypeFamily
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog
+    assert fonts.EffectiveRamp is EffectiveRamp
+    assert fonts.TypeOverlay is TypeOverlay
+    assert fonts.TypePatch is TypePatch
+    assert fonts.validate_overlay is not None
+
+
+def test_overlay_explicit_size_keeps_default_weight():
+    patch = TypePatch(size=9.0)
+    base = TypeInk(family="jost", weight="book", size=7.4)
+    assert apply_overlay(base, patch) == TypeInk(family="jost", weight="book", size=9.0)
+    assert apply_overlay(base, None) == base
+
+
+def test_empty_effective_ramp_matches_jost_defaults():
+    empty = EffectiveRamp()
+    jost = JostRamp()
+    for role in ("cover_year", "cover_brow", "page_title", "chrome"):
+        assert empty.ink(role) == jost.ink(role)

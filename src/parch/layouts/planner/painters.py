@@ -118,12 +118,15 @@ def paint_nav(
     device: Device,
     items: tuple[tuple[str, str], ...],
     active: str,
+    *,
+    ramp: TypeRamp,
 ) -> None:
     if not items:
         return
     y = device.page_height - NAV_H
     slot = device.page_width / len(items)
     plotter.rect(Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH)
+    chrome = ramp.ink("chrome")
     for i, (label, dest) in enumerate(items):
         x = i * slot
         hit = Rect(x, y, slot, NAV_H)
@@ -133,9 +136,9 @@ def paint_nav(
         plotter.text(
             hit,
             label,
-            size=7.6,
-            bold=on,
-            face="sans",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=PAPER if on else INK,
             small_caps=True,
             align="center",
@@ -216,10 +219,10 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
     )
 
 
-def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid) -> None:
+def paint_annual(plotter: Plotter, box: Rect, grid: AnnualGrid, *, ramp: TypeRamp) -> None:
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
-            _paint_mini_month(plotter, cell, grid.months[r * 3 + c])
+            _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -1468,21 +1471,36 @@ def _paint_focus_row(plotter: Plotter, x: float, y: float, right: float) -> None
     )
 
 
-def _paint_mini_month(plotter: Plotter, box: Rect, month: AnnualMonth) -> None:
+def _paint_mini_month(
+    plotter: Plotter, box: Rect, month: AnnualMonth, *, ramp: TypeRamp | None = None
+) -> None:
     pressed = month.dest is not None
     title_h = 3.5
     dow_h = 2.5
     title = Rect(box.x, box.y, box.w, title_h)
-    plotter.text(
-        title,
-        month.name[:3],
-        size=6.4,
-        bold=pressed,
-        face="sans",
-        gray=INK if pressed else MUTED,
-        small_caps=True,
-        align="left",
-    )
+    if ramp is not None:
+        chrome = ramp.ink("chrome")
+        plotter.text(
+            title,
+            month.name[:3],
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
+            gray=INK if pressed else MUTED,
+            small_caps=True,
+            align="left",
+        )
+    else:
+        plotter.text(
+            title,
+            month.name[:3],
+            size=6.4,
+            bold=pressed,
+            face="sans",
+            gray=INK if pressed else MUTED,
+            small_caps=True,
+            align="left",
+        )
     if month.dest:
         plotter.link(title, month.dest)
     dow = Rect(box.x, box.y + title_h, box.w, dow_h)
@@ -1750,7 +1768,7 @@ def paint_habit_grid_transposed(plotter: Plotter, box: Rect, grid: HabitGrid) ->
             plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
 
 
-def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
+def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid, *, ramp: TypeRamp) -> None:
     gutter = 8.0
     day_grid = Rect(box.x + gutter, box.y, box.w - gutter, box.h)
     tracks = columns(day_grid, 7)
@@ -1758,13 +1776,15 @@ def paint_month_grid(plotter: Plotter, box: Rect, grid: MonthGrid) -> None:
     header = Rect(day_grid.x, box.y, day_grid.w, dow_h)
     # Shared inset + left align for weekday letters and day numerals.
     inset = 0.5
+    chrome = ramp.ink("chrome")
     for i, label in enumerate(grid.weekday_labels):
         col = tracks[i]
         plotter.text(
             Rect(col.x + inset, header.y, col.w - 2 * inset, header.h),
             label[0],
-            size=6.6,
-            face="sans",
+            size=chrome.size,
+            family=chrome.family,
+            weight=chrome.weight,
             gray=MUTED,
             small_caps=True,
             align="left",

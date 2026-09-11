@@ -24,8 +24,65 @@ another catalog family without ripping out the plotter kwarg.
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
 and handed to `Fpdf2Plotter` at press time.
 
-| Ramp | chrome | cover_brow | page_title | cover_year |
-| --- | --- | --- | --- | --- |
-| `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
+### Closed default table (TypeRole / TypeStep)
 
-Cover and header painters take the ramp. Cover specs stay fully literal.
+Today's four roles stay the closed in-code map. Overlay keys are the same
+closed step set. A TypeStep ladder (display / title / eyebrow / body /
+chrome / label / caption × emphasis) is larger; unknown names fail
+validation — they do not invent a role.
+
+| Role | Default ink |
+| --- | --- |
+| `cover_year` | Jost Heavy 42 |
+| `cover_brow` | Jost Medium 10 |
+| `page_title` | Jost Medium 11 |
+| `chrome` | Jost Book 7.4 |
+
+### Overlay schema (thesis S)
+
+`TypeOverlay` is frozen pure data: `schema_version` plus optional
+`TypePatch(size=, weight=)` per closed step. Overlay never changes `family`.
+
+`validate_overlay(overlay, defaults)` is **pure** (no I/O). `overlay` may be a
+`TypeOverlay` or a mapping (the shape later `parch new` / `parch edit` can
+emit). Result is `OverlayOk` or a typed issue:
+
+| Issue | When |
+| --- | --- |
+| `UnknownStep` | key is not in `defaults` (closed step/role set) |
+| `BadWeight` | weight is not `book` / `medium` / `bold` / `heavy` |
+| `NonpositiveSize` | size ≤ 0 |
+| `SizeOutOfRange` | size outside the step's closed band |
+| `VersionMismatch` | `schema_version` is not exactly `OVERLAY_SCHEMA_VERSION` |
+
+**Version policy (today): exact match.** Current `OVERLAY_SCHEMA_VERSION` is
+`1`. Missing, older, or newer versions fail. No forward/backward compat yet —
+that is what version-lock is for.
+
+Size bands (pt, inclusive):
+
+| Step | Range |
+| --- | --- |
+| `cover_year` | 18–72 |
+| `cover_brow` | 6–24 |
+| `page_title` | 8–24 |
+| `chrome` | 5–16 |
+
+`get_device` and `press` call `require_overlay` **before** `bind_ramp` builds
+`EffectiveRamp`. A bad overlay raises `ConfigError` before paint.
+
+Merge (`defaults ⊕ overlay`, then later overlays):
+
+1. Missing role → keep previous ink.
+2. Present role, missing field → that field stays.
+3. Present role, explicit field → that field wins.
+4. Family is never overlaid.
+
+`EffectiveRamp` is the explicit merged object. Painters only call
+`ramp.ink(...)`.
+
+Nomad overlay (this spike): `schema_version = 1`; `chrome` → Medium 8.6;
+`cover_brow` → Medium 12.
+
+Cover, header, nav, year minis, and month weekday letters take the ramp.
+Cover specs stay fully literal.

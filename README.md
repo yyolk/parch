@@ -61,4 +61,6 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp` / validated `EffectiveRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+
+Thesis S (this branch only — **do not merge**): `TypeOverlay` is version-locked data (`schema_version`). `validate_overlay` is pure and returns `OverlayOk` or a typed issue (unknown step, bad weight, nonpositive size, size range, exact version match). Press/device validate before building `EffectiveRamp`. Nomad overlay: chrome Medium 8.6, cover brow 12. Specimens: [`artifacts/mvp/exp-typeramp-overlay-schema-cover.png`](artifacts/mvp/exp-typeramp-overlay-schema-cover.png), [`artifacts/mvp/exp-typeramp-overlay-schema-year.png`](artifacts/mvp/exp-typeramp-overlay-schema-year.png), [`artifacts/mvp/exp-typeramp-overlay-schema-month.png`](artifacts/mvp/exp-typeramp-overlay-schema-month.png).
