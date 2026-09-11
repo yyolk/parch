@@ -26,7 +26,7 @@ class TasksMonthBand:
 
 @dataclass(frozen=True, slots=True)
 class TasksIndex:
-    """Thesis C — month-banded week-horizon index. Rows open weekly Tasks dests."""
+    """Month-banded week-horizon index for ``paint_tasks_index``. Rows open weekly Tasks dests."""
 
     year: int
     dest: str

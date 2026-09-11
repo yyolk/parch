@@ -8,7 +8,7 @@ from parch.spec import Spec
 
 
 class TasksSection:
-    """Tasks index C + weekly dests. Month bands; after Meetings in YearPlanner."""
+    """``paint_tasks_index`` month bands plus ``paint_task`` dests; after Meetings in YearPlanner."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

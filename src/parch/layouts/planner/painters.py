@@ -294,7 +294,7 @@ TICKET_STRIP_PAD = 0.40
 TICKET_STRIP_LEFT = 0.30
 TICKET_STRIP_GRAY = RULE_C
 
-# G (#215) symbol strip — same marks, size, and strip height.
+# ``paint_project`` symbol strip — same marks, size, and strip height.
 CLONE_ICON = 2.1
 CLONE_STRIP_H = 2.8
 CLONE_STRIP_COL_GAP = 1.05
@@ -346,13 +346,13 @@ def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
 
 
 def project_ticket_preview_cards(preview: Rect) -> tuple[Rect, ...]:
-    """G's three cards, side-by-side thumbnail — hairline open frames."""
+    """``paint_project`` three cards, side-by-side thumbnail — hairline open frames."""
     pocket = preview.inset(TICKET_PREVIEW_INSET, TICKET_PREVIEW_INSET)
     return columns(pocket, 3, gap=TICKET_PREVIEW_GAP)
 
 
 def project_ticket_name_seats(name: Rect) -> tuple[Rect, Rect]:
-    """Write-in band over G's 9-mark strip. Hline sits at the band bottom."""
+    """Write-in band over the ``paint_project`` 9-mark strip. Hline sits at the band bottom."""
     block = CLONE_STRIP_H + TICKET_STRIP_PAD
     write_h = max(name.h - block, 1)
     write = Rect(name.x, name.y, name.w, write_h)
@@ -375,7 +375,7 @@ def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
 def paint_projects_index(
     plotter: Plotter, box: Rect, index: ProjectsIndex, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Thesis L — stub, raised write-in, G symbol strip, 3-card preview; stub + preview links."""
+    """``ProjectsIndex`` — stub, raised write-in, symbol strip, 3-card preview; stub + preview links."""
     ramp = _bound_ramp(plotter, ramp)
     for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
         _paint_project_ticket(plotter, seat, ticket, ramp=ramp)
@@ -501,7 +501,7 @@ def projects_clone_a_card(card: Rect) -> tuple[Rect, Rect, Rect, Rect, Rect, Rec
 def paint_project(
     plotter: Plotter, box: Rect, board: ProjectsBoard, *, ramp: TypeRamp | None = None
 ) -> None:
-    """G #215 clone well — spine, soft P + name box, ticks, 2.8 mm dots, strip, status rail."""
+    """``ProjectsBoard`` well — spine, soft P + name box, ticks, 2.8 mm dots, strip, status rail."""
     _bound_ramp(plotter, ramp)
     cards, rails = projects_clone_a_seats(box, board.cards)
     _wash(plotter, projects_clone_a_well(box)[1], WASH)
@@ -607,7 +607,7 @@ def _paint_diamond(plotter: Plotter, box: Rect) -> None:
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
-    """Filled icons, even spread — same craft as G's project-card strip."""
+    """Filled icons, even spread — same craft as the ``paint_project`` card strip."""
     slots = columns(box, len(CLONE_ICONS), gap=CLONE_STRIP_COL_GAP)
     for slot, kind in zip(slots, CLONE_ICONS, strict=True):
         s = min(CLONE_ICON, slot.h - 0.2, slot.w)
@@ -764,7 +764,7 @@ def _fill_cross(plotter: Plotter, box: Rect) -> None:
 
 
 def _fill_star(plotter: Plotter, box: Rect) -> None:
-    """Five-point star — same as G."""
+    """Five-point star — same as ``paint_project``."""
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
     r = min(box.w, box.h) / 2
@@ -917,7 +917,7 @@ def meeting_index_link_hits(row: Rect) -> tuple[Rect, ...]:
 def paint_meetings_index(
     plotter: Plotter, box: Rect, index: MeetingIndex, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Thesis A — dense dated roster. Stub is the dest hit; write-ins stay unlinkable."""
+    """``MeetingIndex`` — dense dated roster. Stub is the dest hit; write-ins stay unlinkable."""
     _bound_ramp(plotter, ramp)
     for seat, slot in zip(meetings_index_roster(box, len(index.slots)), index.slots, strict=True):
         _paint_meeting_index_row(plotter, seat, slot.number)
@@ -935,7 +935,7 @@ def _paint_meeting_index_row(plotter: Plotter, box: Rect, number: int) -> None:
 
 
 def _paint_meeting_index_stub(plotter: Plotter, stub: Rect, number: int) -> None:
-    """Hairline slot mark — the visible tap target, Projects L spirit."""
+    """Hairline slot mark — the visible tap target, same as ``paint_projects_index`` stubs."""
     mark_y = stub.y + (stub.h - MEET_INDEX_MARK) / 2
     mark = Rect(stub.x + (stub.w - MEET_INDEX_MARK) / 2, mark_y, MEET_INDEX_MARK, MEET_INDEX_MARK)
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
@@ -1023,7 +1023,7 @@ def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
 
 
 def tasks_index_link_hits(row: Rect) -> tuple[Rect, ...]:
-    """Stub + week range. Write-in hline stays unlinkable (Meeting A / Projects L)."""
+    """Stub + week range. Write-in hline stays unlinkable (same as ``paint_meetings_index`` / ``paint_projects_index``)."""
     stub, dated, _write = tasks_index_week_parts(row)
     return (stub, dated)
 
@@ -1031,7 +1031,7 @@ def tasks_index_link_hits(row: Rect) -> tuple[Rect, ...]:
 def paint_tasks_index(
     plotter: Plotter, box: Rect, index: TasksIndex, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Thesis C — month-banded week rows. Not Active/Waiting/Done, not This week/Later."""
+    """``TasksIndex`` — month-banded week rows. Not Active/Waiting/Done, not This week/Later."""
     _bound_ramp(plotter, ramp)
     counts = tuple(len(band.weeks) for band in index.bands)
     for band_box, band in zip(tasks_index_bands(box, counts), index.bands, strict=True):
@@ -1173,7 +1173,7 @@ def review_index_rule_y(row: Rect) -> float:
 def paint_review_index(
     plotter: Plotter, box: Rect, index: ReviewIndex, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Thesis B — dense week chips in several columns; month headers + hairlines."""
+    """``ReviewIndex`` — dense week chips in several columns; month headers + hairlines."""
     _bound_ramp(plotter, ramp)
     counts = tuple(len(band.weeks) for band in index.bands)
     n_cols = review_index_cols(counts)
@@ -1238,7 +1238,7 @@ def review_day_parts(cue: Rect) -> tuple[Rect, Rect]:
 
 
 def review_day_link_hits(cue: Rect) -> tuple[Rect, ...]:
-    """Label only. Write-in stays unlinkable (Meeting A / Tasks C)."""
+    """Label only. Write-in stays unlinkable (same as ``paint_meetings_index`` / ``paint_tasks_index``)."""
     label, _write = review_day_parts(cue)
     return (label,)
 
@@ -1252,7 +1252,7 @@ def review_day_rule_y(cue: Rect) -> float:
 def paint_review(
     plotter: Plotter, box: Rect, page: ReviewWeekPage, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Thesis E — seven day cues, then unlabeled week narrative. Chrome names the page."""
+    """``ReviewWeekPage`` — seven day cues, then unlabeled week narrative. Chrome names the page."""
     ramp = _bound_ramp(plotter, ramp)
     strip, notes = review_seats(box)
     for cue, day in zip(review_day_cues(strip), page.days, strict=True):

@@ -132,7 +132,7 @@ def _outputs(args: argparse.Namespace, spec_token: str | None) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch",
-        description="Press fixed e-ink PDF pages (greenfield MVP).",
+        description="Press fixed e-ink PDF pages.",
     )
     parser.add_argument(
         "spec",
