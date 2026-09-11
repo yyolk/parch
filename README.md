@@ -49,6 +49,8 @@ Thesis C (in the year walk, after Meetings): month-banded Tasks index + weekly T
 
 Thesis B index + Thesis E dest (in the year walk, after Tasks): multi-column Review week-chip grid + weekly dest (Mon–Sun mini-write strip over unlabeled week narrative). Month headers sit on the left; hairlines span the well so months read across. **Rev** tab → year index; dest header chip is the ISO week and returns to the index. Dest `review-index-{year}` / `review-{iso_year}-W{nn}`. Proof: [`artifacts/mvp/exp-review-index-b.png`](artifacts/mvp/exp-review-index-b.png) and [`artifacts/mvp/exp-review-dest-e.png`](artifacts/mvp/exp-review-dest-e.png).
 
+Thesis O (PageKind defaults, this spike — **do not merge**): `JostRamp.for_page(kind)` binds a `BoundRamp`; painters ask `ink(step)` and the kind row supplies body / chrome / title (cover keeps `display` + `brow`). Daily body ≠ week body is a table fact. Specimens: [`exp-typeramp-pagekind-cover.png`](artifacts/mvp/exp-typeramp-pagekind-cover.png), [`year`](artifacts/mvp/exp-typeramp-pagekind-year.png), [`month`](artifacts/mvp/exp-typeramp-pagekind-month.png), [`week`](artifacts/mvp/exp-typeramp-pagekind-week.png), [`daily`](artifacts/mvp/exp-typeramp-pagekind-daily.png), [`projects`](artifacts/mvp/exp-typeramp-pagekind-projects.png).
+
 ```shell
 uv run pytest
 ```
@@ -61,4 +63,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Roles resolve through `JostRamp`; `family="jost"` is on the ink for a later dual-font ramp.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`. Weights stay curated. Steps (`body`, `chrome`, `title`, `display`, `brow`) resolve through a `PageKind` table on `JostRamp`; layout binds `for_page(kind)` and painters call `ink(step)`. `family="jost"` stays on the ink for a later dual-font ramp.

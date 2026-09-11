@@ -16,6 +16,7 @@ from parch.layouts.planner.layout import (
     daily_right_seats,
     well_rect,
 )
+from parch.fonts import JostRamp
 from parch.layouts.planner.painters import (
     TICK,
     _paint_mini_month,
@@ -59,7 +60,7 @@ def test_daily_mini_links_and_highlight():
     june_30 = next(cell for cell in cells if not cell.in_month and cell.day == 30)
     assert june_30.dest == "2026-06-30"
     ink = RecordingPlotter()
-    _paint_mini_month(ink, Rect(4, 20, 36, 34), july)
+    _paint_mini_month(ink, Rect(4, 20, 36, 34), july, ramp=JostRamp().for_page("daily"))
     links = ink.links()
     assert "month-2026-07" in links
     assert "2026-07-14" in links
@@ -103,7 +104,7 @@ def test_daily_right_column_priorities_over_notes():
     assert notes.y == pytest.approx(prio.bottom + DAILY_PRIO_GAP)
     assert notes.bottom == pytest.approx(right.bottom)
     ink = RecordingPlotter()
-    paint_priorities(ink, prio, Priorities(label="Priorities", rows=6))
+    paint_priorities(ink, prio, Priorities(label="Priorities", rows=6), ramp=JostRamp().for_page("daily"))
     ticks = [op for op in ink.ops if op[0] == "rect" and op[2] and op[1].w == TICK]
     assert len(ticks) == 6
     labels = [op[2] for op in ink.ops if op[0] == "text"]
