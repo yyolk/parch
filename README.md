@@ -52,6 +52,8 @@ Thesis C (in the year walk, after Meetings): month-banded Tasks index + weekly T
 
 Thesis B index + Thesis E dest (in the year walk, after Tasks): multi-column Review week-chip grid + weekly dest (Mon–Sun mini-write strip over unlabeled week narrative). Month headers sit on the left; hairlines span the well so months read across. **Rev** tab → year index; dest header chip is the ISO week and returns to the index. Dest `review-index-{year}` / `review-{iso_year}-W{nn}`. Proof: [`artifacts/mvp/exp-review-index-b.png`](artifacts/mvp/exp-review-index-b.png) and [`artifacts/mvp/exp-review-dest-e.png`](artifacts/mvp/exp-review-dest-e.png).
 
+Thesis T (exploratory): `parch proof` / `press --proof` applies **ProofProfile** (defaults ⊕ device ⊕ proof) — slightly larger chrome/title for on-screen review. Nomad’s device overlay is unchanged. Specimens: [`exp-typeramp-proof-year.png`](artifacts/mvp/exp-typeramp-proof-year.png), [cover](artifacts/mvp/exp-typeramp-proof-cover.png), [month](artifacts/mvp/exp-typeramp-proof-month.png), [week](artifacts/mvp/exp-typeramp-proof-week.png), [daily](artifacts/mvp/exp-typeramp-proof-daily.png), [projects](artifacts/mvp/exp-typeramp-proof-projects.png).
+
 ```shell
 uv run pytest
 ```
