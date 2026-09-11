@@ -1,10 +1,22 @@
 import pytest
 from parch.components import CoverTitle
 from parch.devices.nomad import NOMAD
-from parch.fonts import FontCatalog, JostRamp, TypeFamily, TypeInk, TypeRole, font_dir, jost_catalog
+from parch.fonts import (
+    FaceBridge,
+    FontCatalog,
+    JostRamp,
+    TypeFace,
+    TypeFamily,
+    TypeInk,
+    TypeRole,
+    TypeWeight,
+    font_dir,
+    jost_catalog,
+)
+from parch.geom import Rect
 from parch.layouts.planner.painters import paint_cover, paint_header
 from parch.plotter import RecordingPlotter
-from parch.plotter.fpdf2 import Fpdf2Plotter, resolve_weight
+from parch.plotter.fpdf2 import Fpdf2Plotter
 
 
 def test_jost_weight_files_and_defaults():
@@ -17,12 +29,33 @@ def test_jost_weight_files_and_defaults():
     assert (root / "AUTHORS").is_file()
     assert not (root / "LiberationSans-Regular.ttf").exists()
     assert not (root / "LiberationSerif-Regular.ttf").exists()
-    assert resolve_weight("sans", False, None) == "book"
-    assert resolve_weight("sans", True, None) == "bold"
-    assert resolve_weight("serif", False, None) == "medium"
-    assert resolve_weight("serif", True, None) == "medium"
-    assert resolve_weight("serif", True, "heavy") == "heavy"
     Fpdf2Plotter(NOMAD)
+
+
+def test_face_bridge_mapping_table():
+    bridge = FaceBridge()
+    assert bridge.resolve("serif", False, 10) == TypeInk(family="jost", weight="medium", size=10)
+    assert bridge.resolve("serif", True, 11) == TypeInk(family="jost", weight="medium", size=11)
+    assert bridge.resolve("sans", False, 8) == TypeInk(family="jost", weight="book", size=8)
+    assert bridge.resolve("sans", True, 8.5) == TypeInk(family="jost", weight="bold", size=8.5)
+    assert bridge.resolve("serif", True, 12, weight="heavy") == TypeInk(
+        family="jost", weight="heavy", size=12
+    )
+    assert bridge.resolve("sans", False, 9, weight="medium") == TypeInk(
+        family="jost", weight="medium", size=9
+    )
+    with pytest.raises(KeyError, match="family='jost' weight='hairline'"):
+        bridge.resolve("sans", False, 10, weight="hairline")  # type: ignore[arg-type]
+
+
+def test_jost_ramp_owns_face_bridge():
+    ramp = JostRamp()
+    assert ramp.resolve_face("serif", False, 10) == TypeInk(family="jost", weight="medium", size=10)
+    assert ramp.resolve_face("sans", False, 7.6) == TypeInk(family="jost", weight="book", size=7.6)
+    assert ramp.resolve_face("sans", True, 7.6) == TypeInk(family="jost", weight="bold", size=7.6)
+    assert ramp.resolve_face("serif", True, 14, weight="bold") == TypeInk(
+        family="jost", weight="bold", size=14
+    )
 
 
 def test_jost_catalog_is_four_cuts():
@@ -159,12 +192,74 @@ def test_header_honors_stub_ramp():
     assert _family(meta) == "jost"
 
 
+class _SpyRamp:
+    """Ramp that records face-bridge traffic; roles stay unused here."""
+
+    def __init__(self) -> None:
+        self.catalog = jost_catalog()
+        self.faces: list[tuple[TypeFace, bool, float, TypeWeight | None]] = []
+
+    def ink(self, role: TypeRole) -> TypeInk:
+        raise AssertionError(f"role path must not run for face+bold text: {role}")
+
+    def resolve_face(
+        self,
+        face: TypeFace,
+        bold: bool,
+        size: float,
+        *,
+        weight: TypeWeight | None = None,
+    ) -> TypeInk:
+        self.faces.append((face, bold, size, weight))
+        return TypeInk(family="jost", weight="heavy", size=size)
+
+
+def test_plotter_face_path_uses_ramp_policy():
+    ramp = _SpyRamp()
+    plotter = Fpdf2Plotter(NOMAD, ramp=ramp)
+    plotter.begin_page()
+    plotter.text(Rect(4, 12, 40, 8), "face", face="serif", bold=False, size=9)
+    assert ramp.faces == [("serif", False, 9, None)]
+    assert plotter.pdf.font_family == "jost:heavy"
+
+    plotter.text(
+        Rect(4, 22, 40, 8),
+        "smcp",
+        face="sans",
+        bold=True,
+        size=7.6,
+        small_caps=True,
+    )
+    assert ramp.faces == [("serif", False, 9, None), ("sans", True, 7.6, None)]
+    assert plotter.pdf.font_family == "jost:heavy"
+
+    plotter.text(Rect(4, 32, 40, 8), "role", family="jost", weight="book", size=7.4)
+    assert ramp.faces == [("serif", False, 9, None), ("sans", True, 7.6, None)]
+    assert plotter.pdf.font_family == "jost:book"
+
+
+def test_plotter_default_face_bridge_cuts():
+    plotter = Fpdf2Plotter(NOMAD)
+    plotter.begin_page()
+    box = Rect(4, 12, 40, 8)
+    plotter.text(box, "sans-reg", face="sans", bold=False, size=8)
+    assert plotter.pdf.font_family == "jost:book"
+    plotter.text(box, "sans-bold", face="sans", bold=True, size=8)
+    assert plotter.pdf.font_family == "jost:bold"
+    plotter.text(box, "serif", face="serif", bold=False, size=10)
+    assert plotter.pdf.font_family == "jost:medium"
+    plotter.text(box, "override", face="sans", bold=False, size=10, weight="heavy")
+    assert plotter.pdf.font_family == "jost:heavy"
+
+
 def test_fonts_package_does_not_import_plotter():
     import parch.fonts as fonts
 
     assert "parch.plotter" not in fonts.__dict__
     assert fonts.JostRamp is JostRamp
+    assert fonts.FaceBridge is FaceBridge
     assert fonts.TypeInk is TypeInk
     assert fonts.TypeFamily is TypeFamily
+    assert fonts.TypeFace is TypeFace
     assert fonts.jost_catalog is jost_catalog
     assert fonts.FontCatalog is FontCatalog

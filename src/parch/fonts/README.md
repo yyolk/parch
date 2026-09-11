@@ -16,16 +16,28 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 
 ## Type ramp
 
-`TypeInk` is `family` + `weight` + `size`. Painters call `ramp.ink(role)` and
-pass those fields to `Plotter.text`. `family` is a closed key
+`TypeInk` is `family` + `weight` + `size`. `family` is a closed key
 (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can pick
 another catalog family without ripping out the plotter kwarg.
 
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
-and handed to `Fpdf2Plotter` at press time.
+and handed to `Fpdf2Plotter` at press time with the ramp itself.
+
+Two ways onto ink — both owned by the ramp, not the plotter:
+
+| Path | Who | API |
+| --- | --- | --- |
+| Role | cover / header | `ramp.ink(role)` → `family` + `weight` + `size` |
+| Face | every other painter (intentional) | `ramp.resolve_face(face, bold, size)` via `FaceBridge` |
+
+`FaceBridge` is a pure table: serif → Medium, sans regular → Book, sans bold
+→ Bold. An explicit `weight` wins. Size is carried onto the ink; it is not
+a weight axis today. Cover specs stay fully literal (no half-applied chrome).
 
 | Ramp | chrome | cover_brow | page_title | cover_year |
 | --- | --- | --- | --- | --- |
 | `JostRamp` (default) | Jost Book | Jost Medium | Jost Medium | Jost Heavy |
 
-Cover and header painters take the ramp. Cover specs stay fully literal.
+Later role adoption: add a `TypeRole`, map it on the ramp, switch that
+painter from `face=`/`bold=` to `ramp.ink(role)`. Do not grow a massive
+role enum in this spike.
