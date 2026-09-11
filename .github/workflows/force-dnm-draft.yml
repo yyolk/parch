@@ -39,11 +39,42 @@ jobs:
             TEXT="$1" python3 -c 'import os,re,sys,unicodedata; t="".join(" " if unicodedata.category(c)=="Zs" or c in "\u200b\u200c\u200d\u2060\ufeff" else c for c in os.environ.get("TEXT","")); sys.exit(0 if "donotmerge" in re.sub(r"[^a-z0-9]+", "", t.lower()) else 1)'
           }
 
+          DNM_LABEL='DO NOT MERGE'
+
+          has_exact_label() {
+            local csv="$1"
+            [[ ",${csv}," == *",${DNM_LABEL},"* ]]
+          }
+
+          ensure_label() {
+            local name="$1" color="$2" desc="$3"
+            if gh label list --limit 100 --json name --jq '.[].name' | grep -Fxq "$name"; then
+              return 0
+            fi
+            gh label create "$name" --color "$color" --description "$desc"
+          }
+
           title_hit=false
-          label_hit=false
           if has_dnm "$TITLE"; then
             title_hit=true
           fi
+
+          # Title is source of truth for the exact "DO NOT MERGE" label.
+          if [[ "$title_hit" == true ]]; then
+            ensure_label "$DNM_LABEL" "b60205" "Do not merge; workflow forces this PR to draft on the default branch"
+            if has_exact_label "$LABELS"; then
+              echo "${DNM_LABEL} label already present"
+            else
+              gh pr edit "$PR" --add-label "$DNM_LABEL"
+              echo "Added ${DNM_LABEL} label"
+            fi
+          elif has_exact_label "$LABELS"; then
+            gh pr edit "$PR" --remove-label "$DNM_LABEL"
+            echo "Removed ${DNM_LABEL} label"
+          fi
+
+          LABELS=$(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(",")')
+          label_hit=false
           if has_dnm "$LABELS"; then
             label_hit=true
           fi
