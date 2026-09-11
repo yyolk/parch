@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from parch import ConfigError
-from parch.fonts.ramp import TypeOverlay, jost_defaults, require_overlay
+from parch.fonts.ramp import ROOT_BODY, TypeOverlay, jost_defaults, require_overlay
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
@@ -27,6 +27,7 @@ class Device:
     toolbar_clearance: float
     writing_clearance: float
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
+    root_body: float = ROOT_BODY
 
     @property
     def content_top(self) -> float:
@@ -58,11 +59,13 @@ class Device:
 
 # Identity overlay — no size/weight patches. Press still builds
 # EffectiveRamp = defaults ⊕ this overlay (⊕ toml if present ⊕ proof if on)
-# so the device hook is wired without a visual chrome bump vs greenfield tip.
-# ProofProfile is a separate press-mode layer; it does not mutate this overlay.
+# at ``root_body``. Overlay size is an absolute step override; it does not
+# change root. ProofProfile is a separate press-mode layer; it does not
+# mutate this overlay.
 NOMAD_TYPE_OVERLAY = TypeOverlay()
 
 # 1404×1872 @ 300 PPI → 118.87×158.50 mm. Toolbar top 8 mm.
+# Body root 8.5pt: month day nums land on pre-snap 8.5; ratios follow.
 NOMAD = Device(
     id="supernote-nomad",
     name="SuperNote Nomad",
@@ -75,6 +78,7 @@ NOMAD = Device(
     toolbar_clearance=8.0,
     writing_clearance=4.0,
     type_overlay=NOMAD_TYPE_OVERLAY,
+    root_body=ROOT_BODY,
 )
 
 _KNOWN = {

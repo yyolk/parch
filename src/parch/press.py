@@ -65,6 +65,9 @@ def press(
 
         EffectiveRamp = defaults ⊕ device ⊕ toml ⊕ proof (if on)
 
+    at ``device.root_body``. Overlay size is an absolute override for
+    that step; it does not change root or sibling steps.
+
     A bad overlay raises ``ConfigError`` before paint. ``proof=True``
     selects ``PROOF_PROFILE``. ``proof=ProofProfile(...)`` uses that
     instance. Nomad's device overlay stays identity.
@@ -84,7 +87,10 @@ def press(
     resolved = (
         ramp
         if ramp is not None
-        else bind_ramp(overlay=merge_press_overlay(device, spec, overlay, proof))
+        else bind_ramp(
+            overlay=merge_press_overlay(device, spec, overlay, proof),
+            root_body=device.root_body,
+        )
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)

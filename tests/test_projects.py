@@ -429,7 +429,7 @@ def test_project_page_g_clone_and_index_chip():
     assert "Doing" not in texts
     p_texts = [op for op in ink.ops if op[0] == "text" and op[2] == "P"]
     assert all(op[7] == pytest.approx(MUTED) for op in p_texts)
-    assert all(op[3] == pytest.approx(5.4) for op in p_texts)
+    assert all(op[3] == pytest.approx(5.2) for op in p_texts)
     assert all(op[9] == "book" for op in p_texts)
     assert all(op[10] == "jost" for op in p_texts)
     ticks = [

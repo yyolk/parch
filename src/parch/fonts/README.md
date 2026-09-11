@@ -5,7 +5,7 @@ Vendored static TTF subsets (fpdf2 cannot load variable fonts). Weights stay
 
 ## Jost 3.7
 
-- `Jost-400-Book.ttf` — weight `book` — steps `body` / `chrome` / `label` / `caption` (regular)
+- `Jost-400-Book.ttf` — weight `book` — steps `body` / `chrome` / `label` / `caption` / `micro` (regular)
 - `Jost-500-Medium.ttf` — weight `medium` — steps `title` / `eyebrow` (regular)
 - `Jost-700-Bold.ttf` — weight `bold` — `strong` emphasis on those steps
 - `Jost-800-Heavy.ttf` — weight `heavy` — step `display`
@@ -24,27 +24,40 @@ key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can
 pick another catalog family without ripping out the plotter path.
 
 The closed ladder is **design tokens**, not page-semantic roles. Painters pick
-from `display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`.
-Today's four roles map as `cover_year` → `display`, `cover_brow` → `eyebrow`,
-`page_title` → `title`, `chrome` → `chrome`.
+from `display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`
+/ `micro`. Today's four roles map as `cover_year` → `display`,
+`cover_brow` → `eyebrow`, `page_title` → `title`, `chrome` → `chrome`.
+
+Sizes are **em-relative**. Ratio-driven steps are
+`root_body × JOST_RATIOS[step]`. Nomad / default `root_body` is **8.5pt**
+(month day numbers). `display` is a **fixed 42pt** exception — it does not
+track root, so the cover year does not reflow when the body scale moves.
+`Device.root_body` is the device hook; press builds the ramp at that root.
 
 `FontCatalog` is an explicit `(family, weight) → ttf` map, owned by the ramp
 and handed to `Fpdf2Plotter` at press time.
 
 ### Closed scale (TypeStep × emphasis)
 
-| Step | Size | Regular | Strong | Typical use |
-| --- | --- | --- | --- | --- |
-| `display` | 42 | Heavy | Heavy | Cover year |
-| `title` | 11 | Medium | Bold | Page titles; week day numbers |
-| `eyebrow` | 10 | Medium | Bold | Cover brow |
-| `body` | 8.2 | Book | Bold | Cover specs; month-grid day numbers |
-| `chrome` | 7.4 | Book | Bold | Header chips / meta; nav; hours |
-| `label` | 6.4 | Book | Bold | Field labels, notes, weekdays, stubs |
-| `caption` | 5.4 | Book | Bold | Mini-month days, week numbers, cues |
+At Nomad `root_body` 8.5pt:
 
-Nearby one-offs snap to the nearest step. Overlay may change size and/or
-weight. Overlay never changes `family`.
+| Step | Ratio | Size | Regular | Strong | Typical use |
+| --- | --- | --- | --- | --- | --- |
+| `display` | *(fixed)* | 42 | Heavy | Heavy | Cover year |
+| `title` | 11/8.5 | 11 | Medium | Bold | Page titles; week day numbers |
+| `eyebrow` | 10/8.5 | 10 | Medium | Bold | Cover brow |
+| `body` | 1.0 | 8.5 | Book | Bold | Cover specs; month-grid day numbers |
+| `chrome` | 7.4/8.5 | 7.4 | Book | Bold | Header chips / meta |
+| `label` | 6.4/8.5 | 6.4 | Book | Bold | Field labels, notes, weekdays |
+| `caption` | 5.4/8.5 | 5.4 | Book | Bold | Clone status; caption-ish cues |
+| `micro` | 4.3/8.5 | 4.3 | Book | Bold | Mini-month dow; habit day nums |
+
+A root bump rescales every ratio-driven step together; `display` stays 42.
+True one-offs (nav 7.6, schedule hours 7.0, review day 9.2, habit denser
+cuts) use `TypeRef.size` as an absolute per-call override — last resort,
+not new semantic roles.
+
+Overlay may change size and/or weight. Overlay never changes `family`.
 
 `Plotter.text` is ink|ref only. There is no `face` / `bold` path and no
 `FaceBridge`.
@@ -56,6 +69,11 @@ weight. Overlay never changes `family`.
 takes. No I/O in validators. A patch applies to both emphases of that
 step; an explicit weight replaces the emphasis-derived cut. Overlay never
 changes `family`.
+
+**Overlay size is an absolute override for that step.** It does not
+change `root_body` and does not rescale sibling steps. A chrome
+`size=9.6` patch leaves title / body / micro at their em-derived sizes.
+`TypeRef.size` wins over both the em size and an overlay size.
 
 `validate_overlay(overlay, defaults)` is **pure**. `overlay` may be a
 `TypeOverlay` or a mapping (press TOML shape). Result is `OverlayOk` or a
@@ -84,6 +102,7 @@ Size bands (pt, inclusive):
 | `chrome` | 5–16 |
 | `label` | 4–12 |
 | `caption` | 4–10 |
+| `micro` | 2.5–8 |
 
 Merge (`defaults ⊕ device ⊕ toml ⊕ proof`, then an optional `press(..., overlay=)`):
 
@@ -111,13 +130,14 @@ weight = "bold"
 
 `examples/mvp.toml` has no typography table (identity / defaults). Side
 example: `examples/mvp-typo-overlay.toml`. `press` builds
-`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay ⊕ proof`. An
-explicit `ramp=` argument wins the whole object. `YearPlanner()` /
-`PlannerLayout()` with no args still use `JostRamp` (defaults, no overlay).
+`EffectiveRamp = defaults ⊕ device ⊕ spec.type_overlay ⊕ proof` at
+`device.root_body`. An explicit `ramp=` argument wins the whole object.
+`YearPlanner()` / `PlannerLayout()` with no args still use `JostRamp`
+(default root 8.5, no overlay).
 
 Nomad's `type_overlay` is **identity** (`TypeOverlay()`): no size/weight
-patches. The device hook is wired; a later profile can patch chrome
-without touching painters.
+patches. Nomad `root_body` is 8.5pt. The device hook is wired; a later
+profile can patch chrome or bump root without touching painters.
 
 ### ProofProfile
 
