@@ -132,6 +132,12 @@ def test_rejects_size_out_of_range():
     assert tiny_display.step == "display"
     typed = validate_overlay(TypeOverlay(chrome=TypePatch(size=16.1)), defaults)
     assert isinstance(typed, SizeOutOfRange)
+    tiny_micro = validate_overlay(
+        {"schema_version": OVERLAY_SCHEMA_VERSION, "micro": {"size": 2.0}},
+        defaults,
+    )
+    assert isinstance(tiny_micro, SizeOutOfRange)
+    assert tiny_micro.step == "micro"
 
 
 def test_version_mismatch_is_exact_match():

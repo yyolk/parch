@@ -1,6 +1,7 @@
 # Same MVP job as examples/mvp.toml, plus an editable typography overlay.
 # press() merges: code defaults ⊕ device overlay (Nomad identity) ⊕ this table.
-# Closed TypeSteps only: display, title, eyebrow, body, chrome, label, caption.
+# Closed TypeSteps only: display, title, eyebrow, body, chrome, label, caption, micro.
+# Overlay size is an absolute override for that step (does not change root).
 # schema_version must exactly match OVERLAY_SCHEMA_VERSION (1 today).
 # Unknown steps, fields, or non-Jost weights fail the press before paint.
 # notes_pages = 1 keeps the year artifact smaller; 2 still works.

@@ -5,11 +5,14 @@ import pytest
 from parch.components import CoverTitle
 from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY
 from parch.fonts import (
+    DISPLAY_SIZE,
+    JOST_RATIOS,
     JOST_SCALE,
     PROOF_CHROME_SIZE,
     PROOF_EYEBROW_SIZE,
     PROOF_PROFILE,
     PROOF_TITLE_SIZE,
+    ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
     FontCatalog,
@@ -65,7 +68,7 @@ def test_jost_catalog_is_four_cuts():
 
 
 def test_jost_scale_table_invariants():
-    """Closed ladder: seven used steps, sizes descend, weights stay in catalog."""
+    """Closed ladder: eight used steps, sizes descend, weights stay in catalog."""
     assert TYPE_STEPS == (
         "display",
         "title",
@@ -74,8 +77,10 @@ def test_jost_scale_table_invariants():
         "chrome",
         "label",
         "caption",
+        "micro",
     )
     assert set(JOST_SCALE) == set(TYPE_STEPS)
+    assert set(JOST_RATIOS) == set(TYPE_STEPS) - {"display"}
     sizes = [JOST_SCALE[step].size for step in TYPE_STEPS]
     assert sizes == sorted(sizes, reverse=True)
     assert len(set(sizes)) == len(sizes)
@@ -97,14 +102,16 @@ def test_jost_scale_table_invariants():
         catalog.path(strong.family, strong.weight)
         assert rank[strong.weight] >= rank[regular.weight]
 
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
+    assert ramp.root_body == ROOT_BODY == 8.5
+    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=DISPLAY_SIZE)
     assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
     assert ramp.ink("title", "strong") == TypeInk(family="jost", weight="bold", size=11)
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
-    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.2)
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.5)
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=7.4)
     assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
     assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
+    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=4.3)
     with pytest.raises(KeyError):
         ramp.ink("cover_year")  # type: ignore[arg-type]
     assert set(ramp.catalog.cuts) == set(jost_catalog().cuts)
@@ -136,7 +143,7 @@ def test_cover_uses_display_eyebrow_body_steps():
     assert brow[9] == "medium"
     assert _family(brow) == "jost"
     specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
-    assert specs[3] == 8.2
+    assert specs[3] == 8.5
     assert specs[9] == "book"
     assert _family(specs) == "jost"
 
@@ -258,6 +265,9 @@ def test_fonts_package_does_not_import_plotter():
     assert fonts.TypeOverlay is TypeOverlay
     assert fonts.TypePatch is TypePatch
     assert fonts.TYPE_STEPS is TYPE_STEPS
+    assert fonts.ROOT_BODY is ROOT_BODY
+    assert fonts.DISPLAY_SIZE is DISPLAY_SIZE
+    assert fonts.JOST_RATIOS is JOST_RATIOS
     assert fonts.validate_overlay is validate_overlay
     assert fonts.ProofProfile is ProofProfile
     assert fonts.PROOF_PROFILE is PROOF_PROFILE
@@ -289,9 +299,10 @@ def test_overlay_missing_step_keeps_default():
     assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=11)
     assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=42)
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=10)
-    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.2)
+    assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=8.5)
     assert ramp.ink("label") == TypeInk(family="jost", weight="book", size=6.4)
     assert ramp.ink("caption") == TypeInk(family="jost", weight="book", size=5.4)
+    assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=4.3)
 
 
 def test_overlay_never_changes_family():
@@ -584,6 +595,7 @@ def test_type_ref_is_frozen_type_step_only():
     assert ref.step == "chrome"
     with pytest.raises(AttributeError):
         ref.step = "title"  # type: ignore[misc]
+    assert TypeRef(step="micro").step == "micro"
     with pytest.raises(ValueError, match="unknown type step"):
         TypeRef(step="cover_year")  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="size must be > 0"):
