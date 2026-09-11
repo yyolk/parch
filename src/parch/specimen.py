@@ -215,6 +215,7 @@ def build_device_catalog(workdir: str | Path, device_id: str) -> Path:
     canonical = get_device(device_id).id
     dest = specimens_dest(workdir, canonical)
     write_specimens(dest, canonical)
+    write_catalog_index(catalog_dest(workdir), (canonical,))
     return dest
 
 

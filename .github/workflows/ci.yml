@@ -44,6 +44,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       UV_PYTHON: "3.14"
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -58,7 +62,6 @@ jobs:
       - name: Build Nomad specimen catalog
         run: |
           uv run parch specimen supernote-nomad -w out
-          uv run python -c 'from pathlib import Path; from parch.specimen import write_catalog_index; write_catalog_index(Path("out/specimens"), ("supernote-nomad",))'
           test -s out/specimens/index.html
           test -s out/specimens/supernote-nomad/cover.png
           test -s out/specimens/supernote-nomad/index.html

@@ -110,6 +110,9 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     dest = build_device_catalog(tmp_path, "supernote-nomad")
     assert (dest / "cover.png").stat().st_size > 0
     assert (dest / "index.html").is_file()
+    root = catalog_dest(tmp_path) / "index.html"
+    assert root.is_file()
+    assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
     assert list(dest.glob("*.pdf")) == []
     html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'src="cover.png"' in html
@@ -133,3 +136,5 @@ def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
     out = build_device_catalog(tmp_path, "nomad")
     assert seen["device_id"] == "supernote-nomad"
     assert out == tmp_path / "specimens" / "supernote-nomad"
+    root = catalog_dest(tmp_path) / "index.html"
+    assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
