@@ -3,7 +3,8 @@ from pathlib import Path
 import pytest
 from pypdf import PdfReader
 
-from parch.press import main, press
+from parch.fonts import TypePatch
+from parch.press import _load_spec, main, press
 from parch.spec import Spec
 
 MM_PER_INCH = 25.4
@@ -88,3 +89,47 @@ def test_cli_press_toml(tmp_path: Path):
     dests = _named_dests(PdfReader(out))
     assert "2026-01-01" in dests
     assert "2026-01-31" in dests
+
+
+def test_cli_load_keeps_toml_overlay_under_month_flag():
+    spec = _load_spec("examples/mvp-typo-overlay.toml", year=None, month=1, day=None)
+    assert spec.months == (1,)
+    assert spec.type_overlay.chrome == TypePatch(size=9.6, weight="bold")
+    assert spec.type_overlay.display == TypePatch(size=48, weight="heavy")
+    assert spec.project_index_pages == 3
+
+
+def test_cli_rejects_unknown_typography(tmp_path: Path, capsys):
+    spec = tmp_path / "bad.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
+        '[typography.overlay.cover_year]\nsize = 48\n',
+        encoding="utf-8",
+    )
+    out = tmp_path / "bad.pdf"
+    assert main(["press", str(spec), "-o", str(out)]) == 2
+    err = capsys.readouterr().err
+    assert "unknown step 'cover_year'" in err
+    assert not out.exists()
+
+
+def test_cli_unknown_weight_fails(tmp_path: Path, capsys):
+    spec = tmp_path / "hair.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
+        '[typography.overlay.chrome]\nweight = "hairline"\n',
+        encoding="utf-8",
+    )
+    assert main(["press", str(spec), "-o", str(tmp_path / "hair.pdf")]) == 2
+    assert "bad weight 'hairline'" in capsys.readouterr().err
+
+
+def test_cli_version_mismatch_fails(tmp_path: Path, capsys):
+    spec = tmp_path / "ver.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 99\n'
+        '[typography.overlay.chrome]\nsize = 8.6\n',
+        encoding="utf-8",
+    )
+    assert main(["press", str(spec), "-o", str(tmp_path / "ver.pdf")]) == 2
+    assert "schema_version" in capsys.readouterr().err

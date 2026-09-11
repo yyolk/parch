@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from parch import ConfigError
-from parch.fonts.ramp import TypeOverlay
+from parch.fonts.ramp import TypeOverlay, jost_defaults, require_overlay
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
@@ -86,4 +86,6 @@ def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:
         raise ConfigError(f"unknown device {spec!r}; MVP knows supernote-nomad")
-    return _KNOWN[key]
+    device = _KNOWN[key]
+    require_overlay(device.type_overlay, jost_defaults())
+    return device

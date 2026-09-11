@@ -1,6 +1,10 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
+from parch import ConfigError
+from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
 from parch.spec import Spec
 
 
@@ -86,6 +90,83 @@ def test_habit_columns_from_toml_keys():
     assert mvp.meeting_index_rows == 16
     assert mvp.meeting_count == 16
     assert mvp.task_rows == 6
+    assert mvp.type_overlay == TypeOverlay()
+
+
+def test_typography_overlay_from_toml():
+    overlayed = Spec.from_path(Path("examples/mvp-typo-overlay.toml"))
+    assert overlayed.type_overlay == TypeOverlay(
+        schema_version=OVERLAY_SCHEMA_VERSION,
+        chrome=TypePatch(size=9.6, weight="bold"),
+        title=TypePatch(size=14, weight="bold"),
+        eyebrow=TypePatch(size=13, weight="bold"),
+        display=TypePatch(size=48, weight="heavy"),
+    )
+    partial = Spec.from_mapping(
+        {
+            "typography": {
+                "overlay": {
+                    "schema_version": OVERLAY_SCHEMA_VERSION,
+                    "chrome": {"size": 9.2},
+                    "title": {"weight": "bold"},
+                }
+            }
+        }
+    )
+    assert partial.type_overlay.chrome == TypePatch(size=9.2)
+    assert partial.type_overlay.title == TypePatch(weight="bold")
+    assert partial.type_overlay.display is None
+    assert partial.type_overlay.schema_version == OVERLAY_SCHEMA_VERSION
+
+
+def test_typography_unknown_keys_fail_loudly():
+    with pytest.raises(ConfigError, match="unknown typography key 'family'"):
+        Spec.from_mapping({"typography": {"family": "jost"}})
+    with pytest.raises(ConfigError, match="unknown step 'cover_year'"):
+        Spec.from_mapping(
+            {
+                "typography": {
+                    "overlay": {
+                        "schema_version": OVERLAY_SCHEMA_VERSION,
+                        "cover_year": {"size": 48},
+                    }
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="unknown step 'chrome.family'"):
+        Spec.from_mapping(
+            {
+                "typography": {
+                    "overlay": {
+                        "schema_version": OVERLAY_SCHEMA_VERSION,
+                        "chrome": {"family": "jost"},
+                    }
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="bad weight 'hairline'"):
+        Spec.from_mapping(
+            {
+                "typography": {
+                    "overlay": {
+                        "schema_version": OVERLAY_SCHEMA_VERSION,
+                        "chrome": {"weight": "hairline"},
+                    }
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="nonpositive size"):
+        Spec.from_mapping(
+            {
+                "typography": {
+                    "overlay": {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}}
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="schema_version"):
+        Spec.from_mapping({"typography": {"overlay": {"chrome": {"size": 9.2}}}})
+    with pytest.raises(ConfigError, match="typography must be a TOML table"):
+        Spec.from_mapping({"typography": "loud"})
 
 
 def test_value_bags_are_slotted():

@@ -1,7 +1,17 @@
-from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY, get_device
-from parch.fonts import TYPE_STEPS, EffectiveRamp, JostRamp, TypeOverlay
-from parch import ConfigError
 import pytest
+
+from parch import ConfigError
+from parch.devices import NOMAD, NOMAD_TYPE_OVERLAY, get_device
+from parch.fonts import (
+    OVERLAY_SCHEMA_VERSION,
+    TYPE_STEPS,
+    EffectiveRamp,
+    JostRamp,
+    OverlayOk,
+    TypeOverlay,
+    jost_defaults,
+    validate_overlay,
+)
 
 
 def test_nomad_geometry():
@@ -37,8 +47,12 @@ def test_nomad_supplies_identity_type_overlay():
     assert isinstance(NOMAD.type_overlay, TypeOverlay)
     assert NOMAD.type_overlay == TypeOverlay()
     assert NOMAD_TYPE_OVERLAY == TypeOverlay()
+    assert NOMAD.type_overlay.schema_version == OVERLAY_SCHEMA_VERSION
+    result = validate_overlay(NOMAD.type_overlay, jost_defaults())
+    assert isinstance(result, OverlayOk)
     ramp = EffectiveRamp(overlay=NOMAD.type_overlay)
     jost = JostRamp()
     for step in TYPE_STEPS:
         assert ramp.ink(step) == jost.ink(step)
         assert ramp.ink(step, "strong") == jost.ink(step, "strong")
+    assert get_device("supernote-nomad") is NOMAD
