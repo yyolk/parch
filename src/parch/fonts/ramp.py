@@ -7,8 +7,6 @@ Plotter still takes ``face`` / ``weight`` / ``size``; the ramp fills those kwarg
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
-from parch.plotter.protocol import TextFace, TextWeight
-
 type TypeRole = Literal["cover_year", "cover_brow", "page_title", "chrome"]
 
 
@@ -16,8 +14,8 @@ type TypeRole = Literal["cover_year", "cover_brow", "page_title", "chrome"]
 class TypeInk:
     """Resolved face / weight / size — the type fields ``Plotter.text`` already takes."""
 
-    face: TextFace
-    weight: TextWeight
+    face: Literal["sans", "serif"]
+    weight: Literal["book", "medium", "bold", "heavy"]
     size: float
 
 
