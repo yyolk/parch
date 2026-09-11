@@ -5,14 +5,7 @@ from typing import override
 
 from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
-from parch.plotter.protocol import (
-    Plotter,
-    TextAlign,
-    TextFace,
-    TextFamily,
-    TextWeight,
-    resolve_text_ink,
-)
+from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
 
 type Op = tuple[object, ...]
 
@@ -70,35 +63,24 @@ class RecordingPlotter(Plotter):
         *,
         ink: TypeInk | None = None,
         ref: TypeRef | None = None,
-        size: float = 10,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
     ) -> None:
         resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
-        if resolved is not None:
-            size = resolved.size
-            weight = resolved.weight
-            family = resolved.family
-            bold = False
-            face = "sans"
         self.ops.append(
             (
                 "text",
                 box,
                 content,
-                size,
+                resolved.size,
                 align,
-                bold,
-                face,
+                False,
+                "sans",
                 gray,
                 small_caps,
-                weight,
-                family,
+                resolved.weight,
+                resolved.family,
             )
         )
 
@@ -131,5 +113,5 @@ class RecordingPlotter(Plotter):
         return [op for op in self.ops if op[0] == "text"]
 
     def face_only_text(self) -> list[Op]:
-        """Text ops that never set ``family`` — FaceBridge / legacy face+bold."""
+        """Text ops that never set ``family`` — a leak if ink/ref resolution failed."""
         return [op for op in self.text_ops() if op[10] is None]

@@ -77,11 +77,10 @@ class PlannerLayout:
     """Seat components below the unmarked toolbar. Cover skips slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``JostRamp``) and binds it onto
-    the plotter. Allowlisted painters pass ``TypeRef`` / ink. Habit /
-    meeting / review / tasks stay on ``face`` + ``bold``; the plotter asks
-    ``ramp.resolve_face``. Press may hand in an ``EffectiveRamp``
-    (defaults ⊕ device ⊕ toml ⊕ proof). Dual-font ramps are future work;
-    ``family`` stays on the resolved ink.
+    the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
+    ladder. Press may hand in an ``EffectiveRamp`` (defaults ⊕ device ⊕
+    toml ⊕ proof). Dual-font ramps are future work; ``family`` stays on
+    the resolved ink.
     """
 
     def __init__(self, ramp: TypeRamp | None = None) -> None:
@@ -122,25 +121,25 @@ class PlannerLayout:
             case "projects_index":
                 paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=ramp)
             case "project":
-                paint_project(plotter, well, _one(page, ProjectsBoard))
+                paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
             case "meetings_index":
-                paint_meetings_index(plotter, well, _one(page, MeetingIndex))
+                paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=ramp)
             case "meeting":
-                paint_meeting(plotter, well, _one(page, MeetingAgenda))
+                paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=ramp)
             case "tasks_index":
-                paint_tasks_index(plotter, well, _one(page, TasksIndex))
+                paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=ramp)
             case "task":
-                paint_task(plotter, well, _one(page, TasksWeekPage))
+                paint_task(plotter, well, _one(page, TasksWeekPage), ramp=ramp)
             case "review_index":
-                paint_review_index(plotter, well, _one(page, ReviewIndex))
+                paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=ramp)
             case "review":
-                paint_review(plotter, well, _one(page, ReviewWeekPage))
+                paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=ramp)
             case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid))
+                paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
             case "month":
                 paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
             case "habits":
-                paint_habit_grid(plotter, well, _one(page, HabitGrid))
+                paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=ramp)
             case "weekly":
                 paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
             case "daily":
@@ -154,7 +153,7 @@ class PlannerLayout:
                     ramp=ramp,
                 )
             case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes))
+                paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 

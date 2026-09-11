@@ -17,7 +17,7 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 ## Type ramp
 
 `TypeRef` is a frozen `TypeStep` + optional `emphasis` + optional `size`.
-No family, no weight on the ref. Migrated painters pass `ref=` (or `ink=`).
+No family, no weight on the ref. Painters pass `ref=` (or `ink=`).
 `Plotter.text` resolves a ref once at the edge via `plotter.ramp`.
 `TypeInk` is the resolved `family` + `weight` + `size`. `family` is a closed
 key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can
@@ -46,19 +46,8 @@ and handed to `Fpdf2Plotter` at press time.
 Nearby one-offs snap to the nearest step. Overlay may change size and/or
 weight. Overlay never changes `family`.
 
-### FaceBridge
-
-Unmigrated painters still pass `face` + `bold`. `Fpdf2Plotter` asks
-`ramp.resolve_face(face, bold, size)` — a pure table on `FaceBridge`.
-An explicit `weight` wins. Size is carried onto the ink; it is not a
-weight axis today.
-
-| face | bold | weight | → TypeInk |
-| --- | --- | --- | --- |
-| `serif` | any | omitted | `jost` / **medium** / *size* |
-| `sans` | `False` | omitted | `jost` / **book** / *size* |
-| `sans` | `True` | omitted | `jost` / **bold** / *size* |
-| any | any | set | `jost` / **that weight** / *size* |
+`Plotter.text` is ink|ref only. There is no `face` / `bold` path and no
+`FaceBridge`.
 
 ### Overlay
 
@@ -152,34 +141,17 @@ uv run parch press examples/mvp.toml --proof -o artifacts/mvp/exp-typeramp-proof
 ```
 
 API: `press(spec, out, proof=True)` or `press(spec, out, proof=ProofProfile())`.
-Allowlisted painters already call `ramp.ink(step)`; this PR does not sweep
-the FaceBridge backlog.
+Every text-emitting painter is on the allowlist and speaks steps.
 
 ### Strangler allowlist
 
-`MigratedSurface` / `MIGRATED_SURFACES` lists painter entrypoints that
-**must** pass `TypeRef` / ink and emit `family` + `weight` + `size`.
-`RecordingPlotter.face_only_text()` fails CI if a listed painter still
-emits face-only text.
+`MigratedSurface` / `MIGRATED_SURFACES` lists every text-emitting painter
+entrypoint. Each must pass `TypeRef` / ink and emit `family` + `weight` +
+`size`. `RecordingPlotter.face_only_text()` fails CI if a listed painter
+still emits text without a resolved family.
 
-| Surface | Entrypoint |
-| --- | --- |
-| cover | `paint_cover` |
-| header | `paint_header` |
-| nav | `paint_nav` |
-| annual / year | `paint_annual` |
-| month | `paint_month_grid` |
-| week | `paint_week` |
-| daily | `paint_daily` |
-| projects index | `paint_projects_index` |
-
-**FaceBridge backlog** (documented, not migrated this cut):
-
-- `paint_habit_grid` (+ comparison variants)
-- `paint_meetings_index` / `paint_meeting`
-- `paint_review_index` / `paint_review`
-- `paint_tasks_index` / `paint_task`
-
-Nav is on the allowlist. Quarter dest, project dest, and daily-notes wells
-are not. Shared helpers they call (`_paint_mini_month`, `paint_notes`)
-speak steps only when the caller passes `ramp=`.
+Layout wells (cover, header, nav, annual, quarter, month, week, daily,
+daily notes, projects index/dest, habit, meetings, review, tasks) and
+comparison variants (`paint_habit_grid_*`, `paint_quarter_*`) are listed.
+Shared helpers (`_paint_mini_month`, `_paint_note_box`,
+`_paint_checklist_box`, clone tracks) always ink.
