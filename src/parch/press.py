@@ -7,19 +7,48 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
+from parch.fonts import FontCatalog, JostBesleyRamp, JostRamp, TypeRamp, jost_catalog
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
+_RAMP_TOKENS = {"jost", "jost-besley"}
 
 
-def press(spec: Spec, output: Path, plotter: Plotter | None = None) -> Path:
-    """Build the MVP book and write ``output``."""
+def _ramp_named(token: str) -> TypeRamp:
+    match token:
+        case "jost-besley":
+            return JostBesleyRamp()
+        case "jost":
+            return JostRamp()
+        case _:
+            raise ConfigError(f"unknown ramp {token!r}; known: jost, jost-besley")
+
+
+def _catalog_of(ramp: TypeRamp) -> FontCatalog:
+    catalog = getattr(ramp, "catalog", None)
+    if isinstance(catalog, FontCatalog):
+        return catalog
+    return jost_catalog()
+
+
+def press(
+    spec: Spec,
+    output: Path,
+    plotter: Plotter | None = None,
+    ramp: TypeRamp | None = None,
+) -> Path:
+    """Build the MVP book and write ``output``.
+
+    Default ramp is ``JostRamp``. Pass ``JostBesleyRamp`` (or ``--ramp jost-besley``)
+    for the dual-font specimen. The ramp's catalog is handed to ``Fpdf2Plotter``.
+    """
     device = get_device(spec.device)
+    resolved = JostRamp() if ramp is None else ramp
     if plotter is None:
-        plotter = Fpdf2Plotter(device)
-    YearPlanner().plot(spec, plotter)
+        plotter = Fpdf2Plotter(device, catalog=_catalog_of(resolved))
+    YearPlanner(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
 
@@ -91,6 +120,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int, help="Overlay planner year.")
     parser.add_argument("--month", type=int, help="MVP month (1–12).")
     parser.add_argument("--day", type=int, help="MVP daily page day-of-month.")
+    parser.add_argument(
+        "--ramp",
+        choices=sorted(_RAMP_TOKENS),
+        default="jost",
+        help="Type ramp: jost (default) or jost-besley (dual-font specimen).",
+    )
     # Accept a leading `press` verb so `parch press` and `python -m parch press` match.
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "press":
@@ -99,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month, day=args.day)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0])
+        first = press(spec, outputs[0], ramp=_ramp_named(args.ramp))
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

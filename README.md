@@ -61,4 +61,4 @@ Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/late
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
-Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) is SIL OFL 1.1 — see `src/parch/fonts/LICENSE`.
+Vendored [Jost](https://indestructibletype.com/Jost.html) (Book / Medium / Bold / Heavy) and [Besley](https://indestructibletype.com/Besley.html) (Regular / Bold) are SIL OFL 1.1 — see `src/parch/fonts/LICENSE` and `LICENSE-Besley`. Weights stay curated per family. Dual-font specimen: `parch press … --ramp jost-besley`.

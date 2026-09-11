@@ -1,21 +1,24 @@
 """Role-based type: painters ask for roles; a ramp resolves plotter ink.
 
 Explicit object — no ambient container, no signature injection, no globals.
-Plotter still takes ``face`` / ``weight`` / ``size``; the ramp fills those kwargs.
+``TypeInk`` carries family + weight + size. Painters call ``ramp.ink(role)``
+and pass those fields through; they do not think in sans/serif slots.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Protocol
+
+from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, jost_besley_catalog, jost_catalog
 
 type TypeRole = Literal["cover_year", "cover_brow", "page_title", "chrome"]
 
 
 @dataclass(frozen=True, slots=True)
 class TypeInk:
-    """Resolved face / weight / size — the type fields ``Plotter.text`` already takes."""
+    """Resolved family / weight / size for ``Plotter.text``."""
 
-    face: Literal["sans", "serif"]
-    weight: Literal["book", "medium", "bold", "heavy"]
+    family: TypeFamily
+    weight: TypeWeight
     size: float
 
 
@@ -26,16 +29,37 @@ class TypeRamp(Protocol):
 
 
 _JOST: dict[TypeRole, TypeInk] = {
-    "cover_year": TypeInk(face="serif", weight="heavy", size=42),
-    "cover_brow": TypeInk(face="serif", weight="medium", size=10),
-    "page_title": TypeInk(face="serif", weight="medium", size=11),
-    "chrome": TypeInk(face="sans", weight="book", size=7.4),
+    "cover_year": TypeInk(family="jost", weight="heavy", size=42),
+    "cover_brow": TypeInk(family="jost", weight="medium", size=10),
+    "page_title": TypeInk(family="jost", weight="medium", size=11),
+    "chrome": TypeInk(family="jost", weight="book", size=7.4),
+}
+
+# Dual-font example. Chrome stays Jost Book. Titles are Besley (Regular / Bold).
+# cover_year is Besley Bold — there is no vendored Besley Heavy.
+_JOST_BESLEY: dict[TypeRole, TypeInk] = {
+    "cover_year": TypeInk(family="besley", weight="bold", size=42),
+    "cover_brow": TypeInk(family="besley", weight="book", size=10),
+    "page_title": TypeInk(family="besley", weight="bold", size=11),
+    "chrome": TypeInk(family="jost", weight="book", size=7.4),
 }
 
 
 @dataclass(frozen=True, slots=True)
 class JostRamp:
-    """Default Jost role map. Construct at the layout / book boundary."""
+    """Single-family Jost role map. Same visual as the pre-family Jost spike."""
+
+    catalog: FontCatalog = field(default_factory=jost_catalog)
 
     def ink(self, role: TypeRole) -> TypeInk:
         return _JOST[role]
+
+
+@dataclass(frozen=True, slots=True)
+class JostBesleyRamp:
+    """Jost chrome + Besley titles. ``cover_year`` is Besley Bold (no Heavy file)."""
+
+    catalog: FontCatalog = field(default_factory=jost_besley_catalog)
+
+    def ink(self, role: TypeRole) -> TypeInk:
+        return _JOST_BESLEY[role]

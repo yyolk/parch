@@ -1,11 +1,25 @@
-"""Vendored Jost (OFL-1.1) — Book, Medium, Bold, Heavy — plus the type ramp."""
+"""Vendored Jost + Besley (OFL-1.1) and the type ramp."""
 
-from pathlib import Path
+from parch.fonts.catalog import (
+    FontCatalog,
+    TypeFamily,
+    TypeWeight,
+    font_dir,
+    jost_besley_catalog,
+    jost_catalog,
+)
+from parch.fonts.ramp import JostBesleyRamp, JostRamp, TypeInk, TypeRamp, TypeRole
 
-from parch.fonts.ramp import JostRamp, TypeInk, TypeRamp, TypeRole
-
-__all__ = ["JostRamp", "TypeInk", "TypeRamp", "TypeRole", "font_dir"]
-
-
-def font_dir() -> Path:
-    return Path(__file__).resolve().parent
+__all__ = [
+    "FontCatalog",
+    "JostBesleyRamp",
+    "JostRamp",
+    "TypeFamily",
+    "TypeInk",
+    "TypeRamp",
+    "TypeRole",
+    "TypeWeight",
+    "font_dir",
+    "jost_besley_catalog",
+    "jost_catalog",
+]
