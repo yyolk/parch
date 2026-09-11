@@ -1,0 +1,217 @@
+name: Force DNM to draft
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - labeled
+      - unlabeled
+      - ready_for_review
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  force-draft:
+    if: >
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.ref == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce DO NOT MERGE as draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+        run: |
+          set -euo pipefail
+
+          MARKER='<!-- dnm-forced-draft -->'
+
+          has_dnm() {
+            TEXT="$1" python3 -c 'import os,re,sys,unicodedata; t="".join(" " if unicodedata.category(c)=="Zs" or c in "\u200b\u200c\u200d\u2060\ufeff" else c for c in os.environ.get("TEXT","")); sys.exit(0 if "donotmerge" in re.sub(r"[^a-z0-9]+", "", t.lower()) else 1)'
+          }
+
+          DNM_LABEL='DO NOT MERGE'
+
+          has_exact_label() {
+            local csv="$1"
+            [[ ",${csv}," == *",${DNM_LABEL},"* ]]
+          }
+
+          ensure_label() {
+            local name="$1" color="$2" desc="$3"
+            if gh label list --limit 100 --json name --jq '.[].name' | grep -Fxq "$name"; then
+              return 0
+            fi
+            gh label create "$name" --color "$color" --description "$desc"
+          }
+
+          ensure_dnm_label_on() {
+            ensure_label "$DNM_LABEL" "b60205" "Do not merge; workflow forces this PR to draft on the default branch"
+            if has_exact_label "$LABELS"; then
+              echo "${DNM_LABEL} label already present"
+            else
+              gh pr edit "$PR" --add-label "$DNM_LABEL"
+              LABELS="${LABELS:+${LABELS},}${DNM_LABEL}"
+              echo "Added ${DNM_LABEL} label"
+            fi
+          }
+
+          remove_dnm_label_if_present() {
+            if has_exact_label "$LABELS"; then
+              gh pr edit "$PR" --remove-label "$DNM_LABEL"
+              echo "Removed ${DNM_LABEL} label"
+            fi
+          }
+
+          # Exact prefix: "DO NOT MERGE" + optional colon + whitespace.
+          strip_dnm_prefix_from() {
+            TITLE="$1" DNM_LABEL="$DNM_LABEL" python3 -c 'import os,re,sys; t=os.environ.get("TITLE",""); p=os.environ["DNM_LABEL"]; m=re.match(re.escape(p)+r":?\s+", t); sys.stdout.write(t[m.end():] if m else t)'
+          }
+
+          prefix_dnm_title() {
+            local stripped
+            stripped="$(strip_dnm_prefix_from "$TITLE")"
+            if [[ "$stripped" != "$TITLE" ]] || has_dnm "$TITLE"; then
+              title_hit=true
+              echo "Title already has DNM; skip prefix"
+              return
+            fi
+            local new
+            if [[ -z "$TITLE" ]]; then
+              new="$DNM_LABEL"
+            else
+              new="${DNM_LABEL}: ${TITLE}"
+            fi
+            gh pr edit "$PR" --title "$new"
+            TITLE="$new"
+            title_hit=true
+            echo "Prefixed title to ${new}"
+          }
+
+          strip_dnm_title_prefix() {
+            local new
+            new="$(strip_dnm_prefix_from "$TITLE")"
+            if [[ "$new" == "$TITLE" ]]; then
+              echo "Title does not begin with DNM prefix; leave unchanged"
+              return
+            fi
+            gh pr edit "$PR" --title "$new"
+            TITLE="$new"
+            echo "Stripped DNM prefix from title"
+          }
+
+          title_hit=false
+          if has_dnm "$TITLE"; then
+            title_hit=true
+          fi
+
+          # Title is the durable marker. Sync label to title except:
+          # labeled DNM → prefix title; unlabeled DNM → strip prefix;
+          # ready_for_review → no title/label mutation.
+          if [[ "$ACTION" == "ready_for_review" ]]; then
+            echo "ready_for_review: no title/label mutation"
+          elif [[ "$ACTION" == "labeled" && "$EVENT_LABEL" == "$DNM_LABEL" ]]; then
+            if [[ "$title_hit" != true ]]; then
+              prefix_dnm_title
+            fi
+            ensure_dnm_label_on
+          elif [[ "$ACTION" == "unlabeled" && "$EVENT_LABEL" == "$DNM_LABEL" ]]; then
+            strip_dnm_title_prefix
+          elif [[ "$title_hit" == true ]]; then
+            ensure_dnm_label_on
+          else
+            remove_dnm_label_if_present
+          fi
+
+          LABELS=$(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(",")')
+          if has_dnm "$TITLE"; then
+            title_hit=true
+          else
+            title_hit=false
+          fi
+          label_hit=false
+          if has_exact_label "$LABELS"; then
+            label_hit=true
+          fi
+
+          reasons=()
+          if [[ "$title_hit" == true ]]; then
+            reasons+=('title contains "DO NOT MERGE"')
+          fi
+          if [[ "$label_hit" == true ]]; then
+            reasons+=('has a "DO NOT MERGE" label')
+          fi
+          reason=""
+          if ((${#reasons[@]})); then
+            reason=$(IFS=' and '; echo "${reasons[*]}")
+          fi
+
+          warning_body="$(printf '%s\n' \
+            "⚠️ Forced this pull request to **draft** because the ${reason}." \
+            '' \
+            'Drafts cannot be merged. Remove DO NOT MERGE from the title, then click **Ready for review**.' \
+            "${MARKER}")"
+
+          waiting_body="$(printf '%s\n' \
+            'DO NOT MERGE marker removed. This pull request is still a draft — click **Ready for review** when you want reviews.' \
+            "${MARKER}")"
+
+          cleared_body="$(printf '%s\n' \
+            '✅ DO NOT MERGE marker cleared. This pull request is ready for review.' \
+            "${MARKER}")"
+
+          find_comment_id() {
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate \
+              | jq -r --arg m "$MARKER" '[.[] | select(.body | contains($m)) | .id][0] // empty'
+          }
+
+          upsert_comment() {
+            local body="$1"
+            local id current
+            id=$(find_comment_id)
+            if [[ -n "$id" && "$id" != "null" ]]; then
+              current=$(gh api "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" --jq .body)
+              if [[ "$current" == "$body" ]]; then
+                echo "Comment already up to date"
+                return
+              fi
+              gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${id}" -f body="$body" >/dev/null
+              echo "Updated existing DNM comment ${id}"
+            else
+              gh pr comment "$PR" --body "$body" >/dev/null
+              echo "Posted DNM comment"
+            fi
+          }
+
+          if [[ "$title_hit" == true || "$label_hit" == true ]]; then
+            if [[ "$IS_DRAFT" != true ]]; then
+              gh pr ready "$PR" --undo
+              echo "Converted PR #${PR} to draft"
+            else
+              echo "Already draft"
+            fi
+            upsert_comment "$warning_body"
+            exit 0
+          fi
+
+          id=$(find_comment_id)
+          if [[ -z "$id" || "$id" == "null" ]]; then
+            echo "No DNM marker and no existing bot comment"
+            exit 0
+          fi
+
+          if [[ "$IS_DRAFT" == true ]]; then
+            upsert_comment "$waiting_body"
+          else
+            upsert_comment "$cleared_body"
+          fi
