@@ -45,7 +45,6 @@ typed issue (unknown step, bad weight, bad size, version mismatch).
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from enum import StrEnum
 from typing import Literal, NewType, Protocol
 
 from parch import ConfigError
@@ -103,34 +102,6 @@ OVERLAY_SIZE_RANGE: dict[str, tuple[float, float]] = {
     "caption": (4.0, 10.0),
     "micro": (2.5, 8.0),
 }
-
-
-class MigratedSurface(StrEnum):
-    """Painter entrypoints that must pass ``TypeRef`` / ink — no face-only text."""
-
-    COVER = "paint_cover"
-    HEADER = "paint_header"
-    NAV = "paint_nav"
-    YEAR = "paint_annual"
-    MONTH = "paint_month_grid"
-    WEEK = "paint_week"
-    DAILY = "paint_daily"
-    DAILY_NOTES = "paint_notes"
-    SCHEDULE = "paint_schedule"
-    PRIORITIES = "paint_priorities"
-    PROJECTS_INDEX = "paint_projects_index"
-    PROJECT = "paint_project"
-    QUARTER = "paint_quarter"
-    HABIT = "paint_habit_grid"
-    MEETINGS_INDEX = "paint_meetings_index"
-    MEETING = "paint_meeting"
-    REVIEW_INDEX = "paint_review_index"
-    REVIEW = "paint_review"
-    TASKS_INDEX = "paint_tasks_index"
-    TASK = "paint_task"
-
-
-MIGRATED_SURFACES: frozenset[MigratedSurface] = frozenset(MigratedSurface)
 
 
 @dataclass(frozen=True, slots=True)
