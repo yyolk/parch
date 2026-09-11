@@ -149,9 +149,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
-    # Accept a leading `press` or `proof` verb. `parch proof` is the historical
-    # on-screen path; it selects ProofProfile.
+    # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
+    # the historical on-screen path; it selects ProofProfile. `parch specimen`
+    # writes a static PNG catalog (not a product PDF).
     raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == "specimen":
+        from parch.specimen import main as specimen_main
+
+        return specimen_main(raw[1:])
     proof_verb = False
     if raw and raw[0] in {"press", "proof"}:
         proof_verb = raw[0] == "proof"

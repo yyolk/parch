@@ -9,8 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Greenfield CI is read-only. No Pages deploy (master's specimen catalog
-# is a different tree and is not reproduced here).
 permissions:
   contents: read
 
@@ -38,19 +36,20 @@ jobs:
           test -s out/nomad/index.pdf
           test -s out/nomad.pdf
 
-  # Fresh fpdf2 press of the Nomad MVP, uploaded as a GitHub Actions
-  # artifact only (out/, never artifacts/). Runs on push to the greenfield
-  # tip and on workflow_dispatch. Skipped on pull_request so PR status
-  # stays the existing `test` job.
-  press-artifact:
+  # Greenfield Pages catalog (fpdf2 PNG gallery). Same job shape as master:
+  # plan → per-device specimen shard → merge + deploy. Gated like master:
+  # plan/specimen on push to master or workflow_dispatch (dry-run artifacts);
+  # deploy only on push to master. Skipped on pull_request.
+  pages-plan:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' &&
-       github.ref == 'refs/heads/cursor/greenfield-nomad-mvp-3c7f')
-    needs: [test]
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     env:
       UV_PYTHON: "3.14"
+    outputs:
+      devices: ${{ steps.devices.outputs.devices }}
+      max_parallel: ${{ steps.devices.outputs.max_parallel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -60,13 +59,100 @@ jobs:
           python-version: "3.14"
       - run: uv python install 3.14
       - run: uv sync --group dev
-      - name: Press Nomad MVP
+      - id: devices
         run: |
-          uv run parch press examples/mvp.toml -w out/nomad -o out/nomad-2026.pdf
-          test -s out/nomad/index.pdf
-          test -s out/nomad-2026.pdf
+          DEVICES="$(uv run python -c "from parch.devices import known_device_ids; import json; print(json.dumps(list(known_device_ids())))")"
+          {
+            echo "devices<<EOF"
+            printf '%s\n' "$DEVICES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "max_parallel=$(printf '%s' "$DEVICES" | uv run python -c 'import json,sys; print(len(json.load(sys.stdin)))')" >> "$GITHUB_OUTPUT"
+
+  pages-specimen:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/master')
+    needs: [test, pages-plan]
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.14"
+      DEVICE: ${{ matrix.device }}
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(needs.pages-plan.outputs.max_parallel) }}
+      matrix:
+        device: ${{ fromJSON(needs.pages-plan.outputs.devices) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.14"
+      - name: Install poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: uv python install 3.14
+      - run: uv sync --group dev
+      - name: Build device specimen
+        run: |
+          uv run parch specimen "$DEVICE" -w out
+          test -s "out/specimens/${DEVICE}/cover.png"
+          test -s "out/specimens/${DEVICE}/index.html"
+          test ! -e "out/specimens/${DEVICE}/specimen.pdf"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: mvp-nomad-2026
-          path: out/nomad-2026.pdf
+          name: specimen-${{ matrix.device }}
+          path: out/specimens/${{ matrix.device }}
           if-no-files-found: error
+
+  pages:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: pages-specimen
+    runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.14"
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          python-version: "3.14"
+      - run: uv python install 3.14
+      - run: uv sync --group dev
+      - name: Download specimen shards
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: specimen-*
+          path: /tmp/specimen-shards
+      - name: Merge catalog and write index
+        run: |
+          mkdir -p out/specimens
+          found=0
+          for shard in /tmp/specimen-shards/specimen-*; do
+            [ -d "$shard" ] || continue
+            device="${shard##*/}"
+            device="${device#specimen-}"
+            mv "$shard" "out/specimens/${device}"
+            found=$((found + 1))
+          done
+          expected="$(uv run python -c 'from parch.devices import known_device_ids; print(len(known_device_ids()))')"
+          test "$found" -eq "$expected"
+          uv run python -c 'from pathlib import Path; from parch.devices import known_device_ids; from parch.specimen import write_catalog_index, listed_catalog_devices; root=Path("out/specimens"); write_catalog_index(root, listed_catalog_devices(root) or list(known_device_ids()))'
+          test -s out/specimens/index.html
+          test -s out/specimens/supernote-nomad/cover.png
+          test -s out/specimens/supernote-nomad/index.html
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: out/specimens
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
