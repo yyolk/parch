@@ -62,11 +62,13 @@ class Plotter(Protocol):
 
         Dual path, both owned by the ramp:
 
-        * Role path — ``family`` + ``weight`` from ``ramp.ink(role)``. Cover
-          and header already paint this way.
+        * Step path — ``family`` + ``weight`` from ``ramp.ink(step)``.
+          Allowlisted painters (cover, header, nav, year, month, week,
+          daily, projects index) paint this way.
         * Face path — when ``family`` is omitted, ``Fpdf2Plotter`` asks
-          ``ramp.resolve_face(face, bold, size)`` (``FaceBridge``). Other
-          painters may keep ``face`` + ``bold``; that is intentional.
+          ``ramp.resolve_face(face, bold, size)`` (``FaceBridge``). Habit /
+          meeting / review / tasks may keep ``face`` + ``bold``; that is
+          intentional.
         """
 
     def link(self, box: Rect, dest: str) -> None:

@@ -27,11 +27,11 @@ def press(
     When ``ramp`` is omitted, press builds ``EffectiveRamp = defaults ⊕
     device overlay ⊕ press overlay`` and passes that one object to the book
     and to ``Fpdf2Plotter``. An explicit ``ramp`` wins the whole object
-    (overlay args are ignored). Painters never read the overlay. Cover/header
-    paint by role; unmigrated painters keep face+bold and the plotter asks
-    ``ramp.resolve_face``. Dual-font ramps are future work — ``family`` stays
-    on ``TypeInk`` / ``Plotter.text`` so they can land without a signature
-    change.
+    (overlay args are ignored). Painters never read the overlay. Allowlisted
+    painters paint by ``ramp.ink(step)``; unmigrated painters keep face+bold
+    and the plotter asks ``ramp.resolve_face``. Dual-font ramps are future
+    work — ``family`` stays on ``TypeInk`` / ``Plotter.text`` so they can
+    land without a signature change.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
