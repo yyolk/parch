@@ -211,7 +211,7 @@ def test_header_honors_stub_ramp():
         chip="01",
         ramp=ramp,
     )
-    assert ramp.roles == ["page_title", "chrome"]
+    assert ramp.roles == ["page_title", "chrome", "chrome"]
     title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
     assert title[3] == 9
     assert title[9] == "bold"
