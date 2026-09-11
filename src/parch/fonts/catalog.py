@@ -64,7 +64,3 @@ def martian_besley_catalog(root: Path | None = None) -> FontCatalog:
             ("martian", "bold"): base / "martian-grotesk" / "MartianGrotesk-Bold.ttf",
         }
     )
-
-
-# Alias: same three-family map. Unmigrated painters still need the Jost ladder.
-jost_besley_martian_catalog = martian_besley_catalog

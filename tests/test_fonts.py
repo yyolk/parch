@@ -9,7 +9,6 @@ from parch.fonts import (
     TypeRole,
     font_dir,
     jost_besley_catalog,
-    jost_besley_martian_catalog,
     jost_catalog,
     martian_besley_catalog,
 )
@@ -88,7 +87,6 @@ def test_martian_files_are_curated_not_maximal():
     assert not (root / "MartianGrotesk-Medium.ttf").exists()
     assert not (root / "MartianGrotesk-Heavy.ttf").exists()
     trio = martian_besley_catalog()
-    assert jost_besley_martian_catalog is martian_besley_catalog
     assert ("martian", "book") in trio.cuts
     assert ("martian", "bold") in trio.cuts
     assert ("martian", "medium") not in trio.cuts

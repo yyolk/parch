@@ -6,7 +6,6 @@ from parch.fonts.catalog import (
     TypeWeight,
     font_dir,
     jost_besley_catalog,
-    jost_besley_martian_catalog,
     jost_catalog,
     martian_besley_catalog,
 )
@@ -24,7 +23,6 @@ __all__ = [
     "TypeWeight",
     "font_dir",
     "jost_besley_catalog",
-    "jost_besley_martian_catalog",
     "jost_catalog",
     "martian_besley_catalog",
 ]
