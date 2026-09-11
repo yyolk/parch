@@ -20,8 +20,7 @@ SIL OFL 1.1 — `LICENSE` / `AUTHORS`. Reserved Font Name: Jost.
 No family, no weight, no per-call size on the ref. Painters pass `ref=` (or `ink=`).
 `Plotter.text` resolves a ref once at the edge via `plotter.ramp.ink`.
 `TypeInk` is the resolved `family` + `weight` + `size`. `family` is a closed
-key (`TypeFamily = Literal["jost"]` today) so a later dual-font ramp can
-pick another catalog family without ripping out the plotter path.
+key (`TypeFamily = Literal["jost"]`).
 
 The closed ladder is **design tokens**, not page-semantic roles. Painters pick
 from `display` / `title` / `eyebrow` / `body` / `chrome` / `label` / `caption`
@@ -59,8 +58,7 @@ Painters stay on the closed ladder — no per-call size snowflakes.
 Overlay may change size and/or weight. Overlay never changes `family`.
 Absolute `Pt` overrides live only on overlay `TypePatch`.
 
-`Plotter.text` is ink|ref only. There is no `face` / `bold` path and no
-`FaceBridge`.
+`Plotter.text` is ink|ref only — no `face` / `bold` path.
 
 ### Overlay
 
@@ -124,7 +122,7 @@ size = 9.6
 weight = "bold"
 ```
 
-`examples/mvp.toml` has no typography table (identity / defaults). Side
+`examples/mvp.toml` has no typography table (closed-table defaults). Side
 example: `examples/mvp-typo-overlay.toml`. `press` builds
 `EffectiveRamp = defaults ⊕ spec.type_overlay ⊕ proof` at
 `device.root_body`.
