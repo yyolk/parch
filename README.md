@@ -8,6 +8,10 @@ Python 3.14+ required (language features, not just the pin).
 
 ## Architecture
 
+```
+Device → Component (data only) → Section (build Page) → Layout (chrome + seat) → Plotter → Press
+```
+
 ```mermaid
 flowchart TB
   Spec[Spec] -->|drives| PressCore
