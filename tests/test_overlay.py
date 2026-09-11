@@ -20,9 +20,9 @@ from parch.press import merge_press_overlay, press
 from parch.spec import Spec
 
 
-def test_accepts_identity_and_example_overlay():
-    identity = require_overlay(TypeOverlay())
-    assert identity == TypeOverlay()
+def test_accepts_empty_and_example_overlay():
+    empty_overlay = require_overlay(TypeOverlay())
+    assert empty_overlay == TypeOverlay()
     mapping = {
         "schema_version": OVERLAY_SCHEMA_VERSION,
         "chrome": {"size": 9.6, "weight": "bold"},

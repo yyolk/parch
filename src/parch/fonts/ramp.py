@@ -18,8 +18,7 @@ change ``root_body`` and does not rescale sibling steps. A chrome
 ``size=9.6`` patch leaves title / body / micro at their em-derived sizes.
 Absolute ``Pt`` overrides live only on overlay ``TypePatch``.
 
-``family`` stays on the ink so a later dual-font ramp can pick another
-catalog family without ripping out the plotter path. Today every step
+``family`` stays on the ink. Today every step
 resolves to ``family="jost"``. Overlay never changes family.
 
 ``EffectiveRamp`` is the closed Jost scale at ``root_body`` ⊕ a stacked
