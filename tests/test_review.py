@@ -222,6 +222,11 @@ def test_review_index_paint_month_headers_hairlines_and_week_links():
     paint_review_index(plotter, well, index)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    january = next(op for op in plotter.ops if op[0] == "text" and op[2] == "January")
+    assert january[7] == "bold"
+    week = next(op for op in plotter.ops if op[0] == "text" and op[2] == "W01")
+    assert week[7] == "medium"
+    assert week[8] == "jost"
     for name in (
         "January",
         "February",

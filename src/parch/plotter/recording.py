@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import override
 
 from parch.geom import Rect
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import Plotter, TextAlign, TextFamily, TextWeight
 
 type Op = tuple[object, ...]
 
@@ -61,12 +61,10 @@ class RecordingPlotter(Plotter):
         *,
         size: float = 10,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
+        weight: TextWeight,
+        family: TextFamily,
     ) -> None:
         self.ops.append(
             (
@@ -75,8 +73,6 @@ class RecordingPlotter(Plotter):
                 content,
                 size,
                 align,
-                bold,
-                face,
                 gray,
                 small_caps,
                 weight,

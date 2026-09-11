@@ -7,7 +7,6 @@ from parch.fonts.catalog import TypeFamily as TextFamily, TypeWeight as TextWeig
 from parch.geom import Rect
 
 type TextAlign = Literal["left", "center", "right"]
-type TextFace = Literal["sans", "serif"]
 
 
 class Plotter(Protocol):
@@ -51,18 +50,16 @@ class Plotter(Protocol):
         *,
         size: float = 10,
         align: TextAlign = "left",
-        bold: bool = False,
-        face: TextFace = "sans",
         gray: float = 0.0,
         small_caps: bool = False,
-        weight: TextWeight | None = None,
-        family: TextFamily | None = None,
+        weight: TextWeight,
+        family: TextFamily,
     ) -> None:
         """Draw a single line of text inside ``box`` (pt size).
 
-        Ramp path: ``family`` + ``weight`` select a catalog cut. When ``family``
-        is omitted, ``face`` + ``bold`` + ``weight`` stay on Jost for unmigrated
-        painters (Book / Bold / Medium / Heavy).
+        ``family`` + ``weight`` select a catalog cut. Painters resolve those
+        through ``TypeRamp.ink`` (roles) or ``TypeRamp.resolve_slot`` (slots).
+        The plotter does not invent a weight from face or bold.
         """
 
     def link(self, box: Rect, dest: str) -> None:

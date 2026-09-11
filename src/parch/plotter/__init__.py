@@ -1,5 +1,5 @@
 from parch.plotter.fpdf2 import Fpdf2Plotter
-from parch.plotter.protocol import Plotter, TextAlign, TextFace, TextFamily, TextWeight
+from parch.plotter.protocol import Plotter, TextAlign, TextFamily, TextWeight
 from parch.plotter.recording import RecordingPlotter
 
 __all__ = [
@@ -7,7 +7,6 @@ __all__ = [
     "Plotter",
     "RecordingPlotter",
     "TextAlign",
-    "TextFace",
     "TextFamily",
     "TextWeight",
 ]

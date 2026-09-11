@@ -24,8 +24,9 @@ def press(
     """Build the MVP book and write ``output``.
 
     Default ramp is ``JostRamp``. The ramp's catalog is handed to
-    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
-    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    ``Fpdf2Plotter``. Roles ignore slots; slots replace the old sans/serif
+    face. Dual-font ramps are future work — ``family`` stays on ``TypeInk``
+    / ``Plotter.text`` so they can land without a signature change.
     """
     device = get_device(spec.device)
     resolved = JostRamp() if ramp is None else ramp
