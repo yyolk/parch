@@ -11,7 +11,6 @@ on:
       - ready_for_review
 
 permissions:
-  contents: write
   issues: write
   pull-requests: write
 
@@ -119,7 +118,6 @@ jobs:
           # Title is the durable marker. Sync label to title except:
           # labeled DNM → prefix title; unlabeled DNM → strip prefix;
           # ready_for_review → no title/label mutation.
-          unlabeled_dnm=false
           if [[ "$ACTION" == "ready_for_review" ]]; then
             echo "ready_for_review: no title/label mutation"
           elif [[ "$ACTION" == "labeled" && "$EVENT_LABEL" == "$DNM_LABEL" ]]; then
@@ -129,7 +127,6 @@ jobs:
             ensure_dnm_label_on
           elif [[ "$ACTION" == "unlabeled" && "$EVENT_LABEL" == "$DNM_LABEL" ]]; then
             strip_dnm_title_prefix
-            unlabeled_dnm=true
           elif [[ "$title_hit" == true ]]; then
             ensure_dnm_label_on
           else
@@ -137,15 +134,13 @@ jobs:
           fi
 
           LABELS=$(gh pr view "$PR" --json labels --jq '[.labels[].name] | join(",")')
-          if [[ "$unlabeled_dnm" == true ]]; then
-            title_hit=false
-          elif has_dnm "$TITLE"; then
+          if has_dnm "$TITLE"; then
             title_hit=true
           else
             title_hit=false
           fi
           label_hit=false
-          if has_dnm "$LABELS"; then
+          if has_exact_label "$LABELS"; then
             label_hit=true
           fi
 
