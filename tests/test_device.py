@@ -1,4 +1,5 @@
 from parch.devices import NOMAD, get_device
+from parch.fonts import TypeOverlay, JostRamp, EffectiveRamp
 from parch import ConfigError
 import pytest
 
@@ -30,3 +31,12 @@ def test_nomad_alias():
     assert get_device("nomad") is NOMAD
     with pytest.raises(ConfigError):
         get_device("kindle-scribe")
+
+
+def test_nomad_type_overlay_is_identity():
+    assert isinstance(NOMAD.type_overlay, TypeOverlay)
+    assert NOMAD.type_overlay == TypeOverlay()
+    empty = EffectiveRamp(overlay=NOMAD.type_overlay)
+    jost = JostRamp()
+    for role in ("cover_year", "cover_brow", "page_title", "chrome"):
+        assert empty.ink(role) == jost.ink(role)

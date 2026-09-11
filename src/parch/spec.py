@@ -2,17 +2,41 @@
 
 import calendar
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
 from parch.calendar import iso_monday, month_touching_weeks, quarter_of
+from parch.fonts.ramp import TypeOverlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
+_TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
+
+
+def _parse_typography(data: TomlTable) -> TypeOverlay:
+    """``[typography.overlay.<role>]`` → ``TypeOverlay``. Unknown keys fail loudly."""
+    raw = data.get("typography")
+    if raw is None:
+        return TypeOverlay()
+    if not isinstance(raw, dict):
+        raise ConfigError("typography must be a TOML table")
+    unknown = set(raw) - _TYPOGRAPHY_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown typography key {key!r}")
+    overlay = raw.get("overlay")
+    if overlay is None:
+        return TypeOverlay()
+    if not isinstance(overlay, dict):
+        raise ConfigError("typography.overlay must be a TOML table")
+    try:
+        return TypeOverlay.from_mapping(overlay)
+    except ValueError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
@@ -71,6 +95,7 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -315,6 +340,7 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            type_overlay=_parse_typography(data),
         )
 
     @classmethod

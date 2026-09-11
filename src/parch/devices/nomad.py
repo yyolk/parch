@@ -1,9 +1,10 @@
 """SuperNote Nomad — the only MVP device."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 from parch import ConfigError
+from parch.fonts.ramp import TypeOverlay
 from parch.geom import Rect
 
 MM_PER_INCH = 25.4
@@ -25,6 +26,9 @@ class Device:
     toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
+    # Device-owned scale layer. Nomad stays identity in this spike — the
+    # press TOML supplies the visible bump (code defaults ⊕ device ⊕ toml).
+    type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     @property
     def content_top(self) -> float:

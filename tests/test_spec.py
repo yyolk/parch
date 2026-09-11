@@ -1,6 +1,10 @@
 from datetime import date
 from pathlib import Path
 
+import pytest
+
+from parch import ConfigError
+from parch.fonts import TypeOverlay, TypePatch
 from parch.spec import Spec
 
 
@@ -86,6 +90,38 @@ def test_habit_columns_from_toml_keys():
     assert mvp.meeting_index_rows == 16
     assert mvp.meeting_count == 16
     assert mvp.task_rows == 6
+    assert mvp.type_overlay == TypeOverlay()
+
+
+def test_typography_overlay_from_toml():
+    overlayed = Spec.from_path(Path("examples/mvp-typo-overlay.toml"))
+    assert overlayed.type_overlay == TypeOverlay(
+        chrome=TypePatch(size=9.6, weight="bold"),
+        page_title=TypePatch(size=14, weight="bold"),
+        cover_brow=TypePatch(size=13, weight="bold"),
+        cover_year=TypePatch(size=48, weight="heavy"),
+    )
+    partial = Spec.from_mapping(
+        {"typography": {"overlay": {"chrome": {"size": 9.2}, "page_title": {"weight": "bold"}}}}
+    )
+    assert partial.type_overlay.chrome == TypePatch(size=9.2)
+    assert partial.type_overlay.page_title == TypePatch(weight="bold")
+    assert partial.type_overlay.cover_year is None
+
+
+def test_typography_unknown_keys_fail_loudly():
+    with pytest.raises(ConfigError, match="unknown typography key 'family'"):
+        Spec.from_mapping({"typography": {"family": "jost"}})
+    with pytest.raises(ConfigError, match="unknown typography overlay role 'body'"):
+        Spec.from_mapping({"typography": {"overlay": {"body": {"size": 8}}}})
+    with pytest.raises(ConfigError, match="unknown typography overlay chrome key 'family'"):
+        Spec.from_mapping({"typography": {"overlay": {"chrome": {"family": "jost"}}}})
+    with pytest.raises(ConfigError, match="unknown Jost weight 'hairline'"):
+        Spec.from_mapping({"typography": {"overlay": {"chrome": {"weight": "hairline"}}}})
+    with pytest.raises(ConfigError, match="size must be > 0"):
+        Spec.from_mapping({"typography": {"overlay": {"chrome": {"size": 0}}}})
+    with pytest.raises(ConfigError, match="typography must be a TOML table"):
+        Spec.from_mapping({"typography": "loud"})
 
 
 def test_value_bags_are_slotted():

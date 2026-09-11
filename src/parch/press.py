@@ -2,12 +2,13 @@
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
-from parch.devices import get_device
-from parch.fonts import JostRamp, TypeRamp
+from parch.devices import Device, get_device
+from parch.fonts import TypeOverlay, TypeRamp, bind_ramp, compose_overlays
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -15,20 +16,37 @@ from parch.spec import Spec
 _DEVICE_TOKENS = {"supernote-nomad", "nomad"}
 
 
+def merge_press_overlay(
+    device: Device,
+    spec: Spec,
+    overlay: TypeOverlay | None = None,
+) -> TypeOverlay:
+    """``code defaults ⊕ device ⊕ toml ⊕ press kwarg`` — later explicit fields win.
+
+    Defaults live in ``EffectiveRamp`` / ``JostRamp``. This function returns
+    the composed overlay only.
+    """
+    return compose_overlays(device.type_overlay, spec.type_overlay, overlay)
+
+
 def press(
     spec: Spec,
     output: Path,
     plotter: Plotter | None = None,
     ramp: TypeRamp | None = None,
+    overlay: TypeOverlay | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
-    Default ramp is ``JostRamp``. The ramp's catalog is handed to
-    ``Fpdf2Plotter``. Dual-font ramps are future work — ``family`` stays on
-    ``TypeInk`` / ``Plotter.text`` so they can land without a signature change.
+    When ``ramp`` is omitted, press builds ``EffectiveRamp = defaults ⊕
+    device overlay ⊕ spec TOML overlay ⊕ press overlay`` and passes that
+    explicit object in. An explicit ``ramp`` wins the whole object (overlay
+    args are ignored). Painters never read the overlay — they call
+    ``ramp.ink``. The ramp's catalog is handed to ``Fpdf2Plotter``. Dual-font
+    ramps are future work — ``family`` stays on ``TypeInk`` / ``Plotter.text``.
     """
     device = get_device(spec.device)
-    resolved = JostRamp() if ramp is None else ramp
+    resolved = bind_ramp(ramp=ramp, overlay=merge_press_overlay(device, spec, overlay))
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog)
     YearPlanner(ramp=resolved).plot(spec, plotter)
@@ -46,32 +64,14 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None, day: i
             spec = Spec.from_path(Path(path_text))
         case _:
             raise ConfigError(f"spec file not found: {token}")
-    data = {
-        "year": spec.year,
-        "device": spec.device,
-        "week_start": spec.week_start,
-        "months": list(spec.months),
-        "day": spec.day,
-        "title": spec.title,
-        "schedule_from": spec.schedule_from,
-        "schedule_to": spec.schedule_to,
-        "notes_pages": spec.notes_pages,
-        "habit_columns": spec.habit_columns,
-        "priority_rows": spec.priority_rows,
-        "project_cards": spec.project_cards,
-        "project_tasks": spec.project_tasks,
-        "project_tickets": spec.project_tickets,
-        "project_index_pages": spec.project_index_pages,
-        "meeting_index_rows": spec.meeting_index_rows,
-        "task_rows": spec.task_rows,
-    }
+    updates: dict[str, object] = {}
     if year is not None:
-        data["year"] = year
+        updates["year"] = year
     if month is not None:
-        data["months"] = [month]
+        updates["months"] = (month,)
     if day is not None:
-        data["day"] = day
-    return Spec.from_mapping(data)
+        updates["day"] = day
+    return replace(spec, **updates) if updates else spec
 
 
 def _outputs(args: argparse.Namespace, spec_token: str | None) -> list[Path]:
