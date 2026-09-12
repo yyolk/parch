@@ -8,6 +8,9 @@ whose centre sits N mm from the named glass edge. Confirm pages say
 HIT TOP/LEFT/RIGHT N mm. Mid-page control should always work.
 
 Page-turn / toolbar / no jump = still inside the OS or EasyReach band.
+
+Fpdf2Plotter is top-left millimetres (same as the bottom-band probe):
+y=0 is the top glass edge, x=0 is the left glass edge.
 """
 
 from __future__ import annotations
@@ -79,19 +82,19 @@ def paint_index(plotter: Fpdf2Plotter) -> None:
     plotter.begin_page()
     plotter.add_dest("index")
     plotter.text(
-        Rect(8.0, d.page_height - 18.0, d.page_width - 16.0, 10.0),
+        Rect(8.0, 8.0, d.page_width - 16.0, 10.0),
         "Scribe edge probe",
         ref=TypeRef(step="title"),
         gray=INK,
     )
     plotter.text(
-        Rect(8.0, d.page_height - 28.0, d.page_width - 16.0, 6.0),
+        Rect(8.0, 18.5, d.page_width - 16.0, 6.0),
         f"{d.page_width:g} x {d.page_height:g} mm   1860x2480 @ 300 PPI",
         ref=TypeRef(step="caption"),
         gray=MUTED,
     )
     plotter.text(
-        Rect(8.0, d.page_height - 48.0, d.page_width - 16.0, 16.0),
+        Rect(8.0, 26.0, d.page_width - 16.0, 16.0),
         "Send-to-Kindle. Finger tap, not pen. Link works = that distance "
         "from the named edge is above the OS / EasyReach band. Page-turn, "
         "toolbar, or no jump = still dead. Record Display Size + chrome up/down.",
@@ -99,28 +102,28 @@ def paint_index(plotter: Fpdf2Plotter) -> None:
         gray=INK,
     )
     plotter.text(
-        Rect(8.0, d.page_height - 58.0, d.page_width - 16.0, 6.0),
+        Rect(8.0, 44.0, d.page_width - 16.0, 6.0),
         "Bottom already measured 10 mm. This file is top / left / right only.",
         ref=TypeRef(step="caption"),
         gray=MUTED,
     )
 
     nav = (
-        ("TOP  0–30 mm", "probe-top"),
-        ("LEFT  0–32 mm", "probe-left"),
-        ("RIGHT  0–32 mm", "probe-right"),
+        ("TOP  0-30 mm", "probe-top"),
+        ("LEFT  0-32 mm", "probe-left"),
+        ("RIGHT  0-32 mm", "probe-right"),
     )
     slot = 14.0
-    y0 = d.page_height - 80.0
+    y0 = 56.0
     for i, (label, dest) in enumerate(nav):
-        box = Rect(18.0, y0 - i * slot, d.page_width - 36.0, 12.0)
+        box = Rect(18.0, y0 + i * slot, d.page_width - 36.0, 12.0)
         plotter.rect(box, stroke=True, fill=True, stroke_width=0.22, fill_gray=WASH, stroke_gray=INK)
         plotter.text(box, label, ref=TypeRef(step="chrome"), gray=INK, align="center", small_caps=True)
         plotter.link(box, dest)
 
     _control(
         plotter,
-        Rect(18.0, 36.0, d.page_width - 36.0, 12.0),
+        Rect(18.0, 110.0, d.page_width - 36.0, 12.0),
         _mid("index"),
         "CONTROL  mid-page",
     )
@@ -133,22 +136,22 @@ def paint_top(plotter: Fpdf2Plotter) -> None:
 
     wash_h = 30.0
     plotter.rect(
-        Rect(0.0, d.page_height - wash_h, d.page_width, wash_h),
+        Rect(0.0, 0.0, d.page_width, wash_h),
         stroke=False,
         fill=True,
         fill_gray=WASH,
     )
-    plotter.line(0.0, d.page_height - 26.0, d.page_width, d.page_height - 26.0, stroke_width=0.18, stroke_gray=SOFT)
-    plotter.line(0.0, d.page_height - 8.0, d.page_width, d.page_height - 8.0, stroke_width=0.18, stroke_gray=SOFT)
+    plotter.line(0.0, 26.0, d.page_width, 26.0, stroke_width=0.18, stroke_gray=SOFT)
+    plotter.line(0.0, 8.0, d.page_width, 8.0, stroke_width=0.18, stroke_gray=SOFT)
 
     plotter.text(
-        Rect(8.0, d.page_height - 44.0, d.page_width - 16.0, 8.0),
+        Rect(8.0, 34.0, d.page_width - 16.0, 8.0),
         "TOP  mm from glass",
         ref=TypeRef(step="title"),
         gray=INK,
     )
     plotter.text(
-        Rect(8.0, d.page_height - 52.0, d.page_width - 16.0, 6.0),
+        Rect(8.0, 42.0, d.page_width - 16.0, 6.0),
         "#193 1/8th = 26.25 mm dashed. Toolbar lives up here on Send-to-Kindle.",
         ref=TypeRef(step="caption"),
         gray=MUTED,
@@ -156,7 +159,7 @@ def paint_top(plotter: Fpdf2Plotter) -> None:
 
     ruler_x = 4.0
     for mm in range(0, 33):
-        y = d.page_height - mm
+        y = float(mm)
         tick = 5.0 if mm % 4 == 0 else 2.4
         plotter.line(ruler_x, y, ruler_x + tick, y, stroke_width=0.12 if mm % 2 else 0.18, stroke_gray=INK)
         if mm % 4 == 0:
@@ -169,7 +172,7 @@ def paint_top(plotter: Fpdf2Plotter) -> None:
 
     slot = (d.page_width - 28.0) / len(TOP_TARGETS)
     for i, mm in enumerate(TOP_TARGETS):
-        y = d.page_height - mm - BOX / 2.0
+        y = mm - BOX / 2.0
         box = Rect(22.0 + i * slot, y, slot - 1.2, BOX)
         plotter.rect(box, stroke=True, fill=True, stroke_width=0.18, fill_gray=1.0, stroke_gray=INK)
         plotter.text(box, f"{mm:g}", ref=TypeRef(step="label", emphasis="strong"), gray=INK, align="center")
@@ -177,11 +180,11 @@ def paint_top(plotter: Fpdf2Plotter) -> None:
 
     _control(
         plotter,
-        Rect(18.0, 70.0, d.page_width - 36.0, 12.0),
+        Rect(18.0, 90.0, d.page_width - 36.0, 12.0),
         _mid("top"),
         "CONTROL  mid-page",
     )
-    back = Rect(18.0, 52.0, d.page_width - 36.0, 10.0)
+    back = Rect(18.0, 108.0, d.page_width - 36.0, 10.0)
     plotter.rect(back, stroke=True, fill=False, stroke_width=0.18, stroke_gray=INK)
     plotter.text(back, "back to index", ref=TypeRef(step="chrome"), gray=INK, align="center", small_caps=True)
     plotter.link(back, "index")
@@ -196,64 +199,63 @@ def paint_side(plotter: Fpdf2Plotter, edge: str) -> None:
     from_left = edge == "left"
     wash_w = 32.0
     wash_x = 0.0 if from_left else d.page_width - wash_w
+    # Keep wash off the measured 10 mm bottom and the top 16 mm toolbar guess.
     plotter.rect(
-        Rect(wash_x, 20.0, wash_w, d.page_height - 40.0),
+        Rect(wash_x, 16.0, wash_w, d.page_height - 36.0),
         stroke=False,
         fill=True,
         fill_gray=WASH,
     )
     mark_8 = 8.0 if from_left else d.page_width - 8.0
     mark_12 = 12.0 if from_left else d.page_width - 12.0
-    plotter.line(mark_8, 20.0, mark_8, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
-    plotter.line(mark_12, 20.0, mark_12, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
+    plotter.line(mark_8, 16.0, mark_8, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
+    plotter.line(mark_12, 16.0, mark_12, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
 
     title_x = 40.0 if from_left else 8.0
     title_w = d.page_width - 48.0
     plotter.text(
-        Rect(title_x, d.page_height - 18.0, title_w, 10.0),
+        Rect(title_x, 8.0, title_w, 10.0),
         f"{edge.upper()}  mm from glass",
         ref=TypeRef(step="title"),
         gray=INK,
     )
     plotter.text(
-        Rect(title_x, d.page_height - 26.0, title_w, 6.0),
+        Rect(title_x, 18.0, title_w, 6.0),
         "#200 rail 8 mm + pad 4 mm. Boxes sit mid-height, above the 10 mm bottom.",
         ref=TypeRef(step="caption"),
         gray=MUTED,
     )
 
-    # 1 mm ticks along the measured edge, 0-36 mm, mid-page vertically.
-    tick_y = d.page_height / 2.0 + 20.0
+    # 1 mm ticks along the measured edge, drawn through mid-page.
+    tick_y = d.page_height / 2.0
     for mm in range(0, 37):
         x = mm if from_left else d.page_width - mm
         tick = 5.0 if mm % 4 == 0 else 2.4
-        y0 = tick_y
-        y1 = tick_y + tick
-        plotter.line(x, y0, x, y1, stroke_width=0.12 if mm % 2 else 0.18, stroke_gray=INK)
+        plotter.line(x, tick_y, x, tick_y + tick, stroke_width=0.12 if mm % 2 else 0.18, stroke_gray=INK)
         if mm % 4 == 0:
             label_x = (x + 1.2) if from_left else (x - 13.0)
             plotter.text(
-                Rect(label_x, y1 + 0.4, 12.0, 4.4),
+                Rect(label_x, tick_y + tick + 0.4, 12.0, 4.4),
                 f"{mm}",
                 ref=TypeRef(step="micro"),
                 gray=INK,
                 align="left" if from_left else "right",
             )
 
-    # Stack targets mid-page so top toolbar and bottom OS band do not confound.
-    y_lo = 36.0
-    y_hi = d.page_height - 40.0
+    # Stack targets in the middle third so top toolbar and bottom OS band
+    # do not confound the reading.
+    y_lo = 70.0
+    y_hi = 150.0
     span = y_hi - y_lo
     slot = span / len(SIDE_TARGETS)
     for i, mm in enumerate(SIDE_TARGETS):
-        y = y_hi - (i + 0.5) * slot - 5.0
+        y = y_lo + i * slot
         if from_left:
             x = mm - BOX / 2.0
         else:
             x = d.page_width - mm - BOX / 2.0
         box = Rect(x, y, BOX, 10.0)
         plotter.rect(box, stroke=True, fill=True, stroke_width=0.18, fill_gray=1.0, stroke_gray=INK)
-        # Number sits beside the strip, away from the edge.
         num_w = 14.0
         if from_left:
             num = Rect(x + BOX + 1.2, y, num_w, 10.0)
@@ -267,11 +269,11 @@ def paint_side(plotter: Fpdf2Plotter, edge: str) -> None:
     ctrl_x = 48.0 if from_left else 18.0
     _control(
         plotter,
-        Rect(ctrl_x, 48.0, d.page_width - 66.0, 12.0),
+        Rect(ctrl_x, 168.0, d.page_width - 66.0, 12.0),
         _mid(edge),
         "CONTROL  mid-page",
     )
-    back = Rect(ctrl_x, 32.0, d.page_width - 66.0, 10.0)
+    back = Rect(ctrl_x, 184.0, d.page_width - 66.0, 10.0)
     plotter.rect(back, stroke=True, fill=False, stroke_width=0.18, stroke_gray=INK)
     plotter.text(back, "back to index", ref=TypeRef(step="chrome"), gray=INK, align="center", small_caps=True)
     plotter.link(back, "index")
