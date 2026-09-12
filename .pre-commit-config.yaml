@@ -1,0 +1,9 @@
+# pre-commit.ci + local: ruff only. Enable the GitHub App on the repo for CI.
+# Hook rev should stay in step with [tool.ruff] / the ruff pin in uv.lock.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.7
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

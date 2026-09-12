@@ -1,7 +1,5 @@
 from parch.books import YearPlanner
 from parch.calendar import month_days, months_touching_weeks
-from parch.sections.review import ReviewSection
-from parch.sections.tasks import TasksSection
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
@@ -13,9 +11,9 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectTicket,
     ProjectsBoard,
     ProjectsIndex,
+    ProjectTicket,
     QuarterGrid,
     ReviewDay,
     ReviewIndex,
@@ -23,13 +21,15 @@ from parch.components import (
     ReviewWeek,
     ReviewWeekPage,
     Schedule,
-    TaskWeek,
     TasksIndex,
     TasksMonthBand,
     TasksWeekPage,
+    TaskWeek,
     WeekStrip,
 )
 from parch.plotter import RecordingPlotter
+from parch.sections.review import ReviewSection
+from parch.sections.tasks import TasksSection
 from parch.spec import Spec
 
 
@@ -40,9 +40,13 @@ def _year_dests(*, notes_pages: int) -> list[str]:
         spec.dest_for_projects_index(page)
         for page in range(1, spec.project_index_pages + 1)
     )
-    dests.extend(spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1))
+    dests.extend(
+        spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1)
+    )
     dests.append(spec.meetings_index_dest)
-    dests.extend(spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1))
+    dests.extend(
+        spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1)
+    )
     dests.extend(page.dest for page in TasksSection(spec).pages())
     dests.extend(page.dest for page in ReviewSection(spec).pages())
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())

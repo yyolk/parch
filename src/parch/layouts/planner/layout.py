@@ -50,8 +50,8 @@ from parch.layouts.planner.painters import (
     paint_review_index,
     paint_task,
     paint_tasks_index,
-    paint_week,
     paint_toolbar,
+    paint_week,
     strip_active,
     strip_items,
     well_rect,
@@ -118,7 +118,9 @@ class PlannerLayout:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "projects_index":
-                paint_projects_index(plotter, well, _one(page, ProjectsIndex), ramp=ramp)
+                paint_projects_index(
+                    plotter, well, _one(page, ProjectsIndex), ramp=ramp
+                )
             case "project":
                 paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
             case "meetings_index":

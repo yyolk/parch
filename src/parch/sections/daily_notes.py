@@ -26,11 +26,12 @@ class DailyNotesSection:
                     kind="daily_notes",
                     title=f"{weekday} {day.day}  {index}/{spec.notes_pages}",
                     nav=planner_nav(
-                        spec, week_dest=spec.dest_for_week(day), day=day, month=day.month
+                        spec,
+                        week_dest=spec.dest_for_week(day),
+                        day=day,
+                        month=day.month,
                     ),
-                    components=(
-                        Notes(label=f"Notes {index}/{spec.notes_pages}"),
-                    ),
+                    components=(Notes(label=f"Notes {index}/{spec.notes_pages}"),),
                 )
             )
         return built

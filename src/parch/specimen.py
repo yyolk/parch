@@ -82,15 +82,22 @@ def sample_dests(spec: Spec) -> dict[str, str]:
     }
 
 
-def sample_page_numbers(spec: Spec, stems: Sequence[str] = SAMPLE_STEMS) -> dict[str, int]:
+def sample_page_numbers(
+    spec: Spec, stems: Sequence[str] = SAMPLE_STEMS
+) -> dict[str, int]:
     """1-based page numbers for requested stems, from the year-planner walk."""
     dests = sample_dests(spec)
-    by_dest = {page.dest: index for index, page in enumerate(YearPlanner().pages(spec), start=1)}
+    by_dest = {
+        page.dest: index
+        for index, page in enumerate(YearPlanner().pages(spec), start=1)
+    }
     numbers: dict[str, int] = {}
     for stem in stems:
         dest = dests[stem]
         if dest not in by_dest:
-            raise ConfigError(f"specimen dest {dest!r} for {stem!r} is not in the press")
+            raise ConfigError(
+                f"specimen dest {dest!r} for {stem!r} is not in the press"
+            )
         numbers[stem] = by_dest[dest]
     return numbers
 
@@ -168,7 +175,9 @@ def _pdftoppm() -> str:
     return path
 
 
-def render_page_png(pdf: Path, page: int, dest: Path, *, dpi: int = PREVIEW_DPI) -> Path:
+def render_page_png(
+    pdf: Path, page: int, dest: Path, *, dpi: int = PREVIEW_DPI
+) -> Path:
     """Rasterize one 1-based PDF page to ``dest`` via pdftoppm."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     prefix = dest.with_suffix("")

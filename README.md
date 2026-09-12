@@ -32,6 +32,7 @@ Device → Component (data only) → Section (build Page) → Layout (chrome + s
 
 ```shell
 uv run pytest
+uv run ruff check src tests && uv run ruff format --check src tests
 ```
 
 ## Releasing

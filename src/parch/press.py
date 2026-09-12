@@ -38,7 +38,9 @@ def merge_press_overlay(
     """
     toml_overlay = require_overlay(spec.type_overlay)
     proof_layer = _proof_overlay(proof)
-    proof_overlay = TypeOverlay() if proof_layer is None else require_overlay(proof_layer)
+    proof_overlay = (
+        TypeOverlay() if proof_layer is None else require_overlay(proof_layer)
+    )
     press_overlay = TypeOverlay() if overlay is None else require_overlay(overlay)
     return require_overlay(compose_overlays(toml_overlay, proof_overlay, press_overlay))
 

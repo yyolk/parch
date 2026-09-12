@@ -10,11 +10,11 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
-    RULE,
-    RULE_C,
     FOCUS_PAD_BOT,
     FOCUS_PAD_TOP,
     FOCUS_PITCH,
+    RULE,
+    RULE_C,
     TASK_CHECKLIST_FRAC,
     TASK_GAP,
     TASK_INDEX_BAND_GAP,
@@ -27,9 +27,9 @@ from parch.layouts.planner.painters import (
     checklist_content_height,
     paint_task,
     paint_tasks_index,
-    task_row_count,
     strip_active,
     strip_items,
+    task_row_count,
     task_seats,
     tasks_index_band_seats,
     tasks_index_bands,
@@ -79,7 +79,19 @@ def test_tasks_in_year_planner_after_meetings():
     assert "tasks-2026-W53" in dests
     year = next(page for page in pages if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"]
+    assert labels == [
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ]
     assert dict(strip_items(year))["Task"] == spec.tasks_index_dest
 
 
@@ -168,19 +180,28 @@ def test_tasks_index_seats_weighted_by_weeks():
     stub, dated, write = tasks_index_week_parts(week_rows[0])
     strip = tasks_index_week_strip(week_rows[0])
     assert strip.h == pytest.approx(TASK_INDEX_LINE_H)
-    assert strip.y == pytest.approx(week_rows[0].y + (week_rows[0].h - TASK_INDEX_LINE_H) / 2)
+    assert strip.y == pytest.approx(
+        week_rows[0].y + (week_rows[0].h - TASK_INDEX_LINE_H) / 2
+    )
     assert stub.w == pytest.approx(TASK_INDEX_WEEK_W)
     assert dated.x == pytest.approx(stub.right)
     assert dated.w == pytest.approx(TASK_INDEX_RANGE_W)
     assert write.x == pytest.approx(dated.right + TASK_INDEX_WRITE_GAP)
     assert TASK_INDEX_RANGE_W == pytest.approx(20.4)
     assert TASK_INDEX_WRITE_GAP == pytest.approx(2.105)
-    via_cols = columns(strip, 2, gap=0, weights=(TASK_INDEX_WEEK_W, max(strip.w - TASK_INDEX_WEEK_W, 1)))
+    via_cols = columns(
+        strip,
+        2,
+        gap=0,
+        weights=(TASK_INDEX_WEEK_W, max(strip.w - TASK_INDEX_WEEK_W, 1)),
+    )
     rest = via_cols[1]
     write_w = max(rest.w - TASK_INDEX_WRITE_GAP - TASK_INDEX_RANGE_W, 1)
     assert (stub, dated, write) == (
         via_cols[0],
-        *columns(rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(TASK_INDEX_RANGE_W, write_w)),
+        *columns(
+            rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(TASK_INDEX_RANGE_W, write_w)
+        ),
     )
     assert write.right == pytest.approx(week_rows[0].right)
     assert write.h == pytest.approx(TASK_INDEX_LINE_H)
@@ -188,7 +209,9 @@ def test_tasks_index_seats_weighted_by_weeks():
     assert write.y > week_rows[0].y
     assert write.w > dated.w
     assert tasks_index_link_hits(week_rows[0]) == (stub, dated)
-    assert not any(_rects_overlap(hit, write) for hit in tasks_index_link_hits(week_rows[0]))
+    assert not any(
+        _rects_overlap(hit, write) for hit in tasks_index_link_hits(week_rows[0])
+    )
     assert tasks_index_rule_y(week_rows[0]) == pytest.approx(strip.bottom)
     assert tasks_index_rule_y(week_rows[0]) == pytest.approx(write.bottom)
 
@@ -212,7 +235,9 @@ def test_task_dest_seats():
     assert target - checklist.h < FOCUS_PITCH
     assert checklist.h > notes.h
     assert checklist.h == pytest.approx(well.h * TASK_CHECKLIST_FRAC, rel=0.08)
-    assert notes.h == pytest.approx((well.h - TASK_GAP) * (1 - TASK_CHECKLIST_FRAC), rel=0.12)
+    assert notes.h == pytest.approx(
+        (well.h - TASK_GAP) * (1 - TASK_CHECKLIST_FRAC), rel=0.12
+    )
 
 
 def test_tasks_index_paint_month_headers_and_week_links():
@@ -254,11 +279,15 @@ def test_tasks_index_paint_month_headers_and_week_links():
     assert ticks == []
 
     links = [op[2] for op in plotter.ops if op[0] == "link"]
-    assert links == [dest for week in range(1, 15) for dest in (f"tasks-2026-W{week:02d}",) * 2]
+    assert links == [
+        dest for week in range(1, 15) for dest in (f"tasks-2026-W{week:02d}",) * 2
+    ]
     counts = tuple(len(band.weeks) for band in index.bands)
     seats = [
         row
-        for band_box, band in zip(tasks_index_bands(well, counts), index.bands, strict=True)
+        for band_box, band in zip(
+            tasks_index_bands(well, counts), index.bands, strict=True
+        )
         for row in tasks_index_band_seats(band_box, len(band.weeks))[1]
     ]
     expected_hits: list[tuple[Rect, str]] = []
@@ -277,7 +306,9 @@ def test_tasks_index_paint_month_headers_and_week_links():
     hlines = [
         op
         for op in plotter.ops
-        if op[0] == "line" and op[5] == pytest.approx(RULE) and op[6] == pytest.approx(RULE_C)
+        if op[0] == "line"
+        and op[5] == pytest.approx(RULE)
+        and op[6] == pytest.approx(RULE_C)
     ]
     assert len(hlines) == 14
     for seat, line in zip(seats, hlines, strict=True):
@@ -331,14 +362,28 @@ def test_task_header_week_chip_and_task_tab():
     assert "W01" in texts
     assert "2026" in texts
     assert "29 Dec–4 Jan" not in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
+    for label in (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ):
         assert label in texts
     assert strip_active(page.kind) == "Task"
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links.count("tasks-index-2026-Q1") >= 2
     chip = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "W01")
     assert any(
-        op[0] == "link" and op[2] == "tasks-index-2026-Q1" and _rects_overlap(op[1], chip)
+        op[0] == "link"
+        and op[2] == "tasks-index-2026-Q1"
+        and _rects_overlap(op[1], chip)
         for op in plotter.ops
     )
 
@@ -392,5 +437,7 @@ def test_q1_bands_match_calendar():
         if isinstance(item, TasksIndex)
     )
     calendar = month_week_bands(2026, (1, 2, 3), weekday_start=0)
-    assert [len(band.weeks) for band in index.bands] == [len(weeks) for _month, weeks in calendar]
+    assert [len(band.weeks) for band in index.bands] == [
+        len(weeks) for _month, weeks in calendar
+    ]
     assert index.bands[0].weeks[0].monday == calendar[0][1][0][0]

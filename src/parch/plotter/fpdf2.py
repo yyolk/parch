@@ -32,7 +32,9 @@ class Fpdf2Plotter(Plotter):
     ) -> None:
         self.device = device
         if ramp is None:
-            self.ramp: TypeRamp = EffectiveRamp() if catalog is None else EffectiveRamp(catalog=catalog)
+            self.ramp: TypeRamp = (
+                EffectiveRamp() if catalog is None else EffectiveRamp(catalog=catalog)
+            )
         else:
             self.ramp = ramp
         self.catalog = catalog if catalog is not None else self.ramp.catalog
@@ -62,7 +64,9 @@ class Fpdf2Plotter(Plotter):
             return 0.0
         self.pdf.set_font(register_as, "", size * SMCP_SCALE)
         track = _pt_mm(size * SMCP_SCALE) * SMCP_TRACK_EM
-        return sum(self.pdf.get_string_width(ch) for ch in chars) + track * (len(chars) - 1)
+        return sum(self.pdf.get_string_width(ch) for ch in chars) + track * (
+            len(chars) - 1
+        )
 
     def _draw_smcp(
         self,

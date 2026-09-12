@@ -40,7 +40,19 @@ def test_habit_pages_follow_each_month():
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)
     labels = [label for label, _ in strip_items(july)]
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"]
+    assert labels == [
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ]
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31
@@ -69,7 +81,9 @@ def test_habit_paint_smoke_and_nav_link():
     assert "31" in texts
 
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-01-habits")
+    page = next(
+        p for p in YearPlanner().pages(spec) if p.dest == "month-2026-01-habits"
+    )
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     ink = RecordingPlotter()
     paint_habit_grid(ink, Rect(4, 20, 110, 120), grid)
@@ -129,7 +143,9 @@ def test_habit_seat_and_paint():
     assert bands[-1].bottom == pytest.approx(box.bottom)
 
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    page = next(
+        p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits"
+    )
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     ink = RecordingPlotter()
     paint_habit_grid(ink, box, grid)
@@ -153,7 +169,9 @@ def test_habit_seat_and_paint():
 
 def test_habit_paint_follows_spec_columns():
     spec = Spec(notes_pages=1, habit_columns=8)
-    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    page = next(
+        p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits"
+    )
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     assert grid.rows == 8
     ink = RecordingPlotter()
@@ -184,7 +202,9 @@ def test_habit_nav_landings():
 
 def test_habit_day_labels_link_to_dailies():
     spec = Spec(notes_pages=1)
-    page = next(p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits")
+    page = next(
+        p for p in YearPlanner().pages(spec) if p.dest == "month-2026-07-habits"
+    )
     grid = next(item for item in page.components if isinstance(item, HabitGrid))
     box = Rect(4, 20, 110, 120)
     day_col, names, _bands = habit_seats(box, grid.days, grid.rows)

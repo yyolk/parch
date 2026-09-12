@@ -1,8 +1,9 @@
 """Explicit ``(family, weight) → TTF``. Constructed and passed — no ambient globals."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Mapping
+from typing import Literal
 
 # More families later; today the catalog is Jost only.
 type TypeFamily = Literal["jost"]

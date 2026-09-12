@@ -135,7 +135,9 @@ def test_meeting_seats_stack():
 
 
 def test_meeting_paint_template():
-    agenda = MeetingAgenda(year=2026, agenda=4, action_items=3, index_dest="meetings-index-2026", number=1)
+    agenda = MeetingAgenda(
+        year=2026, agenda=4, action_items=3, index_dest="meetings-index-2026", number=1
+    )
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
     paint_meeting(plotter, well, agenda)
@@ -166,7 +168,9 @@ def test_meeting_paint_template():
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert fills == []
 
-    title_box = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "Title")
+    title_box = next(
+        op[1] for op in plotter.ops if op[0] == "text" and op[2] == "Title"
+    )
     date_box = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "Date")
     assert title_box.h == pytest.approx(MEET_WRITE_LABEL_H)
     assert date_box.h == pytest.approx(MEET_WRITE_LABEL_H)
@@ -207,7 +211,19 @@ def test_meeting_header_year_chip_and_meet_tab():
     assert "01" in texts
     assert "Projects" not in texts
     assert "Attendees" not in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
+    for label in (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ):
         assert label in texts
     assert texts.count("Notes") == 2
     assert "Action items" in texts
@@ -241,7 +257,9 @@ def test_meeting_index_seats():
     assert dated.right < title.x
     assert title.x == pytest.approx(dated.right + MEET_INDEX_COL_GAP)
     share = dated.w + title.w
-    assert dated.w / share == pytest.approx(MEET_INDEX_WEIGHTS[0] / sum(MEET_INDEX_WEIGHTS))
+    assert dated.w / share == pytest.approx(
+        MEET_INDEX_WEIGHTS[0] / sum(MEET_INDEX_WEIGHTS)
+    )
     assert title.w > dated.w
     assert dated.y == pytest.approx(title.y)
     assert dated.bottom == pytest.approx(title.bottom)
@@ -278,12 +296,17 @@ def test_meeting_index_paint_date_cues_and_links():
     marks = [
         op
         for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(MEET_INDEX_MARK)
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(MEET_INDEX_MARK)
     ]
     assert len(marks) == 16
 
     seats = meetings_index_roster(well, 16)
-    rules = [op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(0.12)]
+    rules = [
+        op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(0.12)
+    ]
     assert len(rules) == 32
     for seat, date_box in zip(seats, date_boxes, strict=True):
         dated, title = meeting_index_row_seats(seat)

@@ -1,7 +1,13 @@
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, iso_monday, month_week_bands
-from parch.components import ReviewDay, ReviewIndex, ReviewMonthBand, ReviewWeek, ReviewWeekPage
+from parch.components import (
+    ReviewDay,
+    ReviewIndex,
+    ReviewMonthBand,
+    ReviewWeek,
+    ReviewWeekPage,
+)
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -33,9 +39,7 @@ class ReviewSection:
                     month=landing.month,
                     rev_dest=index_dest,
                 ),
-                components=(
-                    ReviewIndex(year=spec.year, dest=index_dest, bands=bands),
-                ),
+                components=(ReviewIndex(year=spec.year, dest=index_dest, bands=bands),),
             )
         ]
         for band in bands:

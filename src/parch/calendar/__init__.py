@@ -47,7 +47,9 @@ def weekday_labels(weekday_start: int) -> tuple[str, ...]:
     return tuple(WEEKDAY_LABELS[(weekday_start + i) % 7] for i in range(7))
 
 
-def month_weeks(year: int, month: int, weekday_start: int = 0) -> list[list[date | None]]:
+def month_weeks(
+    year: int, month: int, weekday_start: int = 0
+) -> list[list[date | None]]:
     cal = pycal.Calendar(firstweekday=weekday_start)
     weeks: list[list[date | None]] = []
     for week in cal.monthdatescalendar(year, month):
@@ -55,7 +57,9 @@ def month_weeks(year: int, month: int, weekday_start: int = 0) -> list[list[date
     return weeks
 
 
-def month_touching_weeks(year: int, month: int, weekday_start: int = 0) -> list[list[date]]:
+def month_touching_weeks(
+    year: int, month: int, weekday_start: int = 0
+) -> list[list[date]]:
     """Full 7-day weeks that contain at least one day of the month (adjacent days kept)."""
     cal = pycal.Calendar(firstweekday=weekday_start)
     return [list(week) for week in cal.monthdatescalendar(year, month)]
@@ -65,7 +69,11 @@ def months_touching_weeks(
     year: int, months: tuple[int, ...], weekday_start: int = 0
 ) -> list[list[date]]:
     """ISO/Monday weeks that touch any of ``months``, each week once (first seen)."""
-    return [week for _month, weeks in month_week_bands(year, months, weekday_start) for week in weeks]
+    return [
+        week
+        for _month, weeks in month_week_bands(year, months, weekday_start)
+        for week in weeks
+    ]
 
 
 def month_week_bands(

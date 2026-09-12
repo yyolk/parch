@@ -19,8 +19,12 @@ class QuarterSection:
 
     def pages_for(self, quarter: int) -> list[Page]:
         spec = self.spec
-        months = tuple(build_annual_month(spec, month) for month in months_in_quarter(quarter))
-        landing_month = next((month for month in months_in_quarter(quarter) if spec.presses(month)))
+        months = tuple(
+            build_annual_month(spec, month) for month in months_in_quarter(quarter)
+        )
+        landing_month = next(
+            month for month in months_in_quarter(quarter) if spec.presses(month)
+        )
         first = month_touching_weeks(spec.year, landing_month, spec.weekday_start)[0]
         dest = spec.dest_for_quarter(quarter)
         return [
@@ -28,7 +32,9 @@ class QuarterSection:
                 dest=dest,
                 kind="quarter",
                 title=f"Q{quarter} {spec.year}",
-                nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0]), month=landing_month),
+                nav=planner_nav(
+                    spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
+                ),
                 components=(
                     QuarterGrid(year=spec.year, quarter=quarter, months=months),
                 ),

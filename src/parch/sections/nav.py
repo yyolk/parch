@@ -56,7 +56,9 @@ from parch.sections.page import NavItem
 from parch.spec import Spec
 
 
-def landing_day(spec: Spec, *, day: date | None = None, month: int | None = None) -> date:
+def landing_day(
+    spec: Spec, *, day: date | None = None, month: int | None = None
+) -> date:
     """DAY/NOTES landing. Not a generation-time “today” seed."""
     if day is not None:
         return day

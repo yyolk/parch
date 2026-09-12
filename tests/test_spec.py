@@ -157,7 +157,10 @@ def test_typography_unknown_keys_fail_loudly():
         Spec.from_mapping(
             {
                 "typography": {
-                    "overlay": {"schema_version": OVERLAY_SCHEMA_VERSION, "chrome": {"size": 0}}
+                    "overlay": {
+                        "schema_version": OVERLAY_SCHEMA_VERSION,
+                        "chrome": {"size": 0},
+                    }
                 }
             }
         )

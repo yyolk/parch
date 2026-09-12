@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, iso_monday, month_week_bands, quarter_of
-from parch.components import TaskWeek, TasksIndex, TasksMonthBand, TasksWeekPage
+from parch.components import TasksIndex, TasksMonthBand, TasksWeekPage, TaskWeek
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec

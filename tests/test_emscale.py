@@ -109,7 +109,9 @@ def test_overlay_size_is_absolute_override_not_root():
     )
     bumped = EffectiveRamp(root_body=Pt(12.0))
     assert over.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(9.0))
-    assert over.ink("chrome", "strong") == TypeInk(family="jost", weight="bold", size=Pt(9.0))
+    assert over.ink("chrome", "strong") == TypeInk(
+        family="jost", weight="bold", size=Pt(9.0)
+    )
     assert over.ink("body").size == pytest.approx(12.0)
     assert over.ink("title").size == pytest.approx(bumped.ink("title").size)
     assert over.ink("micro").size == pytest.approx(bumped.ink("micro").size)
@@ -119,7 +121,9 @@ def test_overlay_size_is_absolute_override_not_root():
 
 
 def test_overlay_still_validates_with_micro():
-    ok = require_overlay({"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}})
+    ok = require_overlay(
+        {"schema_version": 1, "micro": {"size": 3.8, "weight": "book"}}
+    )
     assert ok.micro == TypePatch(size=Pt(3.8), weight="book")
     ramp = EffectiveRamp(overlay=ok)
     assert ramp.ink("micro") == TypeInk(family="jost", weight="book", size=Pt(3.8))
@@ -138,7 +142,11 @@ def test_header_and_month_honor_bumped_root():
     year = next(op for op in header.ops if op[0] == "text" and op[2] == "2026")
     assert year[3] == pytest.approx(12.0 * 7.4 / 8.5)
 
-    month_page = next(p for p in YearPlanner().pages(Spec(months=(1,), notes_pages=0)) if p.kind == "month")
+    month_page = next(
+        p
+        for p in YearPlanner().pages(Spec(months=(1,), notes_pages=0))
+        if p.kind == "month"
+    )
     ink = RecordingPlotter(ramp=bumped)
     paint_month_grid(ink, well_rect(NOMAD), _one(month_page, MonthGrid), ramp=bumped)
     day = next(op for op in ink.ops if op[0] == "text" and op[2] == "15")
@@ -152,7 +160,9 @@ def test_painters_use_closed_ladder_sizes():
     ramp = EffectiveRamp()
 
     nav = RecordingPlotter(ramp=ramp)
-    paint_nav(nav, NOMAD, (("Year", "year-2026"), ("Mon", "month-2026-01")), "Year", ramp=ramp)
+    paint_nav(
+        nav, NOMAD, (("Year", "year-2026"), ("Mon", "month-2026-01")), "Year", ramp=ramp
+    )
     nav_sizes = {op[3] for op in nav.ops if op[0] == "text"}
     assert nav_sizes == {7.4}
 
@@ -162,7 +172,9 @@ def test_painters_use_closed_ladder_sizes():
     day = next(op for op in month_ink.ops if op[0] == "text" and op[2] == "15")
     assert day[3] == pytest.approx(8.5)
     week_chip = next(
-        op for op in month_ink.ops if op[0] == "text" and str(op[2]).startswith("W") and str(op[2])[1:].isdigit()
+        op
+        for op in month_ink.ops
+        if op[0] == "text" and str(op[2]).startswith("W") and str(op[2])[1:].isdigit()
     )
     assert week_chip[3] == pytest.approx(5.4)
 
@@ -181,7 +193,8 @@ def test_painters_use_closed_ladder_sizes():
     weekday = next(
         op
         for op in review_ink.ops
-        if op[0] == "text" and op[2] in {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
+        if op[0] == "text"
+        and op[2] in {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}
     )
     assert weekday[3] == pytest.approx(5.4)
     review_day = next(op for op in review_ink.ops if op[0] == "text" and op[2] == "1")
@@ -195,16 +208,26 @@ def test_mini_month_and_clone_caption_cues(tmp_path: Path):
     annual_dow = next(
         op
         for op in plotter.ops
-        if op[0] == "text" and op[2] in {"M", "T", "W", "F", "S"} and op[3] == pytest.approx(4.3)
+        if op[0] == "text"
+        and op[2] in {"M", "T", "W", "F", "S"}
+        and op[3] == pytest.approx(4.3)
     )
     assert annual_dow[9] == "book"
-    mini_day = next(op for op in plotter.ops if op[0] == "text" and op[2] == "15" and op[3] == pytest.approx(5.4))
+    mini_day = next(
+        op
+        for op in plotter.ops
+        if op[0] == "text" and op[2] == "15" and op[3] == pytest.approx(5.4)
+    )
     assert mini_day[9] in {"book", "bold"}
     clone_p = next(op for op in plotter.ops if op[0] == "text" and op[2] == "P")
     assert clone_p[3] == pytest.approx(5.4)
     date_cue = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Date")
     assert date_cue[3] == pytest.approx(5.4)
-    nav = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year" and op[3] == pytest.approx(7.4))
+    nav = next(
+        op
+        for op in plotter.ops
+        if op[0] == "text" and op[2] == "Year" and op[3] == pytest.approx(7.4)
+    )
     assert nav[9] in {"book", "bold"}
 
 
@@ -216,7 +239,9 @@ def test_press_mvp_toml_and_overlay_compose(tmp_path: Path):
         tmp_path / "mvp-id.pdf",
         plotter=plotter,
     )
-    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 42)
+    year = next(
+        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 42
+    )
     assert year[9] == "heavy"
     brow = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Year Book")
     assert brow[3] == 10
@@ -227,8 +252,12 @@ def test_press_mvp_toml_and_overlay_compose(tmp_path: Path):
 
 
 def test_typeref_resolve_is_ink():
-    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1))), root_body=Pt(12.0))
-    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.1))
+    over = EffectiveRamp(
+        overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1))), root_body=Pt(12.0)
+    )
+    assert over.resolve(TypeRef(step="chrome")) == TypeInk(
+        family="jost", weight="book", size=Pt(9.1)
+    )
     assert over.resolve(TypeRef(step="micro")) == over.ink("micro")
     assert over.resolve(TypeRef(step="display")).size == Pt(42.0)
     assert over.ink("micro").size == pytest.approx(12.0 * 4.3 / 8.5)

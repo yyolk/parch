@@ -78,7 +78,19 @@ def test_review_in_year_planner_after_tasks():
     assert kinds.count("review") == 53
     year = next(page for page in pages if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]
-    assert labels == ["Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"]
+    assert labels == [
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ]
     assert dict(strip_items(year))["Rev"] == spec.review_index_dest
 
 
@@ -105,7 +117,20 @@ def test_review_index_page():
         "November",
         "December",
     ]
-    assert [len(band.weeks) for band in index.bands] == [5, 4, 5, 4, 4, 5, 4, 5, 4, 4, 5, 4]
+    assert [len(band.weeks) for band in index.bands] == [
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+        5,
+        4,
+        4,
+        5,
+        4,
+    ]
     assert index.bands[0].weeks[0].dest == "review-2026-W01"
     assert index.bands[0].weeks[-1].iso_week == 5
     assert index.bands[1].weeks[0].iso_week == 6
@@ -151,7 +176,9 @@ def test_review_section_order_index_then_weeks():
     assert dests[0] == "review-index-2026"
     assert dests[1:] == [f"review-2026-W{week:02d}" for week in range(1, 54)]
     assert dests.count("review-index-2026") == 1
-    assert [page.kind for page in ReviewSection(spec).pages()].count("review_index") == 1
+    assert [page.kind for page in ReviewSection(spec).pages()].count(
+        "review_index"
+    ) == 1
     assert [page.kind for page in ReviewSection(spec).pages()].count("review") == 53
     week_dests = [dest for dest in dests if dest.startswith("review-2026-W")]
     assert week_dests == [f"review-2026-W{week:02d}" for week in range(1, 54)]
@@ -294,11 +321,7 @@ def test_review_index_paint_month_headers_hairlines_and_week_links():
         assert line[4] == pytest.approx(rule_y)
         assert rule_y == pytest.approx(row.bottom)
 
-    chips = [
-        op[1]
-        for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3]
-    ]
+    chips = [op[1] for op in plotter.ops if op[0] == "rect" and op[2] and not op[3]]
     assert len(chips) == 53
     for seat, box in zip(seats, chips, strict=True):
         assert box == review_index_chip(seat)
@@ -361,11 +384,16 @@ def test_review_paint_day_cues_and_unlabeled_narrative():
     boxes = [
         op[1]
         for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(cues[0].w)
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(cues[0].w)
     ]
     assert len(boxes) == 7
     note_box = next(
-        op[1] for op in plotter.ops if op[0] == "rect" and op[2] and not op[3] and op[1] == notes
+        op[1]
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1] == notes
     )
     assert note_box == notes
 
@@ -382,12 +410,16 @@ def test_review_paint_day_cues_and_unlabeled_narrative():
             assert (label, day.dest) in links
             assert not any(_rects_overlap(hit, write) for hit, _dest in links)
         else:
-            assert all(op[2] != day.day.isoformat() for op in plotter.ops if op[0] == "link")
+            assert all(
+                op[2] != day.day.isoformat() for op in plotter.ops if op[0] == "link"
+            )
 
     rules = [
         op
         for op in plotter.ops
-        if op[0] == "line" and op[5] == pytest.approx(RULE) and op[6] == pytest.approx(RULE_C)
+        if op[0] == "line"
+        and op[5] == pytest.approx(RULE)
+        and op[6] == pytest.approx(RULE_C)
     ]
     for cue in cues:
         _label, write = review_day_parts(cue)
@@ -411,7 +443,19 @@ def test_review_header_week_chip_and_rev_tab():
     assert texts.count("Review") == 1
     assert "W01" in texts
     assert "2026" in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
+    for label in (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ):
         assert label in texts
     assert strip_active(page.kind) == "Rev"
     links = [op[2] for op in plotter.ops if op[0] == "link"]
@@ -447,7 +491,9 @@ def test_review_q1_subset_one_index():
     dests = [page.dest for page in pages]
     assert dests[0] == "review-index-2026"
     assert dests[1:] == [f"review-2026-W{week:02d}" for week in range(1, 15)]
-    dest = next(item for item in pages[1].components if isinstance(item, ReviewWeekPage))
+    dest = next(
+        item for item in pages[1].components if isinstance(item, ReviewWeekPage)
+    )
     assert dest.index_dest == "review-index-2026"
 
 
@@ -461,5 +507,7 @@ def test_q1_bands_match_calendar():
         if isinstance(item, ReviewIndex)
     )
     calendar = month_week_bands(2026, (1, 2, 3), weekday_start=0)
-    assert [len(band.weeks) for band in index.bands] == [len(weeks) for _month, weeks in calendar]
+    assert [len(band.weeks) for band in index.bands] == [
+        len(weeks) for _month, weeks in calendar
+    ]
     assert index.bands[0].weeks[0].monday == calendar[0][1][0][0]

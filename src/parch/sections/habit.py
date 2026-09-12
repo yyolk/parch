@@ -30,7 +30,9 @@ class HabitSection:
                 dest=spec.dest_for_habits(month),
                 kind="habits",
                 title=f"Habits · {month_name(month)} {spec.year}",
-                nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0]), month=month),
+                nav=planner_nav(
+                    spec, week_dest=spec.dest_for_week(first[0]), month=month
+                ),
                 components=(
                     HabitGrid(
                         year=spec.year,
