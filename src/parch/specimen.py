@@ -1,6 +1,6 @@
 """fpdf2 specimen catalog: press key pages to PNG, write a static HTML gallery.
 
-One hero device (SuperNote Nomad) and no paper×hand permutations.
+One default device (SuperNote Nomad) and no paper×hand permutations.
 Catalog layout is ``<workdir>/specimens/<device-id>/``.
 Each page writes one PNG (``{stem}.png`` at ``PREVIEW_DPI``). The device
 index shrinks thumbs with CSS; a checkbox+label toggles expand in place.

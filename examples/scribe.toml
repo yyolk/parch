@@ -1,5 +1,6 @@
-# Kindle Scribe (1st gen) geometry proof — not the hero / mvp.toml book.
-# Hero release stays supernote-nomad. Slim January keeps the press cheap.
+# Kindle Scribe (1st gen) geometry proof — not a release-PDF shard.
+# PRESSABLE / release press stays supernote-nomad → examples/mvp.toml.
+# Slim January keeps the press cheap.
 year = 2026
 device = "kindle-scribe"
 week_start = "monday"

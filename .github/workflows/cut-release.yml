@@ -93,7 +93,7 @@ jobs:
             echo "Dispatching Publish (testpypi + pypi) and Release PDFs for v${VER}"
             gh workflow run publish.yml --ref "v${VER}" -f target=testpypi -f release_tag="v${VER}"
             gh workflow run publish.yml --ref "v${VER}" -f target=pypi -f release_tag="v${VER}"
-            gh workflow run release-pdfs.yml --ref "v${VER}" -f release_tag="v${VER}" -f device_set=hero
+            gh workflow run release-pdfs.yml --ref "v${VER}" -f release_tag="v${VER}"
 
             echo "Dispatched workflow runs (listing may be racy):"
             gh run list --workflow=publish.yml --event=workflow_dispatch --limit 4 || true

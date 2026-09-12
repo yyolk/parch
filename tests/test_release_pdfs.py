@@ -8,30 +8,35 @@ import pytest
 
 from parch.devices import known_device_ids
 from parch.services.release_pdfs import (
-    HERO_DEVICE_IDS,
     PRESSABLE_DEVICE_IDS,
-    device_ids,
     matrix_json,
     matrix_shards,
+    toml_for,
 )
 
 
-def test_hero_shards_json():
-    hero = matrix_shards("hero")
-    assert hero == [{"device": "supernote-nomad"}]
-    assert json.loads(matrix_json("hero")) == hero
-    assert device_ids() == HERO_DEVICE_IDS == ("supernote-nomad",)
+def test_pressable_shards_json():
+    shards = matrix_shards()
+    assert shards == [{"device": "supernote-nomad"}]
+    assert json.loads(matrix_json()) == shards
+    assert PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
 
 
-def test_all_is_pressable_not_registry():
-    assert device_ids("all") == PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
-    assert device_ids("all") != known_device_ids()
+def test_pressable_is_not_registry():
+    assert PRESSABLE_DEVICE_IDS != known_device_ids()
     assert "kindle-scribe" in known_device_ids()
+    assert "kindle-scribe" not in PRESSABLE_DEVICE_IDS
 
 
-def test_device_ids_unknown_set_raises():
-    with pytest.raises(ValueError, match="unknown device_set"):
-        device_ids("unknown")
+def test_toml_for_pressable_nomad():
+    assert toml_for("supernote-nomad") == "examples/mvp.toml"
+
+
+def test_toml_for_rejects_unpressable():
+    with pytest.raises(ValueError, match="is not pressable"):
+        toml_for("kindle-scribe")
+    with pytest.raises(ValueError, match="is not pressable"):
+        toml_for("unknown-slate")
 
 
 def test_module_prints_matrix_json():
@@ -39,4 +44,14 @@ def test_module_prints_matrix_json():
         [sys.executable, "-m", "parch.services.release_pdfs"],
         text=True,
     )
-    assert json.loads(out) == matrix_shards("hero")
+    assert json.loads(out) == matrix_shards()
+
+
+def test_module_rejects_device_set_args():
+    proc = subprocess.run(
+        [sys.executable, "-m", "parch.services.release_pdfs", "hero"],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode != 0
+    assert "usage:" in proc.stderr
