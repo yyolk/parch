@@ -7,8 +7,6 @@
 
 parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
 
-Python 3.14+ required (language features, not just the pin).
-
 ## Install / Press
 
 Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.
@@ -16,17 +14,11 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.
 ```shell
 uv sync --group dev
 uv run parch press examples/mvp.toml -o out/nomad-2026.pdf
-# or
 uv run python -m parch press supernote-nomad -o parch.pdf
-# Specimen catalog (PNG previews under out/specimens/; click a thumb to
-# expand in place via CSS. Not a product PDF):
-uv run parch specimen supernote-nomad -w out
-# ProofProfile (on-screen review):
+uv run parch specimen supernote-nomad -w out   # PNG catalog; click a thumb to expand in place
 uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
-# or: parch press examples/mvp.toml --proof -o …
+uv run parch press examples/mvp.toml --proof -o …
 ```
-
-Default `examples/mvp.toml` is full-year 2026, Monday week start, `notes_pages=1`.
 
 ## Architecture
 
@@ -54,24 +46,6 @@ flowchart TB
     end
   end
 ```
-
-Painters live under `layouts/planner/` and take `plotter: Plotter`. Components do not draw. The only plotter backend is `Fpdf2Plotter`. Tests use `RecordingPlotter`.
-
-```
-src/parch/
-  press.py spec.py
-  calendar/
-  components/
-  sections/
-  layouts/planner/
-  plotter/{protocol.py,fpdf2.py,recording.py}
-  devices/nomad.py
-  books/year_planner.py
-```
-
-### Device
-
-From `src/parch/devices/nomad.py` (`NOMAD`). Toolbar slab is reserved — not a writing well.
 
 | Device | id | size | resolution | notes |
 | --- | --- | --- | --- | --- |
