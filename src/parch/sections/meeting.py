@@ -30,7 +30,9 @@ class MeetingSection:
                 title="Meetings",
                 nav=nav,
                 components=(
-                    MeetingIndex(year=spec.year, dest=spec.meetings_index_dest, slots=slots),
+                    MeetingIndex(
+                        year=spec.year, dest=spec.meetings_index_dest, slots=slots
+                    ),
                 ),
             )
         ]

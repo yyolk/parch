@@ -102,8 +102,8 @@ def test_cli_load_keeps_toml_overlay_under_month_flag():
 def test_cli_rejects_unknown_typography(tmp_path: Path, capsys):
     spec = tmp_path / "bad.toml"
     spec.write_text(
-        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
-        '[typography.overlay.cover_year]\nsize = 48\n',
+        "year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n"
+        "[typography.overlay.cover_year]\nsize = 48\n",
         encoding="utf-8",
     )
     out = tmp_path / "bad.pdf"
@@ -116,7 +116,7 @@ def test_cli_rejects_unknown_typography(tmp_path: Path, capsys):
 def test_cli_unknown_weight_fails(tmp_path: Path, capsys):
     spec = tmp_path / "hair.toml"
     spec.write_text(
-        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n'
+        "year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 1\n"
         '[typography.overlay.chrome]\nweight = "hairline"\n',
         encoding="utf-8",
     )
@@ -127,8 +127,8 @@ def test_cli_unknown_weight_fails(tmp_path: Path, capsys):
 def test_cli_version_mismatch_fails(tmp_path: Path, capsys):
     spec = tmp_path / "ver.toml"
     spec.write_text(
-        'year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 99\n'
-        '[typography.overlay.chrome]\nsize = 8.6\n',
+        "year = 2026\nmonth = 1\n[typography.overlay]\nschema_version = 99\n"
+        "[typography.overlay.chrome]\nsize = 8.6\n",
         encoding="utf-8",
     )
     assert main(["press", str(spec), "-o", str(tmp_path / "ver.pdf")]) == 2

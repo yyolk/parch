@@ -14,18 +14,18 @@ from parch.components import (
     MonthGrid,
     Notes,
     Priorities,
-    ProjectTicket,
     ProjectsBoard,
     ProjectsIndex,
+    ProjectTicket,
     QuarterGrid,
     ReviewDay,
     ReviewIndex,
     ReviewWeek,
     ReviewWeekPage,
     Schedule,
-    TaskWeek,
     TasksIndex,
     TasksWeekPage,
+    TaskWeek,
     WeekStrip,
 )
 from parch.devices.nomad import Device
@@ -71,7 +71,9 @@ def _ink_text(
     small_caps: bool = False,
 ) -> None:
     if isinstance(mark, TypeRef):
-        plotter.text(box, content, ref=mark, gray=gray, align=align, small_caps=small_caps)
+        plotter.text(
+            box, content, ref=mark, gray=gray, align=align, small_caps=small_caps
+        )
         return
     plotter.text(box, content, ink=mark, gray=gray, align=align, small_caps=small_caps)
 
@@ -100,10 +102,14 @@ def paint_header(
         gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
     )
     plotter.ramp = ramp
-    _ink_text(plotter, title_box, title, TypeRef(step="title"), gray=PAPER, align="left")
+    _ink_text(
+        plotter, title_box, title, TypeRef(step="title"), gray=PAPER, align="left"
+    )
     chrome = TypeRef(step="chrome")
     if chip:
-        chip_box = Rect(device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h)
+        chip_box = Rect(
+            device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h
+        )
         _ink_text(
             plotter,
             chip_box,
@@ -143,7 +149,9 @@ def paint_nav(
     ramp = _bound_ramp(plotter, ramp)
     y = device.page_height - NAV_H
     slot = device.page_width / len(items)
-    plotter.rect(Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH)
+    plotter.rect(
+        Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH
+    )
     for i, (label, dest) in enumerate(items):
         x = i * slot
         hit = Rect(x, y, slot, NAV_H)
@@ -164,10 +172,14 @@ def paint_nav(
         if i and not on:
             prev_on = items[i - 1][0] == active
             if not prev_on:
-                plotter.line(x, y + 1.8, x, y + NAV_H - 1.8, stroke_width=HAIR, stroke_gray=SOFT)
+                plotter.line(
+                    x, y + 1.8, x, y + NAV_H - 1.8, stroke_width=HAIR, stroke_gray=SOFT
+                )
 
 
-def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp) -> None:
+def paint_cover(
+    plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp
+) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
     # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
@@ -213,7 +225,12 @@ def paint_cover(plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: Ty
         Rect((device.page_width - tap_w) / 2, year_box.y, tap_w, year_box.h),
         cover.cta_dest,
     )
-    specs = Rect(device.writing_clearance, 84.0, device.page_width - 2 * device.writing_clearance, 6.5)
+    specs = Rect(
+        device.writing_clearance,
+        84.0,
+        device.page_width - 2 * device.writing_clearance,
+        6.5,
+    )
     _ink_text(
         plotter,
         specs,
@@ -377,7 +394,9 @@ def paint_projects_index(
 ) -> None:
     """``ProjectsIndex`` — stub, raised write-in, symbol strip, 3-card preview; stub + preview links."""
     ramp = _bound_ramp(plotter, ramp)
-    for seat, ticket in zip(project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True):
+    for seat, ticket in zip(
+        project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True
+    ):
         _paint_project_ticket(plotter, seat, ticket, ramp=ramp)
         for hit in project_ticket_link_hits(seat):
             plotter.link(hit, ticket.dest)
@@ -403,7 +422,14 @@ def _paint_project_ticket(
     )
     perf_x = stub.right + 0.55
     _paint_perforation(plotter, perf_x, box.y + 0.9, perf_x, box.bottom - 0.9)
-    plotter.line(write.x, write.bottom, write.right, write.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(
+        write.x,
+        write.bottom,
+        write.right,
+        write.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
     _paint_clone_icon_strip(plotter, strip)
     for card in project_ticket_preview_cards(preview):
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
@@ -468,7 +494,9 @@ def projects_clone_a_well(well: Rect) -> tuple[Rect, Rect]:
     return columns(well, 2, gap=CLONE_RAIL_GAP, weights=CLONE_RAIL_WEIGHTS)
 
 
-def projects_clone_a_seats(well: Rect, cards: int) -> tuple[tuple[Rect, ...], tuple[Rect, ...]]:
+def projects_clone_a_seats(
+    well: Rect, cards: int
+) -> tuple[tuple[Rect, ...], tuple[Rect, ...]]:
     """Stacked project cards and the matching three-stage rail seats."""
     board, rail = projects_clone_a_well(well)
     return project_card_seats(board, cards), rows(rail, cards, gap=PROJECT_CARD_GAP)
@@ -509,7 +537,9 @@ def paint_project(
         spine, name_h, name_field, tasks, notes, strip = projects_clone_a_card(card)
         plotter.rect(spine, stroke=False, fill=True, fill_gray=INK)
         _paint_clone_priority(plotter, name_h)
-        plotter.rect(name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+        plotter.rect(
+            name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK
+        )
         _paint_clone_tasks(plotter, tasks)
         _paint_clone_dot_grid(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
@@ -577,13 +607,17 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
     track = Rect(box.x, box.y + (box.h - track_h) / 2, box.w, track_h)
     inset = track.inset(1.4, 0.6)
     marks: list[Rect] = []
-    for slot, label in zip(rows(inset, 3, gap=CLONE_RAIL_SLOT_GAP), CLONE_STATUS_LABELS, strict=True):
+    for slot, label in zip(
+        rows(inset, 3, gap=CLONE_RAIL_SLOT_GAP), CLONE_STATUS_LABELS, strict=True
+    ):
         mark_y = slot.y + (slot.h - PROJECT_STATUS_MARK) / 2
         mark = Rect(slot.x, mark_y, PROJECT_STATUS_MARK, PROJECT_STATUS_MARK)
         plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
         _ink_text(
             plotter,
-            Rect(mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h),
+            Rect(
+                mark.right + 0.7, slot.y, max(slot.right - mark.right - 0.7, 1), slot.h
+            ),
             label,
             TypeRef(step="caption"),
             gray=MUTED,
@@ -700,7 +734,9 @@ def _fill_triangle(plotter: Plotter, box: Rect) -> None:
     _fill_span_rows(plotter, spans, dy)
 
 
-def _fill_poly(plotter: Plotter, box: Rect, pts: list[tuple[float, float]], *, n: int = 12) -> None:
+def _fill_poly(
+    plotter: Plotter, box: Rect, pts: list[tuple[float, float]], *, n: int = 12
+) -> None:
     ys, dy = _scan_box(box, n=n)
     spans: list[tuple[float, float, float]] = []
     for y in ys:
@@ -749,7 +785,10 @@ def _fill_hexagon(plotter: Plotter, box: Rect) -> None:
     cy = box.y + box.h / 2
     r = min(box.w, box.h) / 2
     pts = [
-        (cx + r * math.cos(math.radians(-90 + i * 60)), cy + r * math.sin(math.radians(-90 + i * 60)))
+        (
+            cx + r * math.cos(math.radians(-90 + i * 60)),
+            cy + r * math.sin(math.radians(-90 + i * 60)),
+        )
         for i in range(6)
     ]
     _fill_poly(plotter, box, pts)
@@ -793,10 +832,17 @@ def _poly_xs_at(pts: list[tuple[float, float]], y: float) -> list[float]:
     return xs
 
 
-def _fill_span_rows(plotter: Plotter, spans: list[tuple[float, float, float]], dy: float) -> None:
+def _fill_span_rows(
+    plotter: Plotter, spans: list[tuple[float, float, float]], dy: float
+) -> None:
     for y, x0, x1 in spans:
         if x1 - x0 > 0.08:
-            plotter.rect(Rect(x0, y, x1 - x0, dy), stroke=False, fill=True, fill_gray=TICKET_STRIP_GRAY)
+            plotter.rect(
+                Rect(x0, y, x1 - x0, dy),
+                stroke=False,
+                fill=True,
+                fill_gray=TICKET_STRIP_GRAY,
+            )
 
 
 MEET_GAP = 2.6
@@ -858,7 +904,9 @@ def paint_meeting(
         box, agenda.agenda, agenda.action_items
     )
     _paint_meeting_head(plotter, head)
-    _paint_checklist_box(plotter, agenda_box, label="Agenda", rows=agenda.agenda, ramp=ramp)
+    _paint_checklist_box(
+        plotter, agenda_box, label="Agenda", rows=agenda.agenda, ramp=ramp
+    )
     _paint_note_box(plotter, notes, label="Notes", ramp=ramp)
     _paint_checklist_box(
         plotter, action_items, label="Action items", rows=agenda.action_items, ramp=ramp
@@ -886,7 +934,9 @@ def _paint_meeting_writein(plotter: Plotter, box: Rect, label: str) -> None:
         small_caps=True,
         align="left",
     )
-    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(
+        write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C
+    )
 
 
 def meetings_index_roster(box: Rect, n: int) -> tuple[Rect, ...]:
@@ -898,7 +948,9 @@ def meeting_index_row_parts(row: Rect) -> tuple[Rect, Rect]:
     """Stub | date+title body, after a quiet inset and stub gap."""
     inner = row.inset(MEET_INDEX_INSET_X, MEET_INDEX_INSET_Y)
     stub, rest = inner.split_left(MEET_INDEX_STUB_W)
-    body = Rect(rest.x + MEET_INDEX_STUB_GAP, rest.y, rest.w - MEET_INDEX_STUB_GAP, rest.h)
+    body = Rect(
+        rest.x + MEET_INDEX_STUB_GAP, rest.y, rest.w - MEET_INDEX_STUB_GAP, rest.h
+    )
     return stub, body
 
 
@@ -919,7 +971,9 @@ def paint_meetings_index(
 ) -> None:
     """``MeetingIndex`` — dense dated roster. Stub is the dest hit; write-ins stay unlinkable."""
     _bound_ramp(plotter, ramp)
-    for seat, slot in zip(meetings_index_roster(box, len(index.slots)), index.slots, strict=True):
+    for seat, slot in zip(
+        meetings_index_roster(box, len(index.slots)), index.slots, strict=True
+    ):
         _paint_meeting_index_row(plotter, seat, slot.number)
         for hit in meeting_index_link_hits(seat):
             plotter.link(hit, slot.dest)
@@ -937,7 +991,12 @@ def _paint_meeting_index_row(plotter: Plotter, box: Rect, number: int) -> None:
 def _paint_meeting_index_stub(plotter: Plotter, stub: Rect, number: int) -> None:
     """Hairline slot mark — the visible tap target, same as ``paint_projects_index`` stubs."""
     mark_y = stub.y + (stub.h - MEET_INDEX_MARK) / 2
-    mark = Rect(stub.x + (stub.w - MEET_INDEX_MARK) / 2, mark_y, MEET_INDEX_MARK, MEET_INDEX_MARK)
+    mark = Rect(
+        stub.x + (stub.w - MEET_INDEX_MARK) / 2,
+        mark_y,
+        MEET_INDEX_MARK,
+        MEET_INDEX_MARK,
+    )
     plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _ink_text(
         plotter,
@@ -962,12 +1021,16 @@ def _paint_meeting_index_date_cue(plotter: Plotter, box: Rect) -> None:
         small_caps=True,
         align="left",
     )
-    plotter.line(write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(
+        write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C
+    )
 
 
 def _paint_meeting_index_title(plotter: Plotter, box: Rect) -> None:
     """Title write-in rule on the same baseline as the date cue."""
-    plotter.line(box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    plotter.line(
+        box.x, box.bottom, box.right, box.bottom, stroke_width=RULE, stroke_gray=RULE_C
+    )
 
 
 TASK_INDEX_BAND_GAP = 2.6
@@ -996,7 +1059,9 @@ def tasks_index_band_seats(band: Rect, n: int) -> tuple[Rect, tuple[Rect, ...]]:
     """Month header over linked week rows, after a quiet inset."""
     inner = band.inset(TASK_INDEX_INSET_X, TASK_INDEX_INSET_Y)
     head, rest = inner.split_top(TASK_INDEX_HEAD_H)
-    body = Rect(rest.x, rest.y + TASK_INDEX_HEAD_GAP, rest.w, rest.h - TASK_INDEX_HEAD_GAP)
+    body = Rect(
+        rest.x, rest.y + TASK_INDEX_HEAD_GAP, rest.w, rest.h - TASK_INDEX_HEAD_GAP
+    )
     return head, rows(body, n, gap=TASK_INDEX_ROW_GAP)
 
 
@@ -1018,7 +1083,9 @@ def tasks_index_week_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
     stub, rest = columns(strip, 2, gap=0, weights=(stub_w, max(strip.w - stub_w, 1)))
     range_w = TASK_INDEX_RANGE_W
     write_w = max(rest.w - TASK_INDEX_WRITE_GAP - range_w, 1)
-    dated, write = columns(rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(range_w, write_w))
+    dated, write = columns(
+        rest, 2, gap=TASK_INDEX_WRITE_GAP, weights=(range_w, write_w)
+    )
     return stub, dated, write
 
 
@@ -1035,7 +1102,9 @@ def paint_tasks_index(
     _bound_ramp(plotter, ramp)
     counts = tuple(len(band.weeks) for band in index.bands)
     for band_box, band in zip(tasks_index_bands(box, counts), index.bands, strict=True):
-        plotter.rect(band_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.rect(
+            band_box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT
+        )
         head, lines = tasks_index_band_seats(band_box, len(band.weeks))
         _ink_text(
             plotter,
@@ -1046,7 +1115,14 @@ def paint_tasks_index(
             small_caps=True,
             align="left",
         )
-        plotter.line(head.x, head.bottom, head.right, head.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.line(
+            head.x,
+            head.bottom,
+            head.right,
+            head.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
         for line, week in zip(lines, band.weeks, strict=True):
             _paint_tasks_index_week(plotter, line, week)
             for hit in tasks_index_link_hits(line):
@@ -1330,7 +1406,11 @@ def _stack_focus_notes(stack: Rect) -> tuple[Rect, Rect]:
 
 
 def _paint_note_box(
-    plotter: Plotter, box: Rect, *, label: str | None = None, ramp: TypeRamp | None = None
+    plotter: Plotter,
+    box: Rect,
+    *,
+    label: str | None = None,
+    ramp: TypeRamp | None = None,
 ) -> None:
     """Lined writing box — outline + daily-notes rhythm. Not a Notes section."""
     if ramp is not None:
@@ -1544,12 +1624,16 @@ def _wash(plotter: Plotter, box: Rect, gray: float) -> None:
     plotter.rect(box, stroke=False, fill=True, fill_gray=gray)
 
 
-def _stripe_span(tracks: tuple[Rect, ...], index: int, *, axis: str, end: float) -> tuple[float, float]:
+def _stripe_span(
+    tracks: tuple[Rect, ...], index: int, *, axis: str, end: float
+) -> tuple[float, float]:
     """Continuous zebra span covering a track plus half the neighboring gaps."""
     track = tracks[index]
     if axis == "y":
         start = (tracks[index - 1].bottom + track.y) / 2 if index else track.y
-        stop = (track.bottom + tracks[index + 1].y) / 2 if index + 1 < len(tracks) else end
+        stop = (
+            (track.bottom + tracks[index + 1].y) / 2 if index + 1 < len(tracks) else end
+        )
         return start, stop
     start = (tracks[index - 1].right + track.x) / 2 if index else track.x
     stop = (track.right + tracks[index + 1].x) / 2 if index + 1 < len(tracks) else end
@@ -1563,7 +1647,9 @@ def paint_habit_grid(
     _bound_ramp(plotter, ramp)
     habits = max(1, grid.rows)
     day_col, names, bands = habit_seats(box, grid.days, habits)
-    matrix = Rect(names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y)
+    matrix = Rect(
+        names[0].x, bands[0].y, names[-1].right - names[0].x, box.bottom - bands[0].y
+    )
     day_tracks = columns(matrix, habits, gap=0.4)
     for i, _band in enumerate(bands):
         if i % 2 == 0:
@@ -1574,7 +1660,9 @@ def paint_habit_grid(
         if j % 2 == 0:
             continue
         x0, x1 = _stripe_span(day_tracks, j, axis="x", end=day_tracks[-1].right)
-        _wash(plotter, Rect(x0, names[0].y, x1 - x0, box.bottom - names[0].y), HABIT_WASH)
+        _wash(
+            plotter, Rect(x0, names[0].y, x1 - x0, box.bottom - names[0].y), HABIT_WASH
+        )
     for i, band in enumerate(bands):
         if i % 2 == 0:
             continue
@@ -1591,7 +1679,14 @@ def paint_habit_grid(
             stroke_width=RULE,
             stroke_gray=RULE_C,
         )
-    plotter.line(box.x, names[0].bottom, box.right, names[0].bottom, stroke_width=HAIR, stroke_gray=SOFT)
+    plotter.line(
+        box.x,
+        names[0].bottom,
+        box.right,
+        names[0].bottom,
+        stroke_width=HAIR,
+        stroke_gray=SOFT,
+    )
     letter_w = HABIT_DOW_W
     num_w = day_col.w - letter_w
     for i, band in enumerate(bands):
@@ -1616,7 +1711,9 @@ def paint_habit_grid(
             plotter.link(Rect(day_col.x, band.y, day_col.w, band.h), grid.day_dests[i])
         for col in day_tracks:
             cell = Rect(col.x, band.y, col.w, band.h).inset(0.2, 0.12)
-            plotter.rect(cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+            plotter.rect(
+                cell, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT
+            )
 
 
 def paint_month_grid(
@@ -1642,7 +1739,14 @@ def paint_month_grid(
             small_caps=True,
             align="left",
         )
-    plotter.line(box.x, header.bottom, box.right, header.bottom, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(
+        box.x,
+        header.bottom,
+        box.right,
+        header.bottom,
+        stroke_width=HAIR,
+        stroke_gray=INK,
+    )
 
     body = Rect(box.x, header.bottom + 0.6, box.w, box.bottom - header.bottom - 0.6)
     bands = rows(body, max(1, len(grid.weeks)))
@@ -1678,7 +1782,14 @@ def paint_month_grid(
             )
             if day.dest:
                 plotter.link(cell, day.dest)
-        plotter.line(box.x, band.bottom, box.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.line(
+            box.x,
+            band.bottom,
+            box.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
 
 
 def _week_monday(grid: MonthGrid, week: tuple, _row: int) -> date | None:
@@ -1730,9 +1841,23 @@ def paint_week(
         rule_y = band.y + 6.9
         pitch = 4.15
         while rule_y < band.bottom - 1.15:
-            plotter.line(band.x, rule_y, band.right, rule_y, stroke_width=RULE, stroke_gray=RULE_C)
+            plotter.line(
+                band.x,
+                rule_y,
+                band.right,
+                rule_y,
+                stroke_width=RULE,
+                stroke_gray=RULE_C,
+            )
             rule_y += pitch
-        plotter.line(band.x, band.bottom, band.right, band.bottom, stroke_width=HAIR, stroke_gray=SOFT)
+        plotter.line(
+            band.x,
+            band.bottom,
+            band.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
 
 
 def paint_schedule(

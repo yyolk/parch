@@ -95,7 +95,9 @@ def test_specimen_cli_help(capsys):
     assert "--workdir" in out
 
 
-def test_specimen_rejects_unknown_device_before_press(tmp_path: Path, capsys, monkeypatch):
+def test_specimen_rejects_unknown_device_before_press(
+    tmp_path: Path, capsys, monkeypatch
+):
     def boom(*_args, **_kwargs):
         raise AssertionError("should not press")
 
@@ -110,7 +112,9 @@ def test_specimen_spec_rejects_unknown_device():
         specimen_spec("kindle-scribe")
 
 
-@pytest.mark.skipif(shutil.which("pdftoppm") is None, reason="pdftoppm (poppler-utils) required")
+@pytest.mark.skipif(
+    shutil.which("pdftoppm") is None, reason="pdftoppm (poppler-utils) required"
+)
 def test_write_specimens_png_catalog(tmp_path: Path):
     from parch.specimen import build_device_catalog
 

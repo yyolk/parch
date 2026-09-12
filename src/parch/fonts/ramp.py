@@ -168,7 +168,9 @@ _STEP_WEIGHTS: dict[TypeStep, tuple[TypeWeight, TypeWeight]] = {
 
 def _cut(step: TypeStep, root_body: Pt = ROOT_BODY) -> ScaleCut:
     regular, strong = _STEP_WEIGHTS[step]
-    size = DISPLAY_SIZE if step == "display" else pt_from_em(root_body, JOST_RATIOS[step])
+    size = (
+        DISPLAY_SIZE if step == "display" else pt_from_em(root_body, JOST_RATIOS[step])
+    )
     return ScaleCut(size=size, regular=regular, strong=strong)
 
 
@@ -273,7 +275,10 @@ def compose_overlays(*overlays: TypeOverlay | None) -> TypeOverlay:
         if overlay is None:
             continue
         acc = TypeOverlay(
-            **{step: _compose_patch(acc.patch(step), overlay.patch(step)) for step in TYPE_STEPS}
+            **{
+                step: _compose_patch(acc.patch(step), overlay.patch(step))
+                for step in TYPE_STEPS
+            }
         )
     return acc
 
@@ -388,7 +393,9 @@ class EffectiveRamp:
         _require_root_body(self.root_body)
 
     def ink(self, step: TypeStep, emphasis: TypeEmphasis = "regular") -> TypeInk:
-        ink = apply_overlay(_ink(step, emphasis, root_body=self.root_body), self.overlay.patch(step))
+        ink = apply_overlay(
+            _ink(step, emphasis, root_body=self.root_body), self.overlay.patch(step)
+        )
         self.catalog.path(ink.family, ink.weight)
         return ink
 

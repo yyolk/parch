@@ -1,5 +1,3 @@
-from datetime import date
-
 import pytest
 
 from parch.books import YearPlanner
@@ -50,7 +48,13 @@ def test_daily_has_mini_month_daily_notes_does_not():
 def test_daily_mini_links_and_highlight():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    july = next(item for page in pages if page.dest == "2026-07-15" for item in page.components if isinstance(item, AnnualMonth))
+    july = next(
+        item
+        for page in pages
+        if page.dest == "2026-07-15"
+        for item in page.components
+        if isinstance(item, AnnualMonth)
+    )
     cells = [cell for week in july.weeks for cell in week]
     here = next(cell for cell in cells if cell.in_month and cell.day == 15)
     assert here.dest is None
@@ -73,13 +77,22 @@ def test_daily_mini_links_and_highlight():
 def test_daily_mini_skips_unpressed_adjacent_days():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    jan = next(item for page in pages if page.dest == "2026-01-01" for item in page.components if isinstance(item, AnnualMonth))
+    jan = next(
+        item
+        for page in pages
+        if page.dest == "2026-01-01"
+        for item in page.components
+        if isinstance(item, AnnualMonth)
+    )
     cells = [cell for week in jan.weeks for cell in week]
     dec = [cell for cell in cells if not cell.in_month and cell.day in {29, 30, 31}]
     assert dec
     assert all(cell.dest is None for cell in dec)
     assert next(cell for cell in cells if cell.in_month and cell.day == 1).dest is None
-    assert next(cell for cell in cells if cell.in_month and cell.day == 2).dest == "2026-01-02"
+    assert (
+        next(cell for cell in cells if cell.in_month and cell.day == 2).dest
+        == "2026-01-02"
+    )
 
 
 def test_daily_left_column_split():

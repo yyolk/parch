@@ -22,7 +22,11 @@ def test_columns_gap_and_weights():
     assert tracks[1].right == pytest.approx(22)
 
     weighted = columns(Rect(0, 0, 40, 5), 3, weights=(1, 2, 1))
-    assert [t.w for t in weighted] == [pytest.approx(10), pytest.approx(20), pytest.approx(10)]
+    assert [t.w for t in weighted] == [
+        pytest.approx(10),
+        pytest.approx(20),
+        pytest.approx(10),
+    ]
     assert sum(t.w for t in weighted) == pytest.approx(40)
 
 
@@ -40,7 +44,11 @@ def test_rows_equal_gap_and_weights():
     assert gapped[1].y == pytest.approx(12)
 
     weighted = rows(Rect(0, 0, 4, 40), 3, weights=(1, 2, 1))
-    assert [b.h for b in weighted] == [pytest.approx(10), pytest.approx(20), pytest.approx(10)]
+    assert [b.h for b in weighted] == [
+        pytest.approx(10),
+        pytest.approx(20),
+        pytest.approx(10),
+    ]
     assert sum(b.h for b in weighted) == pytest.approx(40)
 
 

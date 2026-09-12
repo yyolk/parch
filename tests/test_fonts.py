@@ -1,4 +1,5 @@
 import pytest
+
 from parch.components import CoverTitle
 from parch.devices import NOMAD
 from parch.fonts import (
@@ -11,8 +12,8 @@ from parch.fonts import (
     EffectiveRamp,
     Em,
     FontCatalog,
-    Pt,
     ProofProfile,
+    Pt,
     TypeEmphasis,
     TypeFamily,
     TypeInk,
@@ -91,9 +92,13 @@ def test_jost_scale_table_invariants():
         assert rank[strong.weight] >= rank[regular.weight]
 
     assert ramp.root_body == ROOT_BODY == Pt(8.5)
-    assert ramp.ink("display") == TypeInk(family="jost", weight="heavy", size=DISPLAY_SIZE)
+    assert ramp.ink("display") == TypeInk(
+        family="jost", weight="heavy", size=DISPLAY_SIZE
+    )
     assert ramp.ink("title") == TypeInk(family="jost", weight="medium", size=Pt(11))
-    assert ramp.ink("title", "strong") == TypeInk(family="jost", weight="bold", size=Pt(11))
+    assert ramp.ink("title", "strong") == TypeInk(
+        family="jost", weight="bold", size=Pt(11)
+    )
     assert ramp.ink("eyebrow") == TypeInk(family="jost", weight="medium", size=Pt(10))
     assert ramp.ink("body") == TypeInk(family="jost", weight="book", size=Pt(8.5))
     assert ramp.ink("chrome") == TypeInk(family="jost", weight="book", size=Pt(7.4))
@@ -130,7 +135,9 @@ def test_cover_uses_display_eyebrow_body_steps():
     assert brow[3] == 10
     assert brow[9] == "medium"
     assert _family(brow) == "jost"
-    specs = next(op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2]))
+    specs = next(
+        op for op in plotter.ops if op[0] == "text" and "monday weeks" in str(op[2])
+    )
     assert specs[3] == 8.5
     assert specs[9] == "book"
     assert _family(specs) == "jost"
@@ -291,9 +298,19 @@ def test_type_ref_is_frozen_type_step_only():
 def test_ramp_resolve_typeref_uses_type_step():
     ramp = EffectiveRamp()
     assert ramp.resolve(TypeRef(step="display")) == ramp.ink("display")
-    assert ramp.resolve(TypeRef(step="title", emphasis="strong")) == ramp.ink("title", "strong")
-    over = EffectiveRamp(overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium")))
-    assert over.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="medium", size=Pt(9.1))
+    assert ramp.resolve(TypeRef(step="title", emphasis="strong")) == ramp.ink(
+        "title", "strong"
+    )
+    over = EffectiveRamp(
+        overlay=TypeOverlay(chrome=TypePatch(size=Pt(9.1), weight="medium"))
+    )
+    assert over.resolve(TypeRef(step="chrome")) == TypeInk(
+        family="jost", weight="medium", size=Pt(9.1)
+    )
     proof = EffectiveRamp(overlay=PROOF_PROFILE.overlay)
-    assert proof.resolve(TypeRef(step="chrome")) == TypeInk(family="jost", weight="book", size=Pt(9.2))
-    assert proof.resolve(TypeRef(step="display")) == TypeInk(family="jost", weight="heavy", size=Pt(42))
+    assert proof.resolve(TypeRef(step="chrome")) == TypeInk(
+        family="jost", weight="book", size=Pt(9.2)
+    )
+    assert proof.resolve(TypeRef(step="display")) == TypeInk(
+        family="jost", weight="heavy", size=Pt(42)
+    )

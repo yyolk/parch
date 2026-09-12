@@ -40,6 +40,10 @@ def test_month_week_bands_first_seen():
     assert feb[0][0] == date(2026, 2, 2)
     assert mar[-1][-1] == date(2026, 4, 5)
     flat = [week[0] for _month, weeks in bands for week in weeks]
-    assert flat == [week[0] for week in months_touching_weeks(2026, (1, 2, 3), weekday_start=0)]
-    keys = [week[0].isocalendar()[:2] for week in months_touching_weeks(2026, (1, 2, 3))]
+    assert flat == [
+        week[0] for week in months_touching_weeks(2026, (1, 2, 3), weekday_start=0)
+    ]
+    keys = [
+        week[0].isocalendar()[:2] for week in months_touching_weeks(2026, (1, 2, 3))
+    ]
     assert len(keys) == len(set(keys)) == 14

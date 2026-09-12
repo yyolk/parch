@@ -62,7 +62,9 @@ def test_quarter_page_and_nav():
     assert grid.quarter == 1
     assert [month.name[:3] for month in grid.months] == ["Jan", "Feb", "Mar"]
     assert grid.months[0].dest == "month-2026-01"
-    assert any(cell.dest == "2026-01-15" for week in grid.months[0].weeks for cell in week)
+    assert any(
+        cell.dest == "2026-01-15" for week in grid.months[0].weeks for cell in week
+    )
 
     annual = pages[1]
     assert ("Quar", "quarter-2026-Q1") in strip_items(annual)

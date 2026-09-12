@@ -1,9 +1,14 @@
 """Vendored Jost (OFL-1.1) and the type ramp."""
 
-from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight, font_dir, jost_catalog
+from parch.fonts.catalog import (
+    FontCatalog,
+    TypeFamily,
+    TypeWeight,
+    font_dir,
+    jost_catalog,
+)
 from parch.fonts.ramp import (
     DISPLAY_SIZE,
-    Em,
     JOST_RATIOS,
     JOST_SCALE,
     OVERLAY_SCHEMA_VERSION,
@@ -11,6 +16,7 @@ from parch.fonts.ramp import (
     ROOT_BODY,
     TYPE_STEPS,
     EffectiveRamp,
+    Em,
     ProofProfile,
     Pt,
     ScaleCut,

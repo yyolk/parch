@@ -113,7 +113,9 @@ def test_project_card_tracks():
     assert left.right < right.x
     assert right.w > left.w
     share = left.w + right.w
-    assert left.w / share == pytest.approx(PROJECT_COL_WEIGHTS[0] / sum(PROJECT_COL_WEIGHTS))
+    assert left.w / share == pytest.approx(
+        PROJECT_COL_WEIGHTS[0] / sum(PROJECT_COL_WEIGHTS)
+    )
 
     header, tasks, status = project_card_left_seats(left)
     assert header.y == pytest.approx(left.y)
@@ -144,7 +146,19 @@ def test_projects_header_year_and_tabs():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Projects" in texts
     assert "2026" in texts
-    for label in ("Year", "Quar", "Mon", "Habit", "Week", "Rev", "Day", "Notes", "Proj", "Meet", "Task"):
+    for label in (
+        "Year",
+        "Quar",
+        "Mon",
+        "Habit",
+        "Week",
+        "Rev",
+        "Day",
+        "Notes",
+        "Proj",
+        "Meet",
+        "Task",
+    ):
         assert label in texts
 
 
@@ -209,10 +223,16 @@ def test_project_ticket_seats():
     assert preview.right == pytest.approx(body.right)
     assert name.right < preview.x
     share = name.w + preview.w
-    assert name.w / share == pytest.approx(TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS))
+    assert name.w / share == pytest.approx(
+        TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS)
+    )
     leftover = body.w - TICKET_BODY_GAP
-    assert name.w == pytest.approx(leftover * TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS))
-    assert preview.w == pytest.approx(leftover * TICKET_NAME_WEIGHTS[1] / sum(TICKET_NAME_WEIGHTS))
+    assert name.w == pytest.approx(
+        leftover * TICKET_NAME_WEIGHTS[0] / sum(TICKET_NAME_WEIGHTS)
+    )
+    assert preview.w == pytest.approx(
+        leftover * TICKET_NAME_WEIGHTS[1] / sum(TICKET_NAME_WEIGHTS)
+    )
     assert preview.w / leftover == pytest.approx(0.45)
 
     cards = project_ticket_preview_cards(preview)
@@ -279,15 +299,16 @@ def test_projects_index_paint_write_in_underlines_and_links():
     stubs = [
         op
         for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(TICKET_MARK)
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(TICKET_MARK)
     ]
     assert len(stubs) == 8
 
     seats = project_ticket_seats(well, 8)
     rules = [
-        op
-        for op in plotter.ops
-        if op[0] == "line" and op[5] == pytest.approx(0.12)
+        op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(0.12)
     ]
     assert len(rules) == 8
     for seat, rule in zip(seats, rules, strict=True):
@@ -461,7 +482,10 @@ def test_paint_project_and_index_chip():
     p_boxes = [
         op[1]
         for op in ink.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1].w == pytest.approx(PROJECT_P)
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w == pytest.approx(PROJECT_P)
     ]
     assert len(p_boxes) == 3
     for mark, text in zip(p_boxes, p_texts, strict=True):
@@ -539,7 +563,9 @@ def test_projects_index_pages_knob():
     ]
     assert slices == [list(range(1, 9)), list(range(9, 17)), list(range(17, 25))]
 
-    page_two = next(item for item in indexes[1].components if isinstance(item, ProjectsIndex))
+    page_two = next(
+        item for item in indexes[1].components if isinstance(item, ProjectsIndex)
+    )
     plotter = RecordingPlotter()
     paint_projects_index(plotter, well_rect(NOMAD), page_two)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
@@ -562,7 +588,9 @@ def test_projects_index_pages_knob():
     assert "10" in labels
     assert "Index" not in labels
     assert "projects-index-2026-02" in [op[2] for op in chrome.ops if op[0] == "link"]
-    assert "projects-index-2026-01" not in [op[2] for op in chrome.ops if op[0] == "link"]
+    assert "projects-index-2026-01" not in [
+        op[2] for op in chrome.ops if op[0] == "link"
+    ]
 
     year = next(page for page in pages if page.kind == "annual")
     assert dict(strip_items(year))["Proj"] == spec.projects_index_dest

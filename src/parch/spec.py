@@ -98,7 +98,9 @@ class Spec:
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
-            raise ConfigError(f"week_start must be monday or sunday, not {self.week_start!r}")
+            raise ConfigError(
+                f"week_start must be monday or sunday, not {self.week_start!r}"
+            )
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -254,7 +256,9 @@ class Spec:
         key = day.isocalendar()[:2]
         for month in self.months:
             for week in month_touching_weeks(self.year, month, self.weekday_start):
-                monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
+                monday = next(
+                    (d for d in week if d.weekday() == 0), iso_monday(week[0])
+                )
                 if monday.isocalendar()[:2] == key:
                     return self.dest_for_tasks_index(quarter_of(month))
         return self.tasks_index_dest
@@ -304,13 +308,23 @@ class Spec:
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
             title=str(data.get("title", "Year planner")),
-            schedule_from=int(daily_table.get("schedule_from", data.get("schedule_from", 7))),
-            schedule_to=int(daily_table.get("schedule_to", data.get("schedule_to", 16))),
+            schedule_from=int(
+                daily_table.get("schedule_from", data.get("schedule_from", 7))
+            ),
+            schedule_to=int(
+                daily_table.get("schedule_to", data.get("schedule_to", 16))
+            ),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
-            priority_rows=int(daily_table.get("priority_rows", data.get("priority_rows", 6))),
-            project_cards=int(projects_table.get("cards", data.get("project_cards", 3))),
-            project_tasks=int(projects_table.get("tasks", data.get("project_tasks", 4))),
+            priority_rows=int(
+                daily_table.get("priority_rows", data.get("priority_rows", 6))
+            ),
+            project_cards=int(
+                projects_table.get("cards", data.get("project_cards", 3))
+            ),
+            project_tasks=int(
+                projects_table.get("tasks", data.get("project_tasks", 4))
+            ),
             project_tickets=int(
                 projects_table.get(
                     "tickets_per_page",

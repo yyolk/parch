@@ -1,5 +1,5 @@
 from parch.calendar import month_touching_weeks
-from parch.components import ProjectTicket, ProjectsBoard, ProjectsIndex
+from parch.components import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.sections.nav import planner_nav
 from parch.sections.page import Page
 from parch.spec import Spec

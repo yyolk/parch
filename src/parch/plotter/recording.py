@@ -40,7 +40,9 @@ class RecordingPlotter(Plotter):
         fill_gray: float = 0.92,
         stroke_gray: float = 0.0,
     ) -> None:
-        self.ops.append(("rect", box, stroke, fill, stroke_width, fill_gray, stroke_gray))
+        self.ops.append(
+            ("rect", box, stroke, fill, stroke_width, fill_gray, stroke_gray)
+        )
 
     @override
     def line(
