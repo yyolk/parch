@@ -24,7 +24,9 @@ def test_hero_shards_json():
 
 
 def test_all_equals_known_device_ids():
-    assert device_ids("all") == known_device_ids() == ("supernote-nomad", "kindle-scribe")
+    assert (
+        device_ids("all") == known_device_ids() == ("supernote-nomad", "kindle-scribe")
+    )
 
 
 def test_device_ids_unknown_set_raises():
