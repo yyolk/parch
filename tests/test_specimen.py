@@ -8,14 +8,18 @@ import pytest
 from parch import ConfigError
 from parch.press import main
 from parch.specimen import (
+    PREVIEW_DPI,
     SAMPLE_STEMS,
+    THUMB_DPI,
     catalog_dest,
     catalog_index_html,
+    full_png_name,
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
     specimen_spec,
     specimens_dest,
+    thumb_png_name,
     write_catalog_index,
     write_device_index,
 )
@@ -29,14 +33,24 @@ def test_catalog_index_html_is_device_list():
     assert "<script" not in html
 
 
+def test_png_names_are_thumb_and_full():
+    assert thumb_png_name("cover") == "cover.png"
+    assert full_png_name("cover") == "cover-full.png"
+    assert THUMB_DPI == PREVIEW_DPI // 2
+
+
 def test_specimen_index_html_is_png_gallery():
     html = specimen_index_html("supernote-nomad")
     assert "supernote-nomad" in html
     assert "<script" not in html
     assert 'href="../"' in html
     assert html.count("<figure>") == len(SAMPLE_STEMS)
+    assert html.count("<a href=") == len(SAMPLE_STEMS) + 1  # plus specimens parent link
     for stem in SAMPLE_STEMS:
-        assert f'src="{stem}.png"' in html
+        assert (
+            f'<figure><a href="{full_png_name(stem)}">'
+            f'<img src="{thumb_png_name(stem)}" alt="{stem}"></a>'
+        ) in html
 
 
 def test_write_indexes(tmp_path: Path):
@@ -109,6 +123,13 @@ def test_write_specimens_png_catalog(tmp_path: Path):
 
     dest = build_device_catalog(tmp_path, "supernote-nomad")
     assert (dest / "cover.png").stat().st_size > 0
+    assert (dest / "cover-full.png").stat().st_size > 0
+    assert (dest / "cover-full.png").stat().st_size > (dest / "cover.png").stat().st_size
+    from PIL import Image
+
+    with Image.open(dest / "cover.png") as thumb, Image.open(dest / "cover-full.png") as full:
+        assert abs(full.size[0] - thumb.size[0] * 2) <= 1
+        assert abs(full.size[1] - thumb.size[1] * 2) <= 1
     assert (dest / "index.html").is_file()
     root = catalog_dest(tmp_path) / "index.html"
     assert root.is_file()
@@ -116,8 +137,41 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert list(dest.glob("*.pdf")) == []
     html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'src="cover.png"' in html
+    assert 'href="cover-full.png"' in html
     for stem in SAMPLE_STEMS:
-        assert (dest / f"{stem}.png").is_file()
+        assert (dest / thumb_png_name(stem)).is_file()
+        assert (dest / full_png_name(stem)).is_file()
+
+
+def test_write_specimens_emits_thumb_and_full(tmp_path: Path, monkeypatch):
+    from parch.specimen import write_specimens
+
+    calls: list[tuple[str, int, int]] = []
+
+    def fake_press(_spec, pdf: Path, proof=False):
+        assert proof is True
+        pdf.write_bytes(b"%PDF-1.4")
+        return pdf
+
+    def fake_render(_pdf, page: int, dest: Path, *, dpi: int = PREVIEW_DPI):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"PNG")
+        calls.append((dest.name, page, dpi))
+        return dest
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    monkeypatch.setattr("parch.specimen.render_page_png", fake_render)
+    dest = tmp_path / "specimens" / "supernote-nomad"
+    write_specimens(dest, "supernote-nomad", stems=("cover", "annual"))
+    assert {(name, dpi) for name, _page, dpi in calls} == {
+        (thumb_png_name("cover"), THUMB_DPI),
+        (full_png_name("cover"), PREVIEW_DPI),
+        (thumb_png_name("annual"), THUMB_DPI),
+        (full_png_name("annual"), PREVIEW_DPI),
+    }
+    html = (dest / "index.html").read_text(encoding="utf-8")
+    assert '<a href="cover-full.png"><img src="cover.png" alt="cover"></a>' in html
+    assert '<a href="annual-full.png"><img src="annual.png" alt="annual"></a>' in html
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):

@@ -2,6 +2,8 @@
 
 One hero device (SuperNote Nomad) and no paper×hand permutations.
 Catalog layout is ``<workdir>/specimens/<device-id>/``.
+Each page writes a half-size gallery thumb (``{stem}.png`` at ``THUMB_DPI``)
+and a full-size click target (``{stem}-full.png`` at ``PREVIEW_DPI``).
 The product PDF is not part of the catalog.
 """
 
@@ -39,6 +41,17 @@ SAMPLE_STEMS = (
 )
 
 PREVIEW_DPI = 96
+THUMB_DPI = PREVIEW_DPI // 2
+
+
+def thumb_png_name(stem: str) -> str:
+    """Gallery thumb: ``{stem}.png`` (half-size)."""
+    return f"{stem}.png"
+
+
+def full_png_name(stem: str) -> str:
+    """Click target: ``{stem}-full.png`` (full-size)."""
+    return f"{stem}-full.png"
 
 
 def catalog_dest(workdir: str | Path) -> Path:
@@ -101,9 +114,10 @@ def _catalog_style() -> str:
 
 
 def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> str:
-    """Dumb device page: one gallery of PNG previews. No JS."""
+    """Dumb device page: half-size thumbs that link to full-size PNGs. No JS."""
     figures = [
-        f'<figure><img src="{stem}.png" alt="{stem}">'
+        f'<figure><a href="{full_png_name(stem)}">'
+        f'<img src="{thumb_png_name(stem)}" alt="{stem}"></a>'
         f"<figcaption>{stem}</figcaption></figure>"
         for stem in stems
     ]
@@ -195,7 +209,7 @@ def write_specimens(
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
 ) -> Path:
-    """Press a slim book and write PNG previews + device index under *dest*."""
+    """Press a slim book and write thumb + full PNGs and a device index under *dest*."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -205,7 +219,9 @@ def write_specimens(
         pdf = Path(tmp) / "specimen.pdf"
         press(spec, pdf, proof=True)
         for stem in stems:
-            render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
+            page = numbers[stem]
+            render_page_png(pdf, page, dest / full_png_name(stem), dpi=PREVIEW_DPI)
+            render_page_png(pdf, page, dest / thumb_png_name(stem), dpi=THUMB_DPI)
     write_device_index(dest, spec.device, stems=stems)
     return dest
 
