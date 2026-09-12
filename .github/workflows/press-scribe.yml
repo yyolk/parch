@@ -1,5 +1,5 @@
 name: Press Scribe band
-run-name: Press Scribe size + depth probes
+run-name: Press Scribe side-close probe
 
 on:
   workflow_dispatch:
@@ -21,17 +21,13 @@ jobs:
         with:
           enable-cache: false
       - run: uv sync --group dev
-      - name: Press probes
+      - name: Press close probe
         run: |
           mkdir -p out
-          uv run python scripts/scribe_side_size_probe.py -o out/scribe-side-size-probe.pdf
-          test -s out/scribe-side-size-probe.pdf
-          uv run python scripts/scribe_side_depth_probe.py -o out/scribe-side-depth-probe.pdf
-          test -s out/scribe-side-depth-probe.pdf
+          uv run python scripts/scribe_side_close_probe.py -o out/scribe-side-close-probe.pdf
+          test -s out/scribe-side-close-probe.pdf
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: scribe-side-size-press
-          path: |
-            out/scribe-side-size-probe.pdf
-            out/scribe-side-depth-probe.pdf
+          name: scribe-side-close-press
+          path: out/scribe-side-close-probe.pdf
           if-no-files-found: error
