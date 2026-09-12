@@ -11,19 +11,12 @@ _PRESSABLE_TOML: dict[str, str] = {
 PRESSABLE_DEVICE_IDS: tuple[str, ...] = tuple(_PRESSABLE_TOML)
 
 
-def device_ids() -> tuple[str, ...]:
-    """Return pressable release-matrix ids. Not the device registry."""
-    return PRESSABLE_DEVICE_IDS
-
-
 def toml_for(device: str) -> str:
     """Spec path for a pressable device. Device must be in PRESSABLE and mapped."""
-    if device not in PRESSABLE_DEVICE_IDS:
-        raise ValueError(f"device {device!r} is not pressable")
     try:
         return _PRESSABLE_TOML[device]
     except KeyError as exc:
-        raise ValueError(f"no toml mapped for pressable device {device!r}") from exc
+        raise ValueError(f"device {device!r} is not pressable") from exc
 
 
 def matrix_shards() -> list[dict[str, str]]:

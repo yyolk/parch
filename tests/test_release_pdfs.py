@@ -9,7 +9,6 @@ import pytest
 from parch.devices import known_device_ids
 from parch.services.release_pdfs import (
     PRESSABLE_DEVICE_IDS,
-    device_ids,
     matrix_json,
     matrix_shards,
     toml_for,
@@ -20,7 +19,7 @@ def test_pressable_shards_json():
     shards = matrix_shards()
     assert shards == [{"device": "supernote-nomad"}]
     assert json.loads(matrix_json()) == shards
-    assert device_ids() == PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
+    assert PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
 
 
 def test_pressable_is_not_registry():
