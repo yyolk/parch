@@ -4,7 +4,7 @@ Happy path:
 
 1. **Actions → Bump version** — pick `patch` / `minor` / `major` and **publish** (default) vs draft.
 2. Merge the `bump/v…` PR when CI is green.
-3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish** (TestPyPI + PyPI, with `release_tag`) and **Release PDFs** (`release_tag` + hero). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
+3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish** (TestPyPI + PyPI, with `release_tag`) and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
 
 A published GitHub Release is the ship step. Tag `vX.Y.Z` must match `[project].version` in `pyproject.toml` (no `v` in the file). Hatchling embeds that file version on the tagged commit; **Publish** fails the build if the tag and file differ.
 
@@ -16,11 +16,11 @@ Manual TestPyPI-only: **Actions → Publish → `testpypi`**.
 
 ## Release PDFs
 
-Published Releases also run **Release PDFs**, which presses the hero device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not.
+Published Releases also run **Release PDFs**, which presses each pressable device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not.
 
-Hero is SuperNote Nomad only (`supernote-nomad`). The matrix is `{device}` shards from `parch.services.release_pdfs` (`hero` / `all` — both pressable Nomad-only; `all` does not follow `known_device_ids()`). Each shard runs `parch press examples/mvp.toml`.
+The matrix is `{device}` shards from `parch.services.release_pdfs` (`PRESSABLE_DEVICE_IDS` — Nomad-only; not `known_device_ids()`). Each shard presses the TOML mapped for that device (`supernote-nomad` → `examples/mvp.toml`). Kindle Scribe is in the registry and can be pressed via `examples/scribe.toml`; it is not a release-PDF shard yet.
 
-To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. `max-parallel` defaults to the shard count; set `max_parallel` to override. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version. Dispatch `device_set=all` for a full-catalog timing/artifact run only; published Releases always use hero. `device_set=all` with a non-empty `release_tag` is rejected so the full catalog cannot attach to a Release.
+To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. `max-parallel` defaults to the shard count; set `max_parallel` to override. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version.
 
 ## Version bumps
 
