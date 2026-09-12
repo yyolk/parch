@@ -17,34 +17,12 @@ uv run parch press examples/mvp.toml -o out/nomad-2026.pdf
 uv run python -m parch press supernote-nomad -o parch.pdf
 uv run parch specimen supernote-nomad -w out   # PNG catalog; click a thumb to expand in place
 uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
-uv run parch press examples/mvp.toml --proof -o …
 ```
 
 ## Architecture
 
 ```
 Device → Component (data only) → Section (build Page) → Layout (chrome + seat) → Plotter → Press
-```
-
-```mermaid
-flowchart TB
-  Spec[Spec] -->|drives| PressCore
-  YP["books/year_planner"] -->|walks pages| PressCore
-
-  subgraph device ["Device — canvas · chrome gate"]
-    subgraph component ["Component — data only · does not draw"]
-      subgraph section ["Section — builds Page"]
-        subgraph layout ["Layout — chrome + seat"]
-          Painters["painters under layouts/planner/"]
-          subgraph plotter ["Plotter — protocol"]
-            PressCore["Press"]
-            Backends["Fpdf2Plotter · RecordingPlotter"]
-          end
-          Painters -->|takes plotter| plotter
-        end
-      end
-    end
-  end
 ```
 
 | Device | id | size | resolution | notes |
@@ -65,7 +43,7 @@ Ship steps live in [Releasing](RELEASING.md).
 
 MIT — see [LICENSE](LICENSE).
 
-Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/latex-yearly-planner). This branch is an fpdf2 Plotter rewrite; it is not a port of LYP sources.
+Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/latex-yearly-planner). This is an fpdf2 Plotter rewrite; it is not a port of LYP sources.
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
