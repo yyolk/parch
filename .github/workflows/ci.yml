@@ -53,9 +53,8 @@ jobs:
           uv run parch specimen supernote-nomad -w out
           test -s out/specimens/index.html
           test -s out/specimens/supernote-nomad/cover.png
-          test -s out/specimens/supernote-nomad/cover-full.png
           test -s out/specimens/supernote-nomad/index.html
-          grep -q 'href="cover-full.png"' out/specimens/supernote-nomad/index.html
+          grep -q 'href="cover.png"' out/specimens/supernote-nomad/index.html
           grep -q 'src="cover.png"' out/specimens/supernote-nomad/index.html
           test ! -e out/specimens/supernote-nomad/specimen.pdf
       - name: Upload catalog (dry-run)
