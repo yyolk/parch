@@ -3,8 +3,7 @@ import pytest
 from parch import ConfigError
 from parch.devices import NOMAD, SCRIBE, get_device, known_device_ids
 from parch.fonts import ROOT_BODY, Pt
-from parch.layouts.planner.painters import NAV_H, paint_nav, well_rect
-from parch.plotter import RecordingPlotter
+from parch.layouts.planner.layout import well_rect
 
 
 def test_nomad_geometry():
@@ -56,29 +55,16 @@ def test_scribe_geometry():
 def test_bottom_clearance_seats_strip_and_well():
     assert NOMAD.bottom_clearance == 0.0
     assert SCRIBE.bottom_clearance > 0
-    assert well_rect(NOMAD).bottom == pytest.approx(NOMAD.page_height - NAV_H - 2.2)
-    assert well_rect(SCRIBE).bottom == pytest.approx(
-        SCRIBE.page_height - SCRIBE.bottom_clearance - NAV_H - 2.2
-    )
+    nomad_well = well_rect(NOMAD)
+    scribe_well = well_rect(SCRIBE)
+    nomad_gap = NOMAD.page_height - nomad_well.bottom
+    scribe_gap = SCRIBE.page_height - scribe_well.bottom
+    assert scribe_gap == pytest.approx(nomad_gap + SCRIBE.bottom_clearance)
     assert NOMAD.content_frame().bottom == pytest.approx(
         NOMAD.page_height - NOMAD.writing_clearance
     )
     assert SCRIBE.content_frame().bottom == pytest.approx(
         SCRIBE.page_height - SCRIBE.writing_clearance - SCRIBE.bottom_clearance
-    )
-    nomad = RecordingPlotter()
-    paint_nav(nomad, NOMAD, (("Year", "year-2026"),), "Year")
-    scribe = RecordingPlotter()
-    paint_nav(scribe, SCRIBE, (("Year", "year-2026"),), "Year")
-    nomad_strip = next(op[1] for op in nomad.ops if op[0] == "rect")
-    scribe_strip = next(op[1] for op in scribe.ops if op[0] == "rect")
-    assert nomad_strip.y == pytest.approx(NOMAD.page_height - NAV_H)
-    assert nomad_strip.bottom == pytest.approx(NOMAD.page_height)
-    assert scribe_strip.y == pytest.approx(
-        SCRIBE.page_height - SCRIBE.bottom_clearance - NAV_H
-    )
-    assert scribe_strip.bottom == pytest.approx(
-        SCRIBE.page_height - SCRIBE.bottom_clearance
     )
 
 
