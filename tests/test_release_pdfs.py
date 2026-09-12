@@ -29,7 +29,7 @@ def test_pressable_is_not_registry():
 
 
 def test_toml_for_pressable_nomad():
-    assert toml_for("supernote-nomad") == "examples/mvp.toml"
+    assert toml_for("supernote-nomad") == "examples/nomad.toml"
 
 
 def test_toml_for_rejects_unpressable():

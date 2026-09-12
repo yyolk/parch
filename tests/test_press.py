@@ -92,7 +92,7 @@ def test_cli_press_toml(tmp_path: Path):
 
 
 def test_cli_load_keeps_toml_overlay_under_month_flag():
-    spec = _load_spec("examples/mvp-typo-overlay.toml", year=None, month=1)
+    spec = _load_spec("examples/nomad-typo-overlay.toml", year=None, month=1)
     assert spec.months == (1,)
     assert spec.type_overlay.chrome == TypePatch(size=9.6, weight="bold")
     assert spec.type_overlay.display == TypePatch(size=48, weight="heavy")

@@ -13,9 +13,9 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.
 
 ```shell
 uv sync --group dev
-uv run parch press examples/mvp.toml -o out/nomad-2026.pdf
+uv run parch press examples/nomad.toml -o out/nomad-2026.pdf
 uv run parch specimen supernote-nomad -w out   # PNG catalog; click a thumb to expand in place
-uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
+uv run parch proof examples/nomad.toml -o out/exp-typeramp-proof.pdf
 ```
 
 ## Architecture

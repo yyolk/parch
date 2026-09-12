@@ -70,8 +70,8 @@ def press(
     Invoke::
 
         press(spec, out, proof=True)
-        parch proof examples/mvp.toml -o out.pdf
-        parch press examples/mvp.toml --proof -o out.pdf
+        parch proof examples/nomad.toml -o out.pdf
+        parch press examples/nomad.toml --proof -o out.pdf
 
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
