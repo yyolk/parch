@@ -3,7 +3,7 @@
 One hero device (SuperNote Nomad) and no paper×hand permutations.
 Catalog layout is ``<workdir>/specimens/<device-id>/``.
 Each page writes one PNG (``{stem}.png`` at ``PREVIEW_DPI``). The device
-index wraps each CSS-shrunk thumb in a self-link so click opens that PNG.
+index shrinks thumbs with CSS; click toggles ``.expanded`` in place.
 The product PDF is not part of the catalog.
 """
 
@@ -98,15 +98,31 @@ def sample_page_numbers(spec: Spec, stems: Sequence[str] = SAMPLE_STEMS) -> dict
 def _catalog_style() -> str:
     return (
         "<style>figure{display:inline-block;margin:1rem;vertical-align:top}"
-        "img{width:16rem;height:auto}</style>\n"
+        "figure>button{display:block;padding:0;border:0;background:none;cursor:zoom-in}"
+        "figure>button img{width:16rem;height:auto;vertical-align:top}"
+        "figure.expanded>button{cursor:zoom-out}"
+        "figure.expanded>button img{width:auto;max-width:100%}</style>\n"
+    )
+
+
+def _gallery_script() -> str:
+    return (
+        "<script>"
+        "document.querySelectorAll('figure>button').forEach(btn=>{"
+        "btn.addEventListener('click',()=>{"
+        "const on=btn.parentElement.classList.toggle('expanded');"
+        "btn.setAttribute('aria-expanded',on);"
+        "});"
+        "});"
+        "</script>\n"
     )
 
 
 def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> str:
-    """Dumb device page: CSS-shrunk PNG thumbs that self-link. No JS."""
+    """Device gallery: CSS-shrunk thumbs; click toggles expand in place."""
     figures = [
-        f'<figure><a href="{stem}.png">'
-        f'<img src="{stem}.png" alt="{stem}"></a>'
+        f'<figure><button type="button" aria-expanded="false">'
+        f'<img src="{stem}.png" alt="{stem}"></button>'
         f"<figcaption>{stem}</figcaption></figure>"
         for stem in stems
     ]
@@ -118,6 +134,7 @@ def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> 
         + "<section>\n"
         + "\n".join(figures)
         + "\n</section>\n"
+        + _gallery_script()
     )
 
 
