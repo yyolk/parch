@@ -55,8 +55,9 @@ jobs:
           test -s out/specimens/supernote-nomad/cover.png
           test -s out/specimens/supernote-nomad/index.html
           grep -q 'src="cover.png"' out/specimens/supernote-nomad/index.html
-          grep -q 'aria-expanded="false"' out/specimens/supernote-nomad/index.html
-          grep -q "classList.toggle('expanded')" out/specimens/supernote-nomad/index.html
+          grep -q '<input type="checkbox" id="cover">' out/specimens/supernote-nomad/index.html
+          grep -q 'input:checked+label img' out/specimens/supernote-nomad/index.html
+          ! grep -q '<script' out/specimens/supernote-nomad/index.html
           ! grep -q 'href="cover.png"' out/specimens/supernote-nomad/index.html
           test ! -e out/specimens/supernote-nomad/specimen.pdf
       - name: Upload catalog (dry-run)
