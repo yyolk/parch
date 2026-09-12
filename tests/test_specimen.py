@@ -35,8 +35,15 @@ def test_specimen_index_html_is_png_gallery():
     assert "<script" not in html
     assert 'href="../"' in html
     assert html.count("<figure>") == len(SAMPLE_STEMS)
+    assert html.count("<a href=") == 1  # specimens parent link only
+    assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
     for stem in SAMPLE_STEMS:
         assert f'src="{stem}.png"' in html
+        assert f'href="{stem}.png"' not in html
+        assert (
+            f'<figure><input type="checkbox" id="{stem}">'
+            f'<label for="{stem}"><img src="{stem}.png" alt="{stem}"></label>'
+        ) in html
 
 
 def test_write_indexes(tmp_path: Path):
@@ -116,6 +123,10 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert list(dest.glob("*.pdf")) == []
     html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'src="cover.png"' in html
+    assert 'href="cover.png"' not in html
+    assert "<script" not in html
+    assert '<input type="checkbox" id="cover">' in html
+    assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
     for stem in SAMPLE_STEMS:
         assert (dest / f"{stem}.png").is_file()
 

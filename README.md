@@ -63,7 +63,8 @@ uv sync --group dev
 uv run parch press examples/mvp.toml -o out/nomad-2026.pdf
 # or
 uv run python -m parch press supernote-nomad -o parch.pdf
-# Specimen catalog (PNG previews under out/specimens/; not a product PDF):
+# Specimen catalog (PNG previews under out/specimens/; click a thumb to
+# expand in place via CSS. Not a product PDF):
 uv run parch specimen supernote-nomad -w out
 # ProofProfile (on-screen review):
 uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf

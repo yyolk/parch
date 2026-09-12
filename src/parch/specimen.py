@@ -2,6 +2,8 @@
 
 One hero device (SuperNote Nomad) and no paper×hand permutations.
 Catalog layout is ``<workdir>/specimens/<device-id>/``.
+Each page writes one PNG (``{stem}.png`` at ``PREVIEW_DPI``). The device
+index shrinks thumbs with CSS; a checkbox+label toggles expand in place.
 The product PDF is not part of the catalog.
 """
 
@@ -96,14 +98,19 @@ def sample_page_numbers(spec: Spec, stems: Sequence[str] = SAMPLE_STEMS) -> dict
 def _catalog_style() -> str:
     return (
         "<style>figure{display:inline-block;margin:1rem;vertical-align:top}"
-        "img{width:16rem;height:auto}</style>\n"
+        "figure>input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}"
+        "figure>label{display:block;cursor:zoom-in}"
+        "figure>label img{width:16rem;height:auto;vertical-align:top}"
+        "figure>input:checked+label{cursor:zoom-out}"
+        "figure>input:checked+label img{width:auto;max-width:100%}</style>\n"
     )
 
 
 def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> str:
-    """Dumb device page: one gallery of PNG previews. No JS."""
+    """Device gallery: CSS-shrunk thumbs; checkbox+label expands in place."""
     figures = [
-        f'<figure><img src="{stem}.png" alt="{stem}">'
+        f'<figure><input type="checkbox" id="{stem}">'
+        f'<label for="{stem}"><img src="{stem}.png" alt="{stem}"></label>'
         f"<figcaption>{stem}</figcaption></figure>"
         for stem in stems
     ]
