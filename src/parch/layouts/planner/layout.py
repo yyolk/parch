@@ -21,7 +21,7 @@ from parch.components import (
     TasksWeekPage,
     WeekStrip,
 )
-from parch.devices.nomad import Device
+from parch.devices.registry import Device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.geom import Rect
 from parch.layouts.planner.painters import (

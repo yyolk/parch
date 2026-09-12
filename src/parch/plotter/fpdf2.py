@@ -5,7 +5,7 @@ from typing import override
 
 from fpdf import FPDF
 
-from parch.devices.nomad import Device
+from parch.devices.registry import Device
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect

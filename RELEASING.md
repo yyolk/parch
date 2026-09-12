@@ -18,7 +18,7 @@ Manual TestPyPI-only: **Actions → Publish → `testpypi`**.
 
 Published Releases also run **Release PDFs**, which presses the hero device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not.
 
-Hero is SuperNote Nomad only (`supernote-nomad`). The matrix is `{device}` shards from `parch.services.release_pdfs` (`hero` / `all` via `known_device_ids()`). Each shard runs `parch press examples/mvp.toml`.
+Hero is SuperNote Nomad only (`supernote-nomad`). The matrix is `{device}` shards from `parch.services.release_pdfs` (`hero` / `all` — both pressable Nomad-only; `all` does not follow `known_device_ids()`). Each shard runs `parch press examples/mvp.toml`.
 
 To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. `max-parallel` defaults to the shard count; set `max_parallel` to override. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version. Dispatch `device_set=all` for a full-catalog timing/artifact run only; published Releases always use hero. `device_set=all` with a non-empty `release_tag` is rejected so the full catalog cannot attach to a Release.
 

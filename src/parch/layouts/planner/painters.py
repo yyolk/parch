@@ -28,7 +28,7 @@ from parch.components import (
     TaskWeek,
     WeekStrip,
 )
-from parch.devices.nomad import Device
+from parch.devices.registry import Device
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign

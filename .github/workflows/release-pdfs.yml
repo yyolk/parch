@@ -15,7 +15,7 @@ on:
         required: false
         type: number
       device_set:
-        description: "hero (release default) or all known devices"
+        description: "hero (release default) or all pressable devices"
         required: false
         type: choice
         options:

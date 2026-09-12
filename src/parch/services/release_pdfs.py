@@ -3,17 +3,17 @@
 import json
 import sys
 
-from parch.devices import known_device_ids
-
 HERO_DEVICE_IDS: tuple[str, ...] = ("supernote-nomad",)
+# Release press is Nomad mvp.toml only. Do not follow known_device_ids().
+PRESSABLE_DEVICE_IDS: tuple[str, ...] = ("supernote-nomad",)
 
 
 def device_ids(device_set: str = "hero") -> tuple[str, ...]:
-    """Return hero or all known device ids."""
+    """Return pressable release-matrix ids. ``all`` is not the device registry."""
     if device_set == "hero":
         return HERO_DEVICE_IDS
     if device_set == "all":
-        return known_device_ids()
+        return PRESSABLE_DEVICE_IDS
     raise ValueError(f"unknown device_set {device_set!r}")
 
 

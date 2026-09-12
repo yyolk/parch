@@ -5,7 +5,7 @@ import pytest
 from parch.books import YearPlanner
 from parch.calendar import month_week_bands, short_date_range
 from parch.components import TasksIndex, TasksWeekPage
-from parch.devices.nomad import NOMAD
+from parch.devices.registry import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
