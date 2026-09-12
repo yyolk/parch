@@ -9,6 +9,7 @@ import pytest
 from parch.devices import known_device_ids
 from parch.services.release_pdfs import (
     HERO_DEVICE_IDS,
+    PRESSABLE_DEVICE_IDS,
     device_ids,
     matrix_json,
     matrix_shards,
@@ -22,8 +23,10 @@ def test_hero_shards_json():
     assert device_ids() == HERO_DEVICE_IDS == ("supernote-nomad",)
 
 
-def test_all_equals_known_device_ids():
-    assert device_ids("all") == known_device_ids()
+def test_all_is_pressable_not_registry():
+    assert device_ids("all") == PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
+    assert device_ids("all") != known_device_ids()
+    assert "kindle-scribe" in known_device_ids()
 
 
 def test_device_ids_unknown_set_raises():

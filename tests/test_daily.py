@@ -2,7 +2,7 @@ import pytest
 
 from parch.books import YearPlanner
 from parch.components import AnnualMonth, Notes, Priorities, Schedule
-from parch.devices.nomad import NOMAD
+from parch.devices.registry import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner.layout import (
     COL_GAP,

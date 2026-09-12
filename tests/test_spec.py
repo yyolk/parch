@@ -80,6 +80,7 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     mvp = Spec.from_path(Path("examples/mvp.toml"))
+    assert mvp.device == "supernote-nomad"
     assert mvp.project_cards == 3
     assert mvp.project_tasks == 4
     assert mvp.project_tickets == 8
