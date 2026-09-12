@@ -42,7 +42,7 @@ def test_scribe_geometry():
     assert SCRIBE.toolbar_edge == "none"
     assert SCRIBE.toolbar_clearance == 0.0
     assert SCRIBE.writing_clearance == 4.0
-    assert SCRIBE.bottom_clearance > 0
+    assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
     assert SCRIBE.toolbar_slab() is None
     frame = SCRIBE.content_frame()
@@ -54,7 +54,7 @@ def test_scribe_geometry():
 
 def test_bottom_clearance_seats_strip_and_well():
     assert NOMAD.bottom_clearance == 0.0
-    assert SCRIBE.bottom_clearance > 0
+    assert SCRIBE.bottom_clearance == 10.0
     nomad_well = well_rect(NOMAD)
     scribe_well = well_rect(SCRIBE)
     nomad_gap = NOMAD.page_height - nomad_well.bottom

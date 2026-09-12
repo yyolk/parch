@@ -85,7 +85,7 @@ SCRIBE = Device(
     toolbar_edge="none",
     toolbar_clearance=0.0,
     writing_clearance=4.0,
-    bottom_clearance=8.0,  # ponytail: calibration starting point, not a measured Kindle dead-zone; yolk will retune on device.
+    bottom_clearance=10.0,  # measured Send-to-Kindle: hits below 10 mm miss; 10–20 mm solid.
     root_body=ROOT_BODY,
 )
 
