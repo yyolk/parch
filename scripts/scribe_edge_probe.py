@@ -28,6 +28,8 @@ from parch.plotter.fpdf2 import Fpdf2Plotter
 TOP_TARGETS = (2, 4, 6, 8, 10, 12, 16, 20, 24, 26, 30)
 SIDE_TARGETS = (2, 4, 6, 8, 10, 12, 16, 20, 24, 32)
 BOX = 3.2
+SIDE_H = 12.0
+SIDE_GAP = 4.0
 INK = 0.0
 MUTED = 112 / 255
 WASH = 236 / 255
@@ -197,83 +199,82 @@ def paint_side(plotter: Fpdf2Plotter, edge: str) -> None:
     plotter.add_dest(dest)
 
     from_left = edge == "left"
-    wash_w = 32.0
-    wash_x = 0.0 if from_left else d.page_width - wash_w
-    # Keep wash off the measured 10 mm bottom and the top 16 mm toolbar guess.
-    plotter.rect(
-        Rect(wash_x, 16.0, wash_w, d.page_height - 36.0),
-        stroke=False,
-        fill=True,
-        fill_gray=WASH,
-    )
-    mark_8 = 8.0 if from_left else d.page_width - 8.0
-    mark_12 = 12.0 if from_left else d.page_width - 12.0
-    plotter.line(mark_8, 16.0, mark_8, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
-    plotter.line(mark_12, 16.0, mark_12, d.page_height - 20.0, stroke_width=0.18, stroke_gray=SOFT)
 
     title_x = 40.0 if from_left else 8.0
     title_w = d.page_width - 48.0
     plotter.text(
-        Rect(title_x, 8.0, title_w, 10.0),
+        Rect(title_x, 6.0, title_w, 10.0),
         f"{edge.upper()}  mm from glass",
         ref=TypeRef(step="title"),
         gray=INK,
     )
     plotter.text(
-        Rect(title_x, 18.0, title_w, 6.0),
-        "#200 rail 8 mm + pad 4 mm. Boxes sit mid-height, above the 10 mm bottom.",
+        Rect(title_x, 16.0, title_w, 8.0),
+        "Tap the white slab. Number is inward. Slabs do not overlap.",
         ref=TypeRef(step="caption"),
         gray=MUTED,
     )
 
-    # 1 mm ticks along the measured edge, drawn through mid-page.
-    tick_y = d.page_height / 2.0
+    # Full-height 1 mm ticks so N is readable even when the slab is thin.
     for mm in range(0, 37):
-        x = mm if from_left else d.page_width - mm
-        tick = 5.0 if mm % 4 == 0 else 2.4
-        plotter.line(x, tick_y, x, tick_y + tick, stroke_width=0.12 if mm % 2 else 0.18, stroke_gray=INK)
+        x = float(mm) if from_left else d.page_width - mm
+        tick = 4.0 if mm % 4 == 0 else 2.0
+        y0 = 28.0
+        plotter.line(x, y0, x, y0 + tick, stroke_width=0.12 if mm % 2 else 0.18, stroke_gray=INK)
         if mm % 4 == 0:
-            label_x = (x + 1.2) if from_left else (x - 13.0)
+            label_x = (x + 1.0) if from_left else (x - 12.0)
             plotter.text(
-                Rect(label_x, tick_y + tick + 0.4, 12.0, 4.4),
+                Rect(label_x, y0 + tick + 0.2, 11.0, 4.0),
                 f"{mm}",
                 ref=TypeRef(step="micro"),
                 gray=INK,
                 align="left" if from_left else "right",
             )
 
-    # Stack targets in the middle third so top toolbar and bottom OS band
-    # do not confound the reading.
-    y_lo = 70.0
-    y_hi = 150.0
-    span = y_hi - y_lo
-    slot = span / len(SIDE_TARGETS)
+    # Y-stack so 8 and 10 never share a rectangle. X still centred on N.
+    n = len(SIDE_TARGETS)
+    block = n * SIDE_H + (n - 1) * SIDE_GAP
+    y_lo = 42.0
+    label_w = 22.0
     for i, mm in enumerate(SIDE_TARGETS):
-        y = y_lo + i * slot
+        y = y_lo + i * (SIDE_H + SIDE_GAP)
         if from_left:
             x = mm - BOX / 2.0
-        else:
-            x = d.page_width - mm - BOX / 2.0
-        box = Rect(x, y, BOX, 10.0)
-        plotter.rect(box, stroke=True, fill=True, stroke_width=0.18, fill_gray=1.0, stroke_gray=INK)
-        num_w = 14.0
-        if from_left:
-            num = Rect(x + BOX + 1.2, y, num_w, 10.0)
+            slab = Rect(x, y, BOX, SIDE_H)
+            lead_x0 = slab.x + slab.w
+            lead_x1 = 40.0
+            num = Rect(42.0, y, label_w, SIDE_H)
             align = "left"
         else:
-            num = Rect(x - num_w - 1.2, y, num_w, 10.0)
+            x = d.page_width - mm - BOX / 2.0
+            slab = Rect(x, y, BOX, SIDE_H)
+            lead_x0 = slab.x
+            lead_x1 = d.page_width - 40.0
+            num = Rect(d.page_width - 42.0 - label_w, y, label_w, SIDE_H)
             align = "right"
-        plotter.text(num, f"{mm:g}", ref=TypeRef(step="label", emphasis="strong"), gray=INK, align=align)
-        plotter.link(box, _dest(edge, mm))
+        plotter.rect(slab, stroke=True, fill=True, stroke_width=0.22, fill_gray=1.0, stroke_gray=INK)
+        mid_y = y + SIDE_H / 2.0
+        plotter.line(lead_x0, mid_y, lead_x1, mid_y, stroke_width=0.18, stroke_gray=INK)
+        plotter.rect(num, stroke=True, fill=True, stroke_width=0.18, fill_gray=WASH, stroke_gray=INK)
+        plotter.text(
+            num,
+            f"{mm:g}",
+            ref=TypeRef(step="label", emphasis="strong"),
+            gray=INK,
+            align=align,
+        )
+        # Link is the thin slab only. Label is not a hit, so a tap on "24"
+        # at x=42 cannot false-positive a 24 mm edge measurement.
+        plotter.link(slab, _dest(edge, mm))
 
     ctrl_x = 48.0 if from_left else 18.0
     _control(
         plotter,
-        Rect(ctrl_x, 168.0, d.page_width - 66.0, 12.0),
+        Rect(ctrl_x, y_lo + block + 8.0, d.page_width - 66.0, 12.0),
         _mid(edge),
         "CONTROL  mid-page",
     )
-    back = Rect(ctrl_x, 184.0, d.page_width - 66.0, 10.0)
+    back = Rect(ctrl_x, y_lo + block + 24.0, d.page_width - 66.0, 10.0)
     plotter.rect(back, stroke=True, fill=False, stroke_width=0.18, stroke_gray=INK)
     plotter.text(back, "back to index", ref=TypeRef(step="chrome"), gray=INK, align="center", small_caps=True)
     plotter.link(back, "index")
