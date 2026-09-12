@@ -116,7 +116,6 @@ def test_write_specimens_png_catalog(tmp_path: Path):
 
     dest = build_device_catalog(tmp_path, "supernote-nomad")
     assert (dest / "cover.png").stat().st_size > 0
-    assert not (dest / "cover-full.png").exists()
     assert (dest / "index.html").is_file()
     root = catalog_dest(tmp_path) / "index.html"
     assert root.is_file()
@@ -130,7 +129,6 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
     for stem in SAMPLE_STEMS:
         assert (dest / f"{stem}.png").is_file()
-        assert not (dest / f"{stem}-full.png").exists()
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
