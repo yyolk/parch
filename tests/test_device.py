@@ -3,6 +3,8 @@ import pytest
 from parch import ConfigError
 from parch.devices import NOMAD, SCRIBE, get_device, known_device_ids
 from parch.fonts import ROOT_BODY, Pt
+from parch.layouts.planner.painters import NAV_H, paint_nav, well_rect
+from parch.plotter import RecordingPlotter
 
 
 def test_nomad_geometry():
@@ -15,6 +17,7 @@ def test_nomad_geometry():
     assert NOMAD.toolbar_edge == "top"
     assert NOMAD.toolbar_clearance == 8.0
     assert NOMAD.writing_clearance == 4.0
+    assert NOMAD.bottom_clearance == 0.0
     assert NOMAD.root_body == ROOT_BODY == Pt(8.5)
 
 
@@ -40,13 +43,43 @@ def test_scribe_geometry():
     assert SCRIBE.toolbar_edge == "none"
     assert SCRIBE.toolbar_clearance == 0.0
     assert SCRIBE.writing_clearance == 4.0
+    assert SCRIBE.bottom_clearance > 0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
     assert SCRIBE.toolbar_slab() is None
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
     assert frame.y == 0.0
     assert frame.w == pytest.approx(157.48 - 8.0)
-    assert frame.bottom == pytest.approx(209.97 - 4.0)
+    assert frame.bottom == pytest.approx(209.97 - 4.0 - SCRIBE.bottom_clearance)
+
+
+def test_bottom_clearance_seats_strip_and_well():
+    assert NOMAD.bottom_clearance == 0.0
+    assert SCRIBE.bottom_clearance > 0
+    assert well_rect(NOMAD).bottom == pytest.approx(NOMAD.page_height - NAV_H - 2.2)
+    assert well_rect(SCRIBE).bottom == pytest.approx(
+        SCRIBE.page_height - SCRIBE.bottom_clearance - NAV_H - 2.2
+    )
+    assert NOMAD.content_frame().bottom == pytest.approx(
+        NOMAD.page_height - NOMAD.writing_clearance
+    )
+    assert SCRIBE.content_frame().bottom == pytest.approx(
+        SCRIBE.page_height - SCRIBE.writing_clearance - SCRIBE.bottom_clearance
+    )
+    nomad = RecordingPlotter()
+    paint_nav(nomad, NOMAD, (("Year", "year-2026"),), "Year")
+    scribe = RecordingPlotter()
+    paint_nav(scribe, SCRIBE, (("Year", "year-2026"),), "Year")
+    nomad_strip = next(op[1] for op in nomad.ops if op[0] == "rect")
+    scribe_strip = next(op[1] for op in scribe.ops if op[0] == "rect")
+    assert nomad_strip.y == pytest.approx(NOMAD.page_height - NAV_H)
+    assert nomad_strip.bottom == pytest.approx(NOMAD.page_height)
+    assert scribe_strip.y == pytest.approx(
+        SCRIBE.page_height - SCRIBE.bottom_clearance - NAV_H
+    )
+    assert scribe_strip.bottom == pytest.approx(
+        SCRIBE.page_height - SCRIBE.bottom_clearance
+    )
 
 
 def test_device_aliases():

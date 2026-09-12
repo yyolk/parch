@@ -147,7 +147,7 @@ def paint_nav(
     if not items:
         return
     ramp = _bound_ramp(plotter, ramp)
-    y = device.page_height - NAV_H
+    y = device.page_height - device.bottom_clearance - NAV_H
     slot = device.page_width / len(items)
     plotter.rect(
         Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH
@@ -1961,7 +1961,7 @@ def paint_daily(
 def well_rect(device: Device) -> Rect:
     """Writable well between header slab and bottom nav, inset by writing clearance."""
     top = device.content_top + HEADER_H + 2.2
-    bottom = device.page_height - NAV_H - 2.2
+    bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance
     return Rect(m, top, device.page_width - 2 * m, bottom - top)
 
