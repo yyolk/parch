@@ -14,7 +14,6 @@ Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.
 ```shell
 uv sync --group dev
 uv run parch press examples/mvp.toml -o out/nomad-2026.pdf
-uv run python -m parch press supernote-nomad -o parch.pdf
 uv run parch specimen supernote-nomad -w out   # PNG catalog; click a thumb to expand in place
 uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
 ```
@@ -43,7 +42,7 @@ Ship steps live in [Releasing](RELEASING.md).
 
 MIT — see [LICENSE](LICENSE).
 
-Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/latex-yearly-planner). This is an fpdf2 Plotter rewrite; it is not a port of LYP sources.
+Historical inspiration: [Vitaliy Kudryk’s LYP](https://github.com/kudrykv/latex-yearly-planner). fpdf2 Plotter rewrite; not a port of LYP sources.
 
 Runtime dependency [fpdf2](https://github.com/py-pdf/fpdf2) is LGPL-3.0, separate from this MIT license.
 
