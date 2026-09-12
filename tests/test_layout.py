@@ -1,5 +1,10 @@
+import pytest
+
 from parch.books import YearPlanner
-from parch.devices import NOMAD
+from parch.components import CoverTitle
+from parch.devices import NOMAD, SCRIBE
+from parch.fonts.ramp import EffectiveRamp
+from parch.layouts.planner.painters import NAV_H, paint_cover, paint_nav
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -28,3 +33,49 @@ def test_content_stays_below_toolbar():
             assert op[1].y >= TOOLBAR - 0.01
         if op[0] == "rect":
             assert op[1].y >= TOOLBAR - 0.01
+
+
+def _cover() -> CoverTitle:
+    return CoverTitle(
+        year=2026,
+        subtitle="",
+        device_name="nomad",
+        cta_label="",
+        cta_dest="year-2026",
+    )
+
+
+def test_nav_wash_runs_through_bottom_clearance():
+    items = (("Year", "year-2026"), ("Mon", "month-2026-01"))
+    nomad = RecordingPlotter()
+    paint_nav(nomad, NOMAD, items, "Year", ramp=EffectiveRamp())
+    scribe = RecordingPlotter()
+    paint_nav(scribe, SCRIBE, items, "Year", ramp=EffectiveRamp())
+    nomad_wash = next(op[1] for op in nomad.ops if op[0] == "rect" and op[3])
+    scribe_wash = next(op[1] for op in scribe.ops if op[0] == "rect" and op[3])
+    assert nomad_wash.h == pytest.approx(NAV_H)
+    assert nomad_wash.bottom == pytest.approx(NOMAD.page_height)
+    assert scribe_wash.h == pytest.approx(NAV_H + SCRIBE.bottom_clearance)
+    assert scribe_wash.bottom == pytest.approx(SCRIBE.page_height)
+    for hit in (op[1] for op in scribe.ops if op[0] == "link"):
+        assert hit.h == pytest.approx(NAV_H)
+        assert hit.bottom == pytest.approx(SCRIBE.page_height - SCRIBE.bottom_clearance)
+
+
+def test_cover_frames_stop_above_bottom_clearance():
+    nomad = RecordingPlotter()
+    paint_cover(nomad, NOMAD, _cover(), ramp=EffectiveRamp())
+    scribe = RecordingPlotter()
+    paint_cover(scribe, SCRIBE, _cover(), ramp=EffectiveRamp())
+    nomad_frames = [
+        op[1] for op in nomad.ops if op[0] == "rect" and op[2] and not op[3]
+    ]
+    scribe_frames = [
+        op[1] for op in scribe.ops if op[0] == "rect" and op[2] and not op[3]
+    ]
+    assert [box.bottom for box in nomad_frames] == pytest.approx(
+        [NOMAD.page_height - 3.2, NOMAD.page_height - 4.6]
+    )
+    for box in scribe_frames:
+        assert box.bottom <= SCRIBE.page_height - SCRIBE.bottom_clearance + 0.01
+    assert not any(op[3] for op in scribe.ops if op[0] == "rect")

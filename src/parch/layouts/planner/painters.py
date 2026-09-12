@@ -150,7 +150,10 @@ def paint_nav(
     y = device.page_height - device.bottom_clearance - NAV_H
     slot = device.page_width / len(items)
     plotter.rect(
-        Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH
+        Rect(0.0, y, device.page_width, NAV_H + device.bottom_clearance),
+        stroke=False,
+        fill=True,
+        fill_gray=WASH,
     )
     for i, (label, dest) in enumerate(items):
         x = i * slot
@@ -182,18 +185,20 @@ def paint_cover(
 ) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
-    # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
+    # Frame sits below the unmarked toolbar and above unmarked bottom OS chrome.
     ox, oy = outer, max(outer, top + 0.6)
+    o_bottom = max(outer, device.bottom_clearance + 0.6)
     plotter.rect(
-        Rect(ox, oy, device.page_width - 2 * ox, device.page_height - oy - outer),
+        Rect(ox, oy, device.page_width - 2 * ox, device.page_height - oy - o_bottom),
         stroke=True,
         fill=False,
         stroke_width=HAIR,
         stroke_gray=INK,
     )
     ix, iy = inner, max(inner, top + 1.8)
+    i_bottom = max(inner, device.bottom_clearance + 1.8)
     plotter.rect(
-        Rect(ix, iy, device.page_width - 2 * ix, device.page_height - iy - inner),
+        Rect(ix, iy, device.page_width - 2 * ix, device.page_height - iy - i_bottom),
         stroke=True,
         fill=False,
         stroke_width=HAIR,
