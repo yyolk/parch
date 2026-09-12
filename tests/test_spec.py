@@ -66,7 +66,7 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"habits": {"columns": 8}}).habit_columns == 8
     assert Spec.from_mapping({"habits": {"rows": 6}}).habit_columns == 6
     assert Spec.from_mapping({"habit_rows": 7}).habit_columns == 7
-    assert Spec.from_path(Path("examples/mvp.toml")).habit_columns == 10
+    assert Spec.from_path(Path("examples/nomad.toml")).habit_columns == 10
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_cards == 2
     assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_tasks == 5
     assert Spec.from_mapping({"projects": {"tickets": 6}}).project_tickets == 6
@@ -79,21 +79,21 @@ def test_habit_columns_from_toml_keys():
     assert triple.dest_for_projects_index_of(9) == "projects-index-2026-02"
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
-    mvp = Spec.from_path(Path("examples/mvp.toml"))
-    assert mvp.device == "supernote-nomad"
-    assert mvp.project_cards == 3
-    assert mvp.project_tasks == 4
-    assert mvp.project_tickets == 8
-    assert mvp.project_index_pages == 3
-    assert mvp.project_count == 24
-    assert mvp.meeting_index_rows == 16
-    assert mvp.meeting_count == 16
-    assert mvp.task_rows == 6
-    assert mvp.type_overlay == TypeOverlay()
+    nomad = Spec.from_path(Path("examples/nomad.toml"))
+    assert nomad.device == "supernote-nomad"
+    assert nomad.project_cards == 3
+    assert nomad.project_tasks == 4
+    assert nomad.project_tickets == 8
+    assert nomad.project_index_pages == 3
+    assert nomad.project_count == 24
+    assert nomad.meeting_index_rows == 16
+    assert nomad.meeting_count == 16
+    assert nomad.task_rows == 6
+    assert nomad.type_overlay == TypeOverlay()
 
 
 def test_typography_overlay_from_toml():
-    overlayed = Spec.from_path(Path("examples/mvp-typo-overlay.toml"))
+    overlayed = Spec.from_path(Path("examples/nomad-typo-overlay.toml"))
     assert overlayed.type_overlay == TypeOverlay(
         schema_version=OVERLAY_SCHEMA_VERSION,
         chrome=TypePatch(size=9.6, weight="bold"),

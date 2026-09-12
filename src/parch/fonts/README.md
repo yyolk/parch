@@ -122,8 +122,8 @@ size = 9.6
 weight = "bold"
 ```
 
-`examples/mvp.toml` has no typography table (closed-table defaults). Side
-example: `examples/mvp-typo-overlay.toml`. `press` builds
+`examples/nomad.toml` has no typography table (closed-table defaults). Side
+example: `examples/nomad-typo-overlay.toml`. `press` builds
 `EffectiveRamp = defaults ⊕ spec.type_overlay ⊕ proof` at
 `device.root_body`.
 `YearPlanner()` / `PlannerLayout()` with no args use `EffectiveRamp`
@@ -148,9 +148,9 @@ defaults. Family is never overlaid.
 Invoke:
 
 ```shell
-uv run parch proof examples/mvp.toml -o out/exp-typeramp-proof.pdf
+uv run parch proof examples/nomad.toml -o out/exp-typeramp-proof.pdf
 # or
-uv run parch press examples/mvp.toml --proof -o out/exp-typeramp-proof.pdf
+uv run parch press examples/nomad.toml --proof -o out/exp-typeramp-proof.pdf
 ```
 
 API: `press(spec, out, proof=True)` or `press(spec, out, proof=ProofProfile())`.

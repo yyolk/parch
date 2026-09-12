@@ -18,7 +18,7 @@ Manual TestPyPI-only: **Actions → Publish → `testpypi`**.
 
 Published Releases also run **Release PDFs**, which presses each pressable device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not.
 
-The matrix is `{device}` shards from `parch.services.release_pdfs` (`PRESSABLE_DEVICE_IDS` — Nomad-only; not `known_device_ids()`). Each shard presses the TOML mapped for that device (`supernote-nomad` → `examples/mvp.toml`). Kindle Scribe is in the registry and can be pressed via `examples/scribe.toml`; it is not a release-PDF shard yet.
+The matrix is `{device}` shards from `parch.services.release_pdfs` (`PRESSABLE_DEVICE_IDS` — Nomad-only; not `known_device_ids()`). Each shard presses the TOML mapped for that device (`supernote-nomad` → `examples/nomad.toml`). Kindle Scribe is in the registry and can be pressed via `examples/scribe.toml`; it is not a release-PDF shard yet.
 
 To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. `max-parallel` defaults to the shard count; set `max_parallel` to override. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version.
 

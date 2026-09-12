@@ -3,10 +3,10 @@
 import json
 import sys
 
-# Release press is Nomad mvp.toml only. Do not follow known_device_ids().
+# Release press is examples/nomad.toml only. Do not follow known_device_ids().
 # Grow this table (and PRESSABLE) when a device should ship a release PDF.
 _PRESSABLE_TOML: dict[str, str] = {
-    "supernote-nomad": "examples/mvp.toml",
+    "supernote-nomad": "examples/nomad.toml",
 }
 PRESSABLE_DEVICE_IDS: tuple[str, ...] = tuple(_PRESSABLE_TOML)
 

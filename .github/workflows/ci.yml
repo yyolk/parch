@@ -26,7 +26,7 @@ jobs:
       - run: uv run pytest
       - name: Press Nomad MVP
         run: |
-          uv run parch press examples/mvp.toml -w out/nomad -o out/nomad.pdf
+          uv run parch press examples/nomad.toml -w out/nomad -o out/nomad.pdf
           test -s out/nomad/index.pdf
           test -s out/nomad.pdf
 

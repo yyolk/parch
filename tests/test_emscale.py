@@ -231,12 +231,12 @@ def test_mini_month_and_clone_caption_cues(tmp_path: Path):
     assert nav[9] in {"book", "bold"}
 
 
-def test_press_mvp_toml_and_overlay_compose(tmp_path: Path):
-    spec = Spec.from_path(Path("examples/mvp.toml"))
+def test_press_nomad_toml_and_overlay_compose(tmp_path: Path):
+    spec = Spec.from_path(Path("examples/nomad.toml"))
     plotter = RecordingPlotter()
     press(
         Spec(year=spec.year, months=(1,), notes_pages=0, project_index_pages=1),
-        tmp_path / "mvp-id.pdf",
+        tmp_path / "nomad-id.pdf",
         plotter=plotter,
     )
     year = next(

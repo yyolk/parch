@@ -1,5 +1,5 @@
 # Kindle Scribe (1st gen) geometry proof — not a release-PDF shard.
-# PRESSABLE / release press stays supernote-nomad → examples/mvp.toml.
+# PRESSABLE / release press stays supernote-nomad → examples/nomad.toml.
 # Slim January keeps the press cheap.
 year = 2026
 device = "kindle-scribe"
