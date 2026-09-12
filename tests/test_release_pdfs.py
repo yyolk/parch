@@ -20,10 +20,11 @@ def test_hero_shards_json():
     assert hero == [{"device": "supernote-nomad"}]
     assert json.loads(matrix_json("hero")) == hero
     assert device_ids() == HERO_DEVICE_IDS == ("supernote-nomad",)
+    assert "kindle-scribe" not in HERO_DEVICE_IDS
 
 
 def test_all_equals_known_device_ids():
-    assert device_ids("all") == known_device_ids()
+    assert device_ids("all") == known_device_ids() == ("supernote-nomad", "kindle-scribe")
 
 
 def test_device_ids_unknown_set_raises():

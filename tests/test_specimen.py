@@ -102,14 +102,14 @@ def test_specimen_rejects_unknown_device_before_press(
         raise AssertionError("should not press")
 
     monkeypatch.setattr("parch.press.press", boom)
-    assert main(["specimen", "kindle-scribe", "-w", str(tmp_path)]) == 2
+    assert main(["specimen", "unknown-slate", "-w", str(tmp_path)]) == 2
     assert "unknown device" in capsys.readouterr().err
     assert not (tmp_path / "specimens").exists()
 
 
 def test_specimen_spec_rejects_unknown_device():
     with pytest.raises(ConfigError, match="unknown device"):
-        specimen_spec("kindle-scribe")
+        specimen_spec("unknown-slate")
 
 
 @pytest.mark.skipif(

@@ -1,4 +1,4 @@
-"""SuperNote Nomad — the only MVP device."""
+"""Registered MVP devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
 
 from dataclasses import dataclass
 from typing import Literal
@@ -70,19 +70,38 @@ NOMAD = Device(
     root_body=ROOT_BODY,
 )
 
+# 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar chrome; writing clearance 4 mm.
+# Same ROOT_BODY as Nomad — Scribe calibration knob is later, not this PR.
+SCRIBE = Device(
+    id="kindle-scribe",
+    name="Kindle Scribe (1st gen)",
+    ppi=300,
+    page_width=157.48,
+    page_height=209.97,
+    width_px=1860,
+    height_px=2480,
+    toolbar_edge="none",
+    toolbar_clearance=0.0,
+    writing_clearance=4.0,
+    root_body=ROOT_BODY,
+)
+
 _KNOWN = {
     NOMAD.id: NOMAD,
     "nomad": NOMAD,
+    SCRIBE.id: SCRIBE,
+    "scribe": SCRIBE,
 }
 
 
 def known_device_ids() -> tuple[str, ...]:
     """Canonical device ids (aliases omitted)."""
-    return (NOMAD.id,)
+    return (NOMAD.id, SCRIBE.id)
 
 
 def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:
-        raise ConfigError(f"unknown device {spec!r}; MVP knows supernote-nomad")
+        known = ", ".join(known_device_ids())
+        raise ConfigError(f"unknown device {spec!r}; MVP knows {known}")
     return _KNOWN[key]

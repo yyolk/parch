@@ -21,7 +21,7 @@ from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
 
-_DEVICE_TOKENS = {"supernote-nomad", "nomad"}
+_DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
 
 
 def merge_press_overlay(
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
         "spec",
         nargs="?",
         default=None,
-        help="TOML spec path, or device id (supernote-nomad). Default: Nomad 2026 MVP.",
+        help="TOML spec path, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 MVP.",
     )
     parser.add_argument("-o", "--output", help="Product PDF path.")
     parser.add_argument("-w", "--workdir", help="Also write workdir/index.pdf.")

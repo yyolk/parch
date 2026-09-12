@@ -1,7 +1,7 @@
 import pytest
 
 from parch import ConfigError
-from parch.devices import NOMAD, get_device, known_device_ids
+from parch.devices import NOMAD, SCRIBE, get_device, known_device_ids
 from parch.fonts import ROOT_BODY, Pt
 
 
@@ -29,13 +29,36 @@ def test_toolbar_is_not_the_well():
     assert frame.bottom == pytest.approx(158.5 - 4.0)
 
 
-def test_nomad_alias():
+def test_scribe_geometry():
+    assert SCRIBE.id == "kindle-scribe"
+    assert SCRIBE.name == "Kindle Scribe (1st gen)"
+    assert SCRIBE.page_width == 157.48
+    assert SCRIBE.page_height == 209.97
+    assert SCRIBE.width_px == 1860
+    assert SCRIBE.height_px == 2480
+    assert SCRIBE.ppi == 300
+    assert SCRIBE.toolbar_edge == "none"
+    assert SCRIBE.toolbar_clearance == 0.0
+    assert SCRIBE.writing_clearance == 4.0
+    assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
+    assert SCRIBE.toolbar_slab() is None
+    frame = SCRIBE.content_frame()
+    assert frame.x == 4.0
+    assert frame.y == 0.0
+    assert frame.w == pytest.approx(157.48 - 8.0)
+    assert frame.bottom == pytest.approx(209.97 - 4.0)
+
+
+def test_device_aliases():
     assert get_device("nomad") is NOMAD
     assert get_device("supernote-nomad") is NOMAD
-    with pytest.raises(ConfigError):
-        get_device("kindle-scribe")
+    assert get_device("kindle-scribe") is SCRIBE
+    assert get_device("scribe") is SCRIBE
+    with pytest.raises(ConfigError, match="MVP knows supernote-nomad, kindle-scribe"):
+        get_device("unknown-slate")
 
 
 def test_known_device_ids_are_canonical():
-    assert known_device_ids() == ("supernote-nomad",)
+    assert known_device_ids() == ("supernote-nomad", "kindle-scribe")
     assert "nomad" not in known_device_ids()
+    assert "scribe" not in known_device_ids()

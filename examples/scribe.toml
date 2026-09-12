@@ -1,0 +1,28 @@
+# Kindle Scribe (1st gen) geometry proof — not the hero / mvp.toml book.
+# Hero release stays supernote-nomad. Slim January keeps the press cheap.
+year = 2026
+device = "kindle-scribe"
+week_start = "monday"
+months = [1]
+title = "Year planner"
+
+[daily]
+schedule_from = 7
+schedule_to = 16
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6

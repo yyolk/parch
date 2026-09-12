@@ -194,3 +194,28 @@ def test_cli_proof_verb_plus_flag_stays_true(monkeypatch, tmp_path: Path):
     assert main(["proof", "supernote-nomad", "--proof", "-o", str(out)]) == 0
     assert seen["proof"] is True
     assert PROOF_PROFILE.overlay.display is None
+
+
+def test_cli_press_scribe_id_is_known(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+
+    def fake_press(spec, output, **kwargs):
+        seen["device"] = spec.device
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    out = tmp_path / "scribe.pdf"
+    assert main(["press", "kindle-scribe", "-o", str(out)]) == 0
+    assert seen["device"] == "kindle-scribe"
+    assert main(["press", "scribe", "-o", str(out)]) == 0
+    assert seen["device"] == "scribe"
+
+
+def test_press_scribe_page_geometry(tmp_path: Path):
+    out = tmp_path / "scribe.pdf"
+    assert main(["press", "examples/scribe.toml", "-o", str(out)]) == 0
+    page = PdfReader(out).pages[0]
+    assert float(page.mediabox.width) == pytest.approx(_pt(157.48), abs=0.6)
+    assert float(page.mediabox.height) == pytest.approx(_pt(209.97), abs=0.6)
