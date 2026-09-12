@@ -1,0 +1,39 @@
+name: Press Scribe band
+run-name: Press Scribe January + OS-band probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [press-scribe-os-band]
+
+permissions:
+  contents: read
+
+jobs:
+  press:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: false
+      - run: uv sync --group dev
+      - name: Press slim January Scribe book
+        run: |
+          mkdir -p out
+          uv run parch press examples/scribe.toml -o out/scribe-2026-01.pdf
+          test -s out/scribe-2026-01.pdf
+      - name: Press OS-band probe
+        run: |
+          uv run python scripts/scribe_band_probe.py -o out/scribe-band-probe.pdf
+          test -s out/scribe-band-probe.pdf
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: scribe-os-band-press
+          path: |
+            out/scribe-2026-01.pdf
+            out/scribe-band-probe.pdf
+          if-no-files-found: error
