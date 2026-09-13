@@ -2,9 +2,9 @@
 
 Happy path:
 
-1. **Actions → Bump version** — pick `patch` / `minor` / `major` and **publish** (default) vs draft.
+1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `alpha` / `beta` / `rc` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
 2. Merge the `bump/v…` PR when CI is green.
-3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish** (TestPyPI + PyPI, with `release_tag`) and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
+3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
 
 A published GitHub Release is the ship step. Tag `vX.Y.Z` must match `[project].version` in `pyproject.toml` (no `v` in the file). Hatchling embeds that file version on the tagged commit; **Publish** fails the build if the tag and file differ.
 
@@ -24,11 +24,11 @@ To time a run without a new tag: **Actions → Release PDFs → Run workflow**. 
 
 ## Version bumps
 
-**Bump version** runs `uv version --bump` (do not hand-edit the field), opens a ready-for-review `bump/vX.Y.Z` PR, and labels it `release:publish` or `release:draft`. Merging that PR is what **Cut release** watches.
+**Bump version** runs `uv version --bump` once per dispatch (do not hand-edit the field), opens a ready-for-review `bump/vX.Y.Z` PR, and labels it `release:publish` or `release:draft`. Merging that PR is what **Cut release** watches.
 
 `uv version` writes `[project].version`. Exact string: `uv version 0.1.2rc1 --no-sync`. `parch --version` and `__version__` read the installed package metadata, not a second string.
 
-Manual bump (pre-releases, or when you are not using the workflow):
+Manual bump (two `--bump`s in one command, or when you are not using the workflow):
 
 ```shell
 uv version --short                          # current, e.g. 0.1.1
@@ -44,30 +44,28 @@ The Release tag is `v` plus `uv version --short` after the bump.
 
 ## Pre-release
 
-**Bump version** is `patch` / `minor` / `major` only. Pre-releases stay a manual `uv version` recipe. **Cut release** creates a normal (not pre-release) GitHub Release, so do not use that path for rc/alpha/beta.
-
-Same loop as stable. The version string is a PEP 440 pre-release and the GitHub Release has **Set as a pre-release** checked. TestPyPI gets it; PyPI does not.
+Same loop as stable. **Bump version** accepts the full `uv version --bump` set (`patch`, `minor`, `major`, `alpha`, `beta`, `rc`, `stable`, `post`, `dev`) — one bump per dispatch. **Cut release** sets GitHub **Set as a pre-release** when `packaging.version.Version(ver).is_prerelease` is true (`a` / `b` / `rc` / `.devN`; `.postN` is not). A published pre-release dispatches TestPyPI only. Final and `.postN` cuts dispatch TestPyPI + PyPI + Release PDFs.
 
 From `0.1.1`:
 
 ```shell
-# first rc of the next patch
+# first rc of the next patch (two bumps — run this by hand; the workflow is one bump)
 uv version --bump patch --bump rc --no-sync
 # 0.1.1 => 0.1.2rc1
 
-# another rc of the same version
+# another rc of the same version (workflow: Bump version → rc)
 uv version --bump rc --no-sync
 # 0.1.2rc1 => 0.1.2rc2
 
-# drop the suffix when that cut is good
+# drop the suffix when that cut is good (workflow: Bump version → stable)
 uv version --bump stable --no-sync
 # 0.1.2rc2 => 0.1.2
 ```
 
 `--bump alpha` / `--bump beta` work the same way as `--bump rc`.
 
-1. Merge the bump PR (`0.1.2rc1`) to `master`. Wait for CI.
-2. Draft a Release. Tag `v0.1.2rc1` (create on publish), target `master`, tick **Set as a pre-release**.
-3. Publish. TestPyPI gets `0.1.2rc1`. The `pypi` environment is skipped. Wheel and sdist attach.
+1. **Actions → Bump version** (`rc` / `alpha` / `beta`, or merge a manual two-bump PR).
+2. Merge the bump PR (`0.1.2rc1`) to `master`.
+3. **Cut release** creates `v0.1.2rc1` with **Set as a pre-release**. Publish mode uploads to TestPyPI only.
 
-Stable later is another bump PR (`uv version --bump stable`) and a new Release `v0.1.2` with the box unchecked. Do not reuse `0.1.2rc1`. Do not un-tick pre-release on the same tag. Do not publish `0.1.2` to TestPyPI as a pre-release and then the same `0.1.2` to PyPI.
+Stable later is another bump PR (`uv version --bump stable`, or **Bump version → stable**) and a new Release `v0.1.2` (pre-release unchecked). Do not reuse `0.1.2rc1`. Do not un-tick pre-release on the same tag. Do not publish `0.1.2` to TestPyPI as a pre-release and then the same `0.1.2` to PyPI.

@@ -28,6 +28,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
       - name: Create GitHub Release
         run: |
           set -euo pipefail
@@ -38,6 +40,13 @@ jobs:
           if [ "$VER" != "$expected" ]; then
             echo "pyproject version ${VER} does not match branch ${HEAD_REF} (expected ${expected})." >&2
             exit 1
+          fi
+
+          IS_PRERELEASE="$(VER="$VER" uv run --with packaging --no-project python -c 'import os; from packaging.version import Version; print(Version(os.environ["VER"]).is_prerelease)')"
+          IS_PRERELEASE="${IS_PRERELEASE%%$'\n'}"
+          pre_args=()
+          if [ "$IS_PRERELEASE" = "True" ]; then
+            pre_args+=(--prerelease)
           fi
 
           has_pub_label=0
@@ -75,27 +84,35 @@ jobs:
             exit 1
           fi
 
-          echo "Cutting v${VER} as ${mode} at ${MERGE_SHA}"
+          echo "Cutting v${VER} as ${mode} at ${MERGE_SHA} (is_prerelease=${IS_PRERELEASE})"
           if [ "$mode" = draft ]; then
             gh release create "v${VER}" \
               --draft \
+              "${pre_args[@]}" \
               --generate-notes \
               --title "v${VER}" \
               --target "$MERGE_SHA"
             echo "Draft: not dispatching Publish or Release PDFs (UI publish still fires on: release)."
           else
             gh release create "v${VER}" \
+              "${pre_args[@]}" \
               --generate-notes \
               --title "v${VER}" \
               --target "$MERGE_SHA"
 
             # GITHUB_TOKEN creates do not fire on: release; workflow_dispatch does cascade.
-            echo "Dispatching Publish (testpypi + pypi) and Release PDFs for v${VER}"
-            gh workflow run publish.yml --ref "v${VER}" -f target=testpypi -f release_tag="v${VER}"
-            gh workflow run publish.yml --ref "v${VER}" -f target=pypi -f release_tag="v${VER}"
-            gh workflow run release-pdfs.yml --ref "v${VER}" -f release_tag="v${VER}"
-
-            echo "Dispatched workflow runs (listing may be racy):"
-            gh run list --workflow=publish.yml --event=workflow_dispatch --limit 4 || true
-            gh run list --workflow=release-pdfs.yml --event=workflow_dispatch --limit 2 || true
+            if [ "$IS_PRERELEASE" = "True" ]; then
+              echo "Dispatching Publish (testpypi only) for pre-release v${VER}"
+              gh workflow run publish.yml --ref "v${VER}" -f target=testpypi -f release_tag="v${VER}"
+              echo "Dispatched workflow runs (listing may be racy):"
+              gh run list --workflow=publish.yml --event=workflow_dispatch --limit 2 || true
+            else
+              echo "Dispatching Publish (testpypi + pypi) and Release PDFs for v${VER}"
+              gh workflow run publish.yml --ref "v${VER}" -f target=testpypi -f release_tag="v${VER}"
+              gh workflow run publish.yml --ref "v${VER}" -f target=pypi -f release_tag="v${VER}"
+              gh workflow run release-pdfs.yml --ref "v${VER}" -f release_tag="v${VER}"
+              echo "Dispatched workflow runs (listing may be racy):"
+              gh run list --workflow=publish.yml --event=workflow_dispatch --limit 4 || true
+              gh run list --workflow=release-pdfs.yml --event=workflow_dispatch --limit 2 || true
+            fi
           fi

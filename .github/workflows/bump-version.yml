@@ -4,13 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: Semver component to bump
+        description: uv version --bump (one per dispatch)
         required: true
         type: choice
         options:
           - patch
           - minor
           - major
+          - alpha
+          - beta
+          - rc
+          - stable
+          - post
+          - dev
         default: patch
       publish:
         description: Published Release after merge (false = draft; tag is still created)
@@ -118,7 +124,7 @@ jobs:
             echo
             echo "Merging this PR triggers **Cut release**, which creates GitHub Release \`v${NEW_VER}\` immediately (${mode_word}; does not wait for Pages CI)."
             echo
-            echo "A published Release then runs **Publish** (TestPyPI/PyPI) and **Release PDFs**. A draft does not, until someone publishes it in the UI."
+            echo "A published Release then runs **Publish** (TestPyPI; PyPI and **Release PDFs** only when the version is not a pre-release). A draft does not, until someone publishes it in the UI."
             echo
             echo "Do not push tags by hand. Never retag."
           } > "$RUNNER_TEMP/pr-body.md"
