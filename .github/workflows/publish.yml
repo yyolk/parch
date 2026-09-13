@@ -107,5 +107,5 @@ jobs:
               echo "skip $name (already on release)"
               continue
             fi
-            gh release upload "$RELEASE_TAG" "$f"
+            err="$(gh release upload "$RELEASE_TAG" "$f" 2>&1)" || { printf '%s\n' "$err"; echo "$err" | grep -qi 'already exists'; }
           done
