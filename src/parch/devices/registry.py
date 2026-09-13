@@ -9,6 +9,10 @@ from parch.geom import Rect
 
 type ToolbarEdge = Literal["top", "none"]
 
+# Keep in lockstep with parch.layouts.planner.painters.NAV_H.
+# Registry cannot import painters (cycle). The strip sits on bottom_clearance.
+_NAV_H = 8.0
+
 
 @dataclass(frozen=True, slots=True)
 class Device:
@@ -44,14 +48,19 @@ class Device:
                 return None
 
     def content_frame(self) -> Rect:
-        """Chrome + wells: below toolbar, above bottom OS chrome, writing inset."""
+        """Chrome + wells: below toolbar, above nav strip + bottom OS chrome.
+
+        Side inset is writing_clearance. Bottom inset is the nav strip plus
+        bottom_clearance — not writing_clearance, which used to overlap the strip.
+        """
         top = self.content_top
         margin = self.writing_clearance
+        nav_band = _NAV_H + self.bottom_clearance
         return Rect(
             x=margin,
             y=top,
             w=self.page_width - 2 * margin,
-            h=self.page_height - top - margin - self.bottom_clearance,
+            h=self.page_height - top - nav_band,
         )
 
 
