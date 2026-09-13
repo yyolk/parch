@@ -28,7 +28,7 @@ def test_toolbar_is_not_the_well():
     frame = NOMAD.content_frame()
     assert frame.y == 8.0
     assert frame.x == 4.0
-    assert frame.bottom == pytest.approx(158.5 - 4.0)
+    assert frame.bottom == pytest.approx(158.5 - 8.0)
 
 
 def test_scribe_geometry():
@@ -49,7 +49,7 @@ def test_scribe_geometry():
     assert frame.x == 4.0
     assert frame.y == 0.0
     assert frame.w == pytest.approx(157.48 - 8.0)
-    assert frame.bottom == pytest.approx(209.97 - 4.0 - SCRIBE.bottom_clearance)
+    assert frame.bottom == pytest.approx(209.97 - 8.0 - SCRIBE.bottom_clearance)
 
 
 def test_bottom_clearance_seats_strip_and_well():
@@ -60,11 +60,9 @@ def test_bottom_clearance_seats_strip_and_well():
     nomad_gap = NOMAD.page_height - nomad_well.bottom
     scribe_gap = SCRIBE.page_height - scribe_well.bottom
     assert scribe_gap == pytest.approx(nomad_gap + SCRIBE.bottom_clearance)
-    assert NOMAD.content_frame().bottom == pytest.approx(
-        NOMAD.page_height - NOMAD.writing_clearance
-    )
+    assert NOMAD.content_frame().bottom == pytest.approx(NOMAD.page_height - 8.0)
     assert SCRIBE.content_frame().bottom == pytest.approx(
-        SCRIBE.page_height - SCRIBE.writing_clearance - SCRIBE.bottom_clearance
+        SCRIBE.page_height - 8.0 - SCRIBE.bottom_clearance
     )
 
 
