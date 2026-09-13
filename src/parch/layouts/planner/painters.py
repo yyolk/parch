@@ -147,17 +147,25 @@ def paint_nav(
     if not items:
         return
     ramp = _bound_ramp(plotter, ramp)
-    y = device.page_height - NAV_H
+    y = device.page_height - device.bottom_clearance - NAV_H
     slot = device.page_width / len(items)
     plotter.rect(
-        Rect(0.0, y, device.page_width, NAV_H), stroke=False, fill=True, fill_gray=WASH
+        Rect(0.0, y, device.page_width, NAV_H + device.bottom_clearance),
+        stroke=False,
+        fill=True,
+        fill_gray=WASH,
     )
     for i, (label, dest) in enumerate(items):
         x = i * slot
         hit = Rect(x, y, slot, NAV_H)
         on = label == active
         if on:
-            plotter.rect(hit, stroke=False, fill=True, fill_gray=INK)
+            plotter.rect(
+                Rect(x, y, slot, NAV_H + device.bottom_clearance),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
         chrome = TypeRef(step="chrome", emphasis="strong" if on else "regular")
         _ink_text(
             plotter,
@@ -182,18 +190,20 @@ def paint_cover(
 ) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
-    # Frame sits below the unmarked toolbar; do not shrink the Nomad page.
+    # Frame sits below the unmarked toolbar and above unmarked bottom OS chrome.
     ox, oy = outer, max(outer, top + 0.6)
+    o_bottom = max(outer, device.bottom_clearance + 0.6)
     plotter.rect(
-        Rect(ox, oy, device.page_width - 2 * ox, device.page_height - oy - outer),
+        Rect(ox, oy, device.page_width - 2 * ox, device.page_height - oy - o_bottom),
         stroke=True,
         fill=False,
         stroke_width=HAIR,
         stroke_gray=INK,
     )
     ix, iy = inner, max(inner, top + 1.8)
+    i_bottom = max(inner, device.bottom_clearance + 1.8)
     plotter.rect(
-        Rect(ix, iy, device.page_width - 2 * ix, device.page_height - iy - inner),
+        Rect(ix, iy, device.page_width - 2 * ix, device.page_height - iy - i_bottom),
         stroke=True,
         fill=False,
         stroke_width=HAIR,
@@ -1961,7 +1971,7 @@ def paint_daily(
 def well_rect(device: Device) -> Rect:
     """Writable well between header slab and bottom nav, inset by writing clearance."""
     top = device.content_top + HEADER_H + 2.2
-    bottom = device.page_height - NAV_H - 2.2
+    bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance
     return Rect(m, top, device.page_width - 2 * m, bottom - top)
 

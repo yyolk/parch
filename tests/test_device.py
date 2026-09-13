@@ -15,6 +15,7 @@ def test_nomad_geometry():
     assert NOMAD.toolbar_edge == "top"
     assert NOMAD.toolbar_clearance == 8.0
     assert NOMAD.writing_clearance == 4.0
+    assert NOMAD.bottom_clearance == 0.0
     assert NOMAD.root_body == ROOT_BODY == Pt(8.5)
 
 
@@ -26,7 +27,7 @@ def test_toolbar_is_not_the_well():
     frame = NOMAD.content_frame()
     assert frame.y == 8.0
     assert frame.x == 4.0
-    assert frame.bottom == pytest.approx(158.5 - 4.0)
+    assert frame.bottom == pytest.approx(158.5 - 8.0)
 
 
 def test_scribe_geometry():
@@ -40,13 +41,23 @@ def test_scribe_geometry():
     assert SCRIBE.toolbar_edge == "none"
     assert SCRIBE.toolbar_clearance == 0.0
     assert SCRIBE.writing_clearance == 4.0
+    assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
     assert SCRIBE.toolbar_slab() is None
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
     assert frame.y == 0.0
     assert frame.w == pytest.approx(157.48 - 8.0)
-    assert frame.bottom == pytest.approx(209.97 - 4.0)
+    assert frame.bottom == pytest.approx(209.97 - 8.0 - SCRIBE.bottom_clearance)
+
+
+def test_bottom_clearance_seats_content_frame():
+    assert NOMAD.bottom_clearance == 0.0
+    assert SCRIBE.bottom_clearance == 10.0
+    assert NOMAD.content_frame().bottom == pytest.approx(NOMAD.page_height - 8.0)
+    assert SCRIBE.content_frame().bottom == pytest.approx(
+        SCRIBE.page_height - 8.0 - SCRIBE.bottom_clearance
+    )
 
 
 def test_device_aliases():

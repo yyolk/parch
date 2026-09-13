@@ -9,6 +9,10 @@ from parch.geom import Rect
 
 type ToolbarEdge = Literal["top", "none"]
 
+# Keep in lockstep with parch.layouts.planner.painters.NAV_H.
+# Registry cannot import painters (cycle). The strip sits on bottom_clearance.
+_NAV_H = 8.0
+
 
 @dataclass(frozen=True, slots=True)
 class Device:
@@ -24,6 +28,7 @@ class Device:
     toolbar_edge: ToolbarEdge
     toolbar_clearance: float
     writing_clearance: float
+    bottom_clearance: float
     root_body: Pt = ROOT_BODY
 
     @property
@@ -43,14 +48,19 @@ class Device:
                 return None
 
     def content_frame(self) -> Rect:
-        """Chrome + wells: below the toolbar, inset by writing_clearance."""
+        """Chrome + wells: below toolbar, above nav strip + bottom OS chrome.
+
+        Side inset is writing_clearance. Bottom inset is the nav strip plus
+        bottom_clearance — not writing_clearance, which used to overlap the strip.
+        """
         top = self.content_top
         margin = self.writing_clearance
+        nav_band = _NAV_H + self.bottom_clearance
         return Rect(
             x=margin,
             y=top,
             w=self.page_width - 2 * margin,
-            h=self.page_height - top - margin,
+            h=self.page_height - top - nav_band,
         )
 
 
@@ -67,11 +77,12 @@ NOMAD = Device(
     toolbar_edge="top",
     toolbar_clearance=8.0,
     writing_clearance=4.0,
+    bottom_clearance=0.0,
     root_body=ROOT_BODY,
 )
 
 # 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar chrome; writing clearance 4 mm.
-# Same ROOT_BODY as Nomad — Scribe calibration knob is later, not this PR.
+# Same ROOT_BODY as Nomad — type calibration knob is later, not this PR.
 SCRIBE = Device(
     id="kindle-scribe",
     name="Kindle Scribe (1st gen)",
@@ -83,6 +94,7 @@ SCRIBE = Device(
     toolbar_edge="none",
     toolbar_clearance=0.0,
     writing_clearance=4.0,
+    bottom_clearance=10.0,  # measured Send-to-Kindle: hits below 10 mm miss; 10–20 mm solid.
     root_body=ROOT_BODY,
 )
 
