@@ -1,5 +1,8 @@
+import pytest
+
 from parch.books import YearPlanner
-from parch.devices import NOMAD
+from parch.devices import NAV_H, NOMAD, SCRIBE
+from parch.layouts.planner.layout import well_rect
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -28,3 +31,10 @@ def test_content_stays_below_toolbar():
             assert op[1].y >= TOOLBAR - 0.01
         if op[0] == "rect":
             assert op[1].y >= TOOLBAR - 0.01
+
+
+def test_well_sits_above_strip_and_clearance():
+    for device in (NOMAD, SCRIBE):
+        strip_y = device.page_height - device.bottom_clearance - NAV_H
+        assert well_rect(device).bottom + 2.2 == pytest.approx(strip_y)
+        assert device.content_frame().bottom == pytest.approx(strip_y)
