@@ -9,9 +9,7 @@ from parch.geom import Rect
 
 type ToolbarEdge = Literal["top", "none"]
 
-# Keep in lockstep with parch.layouts.planner.painters.NAV_H.
-# Registry cannot import painters (cycle). The strip sits on bottom_clearance.
-_NAV_H = 8.0
+NAV_H = 8.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +53,7 @@ class Device:
         """
         top = self.content_top
         margin = self.writing_clearance
-        nav_band = _NAV_H + self.bottom_clearance
+        nav_band = NAV_H + self.bottom_clearance
         return Rect(
             x=margin,
             y=top,
