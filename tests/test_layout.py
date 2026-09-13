@@ -85,7 +85,7 @@ def test_nav_wash_runs_through_bottom_clearance():
     active = next(
         op[1] for op in scribe.ops if op[0] == "rect" and op[3] and op[5] == INK
     )
-    assert active.h == pytest.approx(NAV_H + 10)
+    assert active.h == pytest.approx(NAV_H + SCRIBE.bottom_clearance)
     assert active.bottom == pytest.approx(SCRIBE.page_height)
 
 
@@ -105,7 +105,7 @@ def test_scribe_plot_seats_nav_above_clearance():
     spec = Spec(device="kindle-scribe", months=(1,), notes_pages=1)
     plotter = RecordingPlotter()
     YearPlanner().plot(spec, plotter)
-    nav_y = SCRIBE.page_height - 10 - NAV_H
+    nav_y = SCRIBE.page_height - SCRIBE.bottom_clearance - NAV_H
     strip_links = [
         op[1]
         for op in plotter.ops
@@ -127,6 +127,15 @@ def test_scribe_plot_seats_nav_above_clearance():
     for op in plotter.ops:
         if op[0] == "text" and op[1].y >= nav_y:
             assert op[1].h == pytest.approx(NAV_H)
+    for op in plotter.ops:
+        if op[0] == "rect" and op[3] and op[1].y >= nav_y - 0.01:
+            box = op[1]
+            if op[5] == WASH:
+                assert box.w == pytest.approx(SCRIBE.page_width)
+                assert box.bottom == pytest.approx(SCRIBE.page_height)
+            else:
+                assert op[5] == INK
+                assert box.bottom == pytest.approx(SCRIBE.page_height)
 
 
 def test_cover_frames_stop_above_bottom_clearance():
