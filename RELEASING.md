@@ -2,7 +2,7 @@
 
 Happy path:
 
-1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `alpha` / `beta` / `rc` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
+1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `rc` / `beta` / `alpha` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
 2. Merge the `bump/v…` PR when CI is green.
 3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
 
@@ -44,7 +44,7 @@ The Release tag is `v` plus `uv version --short` after the bump.
 
 ## Pre-release
 
-Same loop as stable. **Bump version** accepts the full `uv version --bump` set (`patch`, `minor`, `major`, `alpha`, `beta`, `rc`, `stable`, `post`, `dev`) — one bump per dispatch. **Cut release** sets GitHub **Set as a pre-release** when `packaging.version.Version(ver).is_prerelease` is true (`a` / `b` / `rc` / `.devN`; `.postN` is not). A published pre-release dispatches TestPyPI only. Final and `.postN` cuts dispatch TestPyPI + PyPI + Release PDFs.
+Same loop as stable. **Bump version** accepts the full `uv version --bump` set (`patch`, `minor`, `major`, `rc`, `beta`, `alpha`, `stable`, `post`, `dev`) — one bump per dispatch. **Cut release** sets GitHub **Set as a pre-release** when `packaging.version.Version(ver).is_prerelease` is true (`a` / `b` / `rc` / `.devN`; `.postN` is not). A published pre-release dispatches TestPyPI only. Final and `.postN` cuts dispatch TestPyPI + PyPI + Release PDFs.
 
 From `0.1.1`:
 
