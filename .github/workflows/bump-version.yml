@@ -93,7 +93,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Bump version to ${NEW_VER}." -m "Co-authored-by: Joseph Chiocchi <joe@yolk.cc>"
+          git commit -m "chore: bump version to ${NEW_VER}." -m "Co-authored-by: Joseph Chiocchi <joe@yolk.cc>"
 
           git push -u origin "HEAD:bump/v${NEW_VER}"
 
@@ -132,6 +132,6 @@ jobs:
           gh pr create \
             --base master \
             --head "bump/v${NEW_VER}" \
-            --title "Bump version to ${NEW_VER}" \
+            --title "chore: bump version to ${NEW_VER}" \
             --label "$label" \
             --body-file "$RUNNER_TEMP/pr-body.md"
