@@ -4,11 +4,11 @@ Happy path:
 
 1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `rc` / `beta` / `alpha` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
 2. Merge the `bump/v…` PR when CI is green.
-3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` normally.
+3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` (Publish; **Release PDFs** only when the Release is not a pre-release).
 
 A published GitHub Release is the ship step. Tag `vX.Y.Z` must match `[project].version` in `pyproject.toml` (no `v` in the file). Hatchling embeds that file version on the tagged commit; **Publish** fails the build if the tag and file differ.
 
-Every published Release goes to [TestPyPI](https://test.pypi.org/project/parch/). A stable Release (pre-release unchecked) also waits on the `pypi` environment, then uploads to [PyPI](https://pypi.org/project/parch/). The wheel and sdist attach to that Release. Draft Releases do not start **Publish** or **Release PDFs** until someone publishes the draft in the UI.
+Every published Release goes to [TestPyPI](https://test.pypi.org/project/parch/). A stable Release (pre-release unchecked) also waits on the `pypi` environment, then uploads to [PyPI](https://pypi.org/project/parch/). The wheel and sdist attach to that Release. Draft Releases do not start **Publish** or **Release PDFs** until someone publishes the draft in the UI. A published pre-release does not start **Release PDFs**.
 
 Do not `git push origin vX.Y.Z` to ship. Never retag.
 
@@ -16,7 +16,7 @@ Manual TestPyPI-only: **Actions → Publish → `testpypi`**.
 
 ## Release PDFs
 
-Published Releases also run **Release PDFs**, which presses each pressable device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not.
+A published Release with pre-release unchecked also runs **Release PDFs**, which presses each pressable device and attaches `parch-<version>-<device>.pdf` (e.g. `parch-0.x.y-supernote-nomad.pdf`). Separate from **Publish**: it does not block or gate PyPI. Specimens stay on Pages (`parch specimen` / CI Pages); these product PDFs do not. A pre-release publish does not start this workflow (`on: release` requires `prerelease == false`); **Actions → Release PDFs** still works.
 
 The matrix is `{device}` shards from `parch.services.release_pdfs` (`PRESSABLE_DEVICE_IDS` — Nomad-only; not `known_device_ids()`). Each shard presses the TOML mapped for that device (`supernote-nomad` → `examples/nomad.toml`). Kindle Scribe is in the registry and can be pressed via `examples/scribe.toml`; it is not a release-PDF shard yet.
 

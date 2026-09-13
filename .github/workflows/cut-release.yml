@@ -43,7 +43,6 @@ jobs:
           fi
 
           IS_PRERELEASE="$(VER="$VER" uv run --with packaging --no-project python -c 'import os; from packaging.version import Version; print(Version(os.environ["VER"]).is_prerelease)')"
-          IS_PRERELEASE="${IS_PRERELEASE%%$'\n'}"
           pre_args=()
           if [ "$IS_PRERELEASE" = "True" ]; then
             pre_args+=(--prerelease)
