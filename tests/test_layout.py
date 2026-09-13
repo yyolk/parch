@@ -6,7 +6,7 @@ from parch.devices import NOMAD, SCRIBE
 from parch.devices.registry import Device
 from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.layout import well_rect
-from parch.layouts.planner.painters import NAV_H, WASH, paint_cover, paint_nav
+from parch.layouts.planner.painters import INK, NAV_H, WASH, paint_cover, paint_nav
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
@@ -82,6 +82,11 @@ def test_nav_wash_runs_through_bottom_clearance():
     for hit in (op[1] for op in scribe.ops if op[0] == "link"):
         assert hit.h == pytest.approx(NAV_H)
         assert hit.bottom == pytest.approx(SCRIBE.page_height - SCRIBE.bottom_clearance)
+    active = next(
+        op[1] for op in scribe.ops if op[0] == "rect" and op[3] and op[5] == INK
+    )
+    assert active.h == pytest.approx(NAV_H + 10)
+    assert active.bottom == pytest.approx(SCRIBE.page_height)
 
 
 def test_well_sits_above_strip_and_clearance():

@@ -160,7 +160,12 @@ def paint_nav(
         hit = Rect(x, y, slot, NAV_H)
         on = label == active
         if on:
-            plotter.rect(hit, stroke=False, fill=True, fill_gray=INK)
+            plotter.rect(
+                Rect(x, y, slot, NAV_H + device.bottom_clearance),
+                stroke=False,
+                fill=True,
+                fill_gray=INK,
+            )
         chrome = TypeRef(step="chrome", emphasis="strong" if on else "regular")
         _ink_text(
             plotter,
