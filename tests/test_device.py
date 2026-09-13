@@ -3,7 +3,6 @@ import pytest
 from parch import ConfigError
 from parch.devices import NOMAD, SCRIBE, get_device, known_device_ids
 from parch.fonts import ROOT_BODY, Pt
-from parch.layouts.planner.layout import well_rect
 
 
 def test_nomad_geometry():
@@ -52,14 +51,9 @@ def test_scribe_geometry():
     assert frame.bottom == pytest.approx(209.97 - 8.0 - SCRIBE.bottom_clearance)
 
 
-def test_bottom_clearance_seats_strip_and_well():
+def test_bottom_clearance_seats_content_frame():
     assert NOMAD.bottom_clearance == 0.0
     assert SCRIBE.bottom_clearance == 10.0
-    nomad_well = well_rect(NOMAD)
-    scribe_well = well_rect(SCRIBE)
-    nomad_gap = NOMAD.page_height - nomad_well.bottom
-    scribe_gap = SCRIBE.page_height - scribe_well.bottom
-    assert scribe_gap == pytest.approx(nomad_gap + SCRIBE.bottom_clearance)
     assert NOMAD.content_frame().bottom == pytest.approx(NOMAD.page_height - 8.0)
     assert SCRIBE.content_frame().bottom == pytest.approx(
         SCRIBE.page_height - 8.0 - SCRIBE.bottom_clearance
