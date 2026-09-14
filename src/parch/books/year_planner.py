@@ -54,10 +54,12 @@ class YearPlanner:
                 built.extend(notes.pages_for(day))
         return built
 
-    def plot(self, spec: Spec, plotter: Plotter) -> None:
+    def plot(
+        self, spec: Spec, plotter: Plotter, pages: list[Page] | None = None
+    ) -> None:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
-        pages = self.pages(spec)
+        pages = self.pages(spec) if pages is None else pages
         for page in pages:
             plotter.reserve_dest(page.dest)
         for page in pages:

@@ -2,10 +2,12 @@
 
 import argparse
 import sys
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.pages import pages_factory
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.fonts import (
@@ -19,6 +21,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.sections.page import Page
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -51,6 +54,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    pages: str | Callable[[Spec], list[Page]] | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -70,8 +74,10 @@ def press(
     Invoke::
 
         press(spec, out, proof=True)
+        press(spec, out, pages="projects")
         parch proof examples/nomad.toml -o out.pdf
         parch press examples/nomad.toml --proof -o out.pdf
+        parch press examples/projects.toml --pages projects -o out/projects.pdf
 
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
@@ -83,7 +89,12 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    planner = YearPlanner(ramp=resolved)
+    if pages is None:
+        planner.plot(spec, plotter)
+    else:
+        factory = pages if callable(pages) else pages_factory(pages)
+        planner.plot(spec, plotter, pages=factory(spec))
     plotter.finish(output)
     return output
 
@@ -147,6 +158,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int, help="Overlay planner year.")
     parser.add_argument("--month", type=int, help="MVP month (1–12).")
     parser.add_argument(
+        "--pages",
+        metavar="FACTORY",
+        help="Pages factory (projects). Default: YearPlanner.pages.",
+    )
+    parser.add_argument(
         "--proof",
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
@@ -167,7 +183,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec, outputs[0], proof=proof_verb or args.proof, pages=args.pages
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

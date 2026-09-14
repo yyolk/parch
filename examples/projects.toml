@@ -1,0 +1,17 @@
+# Projects notebook — Cover + Projects via pages factory (Approach D).
+# Not a PRESSABLE / release-PDF shard. No Spec.book; factory is the press hook.
+# uv run parch press examples/projects.toml --pages projects -o out/projects-2026.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+
+[daily]
+notes_pages = 1
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
