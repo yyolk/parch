@@ -43,6 +43,8 @@ SAMPLE_STEMS = (
 
 # Duplex pad faces — pressed from EngineeringPadSection, not YearPlanner dests.
 ENGINEERING_STEMS = ("engineering-front", "engineering-back")
+# Single Gregg face — pressed from GreggPadSection, not YearPlanner dests.
+GREGG_STEMS = ("gregg",)
 
 PREVIEW_DPI = 96
 
@@ -230,7 +232,12 @@ def write_specimens(
         press(replace(spec, engineering_sheets=1), pad_pdf, proof=True)
         render_page_png(pad_pdf, 1, dest / "engineering-front.png")
         render_page_png(pad_pdf, 2, dest / "engineering-back.png")
-    write_device_index(dest, spec.device, stems=(*stems, *ENGINEERING_STEMS))
+        gregg_pdf = Path(tmp) / "gregg-pad.pdf"
+        press(replace(spec, gregg_pages=1), gregg_pdf, proof=True)
+        render_page_png(gregg_pdf, 1, dest / "gregg.png")
+    write_device_index(
+        dest, spec.device, stems=(*stems, *ENGINEERING_STEMS, *GREGG_STEMS)
+    )
     return dest
 
 

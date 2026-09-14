@@ -1,0 +1,8 @@
+# Kindle Scribe geometry proof for the Gregg pad — same S4 snap, larger frame.
+#   parch press examples/gregg-pad-scribe.toml -o out/gregg-pad-scribe.pdf
+year = 2026
+device = "kindle-scribe"
+title = "Gregg pad"
+
+[gregg]
+pages = 1

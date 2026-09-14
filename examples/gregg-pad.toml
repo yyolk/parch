@@ -1,0 +1,9 @@
+# Gregg stenographer pad (S4 draft). Single page, no header, no holes.
+# ⅓″ target pitch snaps to content_frame. PDF is the device page, not 6×9.
+#   parch press examples/gregg-pad.toml -o out/gregg-pad.pdf
+year = 2026
+device = "supernote-nomad"
+title = "Gregg pad"
+
+[gregg]
+pages = 1

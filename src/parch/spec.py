@@ -97,6 +97,7 @@ class Spec:
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
+    gregg_pages: int = 0  # single Gregg faces; 0 keeps year-planner press
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -139,6 +140,8 @@ class Spec:
             raise ConfigError("task_rows must be 4–8")
         if not 0 <= self.engineering_sheets <= 24:
             raise ConfigError("engineering_sheets must be 0–24")
+        if not 0 <= self.gregg_pages <= 24:
+            raise ConfigError("gregg_pages must be 0–24")
 
     @property
     def weekday_start(self) -> int:
@@ -303,6 +306,14 @@ class Spec:
             raise ConfigError(f"engineering sheet out of range: {sheet}")
         return _dest(t"engineering-{self.year:04d}-{sheet:02d}-{face}")
 
+    def dest_for_gregg_pad(self, page: int) -> str:
+        """1-based single-page dest, e.g. ``gregg-2026-01``."""
+        if self.gregg_pages < 1:
+            raise ConfigError("gregg_pages must be >= 1 to name a pad dest")
+        if not 1 <= page <= self.gregg_pages:
+            raise ConfigError(f"gregg page out of range: {page}")
+        return _dest(t"gregg-{self.year:04d}-{page:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -323,6 +334,8 @@ class Spec:
         tasks_table = tasks if isinstance(tasks, dict) else {}
         engineering = data.get("engineering")
         engineering_table = engineering if isinstance(engineering, dict) else {}
+        gregg = data.get("gregg")
+        gregg_table = gregg if isinstance(gregg, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -363,6 +376,7 @@ class Spec:
             engineering_sheets=int(
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
+            gregg_pages=int(gregg_table.get("pages", data.get("gregg_pages", 0))),
             type_overlay=_parse_typography(data),
         )
 

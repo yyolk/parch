@@ -10,6 +10,7 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     EngineeringPad,
+    GreggPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -2076,7 +2077,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back":
+        case "engineering_front" | "engineering_back" | "gregg":
             return ""
         case _:
             return "Year"
@@ -2231,3 +2232,48 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
             stroke_width=HAIR if major else RULE,
             stroke_gray=MUTED if major else RULE_C,
         )
+
+
+GREGG_PITCH_MM = 25.4 / 3  # hardcoded ⅓″ Gregg — not a Spec/TOML knob
+GREGG_CENTER_W = 0.35  # heavier than RULE; grayscale stand-in for the red spine
+
+
+def gregg_gaps(height_mm: float) -> int:
+    """How many ⅓″-ish gaps fill ``height_mm``. Snap nearest; at least one."""
+    return max(1, round(height_mm / GREGG_PITCH_MM))
+
+
+def gregg_pitch(frame: Rect) -> float:
+    """Even pitch that lands first and last rules on the frame edges."""
+    return frame.h / gregg_gaps(frame.h)
+
+
+def paint_gregg_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: GreggPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single Gregg face — ⅓″ horizontals snapped to content_frame, center at mid-x.
+
+    No header, no holes, no duplex. ``pad`` is the sheet index only.
+    """
+    _bound_ramp(plotter, ramp)
+    _ = pad
+    frame = device.content_frame()
+    n = gregg_gaps(frame.h)
+    pitch = frame.h / n
+    plotter.rect(frame, stroke=True, fill=False, stroke_width=RULE, stroke_gray=RULE_C)
+    for i in range(1, n):
+        y = frame.y + i * pitch
+        plotter.line(frame.x, y, frame.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+    mid = frame.x + frame.w / 2
+    plotter.line(
+        mid,
+        frame.y,
+        mid,
+        frame.bottom,
+        stroke_width=GREGG_CENTER_W,
+        stroke_gray=INK,
+    )

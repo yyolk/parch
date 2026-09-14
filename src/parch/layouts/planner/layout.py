@@ -6,6 +6,7 @@ from parch.components import (
     AnnualMonth,
     CoverTitle,
     EngineeringPad,
+    GreggPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -38,6 +39,7 @@ from parch.layouts.planner.painters import (
     paint_cover,
     paint_daily,
     paint_engineering_pad,
+    paint_gregg_pad,
     paint_habit_grid,
     paint_header,
     paint_meeting,
@@ -97,6 +99,8 @@ class PlannerLayout:
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
+            case "gregg":
+                paint_gregg_pad(plotter, device, _one(page, GreggPad), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,
