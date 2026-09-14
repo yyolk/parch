@@ -5,9 +5,16 @@ from parch.spec import Spec
 
 
 class CoverSection:
-    def __init__(self, spec: Spec, *, landing_dest: str | None = None) -> None:
+    def __init__(
+        self,
+        spec: Spec,
+        *,
+        landing_dest: str | None = None,
+        eyebrow: str = "Year Book",
+    ) -> None:
         self.spec = spec
         self.landing_dest = landing_dest
+        self.eyebrow = eyebrow
 
     def pages(self) -> list[Page]:
         spec = self.spec
@@ -26,6 +33,7 @@ class CoverSection:
                         device_name="SuperNote Nomad",
                         cta_label=f"{label}  >",
                         cta_dest=landing,
+                        eyebrow=self.eyebrow,
                     ),
                 ),
             )

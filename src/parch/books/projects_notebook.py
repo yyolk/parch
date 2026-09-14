@@ -23,7 +23,9 @@ class ProjectsNotebook:
 
     def pages(self, spec: Spec) -> list[Page]:
         built = [
-            *CoverSection(spec, landing_dest=spec.projects_index_dest).pages(),
+            *CoverSection(
+                spec, landing_dest=spec.projects_index_dest, eyebrow="Projects"
+            ).pages(),
         ]
         for page in ProjectsSection(spec).pages():
             built.append(replace(page, nav=_proj_nav(page)))

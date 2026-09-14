@@ -4,6 +4,7 @@ from pypdf import PdfReader
 
 from parch.books import ProjectsNotebook, YearPlanner, book_for
 from parch.components import CoverTitle, ProjectsBoard, ProjectsIndex
+from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.spec import Spec
 
@@ -18,6 +19,12 @@ def test_projects_notebook_is_cover_then_projects():
     cover = pages[0].components[0]
     assert isinstance(cover, CoverTitle)
     assert cover.cta_dest == spec.projects_index_dest
+    assert cover.eyebrow == "Projects"
+    plotter = RecordingPlotter()
+    ProjectsNotebook().plot(spec, plotter)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert cover.eyebrow in texts
+    assert "Year Book" not in texts
     assert pages[1].dest == spec.projects_index_dest
     assert isinstance(pages[1].components[0], ProjectsIndex)
     assert isinstance(pages[2].components[0], ProjectsBoard)
