@@ -26,7 +26,7 @@ def test_projects_notebook_is_cover_then_projects():
 
 
 def test_press_selects_projects_notebook_from_toml(tmp_path: Path):
-    spec = Spec.from_path(Path("examples/projects-notebook.toml"))
+    spec = Spec.from_path(Path("examples/projects.toml"))
     assert spec.book == "projects-notebook"
     assert book_for(spec.book) is ProjectsNotebook
     assert book_for("year-planner") is YearPlanner

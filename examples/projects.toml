@@ -1,0 +1,15 @@
+# Projects notebook — cover → projects index/dests (sibling book).
+#   parch press examples/projects.toml -o out/projects.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "projects-notebook"
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
