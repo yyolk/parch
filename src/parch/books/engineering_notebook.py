@@ -5,7 +5,7 @@ from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
-from parch.sections import CoverSection, EngineeringPadSection
+from parch.sections import CoverSection, EngineeringPadSection, Page
 from parch.spec import Spec
 
 
