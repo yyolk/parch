@@ -38,8 +38,8 @@ def test_press_year_pdf(tmp_path: Path):
     assert out.is_file() and out.stat().st_size > 0
 
     reader = PdfReader(out)
-    # cover + annual + index + 8 leaves + meeting index + 16 dests + 4 task indexes + 53 task dests + review index + 53 review dests + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes
-    assert len(reader.pages) == 950
+    # cover + annual + index + 8 leaves + meeting index + 16 dests + 4 task indexes + 53 task dests + review index + 53 review dests + 4 quarters + 12 months + 12 habits + 53 weeks + 365 days + 365 notes + engineering pad pair
+    assert len(reader.pages) == 952
 
     page = reader.pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(118.87), abs=0.6)
@@ -74,6 +74,8 @@ def test_press_year_pdf(tmp_path: Path):
     assert "2026-07-15" in dests
     assert "2026-12-31" in dests
     assert "2026-07-15-notes-1" in dests
+    assert "engineering-pad-2026-front" in dests
+    assert "engineering-pad-2026-back" in dests
     assert _link_count(reader) >= 365
 
 

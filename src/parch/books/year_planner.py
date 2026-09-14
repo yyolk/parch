@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → projects → meetings → tasks → review → quarters → months+habits → weeks → days → engineering pad pair."""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
@@ -11,6 +11,7 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    EngineeringPadSection,
     HabitSection,
     MeetingSection,
     MonthSection,
@@ -53,6 +54,7 @@ class YearPlanner:
                     continue
                 built.extend(daily.pages_for(day))
                 built.extend(notes.pages_for(day))
+        built.extend(EngineeringPadSection(spec).pages())
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

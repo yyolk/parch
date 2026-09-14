@@ -290,6 +290,14 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    def dest_for_engineering_pad(self, face: str) -> str:
+        """Duplex pair dests — ``engineering-pad-{year}-front`` / ``-back``."""
+        if face not in {"front", "back"}:
+            raise ConfigError(
+                f"engineering pad face must be front or back, not {face!r}"
+            )
+        return _dest(t"engineering-pad-{self.year:04d}-{face}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")

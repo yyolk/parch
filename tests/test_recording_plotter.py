@@ -4,6 +4,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -61,6 +62,8 @@ def _year_dests(*, notes_pages: int) -> list[str]:
             dests.append(day.isoformat())
             if notes_pages:
                 dests.append(f"{day.isoformat()}-notes-1")
+    dests.append(spec.dest_for_engineering_pad("front"))
+    dests.append(spec.dest_for_engineering_pad("back"))
     return dests
 
 
@@ -69,6 +72,7 @@ def test_components_do_not_draw():
         AnnualGrid,
         AnnualMonth,
         CoverTitle,
+        EngineeringPad,
         HabitGrid,
         MeetingAgenda,
         MeetingIndex,

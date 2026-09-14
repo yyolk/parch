@@ -61,6 +61,8 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_review(date(2026, 1, 1)) == "review-2026-W01"
     assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
+    assert spec.dest_for_engineering_pad("front") == "engineering-pad-2026-front"
+    assert spec.dest_for_engineering_pad("back") == "engineering-pad-2026-back"
 
 
 def test_habit_columns_from_toml_keys():

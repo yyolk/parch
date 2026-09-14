@@ -8,6 +8,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -1975,6 +1976,115 @@ def well_rect(device: Device) -> Rect:
     bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance
     return Rect(m, top, device.page_width - 2 * m, bottom - top)
+
+
+PAD_MINOR_PER_MAJOR = 5
+PAD_MINOR_PITCH = 5.0
+PAD_MINOR_W = RULE
+PAD_MAJOR_W = HAIR
+PAD_MINOR_GRAY = RULE_C
+PAD_MAJOR_GRAY = MUTED
+
+
+def engineering_pad_well(device: Device, face: str) -> Rect:
+    """Pad writing area — writing clearance on every side. No hole margin, no nav.
+
+    Front sits under the header slab. Back sits under the unmarked toolbar only.
+    """
+    margin = device.writing_clearance
+    bottom = device.page_height - max(device.bottom_clearance, margin)
+    match face:
+        case "front":
+            top = device.content_top + HEADER_H + 2.2
+        case "back":
+            top = device.content_top + margin
+        case _:
+            raise ValueError(f"unknown engineering pad face {face!r}")
+    return Rect(margin, top, device.page_width - 2 * margin, bottom - top)
+
+
+def engineering_pad_grid(box: Rect) -> tuple[Rect, int, int, float]:
+    """Centered 5×5 major/minor lattice that fits ``box``.
+
+    Returns ``(grid, majors_x, majors_y, pitch_mm)``. Pitch is locked at
+    ``PAD_MINOR_PITCH``; major lines fall every ``PAD_MINOR_PER_MAJOR``.
+    """
+    pitch = PAD_MINOR_PITCH
+    step = pitch * PAD_MINOR_PER_MAJOR
+    majors_x = max(1, int(box.w / step))
+    majors_y = max(1, int(box.h / step))
+    width = majors_x * step
+    height = majors_y * step
+    return (
+        Rect(
+            box.x + (box.w - width) / 2,
+            box.y + (box.h - height) / 2,
+            width,
+            height,
+        ),
+        majors_x,
+        majors_y,
+        pitch,
+    )
+
+
+def paint_engineering_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: EngineeringPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """One painter, two faces — header + blank well, or 5×5 grid with no header."""
+    ramp = _bound_ramp(plotter, ramp)
+    match pad.face:
+        case "front":
+            paint_header(
+                plotter,
+                device,
+                pad.title,
+                str(pad.year),
+                ramp=ramp,
+                chip="GRID",
+                chip_dest=pad.other_dest or None,
+            )
+            well = engineering_pad_well(device, "front")
+            plotter.rect(
+                well, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT
+            )
+        case "back":
+            _paint_engineering_grid(plotter, engineering_pad_well(device, "back"))
+        case _:
+            raise ValueError(f"unknown engineering pad face {pad.face!r}")
+
+
+def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
+    """5×5 engineering lattice — minor RULE_C, major MUTED. Grayscale only."""
+    grid, majors_x, majors_y, pitch = engineering_pad_grid(box)
+    nx = majors_x * PAD_MINOR_PER_MAJOR
+    ny = majors_y * PAD_MINOR_PER_MAJOR
+    for i in range(nx + 1):
+        x = grid.x + i * pitch
+        major = i % PAD_MINOR_PER_MAJOR == 0
+        plotter.line(
+            x,
+            grid.y,
+            x,
+            grid.bottom,
+            stroke_width=PAD_MAJOR_W if major else PAD_MINOR_W,
+            stroke_gray=PAD_MAJOR_GRAY if major else PAD_MINOR_GRAY,
+        )
+    for j in range(ny + 1):
+        y = grid.y + j * pitch
+        major = j % PAD_MINOR_PER_MAJOR == 0
+        plotter.line(
+            grid.x,
+            y,
+            grid.right,
+            y,
+            stroke_width=PAD_MAJOR_W if major else PAD_MINOR_W,
+            stroke_gray=PAD_MAJOR_GRAY if major else PAD_MINOR_GRAY,
+        )
 
 
 def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
