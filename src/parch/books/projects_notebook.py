@@ -1,5 +1,6 @@
 """Projects notebook — cover → projects index/dests (sibling of YearPlanner)."""
 
+from collections.abc import Callable
 from dataclasses import replace
 
 from parch.devices import get_device
@@ -34,13 +35,21 @@ class ProjectsNotebook:
             built.append(replace(page, nav=_proj_nav(page)))
         return built
 
-    def plot(self, spec: Spec, plotter: Plotter) -> None:
+    def plot(
+        self,
+        spec: Spec,
+        plotter: Plotter,
+        on_progress: Callable[[int, int, str], None] | None = None,
+    ) -> None:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
+        n = len(pages)
         for page in pages:
             plotter.reserve_dest(page.dest)
-        for page in pages:
+        for i, page in enumerate(pages, start=1):
             plotter.begin_page()
             plotter.add_dest(page.dest)
             layout.paint(page, plotter, device)
+            if on_progress is not None:
+                on_progress(i, n, page.kind)

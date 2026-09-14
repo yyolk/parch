@@ -19,6 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import ProgressReport, resolve_progress_file
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -51,6 +52,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    progress_file: str | Path | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -83,7 +85,8 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    report = ProgressReport(resolve_progress_file(progress_file))
+    book_for(spec.book)(ramp=resolved).plot(spec, plotter, on_progress=report)
     plotter.finish(output)
     return output
 
@@ -151,6 +154,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
+    parser.add_argument(
+        "--progress-file",
+        metavar="PATH",
+        default=None,
+        help="Append JSONL ticks (i/n/kind). Also PARCH_PROGRESS_FILE.",
+    )
     # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
     # the historical on-screen path; it selects ProofProfile. `parch specimen`
     # writes a static PNG catalog (not a product PDF).
@@ -167,7 +176,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec,
+            outputs[0],
+            proof=proof_verb or args.proof,
+            progress_file=args.progress_file,
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())
