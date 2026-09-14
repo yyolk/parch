@@ -13,6 +13,8 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _BOOKS = frozenset({"year-planner", "projects-notebook"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_PAD_KEYS = frozenset({"pages", "grid_pitch_mm", "major_every", "header"})
+_PAD_FACES = frozenset({"front", "back"})
 
 type TomlTable = dict[str, object]
 
@@ -52,6 +54,28 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
         if key in table:
             return int(table[key])
     return 10
+
+
+def _parse_pad(data: TomlTable) -> tuple[int, float, int, bool]:
+    """``[pad]`` knobs that change pixels. Missing table is sealed defaults."""
+    raw = data.get("pad")
+    if raw is None:
+        return 0, 5.0, 5, True
+    if not isinstance(raw, dict):
+        raise ConfigError("pad must be a TOML table")
+    unknown = set(raw) - _PAD_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown pad key {key!r}")
+    header = raw.get("header", True)
+    if not isinstance(header, bool):
+        raise ConfigError("pad.header must be true or false")
+    return (
+        int(raw.get("pages", 0)),
+        float(raw.get("grid_pitch_mm", 5.0)),
+        int(raw.get("major_every", 5)),
+        header,
+    )
 
 
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
@@ -96,6 +120,10 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    pad_pages: int = 0
+    pad_grid_pitch_mm: float = 5.0
+    pad_major_every: int = 5
+    pad_header: bool = True
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -136,6 +164,12 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if not 0 <= self.pad_pages <= 8:
+            raise ConfigError("pad.pages must be 0–8")
+        if not 4.0 <= self.pad_grid_pitch_mm <= 8.0:
+            raise ConfigError("pad.grid_pitch_mm must be 4–8")
+        if not 4 <= self.pad_major_every <= 10:
+            raise ConfigError("pad.major_every must be 4–10")
 
     @property
     def weekday_start(self) -> int:
@@ -290,6 +324,14 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    def dest_for_pad(self, sheet: int, face: str) -> str:
+        """1-based duplex dest, e.g. ``pad-2026-01-front`` / ``pad-2026-01-back``."""
+        if not 1 <= sheet <= self.pad_pages:
+            raise ConfigError(f"pad sheet out of range: {sheet}")
+        if face not in _PAD_FACES:
+            raise ConfigError(f"pad face must be front or back, not {face!r}")
+        return _dest(t"pad-{self.year:04d}-{sheet:02d}-{face}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -308,6 +350,7 @@ class Spec:
         meetings_table = meetings if isinstance(meetings, dict) else {}
         tasks = data.get("tasks")
         tasks_table = tasks if isinstance(tasks, dict) else {}
+        pages, pitch, major, header = _parse_pad(data)
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -345,6 +388,10 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            pad_pages=pages,
+            pad_grid_pitch_mm=pitch,
+            pad_major_every=major,
+            pad_header=header,
             type_overlay=_parse_typography(data),
         )
 

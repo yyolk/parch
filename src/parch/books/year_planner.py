@@ -14,6 +14,7 @@ from parch.sections import (
     HabitSection,
     MeetingSection,
     MonthSection,
+    PadSection,
     Page,
     ProjectsSection,
     QuarterSection,
@@ -36,6 +37,7 @@ class YearPlanner:
         habits = HabitSection(spec)
         built = [
             *CoverSection(spec).pages(),
+            *PadSection(spec).pages(),
             *AnnualSection(spec).pages(),
             *ProjectsSection(spec).pages(),
             *MeetingSection(spec).pages(),

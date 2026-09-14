@@ -13,6 +13,7 @@ from parch.components import (
     MeetingIndex,
     MonthGrid,
     Notes,
+    PadFace,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -251,6 +252,105 @@ def paint_cover(
         small_caps=True,
         align="center",
     )
+
+
+PAD_HEADER_H = 14.0
+PAD_FIELDS = ("Subject", "Date", "Sheet", "Notes")
+PAD_MAJOR_W = HAIR
+PAD_MINOR_W = RULE
+PAD_MAJOR_G = MUTED
+PAD_MINOR_G = RULE_C
+
+
+def pad_rect(device: Device) -> Rect:
+    """Pad frame: below toolbar, writing-clearance sides, no hole-margin, no nav."""
+    top = device.content_top + 0.6
+    side = device.writing_clearance
+    bottom = max(device.writing_clearance, device.bottom_clearance) + 0.6
+    return Rect(
+        side, top, device.page_width - 2 * side, device.page_height - top - bottom
+    )
+
+
+def paint_pad(
+    plotter: Plotter, device: Device, pad: PadFace, *, ramp: TypeRamp
+) -> None:
+    """Duplex pad: front is header+blank well; back is 5×5 major/minor grid."""
+    plotter.ramp = ramp
+    box = pad_rect(device)
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    if pad.face == "front":
+        _paint_pad_front(plotter, box, pad)
+        return
+    _paint_pad_grid(plotter, box, pad)
+
+
+def _paint_pad_front(plotter: Plotter, box: Rect, pad: PadFace) -> None:
+    if not pad.header:
+        return
+    header, _well = box.split_top(PAD_HEADER_H)
+    plotter.line(
+        header.x,
+        header.bottom,
+        header.right,
+        header.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    fields = columns(header, len(PAD_FIELDS), gap=0)
+    for i, (field, label) in enumerate(zip(fields, PAD_FIELDS, strict=True)):
+        if i:
+            plotter.line(
+                field.x,
+                header.y,
+                field.x,
+                header.bottom,
+                stroke_width=RULE,
+                stroke_gray=RULE_C,
+            )
+        _ink_text(
+            plotter,
+            Rect(field.x + 1.2, field.y + 1.0, field.w - 2.4, 4.2),
+            label,
+            TypeRef(step="caption"),
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+
+
+def _paint_pad_grid(plotter: Plotter, box: Rect, pad: PadFace) -> None:
+    """Interior 5×5 major/minor rules. Outer rect is the border (already inked)."""
+    pitch = pad.grid_pitch_mm
+    every = pad.major_every
+    i = 1
+    x = box.x + pitch
+    while x < box.right - 0.01:
+        major = i % every == 0
+        plotter.line(
+            x,
+            box.y,
+            x,
+            box.bottom,
+            stroke_width=PAD_MAJOR_W if major else PAD_MINOR_W,
+            stroke_gray=PAD_MAJOR_G if major else PAD_MINOR_G,
+        )
+        x += pitch
+        i += 1
+    i = 1
+    y = box.y + pitch
+    while y < box.bottom - 0.01:
+        major = i % every == 0
+        plotter.line(
+            box.x,
+            y,
+            box.right,
+            y,
+            stroke_width=PAD_MAJOR_W if major else PAD_MINOR_W,
+            stroke_gray=PAD_MAJOR_G if major else PAD_MINOR_G,
+        )
+        y += pitch
+        i += 1
 
 
 def paint_annual(

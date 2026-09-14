@@ -61,6 +61,13 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_review(date(2026, 1, 1)) == "review-2026-W01"
     assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
+    assert spec.pad_pages == 0
+    assert spec.pad_grid_pitch_mm == 5.0
+    assert spec.pad_major_every == 5
+    assert spec.pad_header is True
+    named = Spec(pad_pages=1)
+    assert named.dest_for_pad(1, "front") == "pad-2026-01-front"
+    assert named.dest_for_pad(1, "back") == "pad-2026-01-back"
 
 
 def test_habit_columns_from_toml_keys():
@@ -80,9 +87,42 @@ def test_habit_columns_from_toml_keys():
     assert triple.dest_for_projects_index_of(9) == "projects-index-2026-02"
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
+    tuned = Spec.from_mapping(
+        {
+            "pad": {
+                "pages": 2,
+                "grid_pitch_mm": 6.0,
+                "major_every": 4,
+                "header": False,
+            }
+        }
+    )
+    assert tuned.pad_pages == 2
+    assert tuned.pad_grid_pitch_mm == 6.0
+    assert tuned.pad_major_every == 4
+    assert tuned.pad_header is False
+    assert tuned.dest_for_pad(2, "back") == "pad-2026-02-back"
     assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
+    with pytest.raises(ConfigError, match="pad.pages"):
+        Spec.from_mapping({"pad": {"pages": 9}})
+    with pytest.raises(ConfigError, match="grid_pitch"):
+        Spec.from_mapping({"pad": {"grid_pitch_mm": 3.5}})
+    with pytest.raises(ConfigError, match="major_every"):
+        Spec.from_mapping({"pad": {"major_every": 3}})
+    with pytest.raises(ConfigError, match="unknown pad key"):
+        Spec.from_mapping({"pad": {"hole_margin": 12}})
+    with pytest.raises(ConfigError, match="pad.header"):
+        Spec.from_mapping({"pad": {"header": 1}})
+    with pytest.raises(ConfigError, match="pad must be a TOML table"):
+        Spec.from_mapping({"pad": "grid"})
+    example = Spec.from_path(Path("examples/pad.toml"))
+    assert example.pad_pages == 1
+    assert example.pad_grid_pitch_mm == 5.0
+    assert example.pad_major_every == 5
+    assert example.pad_header is True
+    assert example.months == (1,)
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"

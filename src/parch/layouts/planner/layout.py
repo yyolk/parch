@@ -10,6 +10,7 @@ from parch.components import (
     MeetingIndex,
     MonthGrid,
     Notes,
+    PadFace,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -33,6 +34,7 @@ from parch.layouts.planner.painters import (
     checklist_content_height,
     daily_left_seats,
     daily_right_seats,
+    pad_rect,
     paint_annual,
     paint_cover,
     paint_daily,
@@ -43,6 +45,7 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_nav,
     paint_notes,
+    paint_pad,
     paint_project,
     paint_projects_index,
     paint_quarter,
@@ -69,12 +72,13 @@ __all__ = [
     "checklist_content_height",
     "daily_left_seats",
     "daily_right_seats",
+    "pad_rect",
     "well_rect",
 ]
 
 
 class PlannerLayout:
-    """Seat components below the unmarked toolbar. Cover skips slab/nav.
+    """Seat components below the unmarked toolbar. Cover and pad skip slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
@@ -91,6 +95,8 @@ class PlannerLayout:
         match page.kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+            case "pad_front" | "pad_back":
+                paint_pad(plotter, device, _one(page, PadFace), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,

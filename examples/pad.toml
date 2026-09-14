@@ -1,0 +1,18 @@
+# Exploratory E3 — Spec-tuned computation pad knobs (duplex front/back).
+#   uv run parch proof examples/pad.toml -o out/pad-proof.pdf
+# Front = header fields + blank well; back = 5×5 grid. No holes / no hole-margin.
+# Not an Engineering notebook book — year-planner + [pad] knobs.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Year planner"
+
+[daily]
+notes_pages = 0
+
+[pad]
+pages = 1
+grid_pitch_mm = 5.0
+major_every = 5
+header = true
