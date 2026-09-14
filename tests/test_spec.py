@@ -12,6 +12,7 @@ def test_dest_names_from_tstrings():
     spec = Spec()
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
+    assert spec.book == "year-planner"
     assert spec.months == tuple(range(1, 13))
     assert spec.month == 1
     assert spec.presses(3)
@@ -79,8 +80,12 @@ def test_habit_columns_from_toml_keys():
     assert triple.dest_for_projects_index_of(9) == "projects-index-2026-02"
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
+    assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
+    with pytest.raises(ConfigError, match="book must be"):
+        Spec.from_mapping({"book": "meetings-notebook"})
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
+    assert nomad.book == "year-planner"
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
     assert nomad.project_tickets == 8

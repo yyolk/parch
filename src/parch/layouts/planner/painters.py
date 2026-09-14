@@ -214,7 +214,7 @@ def paint_cover(
     _ink_text(
         plotter,
         brow,
-        "Year Book",
+        cover.eyebrow,
         TypeRef(step="eyebrow"),
         gray=MUTED,
         small_caps=True,
@@ -240,10 +240,12 @@ def paint_cover(
         device.page_width - 2 * device.writing_clearance,
         6.5,
     )
+    dims = f"{device.page_width:g} × {device.page_height:g} mm"
+    specs_line = f"{cover.specs_lead}  ·  {dims}" if cover.specs_lead else dims
     _ink_text(
         plotter,
         specs,
-        f"monday weeks  ·  {device.page_width:g} × {device.page_height:g} mm",
+        specs_line,
         TypeRef(step="body"),
         gray=MUTED,
         small_caps=True,
