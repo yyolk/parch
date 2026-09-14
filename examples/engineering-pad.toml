@@ -1,0 +1,9 @@
+# Duplex engineering / computation pad demo — front write-in, back 5×5 grid.
+# Not an engineering notebook. Two PDF pages only.
+#   uv run parch proof examples/engineering-pad.toml -o out/engineering-pad.pdf
+#   uv run parch specimen supernote-nomad --book engineering-pad -w out
+# Swap device = "kindle-scribe" for the other slate.
+book = "engineering-pad"
+year = 2026
+device = "supernote-nomad"
+title = "Engineering"

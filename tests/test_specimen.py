@@ -93,6 +93,7 @@ def test_specimen_cli_help(capsys):
     out = capsys.readouterr().out
     assert "specimen" in out
     assert "--workdir" in out
+    assert "--book" in out
 
 
 def test_specimen_rejects_unknown_device_before_press(
@@ -153,3 +154,60 @@ def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
     assert out == tmp_path / "specimens" / "supernote-nomad"
     root = catalog_dest(tmp_path) / "index.html"
     assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+
+
+def test_engineering_specimen_spec_is_duplex_pad():
+    from parch.specimen import ENGINEERING_STEMS, engineering_specimen_spec
+
+    spec = engineering_specimen_spec("nomad")
+    assert spec.book == "engineering-pad"
+    assert spec.device == "supernote-nomad"
+    assert ENGINEERING_STEMS == ("engineering-front", "engineering-back")
+
+
+def test_build_engineering_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
+    from parch.specimen import build_engineering_catalog
+
+    seen: dict[str, object] = {}
+
+    def fake_write(dest: Path, device_id: str, **_kwargs):
+        seen["dest"] = dest
+        seen["device_id"] = device_id
+        dest.mkdir(parents=True)
+        (dest / "index.html").write_text("x", encoding="utf-8")
+        return dest
+
+    monkeypatch.setattr("parch.specimen.write_engineering_specimens", fake_write)
+    out = build_engineering_catalog(tmp_path, "nomad")
+    assert seen["device_id"] == "supernote-nomad"
+    assert out == tmp_path / "specimens" / "engineering-pad" / "supernote-nomad"
+    root = catalog_dest(tmp_path) / "engineering-pad" / "index.html"
+    assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+
+
+def test_specimen_cli_engineering_pad_book(tmp_path: Path, monkeypatch, capsys):
+    seen: list[str] = []
+
+    def fake_build(workdir, device_id):
+        seen.append(f"{workdir}:{device_id}")
+        dest = catalog_dest(workdir) / "engineering-pad" / "supernote-nomad"
+        dest.mkdir(parents=True)
+        return dest
+
+    monkeypatch.setattr("parch.specimen.build_engineering_catalog", fake_build)
+    assert (
+        main(["specimen", "nomad", "--book", "engineering-pad", "-w", str(tmp_path)])
+        == 0
+    )
+    assert seen == [f"{tmp_path}:nomad"]
+    assert "engineering-pad" in capsys.readouterr().out
+
+
+def test_specimen_cli_rejects_unknown_book(tmp_path: Path, capsys):
+    assert (
+        main(
+            ["specimen", "nomad", "--book", "engineering-notebook", "-w", str(tmp_path)]
+        )
+        == 2
+    )
+    assert "engineering-pad" in capsys.readouterr().err

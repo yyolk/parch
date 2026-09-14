@@ -61,6 +61,8 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_review(date(2026, 1, 1)) == "review-2026-W01"
     assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
+    assert spec.engineering_front_dest == "engineering-2026-front"
+    assert spec.engineering_back_dest == "engineering-2026-back"
 
 
 def test_habit_columns_from_toml_keys():
@@ -81,8 +83,11 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
+    assert Spec.from_mapping({"book": "engineering-pad"}).book == "engineering-pad"
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
+    with pytest.raises(ConfigError, match="book must be"):
+        Spec.from_mapping({"book": "engineering-notebook"})
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"

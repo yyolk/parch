@@ -21,6 +21,11 @@ from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.spec import Spec
 
+ENGINEERING_STEMS = (
+    "engineering-front",
+    "engineering-back",
+)
+
 SAMPLE_STEMS = (
     "cover",
     "annual",
@@ -51,6 +56,12 @@ def catalog_dest(workdir: str | Path) -> Path:
 def specimens_dest(workdir: str | Path, device_id: str) -> Path:
     """Per-device dir: ``<workdir>/specimens/<device-id>/``."""
     return catalog_dest(workdir) / device_id
+
+
+def engineering_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Two-page duplex pad — not the year-planner catalog."""
+    device = get_device(device_id)
+    return Spec(device=device.id, year=year, book="engineering-pad")
 
 
 def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
@@ -204,6 +215,27 @@ def render_page_png(
     return dest
 
 
+def write_engineering_specimens(
+    dest: Path,
+    device_id: str,
+    *,
+    year: int = 2026,
+) -> Path:
+    """Press the duplex pad and write front/back PNGs + device index."""
+    spec = engineering_specimen_spec(device_id, year=year)
+    dest.mkdir(parents=True, exist_ok=True)
+    from parch.press import press
+
+    with tempfile.TemporaryDirectory() as tmp:
+        pdf = Path(tmp) / "engineering-pad.pdf"
+        press(spec, pdf, proof=True)
+        stems = ENGINEERING_STEMS
+        for page, stem in enumerate(stems, start=1):
+            render_page_png(pdf, page, dest / f"{stem}.png")
+    write_device_index(dest, spec.device, stems=stems)
+    return dest
+
+
 def write_specimens(
     dest: Path,
     device_id: str,
@@ -235,6 +267,15 @@ def build_device_catalog(workdir: str | Path, device_id: str) -> Path:
     return dest
 
 
+def build_engineering_catalog(workdir: str | Path, device_id: str) -> Path:
+    """CLI entry: ``parch specimen DEVICE --book engineering-pad -w workdir``."""
+    canonical = get_device(device_id).id
+    dest = catalog_dest(workdir) / "engineering-pad" / canonical
+    write_engineering_specimens(dest, canonical)
+    write_catalog_index(catalog_dest(workdir) / "engineering-pad", (canonical,))
+    return dest
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch specimen",
@@ -252,9 +293,21 @@ def main(argv: list[str] | None = None) -> int:
         default="./out",
         help="Catalog root parent (default ./out → ./out/specimens/<device>/).",
     )
+    parser.add_argument(
+        "--book",
+        default="year-planner",
+        help="year-planner catalog (default) or engineering-pad (duplex demo).",
+    )
     args = parser.parse_args(argv)
     try:
-        dest = build_device_catalog(args.workdir, args.device)
+        if args.book == "engineering-pad":
+            dest = build_engineering_catalog(args.workdir, args.device)
+        elif args.book == "year-planner":
+            dest = build_device_catalog(args.workdir, args.device)
+        else:
+            raise ConfigError(
+                f"specimen book must be year-planner or engineering-pad, not {args.book!r}"
+            )
     except ConfigError as exc:
         print(f"parch: {exc}", file=sys.stderr)
         return 2

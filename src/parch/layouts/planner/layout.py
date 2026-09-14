@@ -5,6 +5,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -24,6 +25,7 @@ from parch.components import (
 from parch.devices.registry import Device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.geom import Rect
+from parch.layouts.planner.engineering import paint_engineering_pad
 from parch.layouts.planner.painters import (
     COL_GAP,
     DAILY_COL_WEIGHTS,
@@ -91,6 +93,13 @@ class PlannerLayout:
         match page.kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+            case "engineering_front" | "engineering_back":
+                paint_engineering_pad(
+                    plotter,
+                    device.content_frame(),
+                    _one(page, EngineeringPad),
+                    ramp=self.ramp,
+                )
             case _:
                 paint_header(
                     plotter,

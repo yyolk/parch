@@ -11,7 +11,7 @@ from parch.calendar import iso_monday, month_touching_weeks, quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
-_BOOKS = frozenset({"year-planner", "projects-notebook"})
+_BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-pad"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
@@ -105,7 +105,7 @@ class Spec:
             )
         if self.book not in _BOOKS:
             raise ConfigError(
-                f"book must be year-planner or projects-notebook, not {self.book!r}"
+                f"book must be year-planner, projects-notebook, or engineering-pad, not {self.book!r}"
             )
         if not self.months:
             raise ConfigError("months must not be empty")
@@ -283,6 +283,16 @@ class Spec:
         """Weekly Review dest, e.g. ``review-2026-W01`` — not the planner week page."""
         iso = day.isocalendar()
         return _dest(t"review-{iso.year:04d}-W{iso.week:02d}")
+
+    @property
+    def engineering_front_dest(self) -> str:
+        """Front face of the duplex computation sheet."""
+        return _dest(t"engineering-{self.year:04d}-front")
+
+    @property
+    def engineering_back_dest(self) -> str:
+        """Back face of the duplex computation sheet."""
+        return _dest(t"engineering-{self.year:04d}-back")
 
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""

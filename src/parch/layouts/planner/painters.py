@@ -2034,6 +2034,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
+        case "engineering_front" | "engineering_back":
+            pass
     order = (
         "Year",
         "Quar",
