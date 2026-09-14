@@ -1,5 +1,6 @@
 """Projects notebook — cover → projects index/dests (sibling of YearPlanner)."""
 
+import logging
 from dataclasses import replace
 
 from parch.devices import get_device
@@ -9,6 +10,8 @@ from parch.plotter.protocol import Plotter
 from parch.sections import CoverSection, Page, ProjectsSection
 from parch.sections.page import NavItem
 from parch.spec import Spec
+
+_log = logging.getLogger("parch.progress")
 
 
 def _proj_nav(page: Page) -> tuple[NavItem, ...]:
@@ -38,9 +41,21 @@ class ProjectsNotebook:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
+        n = len(pages)
         for page in pages:
             plotter.reserve_dest(page.dest)
-        for page in pages:
+        for i, page in enumerate(pages, start=1):
             plotter.begin_page()
             plotter.add_dest(page.dest)
             layout.paint(page, plotter, device)
+            _log.info(
+                "%s/%s %s",
+                i,
+                n,
+                page.kind,
+                extra={
+                    "progress_current": i,
+                    "progress_total": n,
+                    "progress_kind": page.kind,
+                },
+            )

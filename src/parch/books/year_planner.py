@@ -1,5 +1,7 @@
 """Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
 
+import logging
+
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
@@ -21,6 +23,8 @@ from parch.sections import (
     WeeklySection,
 )
 from parch.spec import Spec
+
+_log = logging.getLogger("parch.progress")
 
 
 class YearPlanner:
@@ -58,9 +62,21 @@ class YearPlanner:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
+        n = len(pages)
         for page in pages:
             plotter.reserve_dest(page.dest)
-        for page in pages:
+        for i, page in enumerate(pages, start=1):
             plotter.begin_page()
             plotter.add_dest(page.dest)
             layout.paint(page, plotter, device)
+            _log.info(
+                "%s/%s %s",
+                i,
+                n,
+                page.kind,
+                extra={
+                    "progress_current": i,
+                    "progress_total": n,
+                    "progress_kind": page.kind,
+                },
+            )

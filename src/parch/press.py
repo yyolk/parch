@@ -19,6 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import install_progress_bar, remove_progress_bar
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -164,16 +165,20 @@ def main(argv: list[str] | None = None) -> int:
         proof_verb = raw[0] == "proof"
         raw = raw[1:]
     args = parser.parse_args(raw)
+    handler = install_progress_bar()
     try:
-        spec = _load_spec(args.spec, year=args.year, month=args.month)
-        outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
-        for extra in outputs[1:]:
-            extra.parent.mkdir(parents=True, exist_ok=True)
-            extra.write_bytes(first.read_bytes())
-    except ConfigError as exc:
-        print(f"parch: {exc}", file=sys.stderr)
-        return 2
-    for path in outputs:
-        print(path)
-    return 0
+        try:
+            spec = _load_spec(args.spec, year=args.year, month=args.month)
+            outputs = _outputs(args, args.spec)
+            first = press(spec, outputs[0], proof=proof_verb or args.proof)
+            for extra in outputs[1:]:
+                extra.parent.mkdir(parents=True, exist_ok=True)
+                extra.write_bytes(first.read_bytes())
+        except ConfigError as exc:
+            print(f"parch: {exc}", file=sys.stderr)
+            return 2
+        for path in outputs:
+            print(path)
+        return 0
+    finally:
+        remove_progress_bar(handler)
