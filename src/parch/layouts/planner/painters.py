@@ -2087,6 +2087,7 @@ ENG_HEADER_RIGHT = 0.34
 ENG_LABEL_W = 14.0
 ENG_SHORT_LABEL_W = 9.0
 ENG_WRITE_LABEL_H = 3.8
+ENG_WRITE_LIFT = 1.55
 ENG_DIVIDER_INSET = 0.85
 ENG_MAJOR_EVERY = 5
 ENG_PITCH_MM = 5.08  # 1/5 inch — classic computation-pad square
@@ -2202,14 +2203,14 @@ def _paint_engineering_header(
             _paint_engineering_sheet(plotter, right, pad.sheet, pad.sheets)
         else:
             _paint_engineering_writein(plotter, right, right_label, ENG_SHORT_LABEL_W)
-        plotter.line(
-            header.x,
-            band.bottom,
-            header.right,
-            band.bottom,
-            stroke_width=RULE,
-            stroke_gray=RULE_C,
-        )
+    plotter.line(
+        header.x,
+        header.bottom,
+        header.right,
+        header.bottom,
+        stroke_width=HAIR,
+        stroke_gray=INK,
+    )
 
 
 def _paint_engineering_writein(
@@ -2217,7 +2218,7 @@ def _paint_engineering_writein(
 ) -> None:
     """Muted small-caps label + write-in rule — same craft as meeting head blanks."""
     tag, write = box.split_left(min(label_w, box.w * 0.45))
-    rule_y = box.bottom
+    rule_y = box.bottom - ENG_WRITE_LIFT
     _ink_text(
         plotter,
         Rect(tag.x + 0.8, rule_y - ENG_WRITE_LABEL_H, tag.w - 0.6, ENG_WRITE_LABEL_H),
@@ -2243,7 +2244,7 @@ def _paint_engineering_sheet(
     """``Sheet n of N`` — printed index, not a write-in, so duplex sheets stay ordered."""
     inner = box.inset(0.6, 0.15)
     tag, rest = inner.split_left(ENG_SHORT_LABEL_W)
-    rule_y = box.bottom
+    rule_y = box.bottom - ENG_WRITE_LIFT
     _ink_text(
         plotter,
         Rect(tag.x + 0.2, rule_y - ENG_WRITE_LABEL_H, tag.w, ENG_WRITE_LABEL_H),
