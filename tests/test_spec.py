@@ -10,6 +10,7 @@ from parch.spec import Spec
 
 def test_dest_names_from_tstrings():
     spec = Spec()
+    assert spec.book == "year_planner"
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
     assert spec.months == tuple(range(1, 13))
@@ -80,6 +81,7 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     nomad = Spec.from_path(Path("examples/nomad.toml"))
+    assert nomad.book == "year_planner"
     assert nomad.device == "supernote-nomad"
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
@@ -90,6 +92,16 @@ def test_habit_columns_from_toml_keys():
     assert nomad.meeting_count == 16
     assert nomad.task_rows == 6
     assert nomad.type_overlay == TypeOverlay()
+
+
+def test_book_from_toml():
+    projects = Spec.from_path(Path("examples/projects.toml"))
+    assert projects.book == "projects"
+    assert projects.title == "Projects"
+    assert projects.project_index_pages == 1
+    assert Spec.from_mapping({"book": "projects"}).book == "projects"
+    with pytest.raises(ConfigError, match="book must be year_planner or projects"):
+        Spec(book="annual")
 
 
 def test_typography_overlay_from_toml():
