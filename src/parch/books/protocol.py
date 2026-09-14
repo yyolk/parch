@@ -1,0 +1,52 @@
+"""Book protocol at press/dispatch; ``plot_pages`` walks a page ledger."""
+
+from collections.abc import Callable, Iterable
+from typing import Protocol, runtime_checkable
+
+from parch.devices import get_device
+from parch.fonts.ramp import TypeRamp
+from parch.layouts.planner import PlannerLayout
+from parch.plotter.protocol import Plotter
+from parch.progress import render_progress
+from parch.sections.page import Page
+from parch.spec import Spec
+
+
+@runtime_checkable
+class Book(Protocol):
+    """Press/dispatch surface: ``pages`` + ``plot``.
+
+    ``plot_pages`` is not typed as ``Book`` — it takes a zero-arg pages
+    factory (or any duck that is ``Callable[[], Iterable[Page]]``).
+    """
+
+    def pages(self, spec: Spec) -> list[Page]:
+        """Build the book's pages in press order."""
+
+    def plot(self, spec: Spec, plotter: Plotter) -> None:
+        """Reserve dests, then paint each page."""
+
+
+def plot_pages(
+    pages: Callable[[], Iterable[Page]],
+    plotter: Plotter,
+    *,
+    ramp: TypeRamp,
+    device: str,
+) -> None:
+    """Reserve dests, then begin/add/paint. Progress ticks match the books.
+
+    ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
+    or any zero-arg callable that yields ``Page``. Not a ``Book``.
+    """
+    ledger = list(pages())
+    slate = get_device(device)
+    layout = PlannerLayout(ramp=ramp)
+    n = len(ledger)
+    for page in ledger:
+        plotter.reserve_dest(page.dest)
+    for i, page in enumerate(ledger, start=1):
+        plotter.begin_page()
+        plotter.add_dest(page.dest)
+        layout.paint(page, plotter, slate)
+        render_progress(i, n, page.kind)
