@@ -25,7 +25,7 @@ from parch.layouts.planner.painters import (
 )
 from parch.plotter import RecordingPlotter
 from parch.press import press
-from parch.sections.engineering import EngineeringPadSection
+from parch.sections.engineering import EngineeringPadSection, duplex_sheet
 from parch.spec import Spec
 
 
@@ -64,6 +64,17 @@ def test_section_emits_duplex_pair_per_sheet():
 
 def test_section_empty_when_no_sheets():
     assert EngineeringPadSection(Spec()).pages() == []
+
+
+def test_duplex_sheet_is_front_then_back():
+    spec = Spec(engineering_sheets=2)
+    front, back = duplex_sheet(spec, 2)
+    assert [front.kind, back.kind] == ["engineering_front", "engineering_back"]
+    assert [front.dest, back.dest] == [
+        "engineering-2026-02-front",
+        "engineering-2026-02-back",
+    ]
+    assert EngineeringPadSection(spec).pages_for(2) == [front, back]
 
 
 def test_spec_engineering_dests_and_toml():

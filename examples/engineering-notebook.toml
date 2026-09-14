@@ -1,0 +1,11 @@
+# Engineering notebook — cover then duplex sheets (N5 pages factory).
+#   parch press examples/engineering-notebook.toml -o out/engineering-notebook.pdf
+# Swap device = "kindle-scribe" for the other slate.
+# Pad-only (no cover): examples/engineering-pad.toml
+book = "engineering-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Engineering notebook"
+
+[engineering]
+sheets = 2

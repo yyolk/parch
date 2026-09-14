@@ -64,6 +64,8 @@ def test_spec_steno_dests_and_toml():
         spec.dest_for_steno_pad(2)
     with pytest.raises(ConfigError, match="cannot both be set"):
         Spec(steno_sheets=1, engineering_sheets=1)
+    with pytest.raises(ConfigError, match="engineering-notebook cannot set steno"):
+        Spec(book="engineering-notebook", steno_sheets=1)
 
 
 def test_ruling_is_gregg_pitch_with_equal_columns():

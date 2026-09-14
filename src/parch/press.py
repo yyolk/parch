@@ -82,9 +82,10 @@ def press(
 
     When ``spec.steno_sheets > 0``, press the single-face Gregg pad
     section only (no steno-notebook book yet). When
-    ``spec.engineering_sheets > 0``, press the duplex pad section only
-    (no engineering-notebook book yet). Year-planner specs keep both
-    counts at 0.
+    ``spec.book == "engineering-notebook"``, press Cover then duplex
+    sheets via ``EngineeringNotebook``. Other specs with
+    ``spec.engineering_sheets > 0`` still press the duplex pad section
+    only (no cover). Year-planner specs keep both counts at 0.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -95,7 +96,7 @@ def press(
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
     if spec.steno_sheets > 0:
         _plot_steno_pad(spec, plotter, resolved)
-    elif spec.engineering_sheets > 0:
+    elif spec.engineering_sheets > 0 and spec.book != "engineering-notebook":
         _plot_engineering_pad(spec, plotter, resolved)
     else:
         book_for(spec.book)(ramp=resolved).plot(spec, plotter)

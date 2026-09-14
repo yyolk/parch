@@ -8,6 +8,7 @@ import pytest
 from parch import ConfigError
 from parch.press import main
 from parch.specimen import (
+    ENGINEERING_NOTEBOOK_STEMS,
     ENGINEERING_STEMS,
     SAMPLE_STEMS,
     catalog_dest,
@@ -135,6 +136,9 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     for stem in SAMPLE_STEMS:
         assert (dest / f"{stem}.png").is_file()
     for stem in ENGINEERING_STEMS:
+        assert (dest / f"{stem}.png").stat().st_size > 0
+        assert f'src="{stem}.png"' in html
+    for stem in ENGINEERING_NOTEBOOK_STEMS:
         assert (dest / f"{stem}.png").stat().st_size > 0
         assert f'src="{stem}.png"' in html
 
