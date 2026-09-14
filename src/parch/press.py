@@ -22,6 +22,8 @@ from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.page import Page
+from parch.sections.steno import StenoSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -79,9 +81,10 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.engineering_sheets > 0``, press the duplex pad section
-    only (no engineering-notebook book yet). Year-planner specs keep
-    ``engineering_sheets = 0``.
+    When ``spec.steno_pages > 0``, press the single-page Gregg section
+    only (no steno-notebook book). When ``spec.engineering_sheets > 0``,
+    press the duplex pad section only (no engineering-notebook book).
+    Year-planner specs keep both counts at 0.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -90,19 +93,24 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.engineering_sheets > 0:
-        _plot_engineering_pad(spec, plotter, resolved)
+    if spec.steno_pages > 0:
+        _plot_section_pages(spec, plotter, resolved, StenoSection(spec).pages())
+    elif spec.engineering_sheets > 0:
+        _plot_section_pages(
+            spec, plotter, resolved, EngineeringPadSection(spec).pages()
+        )
     else:
         book_for(spec.book)(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
 
 
-def _plot_engineering_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
-    """Plot ``EngineeringPadSection`` faces. Progress ticks match the books."""
+def _plot_section_pages(
+    spec: Spec, plotter: Plotter, ramp: TypeRamp, pages: list[Page]
+) -> None:
+    """Plot a pad section's pages. Progress ticks match the books."""
     device = get_device(spec.device)
     layout = PlannerLayout(ramp=ramp)
-    pages = EngineeringPadSection(spec).pages()
     n = len(pages)
     for page in pages:
         plotter.reserve_dest(page.dest)

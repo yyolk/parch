@@ -10,6 +10,7 @@ from parch.sections.page import NavItem, Page, PageKind
 from parch.sections.projects import ProjectsSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.review import ReviewSection
+from parch.sections.steno import StenoSection
 from parch.sections.tasks import TasksSection
 from parch.sections.weekly import WeeklySection
 
@@ -28,6 +29,7 @@ __all__ = [
     "PageKind",
     "QuarterSection",
     "ReviewSection",
+    "StenoSection",
     "TasksSection",
     "WeeklySection",
 ]

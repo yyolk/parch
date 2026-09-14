@@ -2078,6 +2078,8 @@ def strip_active(kind: str) -> str:
             return "Rev"
         case "engineering_front" | "engineering_back":
             return ""
+        case "steno":
+            return ""
         case _:
             return "Year"
 
@@ -2129,6 +2131,27 @@ def engineering_grid_mesh(box: Rect) -> EngineeringGridMesh:
     ox = box.x + (box.w - gw) / 2
     oy = box.y + (box.h - gh) / 2
     return EngineeringGridMesh(Rect(ox, oy, gw, gh), pitch, nx, ny)
+
+
+def paint_steno(plotter: Plotter, bands: tuple[Rect, ...], center: Rect) -> None:
+    """Ink Gregg seats only — no geom, no header, no holes. Center is stronger."""
+    for band in bands:
+        plotter.line(
+            band.x,
+            band.bottom,
+            band.right,
+            band.bottom,
+            stroke_width=RULE,
+            stroke_gray=MUTED,
+        )
+    plotter.line(
+        center.x,
+        center.y,
+        center.x,
+        center.bottom,
+        stroke_width=HAIR,
+        stroke_gray=INK,
+    )
 
 
 def paint_engineering_pad(

@@ -50,6 +50,7 @@ from parch.layouts.planner.painters import (
     paint_quarter,
     paint_review,
     paint_review_index,
+    paint_steno,
     paint_task,
     paint_tasks_index,
     paint_toolbar,
@@ -60,6 +61,10 @@ from parch.layouts.planner.painters import (
 )
 from parch.plotter.protocol import Plotter
 from parch.sections.page import Page
+from parch.tracks import columns, rows
+
+# Classic Gregg 6×9 ruling intent: ≈⅓″ writing bands, fitted to the frame.
+GREGG_PITCH_MM = 25.4 / 3
 
 __all__ = [
     "COL_GAP",
@@ -67,12 +72,32 @@ __all__ = [
     "DAILY_MINI_GAP",
     "DAILY_MINI_H",
     "DAILY_PRIO_GAP",
+    "GREGG_PITCH_MM",
     "PlannerLayout",
     "checklist_content_height",
     "daily_left_seats",
     "daily_right_seats",
+    "steno_row_count",
+    "steno_seats",
     "well_rect",
 ]
+
+
+def steno_row_count(frame: Rect) -> int:
+    """How many ≈⅓″ writing bands fill ``frame``."""
+    return max(1, round(frame.h / GREGG_PITCH_MM))
+
+
+def steno_seats(frame: Rect) -> tuple[tuple[Rect, ...], Rect]:
+    """Horizontal writing seats + center spine. Two equal columns; no hole margin.
+
+    Geometry only — ``rows`` / ``columns`` over ``content_frame``. The painter
+    inks ``band.bottom`` and the zero-width center seat.
+    """
+    bands = rows(frame, steno_row_count(frame))
+    left, _right = columns(frame, 2)
+    center = Rect(left.right, frame.y, 0.0, frame.h)
+    return bands, center
 
 
 class PlannerLayout:
@@ -97,6 +122,9 @@ class PlannerLayout:
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
+            case "steno":
+                bands, center = steno_seats(device.content_frame())
+                paint_steno(plotter, bands, center)
             case _:
                 paint_header(
                     plotter,
