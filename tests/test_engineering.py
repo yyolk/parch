@@ -109,16 +109,21 @@ def test_front_seats_use_symmetric_content_frame():
     assert well.bottom == pytest.approx(frame.bottom)
     assert well.x == pytest.approx(frame.x)
     cells = engineering_header_cells(header)
-    assert len(cells) == 4
-    assert [round(cell.w, 6) for cell in cells] == [round(header.w / 4, 6)] * 4
+    assert len(cells) == 3
+    subject, dated, sheet = cells
+    assert subject.w == pytest.approx(header.w * 0.50)
+    assert dated.w == pytest.approx(sheet.w)
+    assert dated.w == pytest.approx(header.w * 0.25)
+    assert subject.w > dated.w
 
 
-def test_front_paints_four_boxed_cells_without_grid():
+def test_front_paints_three_boxed_cells_without_grid():
     pad = EngineeringPad(face="front", sheet=1, sheets=1)
     ink = RecordingPlotter()
     paint_engineering_pad(ink, NOMAD, pad)
     texts = _texts(ink)
     assert texts == list(ENG_HEADER_FIELDS)
+    assert "Notes" not in texts
     assert "Title" not in texts
     assert "No." not in texts
     assert "Name" not in texts

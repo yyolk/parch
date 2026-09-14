@@ -2083,7 +2083,9 @@ def strip_active(kind: str) -> str:
 
 
 ENG_HEADER_H = 14.0
-ENG_HEADER_FIELDS = ("Subject", "Date", "Sheet", "Notes")
+ENG_HEADER_FIELDS = ("Subject", "Date", "Sheet")
+# NOTES column dropped: its width goes to SUBJECT. DATE and SHEET stay compact twins.
+ENG_HEADER_WEIGHTS = (0.50, 0.25, 0.25)
 ENG_LABEL_INSET_X = 1.2
 ENG_LABEL_INSET_Y = 1.0
 ENG_LABEL_H = 4.2
@@ -2107,8 +2109,8 @@ def engineering_front_seats(frame: Rect) -> tuple[Rect, Rect]:
 
 
 def engineering_header_cells(header: Rect) -> tuple[Rect, ...]:
-    """SUBJECT | DATE | SHEET | NOTES — equal boxed cells, no write-in rules."""
-    return columns(header, len(ENG_HEADER_FIELDS), gap=0)
+    """SUBJECT | DATE | SHEET — wide subject, two compact twins. No write-in rules."""
+    return columns(header, len(ENG_HEADER_FIELDS), gap=0, weights=ENG_HEADER_WEIGHTS)
 
 
 def engineering_grid_mesh(box: Rect) -> EngineeringGridMesh:
@@ -2136,7 +2138,7 @@ def paint_engineering_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Duplex computation pad — front four-cell header; back 5×5 grid. No holes."""
+    """Duplex computation pad — front three-cell header; back 5×5 grid. No holes."""
     ramp = _bound_ramp(plotter, ramp)
     frame = device.content_frame()
     match pad.face:
