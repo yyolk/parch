@@ -11,3 +11,4 @@ class CoverTitle:
     cta_label: str
     cta_dest: str
     eyebrow: str = "Year Book"
+    specs_lead: str = "monday weeks"

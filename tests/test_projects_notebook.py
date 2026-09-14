@@ -24,7 +24,9 @@ def test_projects_notebook_is_cover_then_projects():
     ProjectsNotebook().plot(spec, plotter)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert cover.eyebrow in texts
+    assert cover.specs_lead == ""
     assert "Year Book" not in texts
+    assert not any("monday weeks" in str(t).lower() for t in texts)
     assert pages[1].dest == spec.projects_index_dest
     assert isinstance(pages[1].components[0], ProjectsIndex)
     assert isinstance(pages[2].components[0], ProjectsBoard)

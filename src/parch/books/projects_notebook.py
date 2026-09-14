@@ -24,7 +24,10 @@ class ProjectsNotebook:
     def pages(self, spec: Spec) -> list[Page]:
         built = [
             *CoverSection(
-                spec, landing_dest=spec.projects_index_dest, eyebrow="Projects"
+                spec,
+                landing_dest=spec.projects_index_dest,
+                eyebrow="Projects",
+                specs_lead="",
             ).pages(),
         ]
         for page in ProjectsSection(spec).pages():
