@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.fonts import (
@@ -83,9 +84,19 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    _book(spec)(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def _book(spec: Spec) -> type[YearPlanner] | type[ProjectsNotebook]:
+    match spec.book:
+        case "year_planner":
+            return YearPlanner
+        case "projects":
+            return ProjectsNotebook
+        case unexpected:
+            raise ConfigError(f"unknown book {unexpected!r}")
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:

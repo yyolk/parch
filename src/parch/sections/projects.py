@@ -1,7 +1,7 @@
 from parch.calendar import month_touching_weeks
 from parch.components import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import NavItem, Page
 from parch.spec import Spec
 
 
@@ -9,11 +9,19 @@ class ProjectsSection:
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
+    def _nav(
+        self, *, week_dest: str, proj_dest: str | None = None
+    ) -> tuple[NavItem, ...]:
+        spec = self.spec
+        if spec.book == "projects":
+            return (NavItem("Proj", proj_dest or spec.projects_index_dest),)
+        return planner_nav(spec, week_dest=week_dest, proj_dest=proj_dest)
+
     def pages(self) -> list[Page]:
         spec = self.spec
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         week_dest = spec.dest_for_week(first[0])
-        nav = planner_nav(spec, week_dest=week_dest)
+        nav = self._nav(week_dest=week_dest)
         tickets = tuple(
             ProjectTicket(number=slot, dest=spec.dest_for_project(slot))
             for slot in range(1, spec.project_count + 1)
@@ -44,8 +52,7 @@ class ProjectsSection:
                 dest=ticket.dest,
                 kind="project",
                 title="Projects",
-                nav=planner_nav(
-                    spec,
+                nav=self._nav(
                     week_dest=week_dest,
                     proj_dest=spec.dest_for_projects_index_of(ticket.number),
                 ),

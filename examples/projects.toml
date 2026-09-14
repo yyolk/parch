@@ -1,0 +1,13 @@
+# Projects notebook — cover → projects index/dests only.
+year = 2026
+device = "supernote-nomad"
+book = "projects"
+week_start = "monday"
+months = [1]
+title = "Projects"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1

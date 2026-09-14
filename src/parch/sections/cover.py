@@ -11,19 +11,22 @@ class CoverSection:
     def pages(self) -> list[Page]:
         spec = self.spec
         label = f"{month_name(spec.month)} {spec.year}"
+        landing = (
+            spec.projects_index_dest if spec.book == "projects" else spec.year_dest
+        )
         return [
             Page(
                 dest=spec.cover_dest,
                 kind="cover",
                 title=str(spec.year),
-                nav=(NavItem(str(spec.year), spec.year_dest),),
+                nav=(NavItem(str(spec.year), landing),),
                 components=(
                     CoverTitle(
                         year=spec.year,
                         subtitle=spec.title,
                         device_name="SuperNote Nomad",
                         cta_label=f"{label}  >",
-                        cta_dest=spec.year_dest,
+                        cta_dest=landing,
                     ),
                 ),
             )
