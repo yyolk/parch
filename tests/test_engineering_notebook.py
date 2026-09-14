@@ -3,7 +3,6 @@ from pathlib import Path
 from pypdf import PdfReader
 
 from parch.books import (
-    Book,
     EngineeringNotebook,
     ProjectsNotebook,
     YearPlanner,
@@ -68,14 +67,6 @@ def test_press_selects_engineering_notebook_from_toml(tmp_path: Path):
     assert spec.year_dest not in dests
     assert spec.projects_index_dest not in dests
     assert len(PdfReader(out).pages) == 1 + 2 * spec.engineering_sheets
-
-
-def test_books_match_book_protocol_at_dispatch():
-    assert isinstance(YearPlanner(), Book)
-    assert isinstance(ProjectsNotebook(), Book)
-    assert isinstance(EngineeringNotebook(), Book)
-    assert not isinstance(EngineeringPadSection(Spec(engineering_sheets=1)), Book)
-    assert book_for("engineering-notebook") is EngineeringNotebook
 
 
 def test_plot_pages_walks_a_section_callable_without_book():

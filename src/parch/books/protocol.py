@@ -1,7 +1,7 @@
 """Book protocol at press/dispatch; ``plot_pages`` walks a page ledger."""
 
 from collections.abc import Callable, Iterable
-from typing import Protocol, runtime_checkable
+from typing import Protocol
 
 from parch.devices import get_device
 from parch.fonts.ramp import TypeRamp
@@ -12,10 +12,10 @@ from parch.sections.page import Page
 from parch.spec import Spec
 
 
-@runtime_checkable
 class Book(Protocol):
     """Press/dispatch surface: ``pages`` + ``plot``.
 
+    Structural only — press does not ``isinstance``-check it.
     ``plot_pages`` is not typed as ``Book`` — it takes a zero-arg pages
     factory (or any duck that is ``Callable[[], Iterable[Page]]``).
     """
