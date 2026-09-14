@@ -22,6 +22,8 @@ type PageKind = Literal[
     "weekly",
     "daily",
     "daily_notes",
+    "engineering_front",
+    "engineering_back",
 ]
 
 

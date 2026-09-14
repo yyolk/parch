@@ -96,6 +96,7 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -136,6 +137,8 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if not 0 <= self.engineering_sheets <= 24:
+            raise ConfigError("engineering_sheets must be 0–24")
 
     @property
     def weekday_start(self) -> int:
@@ -290,6 +293,16 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    def dest_for_engineering_pad(self, sheet: int, face: str) -> str:
+        """1-based duplex dest, e.g. ``engineering-2026-01-front``."""
+        if face not in {"front", "back"}:
+            raise ConfigError(f"engineering face must be front or back, not {face!r}")
+        if self.engineering_sheets < 1:
+            raise ConfigError("engineering_sheets must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= self.engineering_sheets:
+            raise ConfigError(f"engineering sheet out of range: {sheet}")
+        return _dest(t"engineering-{self.year:04d}-{sheet:02d}-{face}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -308,6 +321,8 @@ class Spec:
         meetings_table = meetings if isinstance(meetings, dict) else {}
         tasks = data.get("tasks")
         tasks_table = tasks if isinstance(tasks, dict) else {}
+        engineering = data.get("engineering")
+        engineering_table = engineering if isinstance(engineering, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -345,6 +360,9 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            engineering_sheets=int(
+                engineering_table.get("sheets", data.get("engineering_sheets", 0))
+            ),
             type_overlay=_parse_typography(data),
         )
 

@@ -1,5 +1,6 @@
 import inspect
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -96,6 +97,20 @@ def test_year_planner_plot_ticks_each_page(monkeypatch):
     assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))
     assert all(tick[1] == len(pages) for tick in ticks)
     assert [tick[2] for tick in ticks] == [page.kind for page in pages]
+
+
+def test_engineering_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.press.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(engineering_sheets=1)
+    press(spec, tmp_path / "pad.pdf", plotter=RecordingPlotter())
+    assert ticks == [
+        (1, 2, "engineering_front"),
+        (2, 2, "engineering_back"),
+    ]
 
 
 def test_projects_notebook_plot_ticks_each_page(monkeypatch):
