@@ -1,5 +1,6 @@
 """Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
 
+from parch.books.outline import apply_outline
 from parch.books.protocol import plot_pages
 from parch.calendar import months_touching_weeks
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
@@ -54,9 +55,11 @@ class YearPlanner:
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
+        pages = self.pages(spec)
         plot_pages(
-            lambda: self.pages(spec),
+            lambda: pages,
             plotter,
             ramp=self.ramp,
             device=spec.device,
         )
+        apply_outline(spec, plotter, pages)

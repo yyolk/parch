@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import override
 
 from fpdf import FPDF
+from fpdf.outline import OutlineSection
 
+from parch import ConfigError
 from parch.devices.registry import Device
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
@@ -198,6 +200,15 @@ class Fpdf2Plotter(Plotter):
     def link(self, box: Rect, dest: str) -> None:
         target = dest if dest.startswith("#") else f"#{dest}"
         self.pdf.link(box.x, box.y, box.w, box.h, target)
+
+    @override
+    def outline(self, title: str, dest: str, *, level: int = 0) -> None:
+        if level < 0:
+            raise ValueError("outline level must be >= 0")
+        target = self.pdf.named_destinations.get(dest)
+        if target is None:
+            raise ConfigError(f"outline dest {dest!r} was never reserved")
+        self.pdf._outline.append(OutlineSection(title, level, target.page_number, target))
 
     @override
     def finish(self, path: Path) -> None:

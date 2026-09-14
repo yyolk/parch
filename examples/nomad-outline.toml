@@ -1,0 +1,12 @@
+# Year-planner reader outline — Annual → Q → Month → Week (habits under month).
+# Cover skipped; no printed TOC. months=[1] keeps the PDF small.
+#   parch press examples/nomad-outline.toml -o out/nomad-outline.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Year planner"
+outline = true
+
+[daily]
+notes_pages = 0

@@ -1,5 +1,6 @@
 """Engineering notebook — cover → duplex eng-pad fronts/backs (sibling of YearPlanner)."""
 
+from parch.books.outline import apply_outline
 from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.plotter.protocol import Plotter
@@ -24,9 +25,11 @@ class EngineeringNotebook:
         ]
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
+        pages = self.pages(spec)
         plot_pages(
-            lambda: self.pages(spec),
+            lambda: pages,
             plotter,
             ramp=self.ramp,
             device=spec.device,
         )
+        apply_outline(spec, plotter, pages)

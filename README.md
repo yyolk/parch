@@ -28,6 +28,8 @@ Device → Component (data only) → Section (build Page) → Layout (chrome + s
 | --- | --- | --- | --- | --- |
 | SuperNote Nomad | `supernote-nomad` | 118.87 × 158.5 mm | 1404×1872 @ 300 PPI | top toolbar 8 mm reserved; writing clearance 4 mm; `root_body` 8.5pt |
 
+Optional reader outline (bookmarks, no printed TOC): set `outline = true`. Year-planner is Annual→Quarter→Month→Week (habits under month); notebooks are flat section hubs; cover is skipped.
+
 ## Tests
 
 ```shell
