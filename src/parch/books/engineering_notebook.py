@@ -1,5 +1,6 @@
 """Engineering notebook — cover → duplex eng-pad fronts/backs (sibling of YearPlanner)."""
 
+from parch.books.outline import OutlineEntry, outline_for
 from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.plotter.protocol import Plotter
@@ -23,10 +24,14 @@ class EngineeringNotebook:
             *EngineeringPadSection(spec).pages(),
         ]
 
+    def outline_entries(self, spec: Spec) -> list[OutlineEntry]:
+        return [OutlineEntry("Engineering", spec.dest_for_engineering_pad(1, "front"))]
+
     def plot(self, spec: Spec, plotter: Plotter) -> None:
         plot_pages(
             lambda: self.pages(spec),
             plotter,
             ramp=self.ramp,
             device=spec.device,
+            outline=outline_for(self, spec),
         )

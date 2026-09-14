@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 
+from parch.books.outline import OutlineEntry, outline_for
 from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.plotter.protocol import Plotter
@@ -33,10 +34,14 @@ class ProjectsNotebook:
             built.append(replace(page, nav=_proj_nav(page)))
         return built
 
+    def outline_entries(self, spec: Spec) -> list[OutlineEntry]:
+        return [OutlineEntry("Projects", spec.projects_index_dest)]
+
     def plot(self, spec: Spec, plotter: Plotter) -> None:
         plot_pages(
             lambda: self.pages(spec),
             plotter,
             ramp=self.ramp,
             device=spec.device,
+            outline=outline_for(self, spec),
         )

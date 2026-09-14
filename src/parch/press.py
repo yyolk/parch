@@ -98,6 +98,7 @@ def press(
             plotter,
             ramp=resolved,
             device=spec.device,
+            outline=spec.outline or (),
         )
     elif spec.book == "year-planner" and spec.engineering_sheets > 0:
         plot_pages(
@@ -105,6 +106,7 @@ def press(
             plotter,
             ramp=resolved,
             device=spec.device,
+            outline=spec.outline or (),
         )
     else:
         book: Book = book_for(spec.book)(ramp=resolved)

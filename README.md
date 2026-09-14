@@ -5,7 +5,7 @@
 [![CI](https://github.com/yyolk/parch/actions/workflows/ci.yml/badge.svg)](https://github.com/yyolk/parch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
+parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only. Optional `outline = true` adds PDF reader bookmarks at each section start (no printed TOC page).
 
 ## Install / Press
 

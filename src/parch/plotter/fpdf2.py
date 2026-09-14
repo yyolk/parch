@@ -113,6 +113,10 @@ class Fpdf2Plotter(Plotter):
         self.pdf.add_link(name=name)
 
     @override
+    def add_outline(self, title: str, dest: str, *, level: int = 0) -> None:
+        self.pdf.start_section(title, level=level)
+
+    @override
     def rect(
         self,
         box: Rect,

@@ -1,10 +1,12 @@
 # Projects notebook — cover → projects index/dests (sibling book).
 #   parch press examples/projects.toml -o out/projects.pdf
 # Swap device = "kindle-scribe" for the other slate.
+# outline = true adds PDF reader bookmarks (no printed TOC page).
 book = "projects-notebook"
 year = 2026
 device = "supernote-nomad"
 title = "Projects"
+outline = true
 
 [projects]
 cards = 3
