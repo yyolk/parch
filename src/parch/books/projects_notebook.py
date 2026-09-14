@@ -2,9 +2,8 @@
 
 from dataclasses import replace
 
-from parch.devices import get_device
+from parch.books.plot import OnPage, plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
-from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import CoverSection, Page, ProjectsSection
 from parch.sections.page import NavItem
@@ -34,13 +33,7 @@ class ProjectsNotebook:
             built.append(replace(page, nav=_proj_nav(page)))
         return built
 
-    def plot(self, spec: Spec, plotter: Plotter) -> None:
-        device = get_device(spec.device)
-        layout = PlannerLayout(ramp=self.ramp)
-        pages = self.pages(spec)
-        for page in pages:
-            plotter.reserve_dest(page.dest)
-        for page in pages:
-            plotter.begin_page()
-            plotter.add_dest(page.dest)
-            layout.paint(page, plotter, device)
+    def plot(
+        self, spec: Spec, plotter: Plotter, *, on_page: OnPage | None = None
+    ) -> None:
+        plot_pages(spec, plotter, self.pages(spec), self.ramp, on_page)

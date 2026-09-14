@@ -1,9 +1,8 @@
 """Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
 
+from parch.books.plot import OnPage, plot_pages
 from parch.calendar import months_touching_weeks
-from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
-from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.sections import (
     AnnualSection,
@@ -54,13 +53,7 @@ class YearPlanner:
                 built.extend(notes.pages_for(day))
         return built
 
-    def plot(self, spec: Spec, plotter: Plotter) -> None:
-        device = get_device(spec.device)
-        layout = PlannerLayout(ramp=self.ramp)
-        pages = self.pages(spec)
-        for page in pages:
-            plotter.reserve_dest(page.dest)
-        for page in pages:
-            plotter.begin_page()
-            plotter.add_dest(page.dest)
-            layout.paint(page, plotter, device)
+    def plot(
+        self, spec: Spec, plotter: Plotter, *, on_page: OnPage | None = None
+    ) -> None:
+        plot_pages(spec, plotter, self.pages(spec), self.ramp, on_page)

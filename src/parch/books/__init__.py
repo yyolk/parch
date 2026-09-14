@@ -1,8 +1,9 @@
 from parch import ConfigError
+from parch.books.plot import OnPage, plot_pages
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 
-__all__ = ["ProjectsNotebook", "YearPlanner", "book_for"]
+__all__ = ["OnPage", "ProjectsNotebook", "YearPlanner", "book_for", "plot_pages"]
 
 
 def book_for(name: str) -> type[YearPlanner] | type[ProjectsNotebook]:

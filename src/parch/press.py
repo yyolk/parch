@@ -4,9 +4,10 @@ import argparse
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import TextIO
 
 from parch import ConfigError
-from parch.books import book_for
+from parch.books import OnPage, book_for
 from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
@@ -19,6 +20,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.sections import Page
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -51,6 +53,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    on_page: OnPage | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -83,9 +86,28 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    book_for(spec.book)(ramp=resolved).plot(spec, plotter, on_page=on_page)
     plotter.finish(output)
     return output
+
+
+def _stderr_page_bar(stream: TextIO | None = None) -> OnPage | None:
+    """Rewrite a 10-char stderr bar; quiet when ``stream`` is not a TTY."""
+    out = sys.stderr if stream is None else stream
+    if not out.isatty():
+        return None
+
+    def on_page(current: int, total: int, page: Page) -> None:
+        filled = 0 if total <= 0 else min(10, 10 * current // total)
+        bar = f"{'█' * filled}{'░' * (10 - filled)}"
+        label = page.kind
+        out.write(f"\rparch |{bar}| {current}/{total}  {label}")
+        out.flush()
+        if current >= total:
+            out.write("\n")
+            out.flush()
+
+    return on_page
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
@@ -167,7 +189,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec,
+            outputs[0],
+            proof=proof_verb or args.proof,
+            on_page=_stderr_page_bar(),
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())
