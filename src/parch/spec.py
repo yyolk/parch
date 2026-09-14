@@ -11,7 +11,7 @@ from parch.calendar import iso_monday, month_touching_weeks, quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
-_BOOKS = frozenset({"year-planner", "projects-notebook"})
+_BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-notebook"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
@@ -107,8 +107,11 @@ class Spec:
             )
         if self.book not in _BOOKS:
             raise ConfigError(
-                f"book must be year-planner or projects-notebook, not {self.book!r}"
+                "book must be year-planner, projects-notebook, or "
+                f"engineering-notebook, not {self.book!r}"
             )
+        if self.book == "engineering-notebook" and self.engineering_sheets < 1:
+            raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
