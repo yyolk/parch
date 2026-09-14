@@ -6,7 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
-from parch.books.year_planner import YearPlanner
+from parch.books import BOOK_NAMES, Book, book_for
 from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
@@ -51,8 +51,9 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    book: Book | None = None,
 ) -> Path:
-    """Build the MVP book and write ``output``.
+    """Build a Book and write ``output``. Default book is YearPlanner.
 
     Press **validates** spec TOML ⊕ proof ⊕ press overlay (pure
     ``require_overlay``, exact ``schema_version`` match) before
@@ -70,8 +71,10 @@ def press(
     Invoke::
 
         press(spec, out, proof=True)
+        press(spec, out, book=book_for("projects"))
         parch proof examples/nomad.toml -o out.pdf
         parch press examples/nomad.toml --proof -o out.pdf
+        parch press examples/projects.toml --book projects -o out/projects.pdf
 
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
@@ -83,7 +86,11 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    if book is None:
+        book = book_for("year", ramp=resolved)
+    else:
+        book.ramp = resolved
+    book.plot(spec, plotter)
     plotter.finish(output)
     return output
 
@@ -151,6 +158,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
+    parser.add_argument(
+        "--book",
+        choices=BOOK_NAMES,
+        default="year",
+        help="Book to press (default year). projects is cover + projects index/dests.",
+    )
     # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
     # the historical on-screen path; it selects ProofProfile. `parch specimen`
     # writes a static PNG catalog (not a product PDF).
@@ -167,7 +180,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec,
+            outputs[0],
+            proof=proof_verb or args.proof,
+            book=book_for(args.book),
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

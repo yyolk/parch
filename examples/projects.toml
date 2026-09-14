@@ -1,0 +1,13 @@
+# Projects notebook — cover → projects index/dests. Book protocol (Approach C).
+# press with: parch press examples/projects.toml --book projects -o out/projects.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects notebook"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
