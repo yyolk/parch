@@ -41,8 +41,12 @@ SAMPLE_STEMS = (
     "meeting-1",
 )
 
-# Duplex pad faces — pressed from EngineeringPadSection, not YearPlanner dests.
-ENGINEERING_STEMS = ("engineering-front", "engineering-back")
+# Engineering notebook — cover + duplex pad (not YearPlanner dests).
+ENGINEERING_STEMS = (
+    "engineering-cover",
+    "engineering-front",
+    "engineering-back",
+)
 
 PREVIEW_DPI = 96
 
@@ -215,7 +219,7 @@ def write_specimens(
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
 ) -> Path:
-    """Press a slim book plus the duplex engineering pad faces; write PNGs + index."""
+    """Press a slim year book plus the engineering notebook; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -226,10 +230,20 @@ def write_specimens(
         press(spec, pdf, proof=True)
         for stem in stems:
             render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
-        pad_pdf = Path(tmp) / "engineering-pad.pdf"
-        press(replace(spec, engineering_sheets=1), pad_pdf, proof=True)
-        render_page_png(pad_pdf, 1, dest / "engineering-front.png")
-        render_page_png(pad_pdf, 2, dest / "engineering-back.png")
+        nb_pdf = Path(tmp) / "engineering-notebook.pdf"
+        press(
+            replace(
+                spec,
+                book="engineering-notebook",
+                engineering_sheets=1,
+                title="Engineering notebook",
+            ),
+            nb_pdf,
+            proof=True,
+        )
+        render_page_png(nb_pdf, 1, dest / "engineering-cover.png")
+        render_page_png(nb_pdf, 2, dest / "engineering-front.png")
+        render_page_png(nb_pdf, 3, dest / "engineering-back.png")
     write_device_index(dest, spec.device, stems=(*stems, *ENGINEERING_STEMS))
     return dest
 

@@ -6,7 +6,7 @@ from parch.spec import Spec
 
 
 class EngineeringPadSection:
-    """Emit duplex pad faces. No engineering-notebook book yet — press plots this section alone."""
+    """Emit duplex pad faces. ``engineering-notebook`` prepends Cover; pad-only press still uses this section alone."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

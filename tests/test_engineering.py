@@ -202,4 +202,5 @@ def test_press_example_toml_is_two_duplex_pages(tmp_path: Path):
     dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
     assert spec.dest_for_engineering_pad(1, "front") in dests
     assert spec.dest_for_engineering_pad(1, "back") in dests
+    assert "cover" not in dests
     assert spec.year_dest not in dests
