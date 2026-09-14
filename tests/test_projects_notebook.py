@@ -111,7 +111,9 @@ def test_notebook_index_pages_keep_leaf_landing():
     assert leaf.nav == (NavItem("Proj", "projects-index-2026-02"),)
     assert strip_items(leaf) == (("Proj", "projects-index-2026-02"),)
     page_two = next(page for page in pages if page.dest == "projects-index-2026-02")
-    roster = next(item for item in page_two.components if isinstance(item, ProjectsIndex))
+    roster = next(
+        item for item in page_two.components if isinstance(item, ProjectsIndex)
+    )
     assert [ticket.number for ticket in roster.tickets] == list(range(9, 17))
 
 
