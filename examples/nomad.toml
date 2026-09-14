@@ -5,6 +5,8 @@ device = "supernote-nomad"
 week_start = "monday"
 months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 title = "Year planner"
+# Reader bookmarks to each section start (skips cover). No printed TOC page.
+outline = true
 
 [daily]
 schedule_from = 7

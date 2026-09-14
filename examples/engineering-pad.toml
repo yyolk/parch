@@ -4,6 +4,7 @@
 #   parch press examples/engineering-pad.toml -o out/engineering-pad.pdf
 device = "supernote-nomad"
 title = "Engineering pad"
+outline = true
 
 [engineering]
 sheets = 1

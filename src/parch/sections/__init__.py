@@ -6,7 +6,13 @@ from parch.sections.engineering import EngineeringPadSection
 from parch.sections.habit import HabitSection
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
-from parch.sections.page import NavItem, Page, PageKind
+from parch.sections.page import (
+    NavItem,
+    Page,
+    PageKind,
+    outline_section,
+    outline_starts,
+)
 from parch.sections.projects import ProjectsSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.review import ReviewSection
@@ -27,6 +33,8 @@ __all__ = [
     "NavItem",
     "Page",
     "PageKind",
+    "outline_section",
+    "outline_starts",
     "QuarterSection",
     "ReviewSection",
     "StenoPadSection",

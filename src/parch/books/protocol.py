@@ -8,7 +8,7 @@ from parch.fonts.ramp import TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
-from parch.sections.page import Page
+from parch.sections.page import Page, outline_starts
 from parch.spec import Spec
 
 
@@ -33,20 +33,25 @@ def plot_pages(
     *,
     ramp: TypeRamp,
     device: str,
+    outline: bool = False,
 ) -> None:
     """Reserve dests, then begin/add/paint. Progress ticks match the books.
 
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
+    When ``outline``, emit reader bookmarks for each section start (no cover).
     """
     ledger = list(pages())
     slate = get_device(device)
     layout = PlannerLayout(ramp=ramp)
     n = len(ledger)
+    starts = {page.dest for page in outline_starts(ledger)} if outline else set()
     for page in ledger:
         plotter.reserve_dest(page.dest)
     for i, page in enumerate(ledger, start=1):
         plotter.begin_page()
         plotter.add_dest(page.dest)
+        if page.dest in starts:
+            plotter.outline(page.title, page.dest)
         layout.paint(page, plotter, slate)
         render_progress(i, n, page.kind)

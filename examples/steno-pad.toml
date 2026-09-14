@@ -5,6 +5,7 @@
 #   parch press examples/steno-pad.toml -o out/steno-pad.pdf
 device = "supernote-nomad"
 title = "Steno pad"
+outline = true
 
 [steno]
 sheets = 1

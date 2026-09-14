@@ -54,6 +54,14 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
     return 10
 
 
+def _parse_outline(data: TomlTable) -> bool:
+    """TOML ``outline = true`` enables reader bookmarks; default off."""
+    raw = data.get("outline", False)
+    if not isinstance(raw, bool):
+        raise ConfigError("outline must be true or false")
+    return raw
+
+
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
     raw = data.get("months")
     if isinstance(raw, list) and raw:
@@ -98,6 +106,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    outline: bool = False  # reader bookmarks; no printed TOC page
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -382,6 +391,7 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            outline=_parse_outline(data),
             type_overlay=_parse_typography(data),
         )
 

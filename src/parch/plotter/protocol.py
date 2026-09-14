@@ -87,5 +87,8 @@ class Plotter(Protocol):
     def link(self, box: Rect, dest: str) -> None:
         """Invisible hit target to a named destination."""
 
+    def outline(self, title: str, dest: str, *, level: int = 0) -> None:
+        """Reader bookmark for ``title``, bound to named ``dest`` (or its page)."""
+
     def finish(self, path: Path) -> None:
         """Write the document to ``path``."""

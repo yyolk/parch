@@ -29,4 +29,5 @@ class EngineeringNotebook:
             plotter,
             ramp=self.ramp,
             device=spec.device,
+            outline=spec.outline,
         )
