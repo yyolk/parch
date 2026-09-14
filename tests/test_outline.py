@@ -83,9 +83,7 @@ def test_projects_and_engineering_outline_entries():
     assert ProjectsNotebook().outline_entries(projects) == [
         OutlineEntry("Projects", projects.projects_index_dest)
     ]
-    engineering = Spec(
-        book="engineering-notebook", engineering_sheets=2, outline=True
-    )
+    engineering = Spec(book="engineering-notebook", engineering_sheets=2, outline=True)
     assert EngineeringNotebook().outline_entries(engineering) == [
         OutlineEntry("Engineering", engineering.dest_for_engineering_pad(1, "front"))
     ]
