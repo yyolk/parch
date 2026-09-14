@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.fonts import (
@@ -16,7 +17,7 @@ from parch.fonts import (
     compose_overlays,
     require_overlay,
 )
-from parch.fonts.ramp import OverlayData
+from parch.fonts.ramp import OverlayData, TypeRamp
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
@@ -83,9 +84,20 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    _book_for(spec, resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def _book_for(spec: Spec, ramp: TypeRamp) -> YearPlanner | ProjectsNotebook:
+    """Press dispatch — year or projects. No book registry."""
+    match spec.book:
+        case "year":
+            return YearPlanner(ramp=ramp)
+        case "projects":
+            return ProjectsNotebook(ramp=ramp)
+        case _:
+            raise ConfigError(f"unknown book {spec.book!r}")
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
