@@ -6,7 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
-from parch.books.year_planner import YearPlanner
+from parch.books import book_for
 from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
@@ -83,7 +83,7 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
 
