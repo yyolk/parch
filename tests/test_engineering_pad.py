@@ -17,6 +17,7 @@ from parch.layouts.planner.painters import (
     HAIR,
     MUTED,
     RULE,
+    RULE_C,
     engineering_grid_counts,
     engineering_grid_lines,
     engineering_pad_header_height,
@@ -200,7 +201,7 @@ def test_back_paints_five_by_five_grid_no_header():
             and op[3] == pytest.approx(x2)
             and op[4] == pytest.approx(y2)
             and op[5] == pytest.approx(HAIR if major else RULE)
-            and op[6] == pytest.approx(MUTED)
+            and op[6] == pytest.approx(MUTED if major else RULE_C)
         ]
         assert match, f"missing grid line {(x1, y1, x2, y2, major)}"
 

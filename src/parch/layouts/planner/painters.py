@@ -2081,7 +2081,7 @@ def _paint_engineering_outer(plotter: Plotter, box: Rect) -> None:
 
 
 def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
-    """Minor RULE / major HAIR, both MUTED. 5×5 blocks fill ``box``."""
+    """Minor RULE + RULE_C / major HAIR + MUTED. 5×5 blocks fill ``box``."""
     for x1, y1, x2, y2, major in engineering_grid_lines(box):
         plotter.line(
             x1,
@@ -2089,7 +2089,7 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
             x2,
             y2,
             stroke_width=HAIR if major else RULE,
-            stroke_gray=MUTED,
+            stroke_gray=MUTED if major else RULE_C,
         )
 
 
