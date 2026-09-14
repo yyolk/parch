@@ -1,0 +1,10 @@
+# Demo press — engineering pad section only (notebook book deferred).
+#   parch press examples/engineering-pad.toml -o out/engineering-pad.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "engineering-pad"
+year = 2026
+device = "supernote-nomad"
+title = "Engineering pad"
+
+[engineering_pad]
+sheets = 2

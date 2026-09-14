@@ -1,5 +1,6 @@
 from parch.components.annual import AnnualGrid, AnnualMonth
 from parch.components.cover import CoverTitle
+from parch.components.engineering_pad import EngineeringPadBack, EngineeringPadFront
 from parch.components.habit import HabitGrid
 from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
@@ -22,6 +23,8 @@ type Component = (
     AnnualGrid
     | AnnualMonth
     | CoverTitle
+    | EngineeringPadBack
+    | EngineeringPadFront
     | HabitGrid
     | MeetingAgenda
     | MeetingIndex
@@ -51,6 +54,8 @@ __all__ = [
     "AnnualMonth",
     "Component",
     "CoverTitle",
+    "EngineeringPadBack",
+    "EngineeringPadFront",
     "HabitGrid",
     "MeetingAgenda",
     "MeetingIndex",

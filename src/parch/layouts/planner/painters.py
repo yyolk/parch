@@ -8,6 +8,8 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPadBack,
+    EngineeringPadFront,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -1967,6 +1969,195 @@ def paint_daily(
     _paint_mini_month(plotter, mini_box, mini, ramp=ramp)
     paint_priorities(plotter, prio_box, priorities, ramp=ramp)
     paint_notes(plotter, notes_box, notes, ramp=ramp)
+
+
+ENG_PAD_MAJOR = 5
+ENG_PAD_TARGET_PITCH = 5.0
+ENG_PAD_HEAD_INSET_X = 1.8
+ENG_PAD_HEAD_INSET_Y = 1.2
+ENG_PAD_HEAD_LINE_H = 5.4
+ENG_PAD_HEAD_ROW_GAP = 1.0
+ENG_PAD_HEAD_COL_GAP = 2.8
+ENG_PAD_HEAD_WEIGHTS = (0.68, 0.32)
+ENG_PAD_LABEL_W = 14.0
+ENG_PAD_WRITE_LABEL_H = 3.8
+ENG_PAD_SHEET_WEIGHTS = (0.36, 0.22, 0.16, 0.26)
+ENG_PAD_SHEET_GAP = 0.8
+
+
+def engineering_pad_header_height() -> float:
+    """Three write-in rows (Title/No., Name/Date, Subject/Sheet) plus quiet inset."""
+    return ENG_PAD_HEAD_INSET_Y * 2 + 3 * ENG_PAD_HEAD_LINE_H + 2 * ENG_PAD_HEAD_ROW_GAP
+
+
+def engineering_pad_seats(frame: Rect) -> tuple[Rect, Rect]:
+    """Header band over the blank writing well. Outer rule is ``frame``."""
+    return frame.split_top(engineering_pad_header_height())
+
+
+def engineering_pad_header_rows(head: Rect) -> tuple[tuple[Rect, Rect], ...]:
+    """Title|No., Name|Date, Subject|Sheet — ``tracks.columns`` after a quiet inset."""
+    inner = head.inset(ENG_PAD_HEAD_INSET_X, ENG_PAD_HEAD_INSET_Y)
+    return tuple(
+        columns(band, 2, gap=ENG_PAD_HEAD_COL_GAP, weights=ENG_PAD_HEAD_WEIGHTS)
+        for band in rows(inner, 3, gap=ENG_PAD_HEAD_ROW_GAP)
+    )
+
+
+def engineering_pad_sheet_parts(box: Rect) -> tuple[Rect, Rect, Rect, Rect]:
+    """Sheet label | n | of | N on one baseline."""
+    return columns(box, 4, gap=ENG_PAD_SHEET_GAP, weights=ENG_PAD_SHEET_WEIGHTS)
+
+
+def engineering_grid_counts(box: Rect) -> tuple[int, int]:
+    """Minor-cell counts, each a multiple of 5 so major lines land on 5×5."""
+    nx = max(
+        ENG_PAD_MAJOR,
+        int(round(box.w / ENG_PAD_TARGET_PITCH) // ENG_PAD_MAJOR) * ENG_PAD_MAJOR,
+    )
+    ny = max(
+        ENG_PAD_MAJOR,
+        int(round(box.h / ENG_PAD_TARGET_PITCH) // ENG_PAD_MAJOR) * ENG_PAD_MAJOR,
+    )
+    return nx, ny
+
+
+def engineering_grid_lines(
+    box: Rect,
+) -> tuple[tuple[float, float, float, float, bool], ...]:
+    """Interior 5×5 segments: ``x1, y1, x2, y2, major``. Edges are the outer rule."""
+    nx, ny = engineering_grid_counts(box)
+    pitch_x = box.w / nx
+    pitch_y = box.h / ny
+    lines: list[tuple[float, float, float, float, bool]] = []
+    for i in range(1, nx):
+        x = box.x + i * pitch_x
+        lines.append((x, box.y, x, box.bottom, i % ENG_PAD_MAJOR == 0))
+    for j in range(1, ny):
+        y = box.y + j * pitch_y
+        lines.append((box.x, y, box.right, y, j % ENG_PAD_MAJOR == 0))
+    return tuple(lines)
+
+
+def paint_engineering_pad_front(
+    plotter: Plotter,
+    box: Rect,
+    front: EngineeringPadFront,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Front kind — labeled header + blank well + outer rules. No grid."""
+    ramp = _bound_ramp(plotter, ramp)
+    _paint_engineering_outer(plotter, box)
+    head, _well = engineering_pad_seats(box)
+    plotter.line(
+        box.x, head.bottom, box.right, head.bottom, stroke_width=HAIR, stroke_gray=MUTED
+    )
+    (title, number), (name, dated), (subject, sheet) = engineering_pad_header_rows(head)
+    _paint_engineering_writein(plotter, title, "Title")
+    _paint_engineering_writein(plotter, number, "No.")
+    _paint_engineering_writein(plotter, name, "Name")
+    _paint_engineering_writein(plotter, dated, "Date")
+    _paint_engineering_writein(plotter, subject, "Subject")
+    _paint_engineering_sheet(plotter, sheet, front.sheet, front.sheets, ramp=ramp)
+
+
+def paint_engineering_pad_back(
+    plotter: Plotter,
+    box: Rect,
+    _back: EngineeringPadBack,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Back kind — 5×5 major/minor grid + outer rules. No header."""
+    _bound_ramp(plotter, ramp)
+    _paint_engineering_outer(plotter, box)
+    _paint_engineering_grid(plotter, box)
+
+
+def _paint_engineering_outer(plotter: Plotter, box: Rect) -> None:
+    """Hairline MUTED frame — content_frame insets, no hole-margin strip."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=MUTED)
+
+
+def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
+    """Minor RULE / major HAIR, both MUTED. 5×5 blocks fill ``box``."""
+    for x1, y1, x2, y2, major in engineering_grid_lines(box):
+        plotter.line(
+            x1,
+            y1,
+            x2,
+            y2,
+            stroke_width=HAIR if major else RULE,
+            stroke_gray=MUTED,
+        )
+
+
+def _paint_engineering_writein(plotter: Plotter, box: Rect, label: str) -> None:
+    """Muted scaps label + write-in rule on one baseline — meeting-header craft."""
+    tag, write = box.split_left(ENG_PAD_LABEL_W)
+    rule_y = box.bottom
+    _ink_text(
+        plotter,
+        Rect(tag.x, rule_y - ENG_PAD_WRITE_LABEL_H, tag.w, ENG_PAD_WRITE_LABEL_H),
+        label,
+        TypeRef(step="label"),
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    plotter.line(
+        write.x, rule_y, write.right, rule_y, stroke_width=RULE, stroke_gray=MUTED
+    )
+
+
+def _paint_engineering_sheet(
+    plotter: Plotter,
+    box: Rect,
+    sheet: int,
+    sheets: int,
+    *,
+    ramp: TypeRamp,
+) -> None:
+    """Sheet n of N — printed counts, same baseline as the Subject write-in."""
+    plotter.ramp = ramp
+    tag, num, of, total = engineering_pad_sheet_parts(box)
+    rule_y = box.bottom
+    label_y = rule_y - ENG_PAD_WRITE_LABEL_H
+    _ink_text(
+        plotter,
+        Rect(tag.x, label_y, tag.w, ENG_PAD_WRITE_LABEL_H),
+        "Sheet",
+        TypeRef(step="label"),
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    _ink_text(
+        plotter,
+        Rect(num.x, label_y, num.w, ENG_PAD_WRITE_LABEL_H),
+        str(sheet),
+        TypeRef(step="label", emphasis="strong"),
+        gray=INK,
+        align="center",
+    )
+    _ink_text(
+        plotter,
+        Rect(of.x, label_y, of.w, ENG_PAD_WRITE_LABEL_H),
+        "of",
+        TypeRef(step="caption"),
+        gray=MUTED,
+        small_caps=True,
+        align="center",
+    )
+    _ink_text(
+        plotter,
+        Rect(total.x, label_y, total.w, ENG_PAD_WRITE_LABEL_H),
+        str(sheets),
+        TypeRef(step="label", emphasis="strong"),
+        gray=INK,
+        align="center",
+    )
 
 
 def well_rect(device: Device) -> Rect:

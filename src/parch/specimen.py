@@ -40,6 +40,11 @@ SAMPLE_STEMS = (
     "meeting-1",
 )
 
+PAD_SAMPLE_STEMS = (
+    "engineering-pad-front",
+    "engineering-pad-back",
+)
+
 PREVIEW_DPI = 96
 
 
@@ -57,6 +62,25 @@ def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """Slim January press for catalog pages — not the product year book."""
     device = get_device(device_id)
     return Spec(device=device.id, year=year, months=(1,), notes_pages=1)
+
+
+def pad_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """One duplex sheet for catalog front/back — not the deferred notebook book."""
+    device = get_device(device_id)
+    return Spec(
+        device=device.id,
+        year=year,
+        book="engineering-pad",
+        engineering_pad_sheets=1,
+    )
+
+
+def pad_sample_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each pad catalog stem on *spec*."""
+    return {
+        "engineering-pad-front": spec.dest_for_engineering_pad_front(1),
+        "engineering-pad-back": spec.dest_for_engineering_pad_back(1),
+    }
 
 
 def sample_dests(spec: Spec) -> dict[str, str]:
@@ -215,6 +239,7 @@ def write_specimens(
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
+    from parch.books.engineering_pad import EngineeringPad
     from parch.press import press
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -222,7 +247,23 @@ def write_specimens(
         press(spec, pdf, proof=True)
         for stem in stems:
             render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
-    write_device_index(dest, spec.device, stems=stems)
+        pad_spec = pad_specimen_spec(spec.device, year=year)
+        pad_pdf = Path(tmp) / "pad.pdf"
+        press(pad_spec, pad_pdf, proof=True)
+        pad_dests = pad_sample_dests(pad_spec)
+        pad_by_dest = {
+            page.dest: index
+            for index, page in enumerate(EngineeringPad().pages(pad_spec), start=1)
+        }
+        for stem in PAD_SAMPLE_STEMS:
+            dest_name = pad_dests[stem]
+            if dest_name not in pad_by_dest:
+                raise ConfigError(
+                    f"specimen dest {dest_name!r} for {stem!r} is not in the pad press"
+                )
+            render_page_png(pad_pdf, pad_by_dest[dest_name], dest / f"{stem}.png")
+    catalog_stems = tuple(stems) + PAD_SAMPLE_STEMS
+    write_device_index(dest, spec.device, stems=catalog_stems)
     return dest
 
 

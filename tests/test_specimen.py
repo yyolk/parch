@@ -8,9 +8,12 @@ import pytest
 from parch import ConfigError
 from parch.press import main
 from parch.specimen import (
+    PAD_SAMPLE_STEMS,
     SAMPLE_STEMS,
     catalog_dest,
     catalog_index_html,
+    pad_sample_dests,
+    pad_specimen_spec,
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
@@ -86,6 +89,16 @@ def test_sample_dests_and_pages_for_january():
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
 
 
+def test_pad_sample_dests_for_one_sheet():
+    spec = pad_specimen_spec("supernote-nomad")
+    assert spec.book == "engineering-pad"
+    assert spec.engineering_pad_sheets == 1
+    dests = pad_sample_dests(spec)
+    assert dests["engineering-pad-front"] == "engineering-pad-2026-01-front"
+    assert dests["engineering-pad-back"] == "engineering-pad-2026-01-back"
+    assert set(dests) == set(PAD_SAMPLE_STEMS)
+
+
 def test_specimen_cli_help(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["specimen", "--help"])
@@ -133,6 +146,10 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
     for stem in SAMPLE_STEMS:
         assert (dest / f"{stem}.png").is_file()
+    for stem in PAD_SAMPLE_STEMS:
+        assert (dest / f"{stem}.png").is_file()
+    assert 'src="engineering-pad-front.png"' in html
+    assert 'src="engineering-pad-back.png"' in html
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):

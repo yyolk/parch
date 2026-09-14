@@ -1,18 +1,23 @@
 from parch import ConfigError
+from parch.books.engineering_pad import EngineeringPad
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 
-__all__ = ["ProjectsNotebook", "YearPlanner", "book_for"]
+__all__ = ["EngineeringPad", "ProjectsNotebook", "YearPlanner", "book_for"]
 
 
-def book_for(name: str) -> type[YearPlanner] | type[ProjectsNotebook]:
-    """Press selection: ``year-planner`` (default) or ``projects-notebook``."""
+def book_for(
+    name: str,
+) -> type[YearPlanner] | type[ProjectsNotebook] | type[EngineeringPad]:
+    """Press selection: year-planner, projects-notebook, or engineering-pad (demo)."""
     match name:
         case "year-planner":
             return YearPlanner
         case "projects-notebook":
             return ProjectsNotebook
+        case "engineering-pad":
+            return EngineeringPad
         case _:
             raise ConfigError(
-                f"book must be year-planner or projects-notebook, not {name!r}"
+                f"book must be year-planner, projects-notebook, or engineering-pad, not {name!r}"
             )

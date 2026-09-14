@@ -11,7 +11,7 @@ from parch.calendar import iso_monday, month_touching_weeks, quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
-_BOOKS = frozenset({"year-planner", "projects-notebook"})
+_BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-pad"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
@@ -96,6 +96,7 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    engineering_pad_sheets: int = 2
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -105,7 +106,7 @@ class Spec:
             )
         if self.book not in _BOOKS:
             raise ConfigError(
-                f"book must be year-planner or projects-notebook, not {self.book!r}"
+                f"book must be year-planner, projects-notebook, or engineering-pad, not {self.book!r}"
             )
         if not self.months:
             raise ConfigError("months must not be empty")
@@ -136,6 +137,8 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if not 1 <= self.engineering_pad_sheets <= 24:
+            raise ConfigError("engineering_pad_sheets must be 1–24")
 
     @property
     def weekday_start(self) -> int:
@@ -290,6 +293,18 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    def _check_engineering_pad_sheet(self, sheet: int) -> None:
+        if not 1 <= sheet <= self.engineering_pad_sheets:
+            raise ConfigError(f"engineering pad sheet out of range: {sheet}")
+
+    def dest_for_engineering_pad_front(self, sheet: int) -> str:
+        self._check_engineering_pad_sheet(sheet)
+        return _dest(t"engineering-pad-{self.year:04d}-{sheet:02d}-front")
+
+    def dest_for_engineering_pad_back(self, sheet: int) -> str:
+        self._check_engineering_pad_sheet(sheet)
+        return _dest(t"engineering-pad-{self.year:04d}-{sheet:02d}-back")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -308,6 +323,8 @@ class Spec:
         meetings_table = meetings if isinstance(meetings, dict) else {}
         tasks = data.get("tasks")
         tasks_table = tasks if isinstance(tasks, dict) else {}
+        engineering_pad = data.get("engineering_pad")
+        pad_table = engineering_pad if isinstance(engineering_pad, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -345,6 +362,9 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            engineering_pad_sheets=int(
+                pad_table.get("sheets", data.get("engineering_pad_sheets", 2))
+            ),
             type_overlay=_parse_typography(data),
         )
 
