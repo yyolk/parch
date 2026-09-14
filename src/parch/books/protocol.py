@@ -34,6 +34,18 @@ def _section_start(kind: str, prev_kind: str | None) -> bool:
     return prev_kind is None or prev_kind == "cover" or prev_kind != kind
 
 
+# Reader outline hubs only. Weeks, days, notes, leaves, habits, and pad kinds omitted.
+_OUTLINE_KINDS = frozenset({
+    "annual",
+    "projects_index",
+    "meetings_index",
+    "tasks_index",
+    "review_index",
+    "quarter",
+    "month",
+})
+
+
 def plot_pages(
     pages: Callable[[], Iterable[Page]],
     plotter: Plotter,
@@ -46,7 +58,9 @@ def plot_pages(
 
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
-    When ``outline``, each section start gets a reader bookmark on ``page.dest``.
+    When ``outline``, each allowlisted section start gets a reader bookmark
+    on ``page.dest``. Cover, weekly, daily, notes, leaves, habits, and pad
+    kinds are omitted — pads with only those kinds get an empty outline.
     """
     ledger = list(pages())
     slate = get_device(device)
@@ -58,7 +72,11 @@ def plot_pages(
     for i, page in enumerate(ledger, start=1):
         plotter.begin_page()
         plotter.add_dest(page.dest)
-        if outline and _section_start(page.kind, prev_kind):
+        if (
+            outline
+            and _section_start(page.kind, prev_kind)
+            and page.kind in _OUTLINE_KINDS
+        ):
             plotter.add_outline(page.title, page.dest)
         layout.paint(page, plotter, slate)
         render_progress(i, n, page.kind)
