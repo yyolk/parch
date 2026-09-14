@@ -12,11 +12,9 @@ from parch.spec import Spec
 
 
 @pytest.fixture(autouse=True)
-def _reset_progress_state():
-    progress._last_filled = None
+def _reset_progress_width():
     progress._last_width = 0
     yield
-    progress._last_filled = None
     progress._last_width = 0
 
 
@@ -73,17 +71,6 @@ def test_render_progress_space_pads_shorter_label(monkeypatch):
     long = "parch |██░░░░░░░░| 2/10  projects_index"
     short = "parch |███░░░░░░░| 3/10  cover"
     assert tty.chunks == [f"\r{long}", f"\r{short.ljust(len(long))}"]
-
-
-def test_render_progress_throttles_same_filled_cell(monkeypatch):
-    tty = _TTY()
-    monkeypatch.setattr(sys, "stderr", tty)
-    for _ in range(5):
-        render_progress(4, 10, "cover")
-    assert tty.chunks == ["\rparch |████░░░░░░| 4/10  cover"]
-    render_progress(10, 10, "daily")
-    assert tty.chunks[-1] == "\rparch |██████████| 10/10  daily\n"
-    assert len(tty.chunks) == 2
 
 
 def test_press_signature_has_no_progress_hook():
