@@ -11,30 +11,34 @@ from parch.press import press
 from parch.sections.engineering import EngineeringPadSection
 from parch.spec import Spec
 
-_OUTLINE_KINDS = frozenset({
-    "annual",
-    "projects_index",
-    "meetings_index",
-    "tasks_index",
-    "review_index",
-    "quarter",
-    "month",
-})
+_OUTLINE_KINDS = frozenset(
+    {
+        "annual",
+        "projects_index",
+        "meetings_index",
+        "tasks_index",
+        "review_index",
+        "quarter",
+        "month",
+    }
+)
 
-_EXCLUDED_KINDS = frozenset({
-    "cover",
-    "weekly",
-    "daily",
-    "daily_notes",
-    "project",
-    "meeting",
-    "task",
-    "review",
-    "habits",
-    "engineering_front",
-    "engineering_back",
-    "steno",
-})
+_EXCLUDED_KINDS = frozenset(
+    {
+        "cover",
+        "weekly",
+        "daily",
+        "daily_notes",
+        "project",
+        "meeting",
+        "task",
+        "review",
+        "habits",
+        "engineering_front",
+        "engineering_back",
+        "steno",
+    }
+)
 
 
 def _outline_titles(reader: PdfReader) -> list[str]:

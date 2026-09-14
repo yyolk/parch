@@ -35,15 +35,17 @@ def _section_start(kind: str, prev_kind: str | None) -> bool:
 
 
 # Reader outline hubs only. Weeks, days, notes, leaves, habits, and pad kinds omitted.
-_OUTLINE_KINDS = frozenset({
-    "annual",
-    "projects_index",
-    "meetings_index",
-    "tasks_index",
-    "review_index",
-    "quarter",
-    "month",
-})
+_OUTLINE_KINDS = frozenset(
+    {
+        "annual",
+        "projects_index",
+        "meetings_index",
+        "tasks_index",
+        "review_index",
+        "quarter",
+        "month",
+    }
+)
 
 
 def plot_pages(
