@@ -99,7 +99,7 @@ def test_tasks_index_page():
     spec = Spec(notes_pages=1, months=(1, 2, 3))
     page = next(p for p in TasksSection(spec).pages() if p.kind == "tasks_index")
     assert page.dest == "tasks-index-2026-Q1"
-    assert page.title == "Tasks"
+    assert page.title == "Tasks Q1 2026"
     index = next(item for item in page.components if isinstance(item, TasksIndex))
     assert index.year == 2026
     assert index.quarter == 1
@@ -395,7 +395,7 @@ def test_tasks_index_chrome_task_tab():
     plotter.begin_page()
     PlannerLayout().paint(page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Tasks" in texts
+    assert "Tasks Q1 2026" in texts
     assert "Q1" in texts
     assert "January" in texts
     assert "Task" in texts

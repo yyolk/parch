@@ -28,9 +28,9 @@ class Book(Protocol):
 
 
 # Reader outline hubs only. Weeks, days, notes, leaves, habits, and pad kinds omitted.
-# ONCE: first occurrence this press (tasks_index repeats per quarter; bookmark the first).
+# RUN: once per contiguous kind-run (tasks_index re-fires after task leaves).
 # EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
-_OUTLINE_ONCE = frozenset(
+_OUTLINE_RUN = frozenset(
     {
         "annual",
         "projects_index",
@@ -42,22 +42,31 @@ _OUTLINE_ONCE = frozenset(
 _OUTLINE_EACH = frozenset({"quarter", "month"})
 
 
-def _should_outline(kind: str, seen: set[str]) -> bool:
-    return kind in _OUTLINE_EACH or (kind in _OUTLINE_ONCE and kind not in seen)
+def _section_start(kind: str, prev_kind: str | None) -> bool:
+    """First non-cover page of a contiguous PageKind run (or first after cover)."""
+    if kind == "cover":
+        return False
+    return prev_kind is None or prev_kind == "cover" or prev_kind != kind
+
+
+def _should_outline(kind: str, prev_kind: str | None) -> bool:
+    return kind in _OUTLINE_EACH or (
+        kind in _OUTLINE_RUN and _section_start(kind, prev_kind)
+    )
 
 
 def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
     """Reader outline ``(title, dest)`` pairs for a page ledger. No PDF.
 
-    Cover and non-hub kinds are omitted. ONCE kinds emit once; EACH kinds
-    emit every page (Q1–Q4 and each pressed month).
+    Cover and non-hub kinds are omitted. RUN kinds emit once per kind-run;
+    EACH kinds emit every page (Q1–Q4 and each pressed month).
     """
-    seen: set[str] = set()
+    prev_kind: str | None = None
     entries: list[tuple[str, str]] = []
     for page in pages:
-        if _should_outline(page.kind, seen):
+        if _should_outline(page.kind, prev_kind):
             entries.append((page.title, page.dest))
-            seen.add(page.kind)
+        prev_kind = page.kind
     return entries
 
 

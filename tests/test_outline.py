@@ -105,7 +105,9 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
         spec.month_dest,
     ]
     assert plotter.outlines() == outline_entries(pages)
-    assert [title for title, _dest in plotter.outlines()].count("Tasks") == 1
+    titles = [title for title, _dest in plotter.outlines()]
+    assert titles.count("Tasks Q1 2026") == 1
+    assert "Tasks" not in titles
     assert outlined_kinds == _OUTLINE_HUBS
     assert outlined_kinds.isdisjoint(_EXCLUDED_KINDS)
     assert spec.cover_dest not in dests
@@ -130,17 +132,24 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     outlined_kinds = {dest_kind[dest] for dest in dests}
     month_titles = [f"{name} {spec.year}" for name in MONTH_NAMES]
     quarter_titles = [f"Q{quarter} {spec.year}" for quarter in range(1, 5)]
+    tasks_titles = [f"Tasks Q{quarter} {spec.year}" for quarter in range(1, 5)]
+    pressed_tasks = [page for page in pages if page.kind == "tasks_index"]
 
     assert titles == [
         str(spec.year),
         "Projects",
         "Meetings",
-        "Tasks",
+        *tasks_titles,
         "Review",
         *quarter_titles,
         *month_titles,
     ]
-    assert titles.count("Tasks") == 1
+    assert [title for title, dest in entries if dest_kind[dest] == "tasks_index"] == [
+        page.title for page in pressed_tasks
+    ]
+    assert len(pressed_tasks) == 4
+    assert len(set(tasks_titles)) == 4
+    assert "Tasks" not in titles
     assert [title for title in titles if title.startswith("Q")] == quarter_titles
     assert [title for title in titles if title in set(month_titles)] == month_titles
     assert outlined_kinds == _OUTLINE_HUBS
@@ -148,8 +157,8 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     assert spec.cover_dest not in dests
     assert spec.tasks_index_dest in dests
     assert spec.dest_for_quarter(1) in dests
-    for quarter in range(2, 5):
-        assert spec.dest_for_tasks_index(quarter) not in dests
+    for quarter in range(1, 5):
+        assert spec.dest_for_tasks_index(quarter) in dests
         assert spec.dest_for_quarter(quarter) in dests
     for month in spec.months:
         assert spec.dest_for_month(month) in dests
@@ -189,7 +198,7 @@ def test_press_pdf_year_planner_outline_when_enabled(tmp_path: Path):
         "2026",
         "Projects",
         "Meetings",
-        "Tasks",
+        "Tasks Q1 2026",
         "Review",
         "Q1 2026",
         "January 2026",
