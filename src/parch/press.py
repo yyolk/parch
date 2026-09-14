@@ -6,7 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
-from parch.books import book_for
+from parch.books import book_for, plot_pages
 from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
@@ -17,10 +17,8 @@ from parch.fonts import (
     require_overlay,
 )
 from parch.fonts.ramp import OverlayData, TypeRamp
-from parch.layouts.planner import PlannerLayout
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
-from parch.progress import render_progress
 from parch.sections.engineering import EngineeringPadSection
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
@@ -80,11 +78,12 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet). When
-    ``spec.engineering_sheets > 0``, press the duplex pad section only
-    (no engineering-notebook book yet). Year-planner specs keep both
-    counts at 0.
+    When ``spec.book`` is a sibling book (projects-notebook,
+    engineering-notebook), press that book. Year-planner specs with
+    ``steno_sheets > 0`` still press the single-face Gregg pad only
+    (no steno-notebook book yet). Year-planner specs with
+    ``engineering_sheets > 0`` still press the duplex pad section only.
+    Year-planner product specs keep both counts at 0.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -93,9 +92,9 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    if spec.book == "year-planner" and spec.steno_sheets > 0:
         _plot_steno_pad(spec, plotter, resolved)
-    elif spec.engineering_sheets > 0:
+    elif spec.book == "year-planner" and spec.engineering_sheets > 0:
         _plot_engineering_pad(spec, plotter, resolved)
     else:
         book_for(spec.book)(ramp=resolved).plot(spec, plotter)
@@ -104,33 +103,13 @@ def press(
 
 
 def _plot_engineering_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
-    """Plot ``EngineeringPadSection`` faces. Progress ticks match the books."""
-    device = get_device(spec.device)
-    layout = PlannerLayout(ramp=ramp)
-    pages = EngineeringPadSection(spec).pages()
-    n = len(pages)
-    for page in pages:
-        plotter.reserve_dest(page.dest)
-    for i, page in enumerate(pages, start=1):
-        plotter.begin_page()
-        plotter.add_dest(page.dest)
-        layout.paint(page, plotter, device)
-        render_progress(i, n, page.kind)
+    """Plot ``EngineeringPadSection`` faces via the shared book walk."""
+    plot_pages(EngineeringPadSection(spec).pages(), spec, plotter, ramp)
 
 
 def _plot_steno_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
-    """Plot ``StenoPadSection`` faces. Progress ticks match the books."""
-    device = get_device(spec.device)
-    layout = PlannerLayout(ramp=ramp)
-    pages = StenoPadSection(spec).pages()
-    n = len(pages)
-    for page in pages:
-        plotter.reserve_dest(page.dest)
-    for i, page in enumerate(pages, start=1):
-        plotter.begin_page()
-        plotter.add_dest(page.dest)
-        layout.paint(page, plotter, device)
-        render_progress(i, n, page.kind)
+    """Plot ``StenoPadSection`` faces via the shared book walk."""
+    plot_pages(StenoPadSection(spec).pages(), spec, plotter, ramp)
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
