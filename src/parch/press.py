@@ -101,7 +101,7 @@ def _stderr_page_bar(stream: TextIO | None = None) -> OnPage | None:
         filled = 0 if total <= 0 else min(10, 10 * current // total)
         bar = f"{'█' * filled}{'░' * (10 - filled)}"
         label = page.kind
-        out.write(f"\rparch |{bar}| {current}/{total}  {label}")
+        out.write(f"\rparch |{bar}| {current}/{total}  {label}\033[K")
         out.flush()
         if current >= total:
             out.write("\n")

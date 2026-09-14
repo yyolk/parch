@@ -26,9 +26,9 @@ def test_stderr_bar_rewrites_kind_and_final_newline():
     on_page = _stderr_page_bar(stream)
     assert on_page is not None
     on_page(4, 10, _cover())
-    assert stream.getvalue() == "\rparch |████░░░░░░| 4/10  cover"
+    assert stream.getvalue() == "\rparch |████░░░░░░| 4/10  cover\033[K"
     on_page(10, 10, _cover("project", "projects-2026-01"))
-    assert stream.getvalue().endswith("\rparch |██████████| 10/10  project\n")
+    assert stream.getvalue().endswith("\rparch |██████████| 10/10  project\033[K\n")
 
 
 def test_stderr_bar_quiet_when_not_tty():
