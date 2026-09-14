@@ -76,6 +76,8 @@ def planner_nav(
     task_dest: str | None = None,
     rev_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
+    if spec.projects_hub:
+        return (NavItem("Proj", proj_dest or spec.projects_index_dest),)
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
     habit_month = month if month is not None else landing.month

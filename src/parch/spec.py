@@ -12,6 +12,21 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_YEAR_SECTIONS = (
+    "cover",
+    "annual",
+    "projects",
+    "meetings",
+    "tasks",
+    "review",
+    "quarters",
+    "months",
+)
+_BOOKS = {
+    "year": _YEAR_SECTIONS,
+    "projects": ("cover", "projects"),
+}
+_KNOWN_SECTIONS = frozenset(_YEAR_SECTIONS)
 
 type TomlTable = dict[str, object]
 
@@ -62,6 +77,16 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     return tuple(range(1, 13))
 
 
+def _parse_sections(data: TomlTable) -> tuple[str, ...]:
+    """Empty tuple means derive from ``book`` in ``Spec.__post_init__``."""
+    raw = data.get("sections")
+    if raw is None:
+        return ()
+    if not isinstance(raw, list) or not raw:
+        raise ConfigError("sections must be a non-empty list")
+    return tuple(str(item) for item in raw)
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -95,8 +120,23 @@ class Spec:
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
+    book: str = "year"
+    sections: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        if self.book not in _BOOKS:
+            known = ", ".join(_BOOKS)
+            raise ConfigError(f"book must be {known}, not {self.book!r}")
+        if not self.sections:
+            object.__setattr__(self, "sections", _BOOKS[self.book])
+        else:
+            seen: set[str] = set()
+            for name in self.sections:
+                if name not in _KNOWN_SECTIONS:
+                    raise ConfigError(f"unknown section {name!r}")
+                if name in seen:
+                    raise ConfigError(f"duplicate section {name}")
+                seen.add(name)
         if self.week_start not in _WEEK_STARTS:
             raise ConfigError(
                 f"week_start must be monday or sunday, not {self.week_start!r}"
@@ -150,6 +190,20 @@ class Spec:
     @property
     def cover_dest(self) -> str:
         return "cover"
+
+    @property
+    def cover_cta_dest(self) -> str:
+        """Cover tap target — annual when present, else projects index."""
+        if "annual" in self.sections:
+            return self.year_dest
+        if "projects" in self.sections:
+            return self.projects_index_dest
+        return self.year_dest
+
+    @property
+    def projects_hub(self) -> bool:
+        """Projects notebook: index is the only strip hub."""
+        return "projects" in self.sections and "annual" not in self.sections
 
     @property
     def year_dest(self) -> str:
@@ -339,6 +393,8 @@ class Spec:
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
             type_overlay=_parse_typography(data),
+            book=str(data.get("book", "year")).lower(),
+            sections=_parse_sections(data),
         )
 
     @classmethod
