@@ -25,6 +25,7 @@ from parch.components import (
     ReviewWeek,
     ReviewWeekPage,
     Schedule,
+    StenoPad,
     TasksIndex,
     TasksWeekPage,
     TaskWeek,
@@ -2076,7 +2077,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back":
+        case "engineering_front" | "engineering_back" | "steno":
             return ""
         case _:
             return "Year"
@@ -2231,3 +2232,77 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
             stroke_width=HAIR if major else RULE,
             stroke_gray=MUTED if major else RULE_C,
         )
+
+
+STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
+
+
+@dataclass(frozen=True, slots=True)
+class StenoRuling:
+    """Top-aligned Gregg ruling: ⅓″ horizontals, one vertical center rule."""
+
+    origin: Rect
+    pitch: float
+    n_lines: int
+    center_x: float
+
+
+def steno_ruling(box: Rect) -> StenoRuling:
+    """Fit as many ⅓″ gaps as *box* allows. Center splits two equal columns."""
+    n_gaps = max(1, int(box.h / STENO_PITCH_MM))
+    used_h = n_gaps * STENO_PITCH_MM
+    return StenoRuling(
+        Rect(box.x, box.y, box.w, used_h),
+        STENO_PITCH_MM,
+        n_gaps + 1,
+        box.x + box.w / 2,
+    )
+
+
+def paint_steno_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: StenoPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face Gregg pad — lined + center. No header, holes, or duplex back."""
+    _bound_ramp(plotter, ramp)
+    frame = device.content_frame()
+    _paint_steno_frame(plotter, frame)
+    _paint_steno_ruling(plotter, frame)
+
+
+def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:
+    """content_frame hairline — no hole-margin strip."""
+    plotter.rect(
+        frame,
+        stroke=True,
+        fill=False,
+        stroke_width=HAIR,
+        stroke_gray=MUTED,
+    )
+
+
+def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
+    """Horizontals RULE/MUTED; one heavier center HAIR/MUTED across the frame."""
+    ruling = steno_ruling(box)
+    grid = ruling.origin
+    for i in range(ruling.n_lines):
+        y = grid.y + i * ruling.pitch
+        plotter.line(
+            grid.x,
+            y,
+            grid.right,
+            y,
+            stroke_width=RULE,
+            stroke_gray=MUTED,
+        )
+    plotter.line(
+        ruling.center_x,
+        box.y,
+        ruling.center_x,
+        box.bottom,
+        stroke_width=HAIR,
+        stroke_gray=MUTED,
+    )

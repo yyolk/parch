@@ -16,6 +16,7 @@ from parch.components.review import (
     ReviewWeekPage,
 )
 from parch.components.schedule import Schedule
+from parch.components.steno import StenoPad
 from parch.components.tasks import TasksIndex, TasksMonthBand, TasksWeekPage, TaskWeek
 from parch.components.week import WeekDay, WeekStrip
 
@@ -41,6 +42,7 @@ type Component = (
     | ReviewWeek
     | ReviewWeekPage
     | Schedule
+    | StenoPad
     | TaskWeek
     | TasksIndex
     | TasksMonthBand
@@ -74,6 +76,7 @@ __all__ = [
     "ReviewWeek",
     "ReviewWeekPage",
     "Schedule",
+    "StenoPad",
     "TaskWeek",
     "TasksIndex",
     "TasksMonthBand",
