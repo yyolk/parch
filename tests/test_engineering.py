@@ -76,8 +76,8 @@ def test_spec_engineering_dests_and_toml():
     assert example.year == 2026
     assert "year =" not in Path("examples/engineering-pad.toml").read_text()
     assert Spec.from_mapping({"engineering": {"sheets": 2}}).engineering_sheets == 2
-    with pytest.raises(ConfigError, match="engineering_sheets must be 0–24"):
-        Spec(engineering_sheets=25)
+    with pytest.raises(ConfigError, match="engineering_sheets must be 0–100"):
+        Spec(engineering_sheets=101)
     with pytest.raises(ConfigError, match="front or back"):
         spec.dest_for_engineering_pad(1, "verso")
     with pytest.raises(ConfigError, match="engineering_sheets must be >= 1"):

@@ -58,8 +58,8 @@ def test_spec_steno_dests_and_toml():
     assert example.year == 2026
     assert "year =" not in Path("examples/steno-pad.toml").read_text()
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
-    with pytest.raises(ConfigError, match="steno_sheets must be 0–24"):
-        Spec(steno_sheets=25)
+    with pytest.raises(ConfigError, match="steno_sheets must be 0–100"):
+        Spec(steno_sheets=101)
     with pytest.raises(ConfigError, match="steno_sheets must be >= 1"):
         Spec().dest_for_steno_pad(1)
     with pytest.raises(ConfigError, match="steno sheet out of range"):

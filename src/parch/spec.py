@@ -141,10 +141,10 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
-        if not 0 <= self.engineering_sheets <= 24:
-            raise ConfigError("engineering_sheets must be 0–24")
-        if not 0 <= self.steno_sheets <= 24:
-            raise ConfigError("steno_sheets must be 0–24")
+        if not 0 <= self.engineering_sheets <= 100:
+            raise ConfigError("engineering_sheets must be 0–100")
+        if not 0 <= self.steno_sheets <= 100:
+            raise ConfigError("steno_sheets must be 0–100")
         if self.steno_sheets and self.engineering_sheets:
             raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
 
