@@ -19,6 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import listeners, render_progress
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -164,6 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         proof_verb = raw[0] == "proof"
         raw = raw[1:]
     args = parser.parse_args(raw)
+    listeners.append(render_progress)
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
@@ -174,6 +176,8 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"parch: {exc}", file=sys.stderr)
         return 2
+    finally:
+        listeners.remove(render_progress)
     for path in outputs:
         print(path)
     return 0

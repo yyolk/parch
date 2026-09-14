@@ -6,6 +6,7 @@ from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
+from parch.progress import notify
 from parch.sections import CoverSection, Page, ProjectsSection
 from parch.sections.page import NavItem
 from parch.spec import Spec
@@ -38,9 +39,11 @@ class ProjectsNotebook:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
+        n = len(pages)
         for page in pages:
             plotter.reserve_dest(page.dest)
-        for page in pages:
+        for i, page in enumerate(pages, start=1):
             plotter.begin_page()
             plotter.add_dest(page.dest)
             layout.paint(page, plotter, device)
+            notify(i, n, page.kind)
