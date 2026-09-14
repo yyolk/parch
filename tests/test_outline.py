@@ -4,14 +4,21 @@ from pathlib import Path
 from pypdf import PdfReader
 from pypdf.generic import Destination
 
-from parch.books import EngineeringNotebook, ProjectsNotebook, YearPlanner, plot_pages
+from parch.books import (
+    EngineeringNotebook,
+    ProjectsNotebook,
+    YearPlanner,
+    outline_entries,
+    plot_pages,
+)
+from parch.calendar import MONTH_NAMES
 from parch.fonts.ramp import EffectiveRamp
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.sections.engineering import EngineeringPadSection
 from parch.spec import Spec
 
-_OUTLINE_KINDS = frozenset(
+_OUTLINE_HUBS = frozenset(
     {
         "annual",
         "projects_index",
@@ -97,13 +104,59 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
         spec.quarter_dest,
         spec.month_dest,
     ]
-    assert outlined_kinds == _OUTLINE_KINDS
+    assert plotter.outlines() == outline_entries(pages)
+    assert [title for title, _dest in plotter.outlines()].count("Tasks") == 1
+    assert outlined_kinds == _OUTLINE_HUBS
     assert outlined_kinds.isdisjoint(_EXCLUDED_KINDS)
     assert spec.cover_dest not in dests
     assert spec.dest_for_habits(1) not in dests
     assert spec.dest_for_project(1) not in dests
     assert spec.dest_for_meeting(1) not in dests
     monday = date(2026, 1, 5)
+    assert spec.dest_for_task(monday) not in dests
+    assert spec.dest_for_review(monday) not in dests
+    assert spec.dest_for_week(monday) not in dests
+    assert spec.dest_for_day(monday) not in dests
+    assert spec.dest_for_notes(monday, 1) not in dests
+
+
+def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
+    spec = Spec(notes_pages=0, outline=True)
+    pages = YearPlanner().pages(spec)
+    entries = outline_entries(pages)
+    titles = [title for title, _dest in entries]
+    dests = [dest for _title, dest in entries]
+    dest_kind = {page.dest: page.kind for page in pages}
+    outlined_kinds = {dest_kind[dest] for dest in dests}
+    month_titles = [f"{name} {spec.year}" for name in MONTH_NAMES]
+    quarter_titles = [f"Q{quarter} {spec.year}" for quarter in range(1, 5)]
+
+    assert titles == [
+        str(spec.year),
+        "Projects",
+        "Meetings",
+        "Tasks",
+        "Review",
+        *quarter_titles,
+        *month_titles,
+    ]
+    assert titles.count("Tasks") == 1
+    assert [title for title in titles if title.startswith("Q")] == quarter_titles
+    assert [title for title in titles if title in set(month_titles)] == month_titles
+    assert outlined_kinds == _OUTLINE_HUBS
+    assert outlined_kinds.isdisjoint(_EXCLUDED_KINDS)
+    assert spec.cover_dest not in dests
+    assert spec.tasks_index_dest in dests
+    assert spec.dest_for_quarter(1) in dests
+    for quarter in range(2, 5):
+        assert spec.dest_for_tasks_index(quarter) not in dests
+        assert spec.dest_for_quarter(quarter) in dests
+    for month in spec.months:
+        assert spec.dest_for_month(month) in dests
+        assert spec.dest_for_habits(month) not in dests
+    monday = date(2026, 1, 5)
+    assert spec.dest_for_project(1) not in dests
+    assert spec.dest_for_meeting(1) not in dests
     assert spec.dest_for_task(monday) not in dests
     assert spec.dest_for_review(monday) not in dests
     assert spec.dest_for_week(monday) not in dests

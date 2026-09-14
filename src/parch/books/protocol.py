@@ -27,25 +27,38 @@ class Book(Protocol):
         """Reserve dests, then paint each page."""
 
 
-def _section_start(kind: str, prev_kind: str | None) -> bool:
-    """First non-cover page of a contiguous PageKind run (or first after cover)."""
-    if kind == "cover":
-        return False
-    return prev_kind is None or prev_kind == "cover" or prev_kind != kind
-
-
 # Reader outline hubs only. Weeks, days, notes, leaves, habits, and pad kinds omitted.
-_OUTLINE_KINDS = frozenset(
+# ONCE: first occurrence this press (tasks_index repeats per quarter; bookmark the first).
+# EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
+_OUTLINE_ONCE = frozenset(
     {
         "annual",
         "projects_index",
         "meetings_index",
         "tasks_index",
         "review_index",
-        "quarter",
-        "month",
     }
 )
+_OUTLINE_EACH = frozenset({"quarter", "month"})
+
+
+def _should_outline(kind: str, seen: set[str]) -> bool:
+    return kind in _OUTLINE_EACH or (kind in _OUTLINE_ONCE and kind not in seen)
+
+
+def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
+    """Reader outline ``(title, dest)`` pairs for a page ledger. No PDF.
+
+    Cover and non-hub kinds are omitted. ONCE kinds emit once; EACH kinds
+    emit every page (Q1–Q4 and each pressed month).
+    """
+    seen: set[str] = set()
+    entries: list[tuple[str, str]] = []
+    for page in pages:
+        if _should_outline(page.kind, seen):
+            entries.append((page.title, page.dest))
+            seen.add(page.kind)
+    return entries
 
 
 def plot_pages(
@@ -60,9 +73,9 @@ def plot_pages(
 
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
-    When ``outline``, each allowlisted section start gets a reader bookmark
-    on ``page.dest``. Cover, weekly, daily, notes, leaves, habits, and pad
-    kinds are omitted — pads with only those kinds get an empty outline.
+    When ``outline``, ``outline_entries`` picks reader bookmarks on ``page.dest``.
+    Cover, weekly, daily, notes, leaves, habits, and pad kinds are omitted —
+    pads with only those kinds get an empty outline.
     """
     ledger = list(pages())
     slate = get_device(device)
@@ -70,16 +83,11 @@ def plot_pages(
     n = len(ledger)
     for page in ledger:
         plotter.reserve_dest(page.dest)
-    prev_kind: str | None = None
+    picks = {dest for _title, dest in outline_entries(ledger)} if outline else set()
     for i, page in enumerate(ledger, start=1):
         plotter.begin_page()
         plotter.add_dest(page.dest)
-        if (
-            outline
-            and _section_start(page.kind, prev_kind)
-            and page.kind in _OUTLINE_KINDS
-        ):
+        if page.dest in picks:
             plotter.add_outline(page.title, page.dest)
         layout.paint(page, plotter, slate)
         render_progress(i, n, page.kind)
-        prev_kind = page.kind
