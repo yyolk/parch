@@ -174,3 +174,10 @@ def test_typography_unknown_keys_fail_loudly():
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
+
+
+def test_book_kind():
+    assert Spec().book == "year_planner"
+    assert Spec.from_mapping({"book": "projects"}).book == "projects"
+    with pytest.raises(ConfigError, match="book must be year_planner or projects"):
+        Spec(book="weekly")

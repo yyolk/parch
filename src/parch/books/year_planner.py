@@ -1,4 +1,8 @@
-"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days.
+
+When ``spec.book == "projects"``, ``pages()`` emits one composite section
+(``ProjectsNotebookSection``: CoverSection then ProjectsSection). Plot stays here.
+"""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
@@ -14,6 +18,7 @@ from parch.sections import (
     MeetingSection,
     MonthSection,
     Page,
+    ProjectsNotebookSection,
     ProjectsSection,
     QuarterSection,
     ReviewSection,
@@ -28,6 +33,8 @@ class YearPlanner:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def pages(self, spec: Spec) -> list[Page]:
+        if spec.book == "projects":
+            return ProjectsNotebookSection(spec).pages()
         daily = DailySection(spec)
         notes = DailyNotesSection(spec)
         weekly = WeeklySection(spec)

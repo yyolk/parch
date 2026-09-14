@@ -11,6 +11,7 @@ from parch.calendar import iso_monday, month_touching_weeks, quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
+_BOOKS = frozenset({"year_planner", "projects"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
@@ -80,6 +81,7 @@ def _dest(template: Template) -> str:
 class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
+    book: str = "year_planner"
     week_start: str = "monday"
     months: tuple[int, ...] = tuple(range(1, 13))
     title: str = "Year planner"
@@ -97,6 +99,10 @@ class Spec:
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
+        if self.book not in _BOOKS:
+            raise ConfigError(
+                f"book must be year_planner or projects, not {self.book!r}"
+            )
         if self.week_start not in _WEEK_STARTS:
             raise ConfigError(
                 f"week_start must be monday or sunday, not {self.week_start!r}"
@@ -305,6 +311,7 @@ class Spec:
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
+            book=str(data.get("book", "year_planner")).lower(),
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
             title=str(data.get("title", "Year planner")),
