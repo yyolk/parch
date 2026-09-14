@@ -1,0 +1,15 @@
+# Projects notebook (Approach F) — cover + projects, then chrome remapper.
+# Press with the CLI flag (not a Spec.book / PRESSABLE shard):
+#   parch press --projects-notebook examples/projects.toml -o out/projects.pdf
+# Swap device = "kindle-scribe" for the other slate; layout still comes from Spec.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1

@@ -16,9 +16,11 @@ from parch.fonts import (
     compose_overlays,
     require_overlay,
 )
-from parch.fonts.ramp import OverlayData
+from parch.fonts.ramp import OverlayData, TypeRamp
+from parch.layouts.planner import PlannerLayout
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.sections.page import Page
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -51,6 +53,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    projects_notebook: bool = False,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -83,9 +86,28 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    if projects_notebook:
+        from parch.sections.remap import projects_notebook_pages
+
+        _plot_pages(projects_notebook_pages(spec), spec, plotter, resolved)
+    else:
+        YearPlanner(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def _plot_pages(
+    pages: list[Page], spec: Spec, plotter: Plotter, ramp: TypeRamp
+) -> None:
+    """Reserve → begin → paint. Device comes from Spec, not PRESSABLE."""
+    device = get_device(spec.device)
+    layout = PlannerLayout(ramp=ramp)
+    for page in pages:
+        plotter.reserve_dest(page.dest)
+    for page in pages:
+        plotter.begin_page()
+        plotter.add_dest(page.dest)
+        layout.paint(page, plotter, device)
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
@@ -151,6 +173,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
+    parser.add_argument(
+        "--projects-notebook",
+        action="store_true",
+        help="Emit cover+projects then remap year-shaped chrome onto the projects index.",
+    )
     # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
     # the historical on-screen path; it selects ProofProfile. `parch specimen`
     # writes a static PNG catalog (not a product PDF).
@@ -167,7 +194,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec,
+            outputs[0],
+            proof=proof_verb or args.proof,
+            projects_notebook=args.projects_notebook,
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

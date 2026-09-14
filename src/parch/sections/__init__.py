@@ -8,6 +8,7 @@ from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
 from parch.sections.projects import ProjectsSection
 from parch.sections.quarter import QuarterSection
+from parch.sections.remap import projects_notebook_pages, remap_year_chrome
 from parch.sections.review import ReviewSection
 from parch.sections.tasks import TasksSection
 from parch.sections.weekly import WeeklySection
@@ -21,6 +22,8 @@ __all__ = [
     "MeetingSection",
     "MonthSection",
     "ProjectsSection",
+    "projects_notebook_pages",
+    "remap_year_chrome",
     "NavItem",
     "Page",
     "PageKind",
