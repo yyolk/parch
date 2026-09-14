@@ -6,6 +6,7 @@ from pypdf import PdfReader
 from parch import ConfigError
 from parch.books import YearPlanner
 from parch.components import CoverTitle, ProjectsBoard, ProjectsIndex
+from parch.layouts.planner.painters import strip_items
 from parch.press import press
 from parch.sections import CoverSection, ProjectsSection
 from parch.spec import BOOK_SECTIONS, SECTION_NAMES, Spec
@@ -68,6 +69,7 @@ def test_projects_book_reuses_cover_and_projects_sections():
     )
     assert roster.year == 2026
     assert board.number == 1
+    assert strip_items(built[1]) == (("Proj", spec.projects_index_dest),)
 
 
 def test_sections_allowlist_overrides_book_preset():

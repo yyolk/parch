@@ -55,6 +55,21 @@ from datetime import date
 from parch.sections.page import NavItem
 from parch.spec import Spec
 
+# Strip label → YearPlanner section name (Spec.book / Spec.sections filter).
+_NAV_SECTIONS: dict[str, str] = {
+    "Year": "annual",
+    "Quar": "quarters",
+    "Mon": "months",
+    "Habit": "habits",
+    "Week": "weeks",
+    "Rev": "review",
+    "Day": "days",
+    "Notes": "days",
+    "Proj": "projects",
+    "Meet": "meetings",
+    "Task": "tasks",
+}
+
 
 def landing_day(
     spec: Spec, *, day: date | None = None, month: int | None = None
@@ -97,4 +112,4 @@ def planner_nav(
             NavItem("Task", task_dest or spec.tasks_index_dest),
         ]
     )
-    return tuple(items)
+    return tuple(item for item in items if spec.includes(_NAV_SECTIONS[item.label]))
