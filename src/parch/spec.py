@@ -63,6 +63,13 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     return tuple(range(1, 13))
 
 
+def _parse_bool(raw: object, key: str) -> bool:
+    """Closed boolean TOML field — strings and ints fail loudly."""
+    if not isinstance(raw, bool):
+        raise ConfigError(f"{key} must be a boolean")
+    return raw
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -98,6 +105,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    outline: bool = False  # reader sidebar outline; default off
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -382,6 +390,7 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            outline=_parse_bool(data.get("outline", False), "outline"),
             type_overlay=_parse_typography(data),
         )
 

@@ -27,17 +27,26 @@ class Book(Protocol):
         """Reserve dests, then paint each page."""
 
 
+def _section_start(kind: str, prev_kind: str | None) -> bool:
+    """First non-cover page of a contiguous PageKind run (or first after cover)."""
+    if kind == "cover":
+        return False
+    return prev_kind is None or prev_kind == "cover" or prev_kind != kind
+
+
 def plot_pages(
     pages: Callable[[], Iterable[Page]],
     plotter: Plotter,
     *,
     ramp: TypeRamp,
     device: str,
+    outline: bool = False,
 ) -> None:
     """Reserve dests, then begin/add/paint. Progress ticks match the books.
 
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
+    When ``outline``, each section start gets a reader bookmark on ``page.dest``.
     """
     ledger = list(pages())
     slate = get_device(device)
@@ -45,8 +54,12 @@ def plot_pages(
     n = len(ledger)
     for page in ledger:
         plotter.reserve_dest(page.dest)
+    prev_kind: str | None = None
     for i, page in enumerate(ledger, start=1):
         plotter.begin_page()
         plotter.add_dest(page.dest)
+        if outline and _section_start(page.kind, prev_kind):
+            plotter.add_outline(page.title, page.dest)
         layout.paint(page, plotter, slate)
         render_progress(i, n, page.kind)
+        prev_kind = page.kind

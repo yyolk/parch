@@ -63,6 +63,7 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
+    assert spec.outline is False
 
 
 def test_habit_columns_from_toml_keys():
@@ -94,6 +95,10 @@ def test_habit_columns_from_toml_keys():
     assert (
         Spec.from_path(Path("examples/engineering.toml")).book == "engineering-notebook"
     )
+    assert Spec.from_path(Path("examples/engineering.toml")).outline is True
+    assert Spec.from_mapping({"outline": True}).outline is True
+    with pytest.raises(ConfigError, match="outline must be a boolean"):
+        Spec.from_mapping({"outline": "true"})
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
     assert Spec.from_path(Path("examples/steno-pad.toml")).steno_sheets == 1
     with pytest.raises(ConfigError, match="book must be"):
