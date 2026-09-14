@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pypdf import PdfReader
+import pytest
+from fpdf.errors import FPDFException
 
 from parch.books import Book, ProjectsNotebook, YearPlanner, plot_pages
 from parch.components import CoverTitle, ProjectsBoard, ProjectsIndex
@@ -111,18 +112,11 @@ def test_year_planner_plot_still_uses_helper():
     assert pages[2].kind == "projects_index"
 
 
-def test_projects_notebook_presses_pdf(tmp_path: Path):
+def test_projects_notebook_cannot_finish_year_shaped_links(tmp_path: Path):
+    """Cover + planner_nav still name year-book dests this walk never reserves."""
     spec = Spec(notes_pages=0)
     device = get_device(spec.device)
-    out = tmp_path / "projects.pdf"
     plotter = Fpdf2Plotter(device)
     ProjectsNotebook().plot(spec, plotter)
-    plotter.finish(out)
-    reader = PdfReader(out)
-    assert len(reader.pages) == 1 + spec.project_index_pages + spec.project_count
-    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
-    assert "cover" in dests
-    assert "projects-index-2026-01" in dests
-    assert "projects-2026-01" in dests
-    assert "projects-2026-08" in dests
-    assert "year-2026" not in dests
+    with pytest.raises(FPDFException, match="year-2026"):
+        plotter.finish(tmp_path / "projects.pdf")
