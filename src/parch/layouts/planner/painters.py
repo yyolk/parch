@@ -2082,20 +2082,18 @@ def strip_active(kind: str) -> str:
             return "Year"
 
 
-ENG_HEADER_H = 18.6
-ENG_HEADER_RIGHT = 0.34
-ENG_LABEL_W = 14.0
-ENG_SHORT_LABEL_W = 9.0
-ENG_WRITE_LABEL_H = 3.8
-ENG_WRITE_LIFT = 1.55
-ENG_DIVIDER_INSET = 0.85
+ENG_HEADER_H = 14.0
+ENG_HEADER_FIELDS = ("Subject", "Date", "Sheet", "Notes")
+ENG_LABEL_INSET_X = 1.2
+ENG_LABEL_INSET_Y = 1.0
+ENG_LABEL_H = 4.2
 ENG_MAJOR_EVERY = 5
-ENG_PITCH_MM = 5.08  # 1/5 inch — classic computation-pad square
+ENG_PITCH_MM = 5.0  # hardcoded E2 mesh — not a Spec/TOML knob
 
 
 @dataclass(frozen=True, slots=True)
 class EngineeringGridMesh:
-    """Centered square mesh: major lines land on multiples of ``ENG_MAJOR_EVERY``."""
+    """Centered square mesh: width-first pitch, majors on multiples of 5."""
 
     origin: Rect
     pitch: float
@@ -2104,28 +2102,25 @@ class EngineeringGridMesh:
 
 
 def engineering_front_seats(frame: Rect) -> tuple[Rect, Rect]:
-    """Header band over the blank writing well. Same outer frame as the back grid."""
+    """One header row over the blank writing well. Same outer frame as the back grid."""
     return frame.split_top(ENG_HEADER_H)
 
 
-def engineering_header_rows(header: Rect) -> tuple[Rect, ...]:
-    return rows(header, 3)
-
-
-def engineering_header_pair(row: Rect) -> tuple[Rect, Rect]:
-    """Title|No., Name|Date, Subject|Sheet — ``tracks.columns``, short vertical divider."""
-    return columns(row, 2, gap=0, weights=(1.0 - ENG_HEADER_RIGHT, ENG_HEADER_RIGHT))
+def engineering_header_cells(header: Rect) -> tuple[Rect, ...]:
+    """SUBJECT | DATE | SHEET | NOTES — equal boxed cells, no write-in rules."""
+    return columns(header, len(ENG_HEADER_FIELDS), gap=0)
 
 
 def engineering_grid_mesh(box: Rect) -> EngineeringGridMesh:
-    """Integer 5×5 blocks of square cells, centered in ``box``."""
+    """Width-first 5 mm clusters: fill the frame width, leftover height is the strip."""
     nx = max(
         ENG_MAJOR_EVERY,
         (int(box.w / ENG_PITCH_MM) // ENG_MAJOR_EVERY) * ENG_MAJOR_EVERY,
     )
+    pitch = box.w / nx
     ny = max(
         ENG_MAJOR_EVERY,
-        (int(box.h / ENG_PITCH_MM) // ENG_MAJOR_EVERY) * ENG_MAJOR_EVERY,
+        (int(box.h / pitch) // ENG_MAJOR_EVERY) * ENG_MAJOR_EVERY,
     )
     pitch = min(box.w / nx, box.h / ny)
     gw, gh = nx * pitch, ny * pitch
@@ -2141,143 +2136,75 @@ def paint_engineering_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Duplex computation pad — front header + blank well; back 5×5 grid. No holes."""
+    """Duplex computation pad — front four-cell header; back 5×5 grid. No holes."""
     ramp = _bound_ramp(plotter, ramp)
     frame = device.content_frame()
-    _paint_engineering_frame(plotter, frame)
     match pad.face:
         case "front":
+            _paint_engineering_frame(plotter, frame, stroke_gray=INK)
             header, _well = engineering_front_seats(frame)
-            _paint_engineering_header(plotter, header, pad, ramp=ramp)
+            _paint_engineering_header(plotter, header, ramp=ramp)
         case "back":
+            _paint_engineering_frame(plotter, frame, stroke_gray=MUTED)
             _paint_engineering_grid(plotter, frame)
         case _:
             raise ValueError(f"unknown engineering face {pad.face!r}")
 
 
-def _paint_engineering_frame(plotter: Plotter, frame: Rect) -> None:
-    """Outer vertical rules (plus quiet top/bottom) — content_frame, not a hole margin."""
-    plotter.line(
-        frame.x, frame.y, frame.x, frame.bottom, stroke_width=HAIR, stroke_gray=INK
-    )
-    plotter.line(
-        frame.right,
-        frame.y,
-        frame.right,
-        frame.bottom,
+def _paint_engineering_frame(
+    plotter: Plotter, frame: Rect, *, stroke_gray: float
+) -> None:
+    """content_frame hairline — no hole-margin strip. Front INK, back MUTED."""
+    plotter.rect(
+        frame,
+        stroke=True,
+        fill=False,
         stroke_width=HAIR,
-        stroke_gray=INK,
-    )
-    plotter.line(
-        frame.x, frame.y, frame.right, frame.y, stroke_width=HAIR, stroke_gray=INK
-    )
-    plotter.line(
-        frame.x,
-        frame.bottom,
-        frame.right,
-        frame.bottom,
-        stroke_width=HAIR,
-        stroke_gray=INK,
+        stroke_gray=stroke_gray,
     )
 
 
 def _paint_engineering_header(
-    plotter: Plotter, header: Rect, pad: EngineeringPad, *, ramp: TypeRamp
+    plotter: Plotter, header: Rect, *, ramp: TypeRamp
 ) -> None:
     plotter.ramp = ramp
-    pairs = (("Title", "No."), ("Name", "Date"), ("Subject", "Sheet"))
-    for band, (left_label, right_label) in zip(
-        engineering_header_rows(header), pairs, strict=True
-    ):
-        left, right = engineering_header_pair(band)
-        plotter.line(
-            right.x,
-            band.y + ENG_DIVIDER_INSET,
-            right.x,
-            band.bottom - ENG_DIVIDER_INSET,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
+    cells = engineering_header_cells(header)
+    for i, (cell, label) in enumerate(zip(cells, ENG_HEADER_FIELDS, strict=True)):
+        if i:
+            plotter.line(
+                cell.x,
+                header.y,
+                cell.x,
+                header.bottom,
+                stroke_width=RULE,
+                stroke_gray=RULE_C,
+            )
+        _ink_text(
+            plotter,
+            Rect(
+                cell.x + ENG_LABEL_INSET_X,
+                cell.y + ENG_LABEL_INSET_Y,
+                cell.w - 2 * ENG_LABEL_INSET_X,
+                ENG_LABEL_H,
+            ),
+            label,
+            TypeRef(step="caption"),
+            gray=MUTED,
+            small_caps=True,
+            align="left",
         )
-        _paint_engineering_writein(plotter, left, left_label, ENG_LABEL_W)
-        if right_label == "Sheet":
-            _paint_engineering_sheet(plotter, right, pad.sheet, pad.sheets)
-        else:
-            _paint_engineering_writein(plotter, right, right_label, ENG_SHORT_LABEL_W)
     plotter.line(
         header.x,
         header.bottom,
         header.right,
         header.bottom,
-        stroke_width=HAIR,
-        stroke_gray=INK,
-    )
-
-
-def _paint_engineering_writein(
-    plotter: Plotter, box: Rect, label: str, label_w: float
-) -> None:
-    """Muted small-caps label + write-in rule — same craft as meeting head blanks."""
-    tag, write = box.split_left(min(label_w, box.w * 0.45))
-    rule_y = box.bottom - ENG_WRITE_LIFT
-    _ink_text(
-        plotter,
-        Rect(tag.x + 0.8, rule_y - ENG_WRITE_LABEL_H, tag.w - 0.6, ENG_WRITE_LABEL_H),
-        label,
-        TypeRef(step="label"),
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
-    plotter.line(
-        write.x + 0.4,
-        rule_y,
-        write.right - 0.6,
-        rule_y,
         stroke_width=RULE,
         stroke_gray=RULE_C,
     )
 
 
-def _paint_engineering_sheet(
-    plotter: Plotter, box: Rect, sheet: int, sheets: int
-) -> None:
-    """``Sheet n of N`` — printed index, not a write-in, so duplex sheets stay ordered."""
-    inner = box.inset(0.6, 0.15)
-    tag, rest = inner.split_left(ENG_SHORT_LABEL_W)
-    rule_y = box.bottom - ENG_WRITE_LIFT
-    _ink_text(
-        plotter,
-        Rect(tag.x + 0.2, rule_y - ENG_WRITE_LABEL_H, tag.w, ENG_WRITE_LABEL_H),
-        "Sheet",
-        TypeRef(step="label"),
-        gray=MUTED,
-        small_caps=True,
-        align="left",
-    )
-    of_w = 5.0
-    num_w = max((rest.w - of_w) / 2, 3.0)
-    n_box = Rect(rest.x, rule_y - ENG_WRITE_LABEL_H, num_w, ENG_WRITE_LABEL_H)
-    of_box = Rect(n_box.right, n_box.y, of_w, ENG_WRITE_LABEL_H)
-    n2_box = Rect(of_box.right, n_box.y, max(rest.right - of_box.right, 3.0), n_box.h)
-    _ink_text(
-        plotter, n_box, str(sheet), TypeRef(step="caption"), gray=INK, align="center"
-    )
-    _ink_text(
-        plotter,
-        of_box,
-        "of",
-        TypeRef(step="caption"),
-        gray=MUTED,
-        small_caps=True,
-        align="center",
-    )
-    _ink_text(
-        plotter, n2_box, str(sheets), TypeRef(step="caption"), gray=INK, align="center"
-    )
-
-
 def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
-    """Square engineering mesh — minors in RULE_C, majors every 5 in MUTED/HAIR."""
+    """Square engineering mesh — minors RULE/RULE_C, majors every 5 HAIR/MUTED."""
     mesh = engineering_grid_mesh(box)
     grid = mesh.origin
     for i in range(mesh.nx + 1):

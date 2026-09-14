@@ -8,6 +8,8 @@ from parch.components import EngineeringPad
 from parch.devices.registry import NOMAD, SCRIBE
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
+    ENG_HEADER_FIELDS,
+    ENG_HEADER_H,
     ENG_MAJOR_EVERY,
     HAIR,
     HEADER_H,
@@ -18,6 +20,7 @@ from parch.layouts.planner.painters import (
     EngineeringGridMesh,
     engineering_front_seats,
     engineering_grid_mesh,
+    engineering_header_cells,
     paint_engineering_pad,
 )
 from parch.plotter import RecordingPlotter
@@ -98,26 +101,40 @@ def test_grid_mesh_is_square_with_majors_every_five():
 def test_front_seats_use_symmetric_content_frame():
     frame = NOMAD.content_frame()
     header, well = engineering_front_seats(frame)
+    assert header.h == pytest.approx(ENG_HEADER_H)
     assert frame.x == pytest.approx(NOMAD.writing_clearance)
     assert NOMAD.page_width - frame.right == pytest.approx(NOMAD.writing_clearance)
     assert header.y == pytest.approx(frame.y)
     assert well.y == pytest.approx(header.bottom)
     assert well.bottom == pytest.approx(frame.bottom)
     assert well.x == pytest.approx(frame.x)
+    cells = engineering_header_cells(header)
+    assert len(cells) == 4
+    assert [round(cell.w, 6) for cell in cells] == [round(header.w / 4, 6)] * 4
 
 
-def test_front_paints_header_blanks_without_grid():
+def test_front_paints_four_boxed_cells_without_grid():
     pad = EngineeringPad(face="front", sheet=1, sheets=1)
     ink = RecordingPlotter()
     paint_engineering_pad(ink, NOMAD, pad)
     texts = _texts(ink)
-    for label in ("Title", "No.", "Name", "Date", "Subject", "Sheet", "of"):
-        assert label in texts
-    assert "1" in texts
+    assert texts == list(ENG_HEADER_FIELDS)
+    assert "Title" not in texts
+    assert "No." not in texts
+    assert "Name" not in texts
+    assert "of" not in texts
+    assert "1" not in texts
     lines = _lines(ink)
     back = RecordingPlotter()
     paint_engineering_pad(back, NOMAD, EngineeringPad(face="back", sheet=1, sheets=1))
     assert len(lines) < len(_lines(back)) / 2
+    frames = [
+        op
+        for op in ink.ops
+        if op[0] == "rect" and op[1] == NOMAD.content_frame() and op[2] and not op[3]
+    ]
+    assert frames
+    assert frames[0][6] == pytest.approx(INK)
 
 
 def test_back_paints_grid_without_header():
@@ -125,7 +142,8 @@ def test_back_paints_grid_without_header():
     ink = RecordingPlotter()
     paint_engineering_pad(ink, NOMAD, pad)
     texts = _texts(ink)
-    assert "Title" not in texts
+    assert texts == []
+    assert "Subject" not in texts
     assert "Sheet" not in texts
     mesh = engineering_grid_mesh(NOMAD.content_frame())
     vertical = [op for op in _lines(ink) if op[1] == op[3] and op[2] != op[4]]
@@ -141,6 +159,13 @@ def test_back_paints_grid_without_header():
     ]
     assert len(majors) == mesh.nx // ENG_MAJOR_EVERY + 1
     assert len(minors) == mesh.nx + 1 - len(majors)
+    frames = [
+        op
+        for op in ink.ops
+        if op[0] == "rect" and op[1] == NOMAD.content_frame() and op[2] and not op[3]
+    ]
+    assert frames
+    assert frames[0][6] == pytest.approx(MUTED)
 
 
 def test_layout_skips_planner_slab_and_nav():
