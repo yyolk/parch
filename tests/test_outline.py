@@ -91,9 +91,7 @@ def test_engineering_notebook_outline_is_flat():
 def test_projects_notebook_outline_is_flat():
     spec = Spec(book="projects-notebook", outline=True)
     dests = {
-        page.dest
-        for page in ProjectsNotebook().pages(spec)
-        if page.kind != "cover"
+        page.dest for page in ProjectsNotebook().pages(spec) if page.kind != "cover"
     }
     assert outline_tree(spec, dests) == [("Projects", spec.projects_index_dest, 0)]
 

@@ -208,7 +208,9 @@ class Fpdf2Plotter(Plotter):
         target = self.pdf.named_destinations.get(dest)
         if target is None:
             raise ConfigError(f"outline dest {dest!r} was never reserved")
-        self.pdf._outline.append(OutlineSection(title, level, target.page_number, target))
+        self.pdf._outline.append(
+            OutlineSection(title, level, target.page_number, target)
+        )
 
     @override
     def finish(self, path: Path) -> None:
