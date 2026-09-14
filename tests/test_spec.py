@@ -83,10 +83,15 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
-    assert Spec.from_mapping(
-        {"book": "engineering-notebook", "engineering": {"sheets": 1}}
-    ).book == "engineering-notebook"
-    assert Spec.from_path(Path("examples/engineering.toml")).book == "engineering-notebook"
+    assert (
+        Spec.from_mapping(
+            {"book": "engineering-notebook", "engineering": {"sheets": 1}}
+        ).book
+        == "engineering-notebook"
+    )
+    assert (
+        Spec.from_path(Path("examples/engineering.toml")).book == "engineering-notebook"
+    )
     assert Spec.from_mapping({"engineering": {"sheets": 3}}).engineering_sheets == 3
     assert Spec.from_path(Path("examples/engineering-pad.toml")).engineering_sheets == 1
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
