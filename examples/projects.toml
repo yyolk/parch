@@ -4,8 +4,6 @@
 book = "projects-notebook"
 year = 2026
 device = "supernote-nomad"
-week_start = "monday"
-months = [1]
 title = "Projects"
 
 [projects]
