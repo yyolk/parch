@@ -120,7 +120,7 @@ def test_paint_is_lined_center_without_header():
     assert center[2] == pytest.approx(frame.y)
     assert center[4] == pytest.approx(frame.bottom)
     ys = sorted(op[2] for op in horizontals)
-    for prev, nxt in zip(ys, ys[1:], strict=True):
+    for prev, nxt in zip(ys, ys[1:]):
         assert nxt - prev == pytest.approx(STENO_PITCH_MM)
     frames = [
         op
