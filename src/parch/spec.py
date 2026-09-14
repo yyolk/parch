@@ -15,6 +15,28 @@ _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 
 type TomlTable = dict[str, object]
 
+SECTION_NAMES: tuple[str, ...] = (
+    "cover",
+    "annual",
+    "projects",
+    "meetings",
+    "tasks",
+    "review",
+    "quarters",
+    "months",
+    "habits",
+    "weeks",
+    "days",
+)
+_SECTION_NAMES = frozenset(SECTION_NAMES)
+
+# Book kind → YearPlanner section walk. ``projects`` is cover + projects only.
+BOOK_SECTIONS: dict[str, tuple[str, ...]] = {
+    "year": SECTION_NAMES,
+    "projects": ("cover", "projects"),
+}
+_BOOK_KINDS = frozenset(BOOK_SECTIONS)
+
 
 def _parse_typography(data: TomlTable) -> TypeOverlay:
     """``[typography.overlay.<step>]`` → ``TypeOverlay``. Unknown keys fail loudly.
@@ -62,6 +84,39 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     return tuple(range(1, 13))
 
 
+def _parse_book(data: TomlTable) -> str:
+    raw = data.get("book", "year")
+    if not isinstance(raw, str):
+        raise ConfigError("book must be a string")
+    book = raw.lower()
+    if book not in _BOOK_KINDS:
+        known = ", ".join(sorted(_BOOK_KINDS))
+        raise ConfigError(f"book must be {known}, not {raw!r}")
+    return book
+
+
+def _parse_sections(data: TomlTable) -> tuple[str, ...] | None:
+    """Optional ``sections`` allowlist. Missing → book default. Empty fails."""
+    raw = data.get("sections")
+    if raw is None:
+        return None
+    if not isinstance(raw, list):
+        raise ConfigError("sections must be a TOML array")
+    if not raw:
+        raise ConfigError("sections must not be empty")
+    names: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        name = str(item).lower()
+        if name not in _SECTION_NAMES:
+            raise ConfigError(f"unknown section {name!r}")
+        if name in seen:
+            raise ConfigError(f"duplicate section {name}")
+        seen.add(name)
+        names.append(name)
+    return tuple(names)
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -83,6 +138,8 @@ class Spec:
     week_start: str = "monday"
     months: tuple[int, ...] = tuple(range(1, 13))
     title: str = "Year planner"
+    book: str = "year"
+    sections: tuple[str, ...] | None = None
     schedule_from: int = 7
     schedule_to: int = 16
     notes_pages: int = 2
@@ -101,6 +158,19 @@ class Spec:
             raise ConfigError(
                 f"week_start must be monday or sunday, not {self.week_start!r}"
             )
+        if self.book not in _BOOK_KINDS:
+            known = ", ".join(sorted(_BOOK_KINDS))
+            raise ConfigError(f"book must be {known}, not {self.book!r}")
+        if self.sections is not None:
+            if not self.sections:
+                raise ConfigError("sections must not be empty")
+            seen_sections: set[str] = set()
+            for name in self.sections:
+                if name not in _SECTION_NAMES:
+                    raise ConfigError(f"unknown section {name!r}")
+                if name in seen_sections:
+                    raise ConfigError(f"duplicate section {name}")
+                seen_sections.add(name)
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -134,6 +204,36 @@ class Spec:
     @property
     def weekday_start(self) -> int:
         return _WEEK_STARTS[self.week_start]
+
+    @property
+    def section_names(self) -> tuple[str, ...]:
+        """Effective YearPlanner walk: explicit ``sections`` or the book preset."""
+        if self.sections is not None:
+            return self.sections
+        return BOOK_SECTIONS[self.book]
+
+    def includes(self, section: str) -> bool:
+        return section in self.section_names
+
+    @property
+    def entry_dest(self) -> str:
+        """Cover CTA / year-chip dest for the first content section in this book."""
+        names = self.section_names
+        if "annual" in names:
+            return self.year_dest
+        if "projects" in names:
+            return self.projects_index_dest
+        if "meetings" in names:
+            return self.meetings_index_dest
+        if "tasks" in names:
+            return self.tasks_index_dest
+        if "review" in names:
+            return self.review_index_dest
+        if "quarters" in names:
+            return self.quarter_dest
+        if "months" in names:
+            return self.month_dest
+        return self.cover_dest
 
     @property
     def month(self) -> int:
@@ -308,6 +408,8 @@ class Spec:
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
             title=str(data.get("title", "Year planner")),
+            book=_parse_book(data),
+            sections=_parse_sections(data),
             schedule_from=int(
                 daily_table.get("schedule_from", data.get("schedule_from", 7))
             ),

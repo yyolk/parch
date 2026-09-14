@@ -1,4 +1,8 @@
-"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days.
+
+``Spec.book`` / ``Spec.sections`` filter this walk. The ``projects`` kind keeps
+``CoverSection`` + ``ProjectsSection`` only; no sibling book class.
+"""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
@@ -28,30 +32,44 @@ class YearPlanner:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def pages(self, spec: Spec) -> list[Page]:
-        daily = DailySection(spec)
-        notes = DailyNotesSection(spec)
-        weekly = WeeklySection(spec)
-        month = MonthSection(spec)
-        habits = HabitSection(spec)
-        built = [
-            *CoverSection(spec).pages(),
-            *AnnualSection(spec).pages(),
-            *ProjectsSection(spec).pages(),
-            *MeetingSection(spec).pages(),
-            *TasksSection(spec).pages(),
-            *ReviewSection(spec).pages(),
-            *QuarterSection(spec).pages(),
-        ]
-        for number in spec.months:
-            built.extend(month.pages_for(number))
-            built.extend(habits.pages_for(number))
-        for week in months_touching_weeks(spec.year, spec.months, spec.weekday_start):
-            built.extend(weekly.pages_for(week))
-            for day in week:
-                if not spec.presses_day(day):
-                    continue
-                built.extend(daily.pages_for(day))
-                built.extend(notes.pages_for(day))
+        built: list[Page] = []
+        if spec.includes("cover"):
+            built.extend(CoverSection(spec).pages())
+        if spec.includes("annual"):
+            built.extend(AnnualSection(spec).pages())
+        if spec.includes("projects"):
+            built.extend(ProjectsSection(spec).pages())
+        if spec.includes("meetings"):
+            built.extend(MeetingSection(spec).pages())
+        if spec.includes("tasks"):
+            built.extend(TasksSection(spec).pages())
+        if spec.includes("review"):
+            built.extend(ReviewSection(spec).pages())
+        if spec.includes("quarters"):
+            built.extend(QuarterSection(spec).pages())
+        if spec.includes("months") or spec.includes("habits"):
+            month = MonthSection(spec)
+            habits = HabitSection(spec)
+            for number in spec.months:
+                if spec.includes("months"):
+                    built.extend(month.pages_for(number))
+                if spec.includes("habits"):
+                    built.extend(habits.pages_for(number))
+        if spec.includes("weeks") or spec.includes("days"):
+            weekly = WeeklySection(spec)
+            daily = DailySection(spec)
+            notes = DailyNotesSection(spec)
+            for week in months_touching_weeks(
+                spec.year, spec.months, spec.weekday_start
+            ):
+                if spec.includes("weeks"):
+                    built.extend(weekly.pages_for(week))
+                if spec.includes("days"):
+                    for day in week:
+                        if not spec.presses_day(day):
+                            continue
+                        built.extend(daily.pages_for(day))
+                        built.extend(notes.pages_for(day))
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

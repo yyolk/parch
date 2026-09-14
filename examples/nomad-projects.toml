@@ -1,0 +1,30 @@
+# Nomad projects notebook — YearPlanner walk filtered to CoverSection + ProjectsSection.
+# book = "projects" (or sections = ["cover", "projects"]) on the existing press path.
+# Strip nav still names year/quarter dests the filter does not reserve — DNM.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+book = "projects"
+
+[daily]
+schedule_from = 7
+schedule_to = 16
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6

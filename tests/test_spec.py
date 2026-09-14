@@ -5,11 +5,15 @@ import pytest
 
 from parch import ConfigError
 from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
-from parch.spec import Spec
+from parch.spec import BOOK_SECTIONS, SECTION_NAMES, Spec
 
 
 def test_dest_names_from_tstrings():
     spec = Spec()
+    assert spec.book == "year"
+    assert spec.sections is None
+    assert spec.section_names == SECTION_NAMES == BOOK_SECTIONS["year"]
+    assert spec.entry_dest == spec.year_dest
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
     assert spec.months == tuple(range(1, 13))
@@ -80,6 +84,7 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     nomad = Spec.from_path(Path("examples/nomad.toml"))
+    assert nomad.book == "year"
     assert nomad.device == "supernote-nomad"
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
