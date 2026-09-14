@@ -7,6 +7,7 @@ from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
 from parch.sections.projects import ProjectsSection
+from parch.sections.projects_notebook import ProjectsNotebookSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.review import ReviewSection
 from parch.sections.tasks import TasksSection
@@ -20,6 +21,7 @@ __all__ = [
     "HabitSection",
     "MeetingSection",
     "MonthSection",
+    "ProjectsNotebookSection",
     "ProjectsSection",
     "NavItem",
     "Page",

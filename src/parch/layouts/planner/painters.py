@@ -214,7 +214,7 @@ def paint_cover(
     _ink_text(
         plotter,
         brow,
-        "Year Book",
+        cover.eyebrow,
         TypeRef(step="eyebrow"),
         gray=MUTED,
         small_caps=True,

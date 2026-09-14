@@ -14,6 +14,7 @@ from parch.sections import (
     MeetingSection,
     MonthSection,
     Page,
+    ProjectsNotebookSection,
     ProjectsSection,
     QuarterSection,
     ReviewSection,
@@ -28,6 +29,8 @@ class YearPlanner:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def pages(self, spec: Spec) -> list[Page]:
+        if spec.book == "projects":
+            return ProjectsNotebookSection(spec).pages()
         daily = DailySection(spec)
         notes = DailyNotesSection(spec)
         weekly = WeeklySection(spec)

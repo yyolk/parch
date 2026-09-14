@@ -10,6 +10,7 @@ from parch.spec import Spec
 
 def test_dest_names_from_tstrings():
     spec = Spec()
+    assert spec.book == "year_planner"
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
     assert spec.months == tuple(range(1, 13))
@@ -80,6 +81,7 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     nomad = Spec.from_path(Path("examples/nomad.toml"))
+    assert nomad.book == "year_planner"
     assert nomad.device == "supernote-nomad"
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
@@ -169,6 +171,13 @@ def test_typography_unknown_keys_fail_loudly():
         Spec.from_mapping({"typography": {"overlay": {"chrome": {"size": 9.2}}}})
     with pytest.raises(ConfigError, match="typography must be a TOML table"):
         Spec.from_mapping({"typography": "loud"})
+
+
+def test_unknown_book_fails():
+    with pytest.raises(ConfigError, match="book must be year_planner or projects"):
+        Spec(book="weekly")
+    with pytest.raises(ConfigError, match="book must be year_planner or projects"):
+        Spec.from_mapping({"book": "atlas"})
 
 
 def test_value_bags_are_slotted():
