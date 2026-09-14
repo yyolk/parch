@@ -19,6 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import Progress, reporter_for
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -51,6 +52,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    progress: Progress | None = None,
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -70,6 +72,7 @@ def press(
     Invoke::
 
         press(spec, out, proof=True)
+        press(spec, out, progress=reporter)
         parch proof examples/nomad.toml -o out.pdf
         parch press examples/nomad.toml --proof -o out.pdf
 
@@ -83,7 +86,7 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    book_for(spec.book)(ramp=resolved).plot(spec, plotter, progress=progress)
     plotter.finish(output)
     return output
 
@@ -167,7 +170,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(
+            spec,
+            outputs[0],
+            proof=proof_verb or args.proof,
+            progress=reporter_for(sys.stderr),
+        )
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

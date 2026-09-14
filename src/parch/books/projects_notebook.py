@@ -6,6 +6,7 @@ from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
+from parch.progress import NullProgress, Progress
 from parch.sections import CoverSection, Page, ProjectsSection
 from parch.sections.page import NavItem
 from parch.spec import Spec
@@ -34,13 +35,21 @@ class ProjectsNotebook:
             built.append(replace(page, nav=_proj_nav(page)))
         return built
 
-    def plot(self, spec: Spec, plotter: Plotter) -> None:
+    def plot(
+        self, spec: Spec, plotter: Plotter, progress: Progress | None = None
+    ) -> None:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
-        for page in pages:
-            plotter.reserve_dest(page.dest)
-        for page in pages:
-            plotter.begin_page()
-            plotter.add_dest(page.dest)
-            layout.paint(page, plotter, device)
+        reporter = NullProgress() if progress is None else progress
+        reporter.start(len(pages))
+        try:
+            for page in pages:
+                plotter.reserve_dest(page.dest)
+            for page in pages:
+                plotter.begin_page()
+                plotter.add_dest(page.dest)
+                layout.paint(page, plotter, device)
+                reporter.advance(page.dest)
+        finally:
+            reporter.done()
