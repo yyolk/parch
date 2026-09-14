@@ -4,9 +4,10 @@ import argparse
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import TextIO
 
 from parch import ConfigError
-from parch.books import book_for
+from parch.books import ProjectsNotebook, YearPlanner, book_for
 from parch.devices import get_device
 from parch.fonts import (
     PROOF_PROFILE,
@@ -17,11 +18,60 @@ from parch.fonts import (
     require_overlay,
 )
 from parch.fonts.ramp import OverlayData
+from parch.layouts.planner import PlannerLayout
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
+_BAR_WIDTH = 10
+
+
+def _progress_line(
+    current: int, total: int, dest: str, *, width: int = _BAR_WIDTH
+) -> str:
+    """``parch |████░░░░░░| 4/10  cover`` — dest is the current page."""
+    filled = 0 if total <= 0 else min(width, (current * width) // total)
+    bar = f"{'█' * filled}{'░' * (width - filled)}"
+    return f"parch |{bar}| {current}/{total}  {dest}"
+
+
+def _write_progress(
+    current: int, total: int, dest: str, stream: TextIO | None = None
+) -> None:
+    """``\\r`` the bar on a TTY stream; stay quiet otherwise."""
+    out = sys.stderr if stream is None else stream
+    if not hasattr(out, "isatty") or not out.isatty():
+        return
+    out.write(f"\r{_progress_line(current, total, dest)}")
+    if current >= total:
+        out.write("\n")
+    out.flush()
+
+
+def _paint_book(
+    book: YearPlanner | ProjectsNotebook,
+    spec: Spec,
+    plotter: Plotter,
+    *,
+    progress: TextIO | None = None,
+) -> None:
+    """Dest-reserve + paint walk at press — not in YearPlanner / ProjectsNotebook.
+
+    Duplicates ``book.plot`` so a TTY tick can live outside the book classes.
+    Library callers that still use ``book.plot`` are unchanged (no bar).
+    """
+    device = get_device(spec.device)
+    layout = PlannerLayout(ramp=book.ramp)
+    pages = book.pages(spec)
+    for page in pages:
+        plotter.reserve_dest(page.dest)
+    total = len(pages)
+    for i, page in enumerate(pages, start=1):
+        plotter.begin_page()
+        plotter.add_dest(page.dest)
+        layout.paint(page, plotter, device)
+        _write_progress(i, total, page.dest, progress)
 
 
 def merge_press_overlay(
@@ -83,7 +133,8 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    book = book_for(spec.book)(ramp=resolved)
+    _paint_book(book, spec, plotter)
     plotter.finish(output)
     return output
 

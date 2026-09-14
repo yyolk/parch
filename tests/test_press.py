@@ -1,11 +1,32 @@
+import io
 from pathlib import Path
 
 import pytest
 from pypdf import PdfReader
 
+from parch.books import ProjectsNotebook
 from parch.fonts import PROOF_PROFILE, TypePatch
-from parch.press import _load_spec, main, press
+from parch.plotter import RecordingPlotter
+from parch.press import (
+    _load_spec,
+    _paint_book,
+    _progress_line,
+    _write_progress,
+    main,
+    press,
+)
 from parch.spec import Spec
+
+
+class _Tty(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+class _Pipe(io.StringIO):
+    def isatty(self) -> bool:
+        return False
+
 
 MM_PER_INCH = 25.4
 
@@ -219,3 +240,57 @@ def test_press_scribe_page_geometry(tmp_path: Path):
     page = PdfReader(out).pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(157.48), abs=0.6)
     assert float(page.mediabox.height) == pytest.approx(_pt(209.97), abs=0.6)
+
+
+def test_progress_line_shared_bar():
+    assert _progress_line(4, 10, "cover") == "parch |████░░░░░░| 4/10  cover"
+    assert _progress_line(0, 10, "cover") == "parch |░░░░░░░░░░| 0/10  cover"
+    assert _progress_line(10, 10, "cover") == "parch |██████████| 10/10  cover"
+
+
+def test_write_progress_quiet_when_not_tty():
+    pipe = _Pipe()
+    _write_progress(4, 10, "cover", pipe)
+    assert pipe.getvalue() == ""
+
+
+def test_write_progress_cr_on_tty():
+    tty = _Tty()
+    _write_progress(4, 10, "cover", tty)
+    assert tty.getvalue() == "\rparch |████░░░░░░| 4/10  cover"
+    _write_progress(10, 10, "projects-2026-08", tty)
+    assert tty.getvalue().endswith("\rparch |██████████| 10/10  projects-2026-08\n")
+
+
+def test_paint_book_ticks_each_dest_on_tty():
+    spec = Spec(book="projects-notebook")
+    pages = ProjectsNotebook().pages(spec)
+    tty = _Tty()
+    _paint_book(ProjectsNotebook(), spec, RecordingPlotter(), progress=tty)
+    text = tty.getvalue()
+    assert text.startswith("\rparch |█░░░░░░░░░| 1/10  cover")
+    for i, page in enumerate(pages, start=1):
+        assert f"{i}/10  {page.dest}" in text
+    assert text.endswith(f"\rparch |██████████| 10/10  {pages[-1].dest}\n")
+
+
+def test_paint_book_quiet_when_not_tty():
+    spec = Spec(book="projects-notebook")
+    pipe = _Pipe()
+    _paint_book(ProjectsNotebook(), spec, RecordingPlotter(), progress=pipe)
+    assert pipe.getvalue() == ""
+
+
+def test_press_walk_matches_book_plot(tmp_path: Path):
+    spec = Spec(book="projects-notebook")
+    via_plot = RecordingPlotter()
+    ProjectsNotebook().plot(spec, via_plot)
+    via_press = RecordingPlotter()
+    press(spec, tmp_path / "rec.txt", plotter=via_press)
+    assert via_press.dests() == via_plot.dests()
+    assert via_press.dests()[0] == "cover"
+
+
+def test_press_stays_quiet_on_captured_stderr(tmp_path: Path, capsys):
+    press(Spec(book="projects-notebook"), tmp_path / "projects.pdf")
+    assert "parch |" not in capsys.readouterr().err
