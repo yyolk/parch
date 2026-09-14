@@ -16,9 +16,12 @@ from parch.fonts import (
     compose_overlays,
     require_overlay,
 )
-from parch.fonts.ramp import OverlayData
+from parch.fonts.ramp import OverlayData, TypeRamp
+from parch.layouts.planner import PlannerLayout
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import render_progress
+from parch.sections.engineering import EngineeringPadSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -75,6 +78,10 @@ def press(
 
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
+
+    When ``spec.engineering_sheets > 0``, press the duplex pad section
+    only (no engineering-notebook book yet). Year-planner specs keep
+    ``engineering_sheets = 0``.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -83,9 +90,27 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    if spec.engineering_sheets > 0:
+        _plot_engineering_pad(spec, plotter, resolved)
+    else:
+        book_for(spec.book)(ramp=resolved).plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def _plot_engineering_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
+    """Plot ``EngineeringPadSection`` faces. Progress ticks match the books."""
+    device = get_device(spec.device)
+    layout = PlannerLayout(ramp=ramp)
+    pages = EngineeringPadSection(spec).pages()
+    n = len(pages)
+    for page in pages:
+        plotter.reserve_dest(page.dest)
+    for i, page in enumerate(pages, start=1):
+        plotter.begin_page()
+        plotter.add_dest(page.dest)
+        layout.paint(page, plotter, device)
+        render_progress(i, n, page.kind)
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:

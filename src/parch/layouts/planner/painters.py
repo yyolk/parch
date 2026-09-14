@@ -1,6 +1,7 @@
 """Painters take ``plotter: Plotter``. Components never draw themselves."""
 
 import math
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
@@ -8,6 +9,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -2074,5 +2076,158 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
+        case "engineering_front" | "engineering_back":
+            return ""
         case _:
             return "Year"
+
+
+ENG_HEADER_H = 14.0
+ENG_HEADER_FIELDS = ("Subject", "Date", "Sheet")
+# NOTES column dropped: its width goes to SUBJECT. DATE and SHEET stay compact twins.
+ENG_HEADER_WEIGHTS = (0.50, 0.25, 0.25)
+ENG_LABEL_INSET_X = 1.2
+ENG_LABEL_INSET_Y = 1.0
+ENG_LABEL_H = 4.2
+ENG_MAJOR_EVERY = 5
+ENG_PITCH_MM = 5.0  # hardcoded E2 mesh — not a Spec/TOML knob
+
+
+@dataclass(frozen=True, slots=True)
+class EngineeringGridMesh:
+    """Centered square mesh: width-first pitch, majors on multiples of 5."""
+
+    origin: Rect
+    pitch: float
+    nx: int
+    ny: int
+
+
+def engineering_front_seats(frame: Rect) -> tuple[Rect, Rect]:
+    """One header row over the blank writing well. Same outer frame as the back grid."""
+    return frame.split_top(ENG_HEADER_H)
+
+
+def engineering_header_cells(header: Rect) -> tuple[Rect, ...]:
+    """SUBJECT | DATE | SHEET — wide subject, two compact twins. No write-in rules."""
+    return columns(header, len(ENG_HEADER_FIELDS), gap=0, weights=ENG_HEADER_WEIGHTS)
+
+
+def engineering_grid_mesh(box: Rect) -> EngineeringGridMesh:
+    """Width-first 5 mm clusters: fill the frame width, leftover height is the strip."""
+    nx = max(
+        ENG_MAJOR_EVERY,
+        (int(box.w / ENG_PITCH_MM) // ENG_MAJOR_EVERY) * ENG_MAJOR_EVERY,
+    )
+    pitch = box.w / nx
+    ny = max(
+        ENG_MAJOR_EVERY,
+        (int(box.h / pitch) // ENG_MAJOR_EVERY) * ENG_MAJOR_EVERY,
+    )
+    pitch = min(box.w / nx, box.h / ny)
+    gw, gh = nx * pitch, ny * pitch
+    ox = box.x + (box.w - gw) / 2
+    oy = box.y + (box.h - gh) / 2
+    return EngineeringGridMesh(Rect(ox, oy, gw, gh), pitch, nx, ny)
+
+
+def paint_engineering_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: EngineeringPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Duplex computation pad — front three-cell header; back 5×5 grid. No holes."""
+    ramp = _bound_ramp(plotter, ramp)
+    frame = device.content_frame()
+    match pad.face:
+        case "front":
+            _paint_engineering_frame(plotter, frame, stroke_gray=INK)
+            header, _well = engineering_front_seats(frame)
+            _paint_engineering_header(plotter, header, ramp=ramp)
+        case "back":
+            _paint_engineering_frame(plotter, frame, stroke_gray=MUTED)
+            _paint_engineering_grid(plotter, frame)
+        case _:
+            raise ValueError(f"unknown engineering face {pad.face!r}")
+
+
+def _paint_engineering_frame(
+    plotter: Plotter, frame: Rect, *, stroke_gray: float
+) -> None:
+    """content_frame hairline — no hole-margin strip. Front INK, back MUTED."""
+    plotter.rect(
+        frame,
+        stroke=True,
+        fill=False,
+        stroke_width=HAIR,
+        stroke_gray=stroke_gray,
+    )
+
+
+def _paint_engineering_header(
+    plotter: Plotter, header: Rect, *, ramp: TypeRamp
+) -> None:
+    plotter.ramp = ramp
+    cells = engineering_header_cells(header)
+    for i, (cell, label) in enumerate(zip(cells, ENG_HEADER_FIELDS, strict=True)):
+        if i:
+            plotter.line(
+                cell.x,
+                header.y,
+                cell.x,
+                header.bottom,
+                stroke_width=RULE,
+                stroke_gray=RULE_C,
+            )
+        _ink_text(
+            plotter,
+            Rect(
+                cell.x + ENG_LABEL_INSET_X,
+                cell.y + ENG_LABEL_INSET_Y,
+                cell.w - 2 * ENG_LABEL_INSET_X,
+                ENG_LABEL_H,
+            ),
+            label,
+            TypeRef(step="caption"),
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+    plotter.line(
+        header.x,
+        header.bottom,
+        header.right,
+        header.bottom,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+
+
+def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
+    """Square engineering mesh — minors RULE/RULE_C, majors every 5 HAIR/MUTED."""
+    mesh = engineering_grid_mesh(box)
+    grid = mesh.origin
+    for i in range(mesh.nx + 1):
+        x = grid.x + i * mesh.pitch
+        major = i % ENG_MAJOR_EVERY == 0
+        plotter.line(
+            x,
+            grid.y,
+            x,
+            grid.bottom,
+            stroke_width=HAIR if major else RULE,
+            stroke_gray=MUTED if major else RULE_C,
+        )
+    for j in range(mesh.ny + 1):
+        y = grid.y + j * mesh.pitch
+        major = j % ENG_MAJOR_EVERY == 0
+        plotter.line(
+            grid.x,
+            y,
+            grid.right,
+            y,
+            stroke_width=HAIR if major else RULE,
+            stroke_gray=MUTED if major else RULE_C,
+        )

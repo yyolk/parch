@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -39,6 +40,9 @@ SAMPLE_STEMS = (
     "meetings",
     "meeting-1",
 )
+
+# Duplex pad faces — pressed from EngineeringPadSection, not YearPlanner dests.
+ENGINEERING_STEMS = ("engineering-front", "engineering-back")
 
 PREVIEW_DPI = 96
 
@@ -211,7 +215,7 @@ def write_specimens(
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
 ) -> Path:
-    """Press a slim book and write PNG previews + device index under *dest*."""
+    """Press a slim book plus the duplex engineering pad faces; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -222,7 +226,11 @@ def write_specimens(
         press(spec, pdf, proof=True)
         for stem in stems:
             render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
-    write_device_index(dest, spec.device, stems=stems)
+        pad_pdf = Path(tmp) / "engineering-pad.pdf"
+        press(replace(spec, engineering_sheets=1), pad_pdf, proof=True)
+        render_page_png(pad_pdf, 1, dest / "engineering-front.png")
+        render_page_png(pad_pdf, 2, dest / "engineering-back.png")
+    write_device_index(dest, spec.device, stems=(*stems, *ENGINEERING_STEMS))
     return dest
 
 

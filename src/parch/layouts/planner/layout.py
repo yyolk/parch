@@ -5,6 +5,7 @@ from parch.components import (
     AnnualGrid,
     AnnualMonth,
     CoverTitle,
+    EngineeringPad,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
@@ -36,6 +37,7 @@ from parch.layouts.planner.painters import (
     paint_annual,
     paint_cover,
     paint_daily,
+    paint_engineering_pad,
     paint_habit_grid,
     paint_header,
     paint_meeting,
@@ -74,7 +76,7 @@ __all__ = [
 
 
 class PlannerLayout:
-    """Seat components below the unmarked toolbar. Cover skips slab/nav.
+    """Seat components below the unmarked toolbar. Cover and pad faces skip slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
@@ -91,6 +93,10 @@ class PlannerLayout:
         match page.kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+            case "engineering_front" | "engineering_back":
+                paint_engineering_pad(
+                    plotter, device, _one(page, EngineeringPad), ramp=self.ramp
+                )
             case _:
                 paint_header(
                     plotter,
