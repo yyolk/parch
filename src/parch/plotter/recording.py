@@ -91,6 +91,10 @@ class RecordingPlotter(Plotter):
         self.ops.append(("link", box, dest))
 
     @override
+    def add_outline(self, title: str, dest: str) -> None:
+        self.ops.append(("add_outline", title, dest, self.page))
+
+    @override
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(repr(self.ops), encoding="utf-8")
@@ -109,6 +113,14 @@ class RecordingPlotter(Plotter):
             match op:
                 case ("link", _, str() as dest):
                     found.append(dest)
+        return found
+
+    def outlines(self) -> list[tuple[str, str]]:
+        found: list[tuple[str, str]] = []
+        for op in self.ops:
+            match op:
+                case ("add_outline", str() as title, str() as dest, _):
+                    found.append((title, dest))
         return found
 
     def text_ops(self) -> list[Op]:

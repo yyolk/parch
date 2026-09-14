@@ -1,7 +1,7 @@
 from parch import ConfigError
 from parch.books.engineering_notebook import EngineeringNotebook
 from parch.books.projects_notebook import ProjectsNotebook
-from parch.books.protocol import Book, plot_pages
+from parch.books.protocol import Book, outline_entries, plot_pages
 from parch.books.year_planner import YearPlanner
 
 __all__ = [
@@ -10,6 +10,7 @@ __all__ = [
     "ProjectsNotebook",
     "YearPlanner",
     "book_for",
+    "outline_entries",
     "plot_pages",
 ]
 

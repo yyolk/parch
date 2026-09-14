@@ -5,6 +5,8 @@ book = "engineering-notebook"
 year = 2026
 device = "supernote-nomad"
 title = "Engineering"
+# Reader sidebar outline (bookmarks). Cover is skipped. Default is false.
+outline = true
 
 [engineering]
 sheets = 12

@@ -200,6 +200,12 @@ class Fpdf2Plotter(Plotter):
         self.pdf.link(box.x, box.y, box.w, box.h, target)
 
     @override
+    def add_outline(self, title: str, dest: str) -> None:
+        if dest not in self.pdf.named_destinations:
+            raise ValueError(f"unknown dest {dest!r}")
+        self.pdf.start_section(title)
+
+    @override
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.pdf.output(str(path))

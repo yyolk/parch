@@ -30,7 +30,7 @@ class TasksSection:
                 Page(
                     dest=index_dest,
                     kind="tasks_index",
-                    title="Tasks",
+                    title=f"Tasks Q{quarter} {spec.year}",
                     nav=planner_nav(
                         spec,
                         week_dest=spec.dest_for_week(first_week.monday),
