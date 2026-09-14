@@ -1,11 +1,21 @@
 import inspect
 import sys
 
+import pytest
+
+from parch import progress
 from parch.books import ProjectsNotebook, YearPlanner
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.progress import render_progress
 from parch.spec import Spec
+
+
+@pytest.fixture(autouse=True)
+def _reset_progress_width():
+    progress._last_width = 0
+    yield
+    progress._last_width = 0
 
 
 class _TTY:
@@ -51,6 +61,16 @@ def test_render_progress_finishes_with_newline(monkeypatch):
 def test_render_progress_quiet_off_tty(monkeypatch):
     monkeypatch.setattr(sys, "stderr", _Pipe())
     render_progress(4, 10, "cover")
+
+
+def test_render_progress_space_pads_shorter_label(monkeypatch):
+    tty = _TTY()
+    monkeypatch.setattr(sys, "stderr", tty)
+    render_progress(2, 10, "projects_index")
+    render_progress(3, 10, "cover")
+    long = "parch |██░░░░░░░░| 2/10  projects_index"
+    short = "parch |███░░░░░░░| 3/10  cover"
+    assert tty.chunks == [f"\r{long}", f"\r{short.ljust(len(long))}"]
 
 
 def test_press_signature_has_no_progress_hook():
