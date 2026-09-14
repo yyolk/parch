@@ -12,6 +12,25 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_YEAR_SECTIONS = (
+    "cover",
+    "annual",
+    "projects",
+    "meetings",
+    "tasks",
+    "review",
+    "quarters",
+    "months",
+    "habits",
+    "weeks",
+    "days",
+    "notes",
+)
+_BOOK_SECTIONS = {
+    "year": _YEAR_SECTIONS,
+    "projects": ("cover", "projects"),
+}
+_SECTION_IDS = frozenset(_YEAR_SECTIONS)
 
 type TomlTable = dict[str, object]
 
@@ -62,6 +81,15 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     return tuple(range(1, 13))
 
 
+def _parse_sections(data: TomlTable) -> tuple[str, ...] | None:
+    raw = data.get("sections")
+    if raw is None:
+        return None
+    if not isinstance(raw, list):
+        raise ConfigError("sections must be a TOML array")
+    return tuple(str(item) for item in raw)
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -94,6 +122,8 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    book: str = "year"
+    sections: tuple[str, ...] | None = None
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -130,6 +160,21 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if self.book not in _BOOK_SECTIONS:
+            raise ConfigError(f"book must be year or projects, not {self.book!r}")
+        if self.sections is not None:
+            if not self.sections:
+                raise ConfigError("sections must not be empty")
+            seen_sections: set[str] = set()
+            for name in self.sections:
+                if name not in _SECTION_IDS:
+                    raise ConfigError(f"unknown section {name!r}")
+                if name in seen_sections:
+                    raise ConfigError(f"duplicate section {name}")
+                seen_sections.add(name)
+            expected = _BOOK_SECTIONS[self.book]
+            if self.book != "year" and self.sections != expected:
+                raise ConfigError("book and sections disagree")
 
     @property
     def weekday_start(self) -> int:
@@ -146,6 +191,22 @@ class Spec:
     def presses_day(self, day: date) -> bool:
         """True when ``day`` is in this spec’s year and a pressed month."""
         return day.year == self.year and self.presses(day.month)
+
+    def pressed_sections(self) -> tuple[str, ...]:
+        """YearPlanner section filter — explicit ``sections`` or the ``book`` kind."""
+        return self.sections if self.sections is not None else _BOOK_SECTIONS[self.book]
+
+    def presses_section(self, name: str) -> bool:
+        return name in self.pressed_sections()
+
+    @property
+    def cover_cta_dest(self) -> str:
+        """Cover year tap — annual when present, else the projects index hub."""
+        if self.presses_section("annual"):
+            return self.year_dest
+        if self.presses_section("projects"):
+            return self.projects_index_dest
+        return self.cover_dest
 
     @property
     def cover_dest(self) -> str:
@@ -338,6 +399,8 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            book=str(data.get("book", "year")).lower(),
+            sections=_parse_sections(data),
             type_overlay=_parse_typography(data),
         )
 

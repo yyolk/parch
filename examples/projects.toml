@@ -1,0 +1,14 @@
+# Projects notebook — YearPlanner section filter (book kind).
+# Cover + ProjectsSection only. Not a release-PDF shard.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+book = "projects"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1

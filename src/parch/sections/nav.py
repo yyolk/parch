@@ -24,6 +24,7 @@ PROJ dest (strip label **Proj**):
 - index page → self
 - ``paint_project`` dest → the index page that lists that row (header chip is the same dest)
 - everywhere else → index page 1 (``spec.projects_index_dest``)
+- projects book (no annual) → strip is Proj only (index hub)
 
 MEET dest (strip label **Meet**):
 - meetings index → self
@@ -76,6 +77,8 @@ def planner_nav(
     task_dest: str | None = None,
     rev_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
+    if spec.presses_section("projects") and not spec.presses_section("annual"):
+        return (NavItem("Proj", proj_dest or spec.projects_index_dest),)
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
     habit_month = month if month is not None else landing.month
