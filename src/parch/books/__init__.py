@@ -1,3 +1,4 @@
+from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 
-__all__ = ["YearPlanner"]
+__all__ = ["ProjectsNotebook", "YearPlanner"]
