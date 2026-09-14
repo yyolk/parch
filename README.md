@@ -7,6 +7,8 @@
 
 parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
 
+Optional PDF reader outline: add `[outline]` `enabled = true` (see `examples/nomad-outline.toml`); missing table stays off.
+
 ## Install / Press
 
 Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.

@@ -13,8 +13,20 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-notebook"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_OUTLINE_KEYS = frozenset({"enabled"})
 
 type TomlTable = dict[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class OutlineSpec:
+    """Closed reader-outline table. Missing ``[outline]`` stays disabled.
+
+    MVP knob is ``enabled`` only. A later closed key (titles / include) can
+    filter kinds or override labels; unknown keys already fail loudly.
+    """
+
+    enabled: bool = False
 
 
 def _parse_typography(data: TomlTable) -> TypeOverlay:
@@ -39,6 +51,30 @@ def _parse_typography(data: TomlTable) -> TypeOverlay:
     if not isinstance(overlay, dict):
         raise ConfigError("typography.overlay must be a TOML table")
     return require_overlay(overlay)
+
+
+def _parse_outline(data: TomlTable) -> OutlineSpec:
+    """``[outline] enabled = true`` → on. Unknown keys fail loudly.
+
+    Missing ``[outline]`` is the closed-table default (disabled). A present
+    table without ``enabled`` stays off — ``enabled = true`` is required
+    to turn the reader TOC on.
+    """
+    raw = data.get("outline")
+    if raw is None:
+        return OutlineSpec()
+    if not isinstance(raw, dict):
+        raise ConfigError("outline must be a TOML table")
+    unknown = set(raw) - _OUTLINE_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown outline key {key!r}")
+    if "enabled" not in raw:
+        return OutlineSpec()
+    enabled = raw["enabled"]
+    if not isinstance(enabled, bool):
+        raise ConfigError("outline.enabled must be a bool")
+    return OutlineSpec(enabled=enabled)
 
 
 def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
@@ -99,6 +135,7 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
+    outline: OutlineSpec = field(default_factory=OutlineSpec)
 
     def __post_init__(self) -> None:
         if self.week_start not in _WEEK_STARTS:
@@ -383,6 +420,7 @@ class Spec:
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
             type_overlay=_parse_typography(data),
+            outline=_parse_outline(data),
         )
 
     @classmethod

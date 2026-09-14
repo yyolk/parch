@@ -113,6 +113,12 @@ class Fpdf2Plotter(Plotter):
         self.pdf.add_link(name=name)
 
     @override
+    def add_outline(self, title: str, dest: str) -> None:
+        if dest not in self.pdf.named_destinations:
+            raise KeyError(f"outline dest {dest!r} is not bound")
+        self.pdf.start_section(title, level=0)
+
+    @override
     def rect(
         self,
         box: Rect,

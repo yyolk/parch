@@ -14,7 +14,7 @@ from parch.fonts.ramp import EffectiveRamp
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.sections.engineering import EngineeringPadSection
-from parch.spec import Spec
+from parch.spec import OutlineSpec, Spec
 
 
 def test_engineering_notebook_is_cover_then_duplex_pads():
@@ -83,3 +83,16 @@ def test_plot_pages_walks_a_section_callable_without_book():
         spec.dest_for_engineering_pad(1, "back"),
     ]
     assert "cover" not in plotter.dests()
+    assert plotter.outlines() == []
+
+    outlined = RecordingPlotter()
+    plot_pages(
+        EngineeringPadSection(spec).pages,
+        outlined,
+        ramp=EffectiveRamp(),
+        device=spec.device,
+        outline=OutlineSpec(enabled=True),
+    )
+    assert outlined.outlines() == [
+        ("Engineering", spec.dest_for_engineering_pad(1, "front")),
+    ]

@@ -5,7 +5,7 @@ import pytest
 
 from parch import ConfigError
 from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
-from parch.spec import Spec
+from parch.spec import OutlineSpec, Spec
 
 
 def test_dest_names_from_tstrings():
@@ -103,6 +103,10 @@ def test_habit_columns_from_toml_keys():
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"
+    assert nomad.outline == OutlineSpec()
+    outlined = Spec.from_path(Path("examples/nomad-outline.toml"))
+    assert outlined.outline == OutlineSpec(enabled=True)
+    assert outlined.type_overlay == TypeOverlay()
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
     assert nomad.project_tickets == 8
@@ -193,6 +197,28 @@ def test_typography_unknown_keys_fail_loudly():
         Spec.from_mapping({"typography": "loud"})
 
 
+def test_outline_from_toml():
+    assert Spec().outline == OutlineSpec()
+    assert Spec.from_mapping({}).outline == OutlineSpec(enabled=False)
+    assert Spec.from_mapping({"outline": {}}).outline == OutlineSpec()
+    assert Spec.from_mapping({"outline": {"enabled": False}}).outline == OutlineSpec()
+    assert Spec.from_mapping({"outline": {"enabled": True}}).outline == OutlineSpec(
+        enabled=True
+    )
+
+
+def test_outline_unknown_keys_fail_loudly():
+    with pytest.raises(ConfigError, match="unknown outline key 'titles'"):
+        Spec.from_mapping({"outline": {"enabled": True, "titles": {"annual": "Year"}}})
+    with pytest.raises(ConfigError, match="unknown outline key 'include'"):
+        Spec.from_mapping({"outline": {"include": ["annual"]}})
+    with pytest.raises(ConfigError, match="outline must be a TOML table"):
+        Spec.from_mapping({"outline": "on"})
+    with pytest.raises(ConfigError, match="outline.enabled must be a bool"):
+        Spec.from_mapping({"outline": {"enabled": "true"}})
+
+
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
+    assert not hasattr(spec.outline, "__dict__")

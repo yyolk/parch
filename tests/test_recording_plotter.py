@@ -1,3 +1,5 @@
+from datetime import date
+
 from parch.books import YearPlanner
 from parch.calendar import month_days, months_touching_weeks
 from parch.components import (
@@ -30,7 +32,7 @@ from parch.components import (
 from parch.plotter import RecordingPlotter
 from parch.sections.review import ReviewSection
 from parch.sections.tasks import TasksSection
-from parch.spec import Spec
+from parch.spec import OutlineSpec, Spec
 
 
 def _year_dests(*, notes_pages: int) -> list[str]:
@@ -157,3 +159,38 @@ def test_notes_pages_zero_skips_wells():
     assert dests == _year_dests(notes_pages=0)
     assert not any("-notes-" in name for name in dests)
     assert "2026-01-05-notes-1" not in plotter.links()
+    assert plotter.outlines() == []
+
+
+def test_outline_off_emits_nothing():
+    plotter = RecordingPlotter()
+    YearPlanner().plot(Spec(months=(1,), notes_pages=0), plotter)
+    assert plotter.outlines() == []
+    YearPlanner().plot(
+        Spec(months=(1,), notes_pages=0, outline=OutlineSpec(enabled=False)),
+        plotter,
+    )
+    assert plotter.outlines() == []
+
+
+def test_outline_on_emits_flat_section_starts():
+    spec = Spec(months=(1,), notes_pages=1, outline=OutlineSpec(enabled=True))
+    plotter = RecordingPlotter()
+    YearPlanner().plot(spec, plotter)
+    assert plotter.outlines() == [
+        ("2026", spec.year_dest),
+        ("Projects", spec.projects_index_dest),
+        ("Meetings", spec.meetings_index_dest),
+        ("Tasks", spec.tasks_index_dest),
+        ("Review", spec.review_index_dest),
+        ("Q1 2026", spec.dest_for_quarter(1)),
+        ("January 2026", spec.dest_for_month(1)),
+        ("Habits · January 2026", spec.dest_for_habits(1)),
+        ("Week 01", spec.dest_for_week(date(2026, 1, 1))),
+        ("Thu 1", spec.dest_for_day(date(2026, 1, 1))),
+        ("Thu 1  1/1", spec.dest_for_notes(date(2026, 1, 1), 1)),
+    ]
+    assert all(dest != spec.cover_dest for _, dest in plotter.outlines())
+    dests = plotter.dests()
+    for _, dest in plotter.outlines():
+        assert dest in dests

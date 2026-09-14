@@ -3,9 +3,10 @@ from pathlib import Path
 import pytest
 from pypdf import PdfReader
 
+from parch.books import YearPlanner
 from parch.fonts import PROOF_PROFILE, TypePatch
 from parch.press import _load_spec, main, press
-from parch.spec import Spec
+from parch.spec import OutlineSpec, Spec
 
 MM_PER_INCH = 25.4
 
@@ -17,6 +18,15 @@ def _pt(mm: float) -> float:
 def _named_dests(reader: PdfReader) -> set[str]:
     raw = reader.named_destinations or {}
     return {str(key).lstrip("/") for key in raw}
+
+
+def _outline_titles(reader: PdfReader) -> list[str]:
+    titles: list[str] = []
+    for item in reader.outline or []:
+        if isinstance(item, list):
+            continue
+        titles.append(str(item.title))
+    return titles
 
 
 def _link_count(reader: PdfReader) -> int:
@@ -77,6 +87,58 @@ def test_press_year_pdf(tmp_path: Path):
     assert _link_count(reader) >= 365
 
 
+def test_press_outline_default_off(tmp_path: Path):
+    out = tmp_path / "plain.pdf"
+    press(Spec(months=(1,), notes_pages=0), out)
+    assert _outline_titles(PdfReader(out)) == []
+
+
+def test_press_outline_enabled(tmp_path: Path):
+    spec = Spec(months=(1,), notes_pages=0, outline=OutlineSpec(enabled=True))
+    out = tmp_path / "outlined.pdf"
+    press(spec, out)
+    reader = PdfReader(out)
+    assert _outline_titles(reader) == [
+        "2026",
+        "Projects",
+        "Meetings",
+        "Tasks",
+        "Review",
+        "Q1 2026",
+        "January 2026",
+        "Habits · January 2026",
+        "Week 01",
+        "Thu 1",
+    ]
+    dests = _named_dests(reader)
+    assert spec.year_dest in dests
+    assert spec.cover_dest in dests
+    assert len(reader.pages) == len(YearPlanner().pages(spec))
+
+
+def test_press_outline_example_toml(tmp_path: Path):
+    spec = Spec.from_path(Path("examples/nomad-outline.toml"))
+    assert spec.outline.enabled
+    slim = Spec(
+        year=spec.year,
+        device=spec.device,
+        months=(1,),
+        notes_pages=0,
+        outline=spec.outline,
+    )
+    out = tmp_path / "nomad-outline.pdf"
+    press(slim, out)
+    assert "2026" in _outline_titles(PdfReader(out))
+
+
+def test_press_steno_outline(tmp_path: Path):
+    spec = Spec(steno_sheets=1, outline=OutlineSpec(enabled=True))
+    out = tmp_path / "steno-outline.pdf"
+    press(spec, out)
+    assert _outline_titles(PdfReader(out)) == ["Steno"]
+    assert len(PdfReader(out).pages) == 1
+
+
 def test_cli_press_toml(tmp_path: Path):
     spec = tmp_path / "job.toml"
     spec.write_text(
@@ -97,6 +159,19 @@ def test_cli_load_keeps_toml_overlay_under_month_flag():
     assert spec.type_overlay.chrome == TypePatch(size=9.6, weight="bold")
     assert spec.type_overlay.display == TypePatch(size=48, weight="heavy")
     assert spec.project_index_pages == 3
+
+
+def test_cli_rejects_unknown_outline(tmp_path: Path, capsys):
+    spec = tmp_path / "bad-outline.toml"
+    spec.write_text(
+        'year = 2026\nmonth = 1\n[outline]\nenabled = true\ninclude = ["annual"]\n',
+        encoding="utf-8",
+    )
+    out = tmp_path / "bad-outline.pdf"
+    assert main(["press", str(spec), "-o", str(out)]) == 2
+    err = capsys.readouterr().err
+    assert "unknown outline key 'include'" in err
+    assert not out.exists()
 
 
 def test_cli_rejects_unknown_typography(tmp_path: Path, capsys):
