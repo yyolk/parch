@@ -35,7 +35,6 @@ class CoverSection:
                     CoverTitle(
                         year=spec.year,
                         subtitle=spec.title,
-                        device_name="SuperNote Nomad",
                         cta_label=f"{label}  >",
                         cta_dest=landing,
                         eyebrow=self.eyebrow,

@@ -114,7 +114,6 @@ def _cover() -> CoverTitle:
     return CoverTitle(
         year=2026,
         subtitle="",
-        device_name="nomad",
         cta_label="",
         cta_dest="year-2026",
     )
