@@ -1,0 +1,10 @@
+# Engineering notebook — cover → duplex pad faces (sibling book).
+#   parch press examples/engineering.toml -o out/engineering.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "engineering-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Engineering"
+
+[engineering]
+sheets = 1

@@ -1,7 +1,6 @@
 # Duplex engineering / computation pad (E1 draft).
 # Front = SUBJECT|DATE|SHEET boxes + empty well; back = 5×5 grid.
-# No engineering-notebook book yet — ``engineering_sheets > 0`` presses this
-# section only:
+# Pad-only press (no cover). For cover + pad, see examples/engineering.toml:
 #   parch press examples/engineering-pad.toml -o out/engineering-pad.pdf
 year = 2026
 device = "supernote-nomad"
