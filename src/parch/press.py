@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.pages import plot_pages, projects_notebook_pages
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.fonts import (
@@ -17,9 +18,13 @@ from parch.fonts import (
     require_overlay,
 )
 from parch.fonts.ramp import OverlayData
+from parch.layouts.planner import PlannerLayout
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.sections.page import Page
 from parch.spec import Spec
+
+_BOOKS = ("year", "projects")
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
 
@@ -51,6 +56,7 @@ def press(
     plotter: Plotter | None = None,
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
+    book: str = "year",
 ) -> Path:
     """Build the MVP book and write ``output``.
 
@@ -83,9 +89,22 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    YearPlanner(ramp=resolved).plot(spec, plotter)
+    pages = _pages_for(spec, book)
+    plot_pages(pages, plotter, device, PlannerLayout(ramp=resolved))
     plotter.finish(output)
     return output
+
+
+def _pages_for(spec: Spec, book: str) -> list[Page]:
+    """CLI/press factory select — no Book ABC, no Spec.book."""
+    match book:
+        case "year":
+            return YearPlanner().pages(spec)
+        case "projects":
+            return projects_notebook_pages(spec)
+        case unexpected:
+            known = ", ".join(_BOOKS)
+            raise ConfigError(f"unknown book {unexpected!r}; known: {known}")
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
@@ -151,6 +170,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
+    parser.add_argument(
+        "--book",
+        choices=_BOOKS,
+        default="year",
+        help="Page factory: year planner (default) or projects notebook.",
+    )
     # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
     # the historical on-screen path; it selects ProofProfile. `parch specimen`
     # writes a static PNG catalog (not a product PDF).
@@ -167,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
-        first = press(spec, outputs[0], proof=proof_verb or args.proof)
+        first = press(spec, outputs[0], proof=proof_verb or args.proof, book=args.book)
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())

@@ -1,5 +1,6 @@
 """Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
 
+from parch.books.pages import plot_pages
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
@@ -57,10 +58,4 @@ class YearPlanner:
     def plot(self, spec: Spec, plotter: Plotter) -> None:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
-        pages = self.pages(spec)
-        for page in pages:
-            plotter.reserve_dest(page.dest)
-        for page in pages:
-            plotter.begin_page()
-            plotter.add_dest(page.dest)
-            layout.paint(page, plotter, device)
+        plot_pages(self.pages(spec), plotter, device, layout)

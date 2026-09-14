@@ -1,0 +1,15 @@
+# Projects notebook — cover → projects index/dests only (Approach D).
+# Press with the pages factory (not Spec.book):
+#   parch press examples/projects.toml --book projects -o out/projects.pdf
+# Device-agnostic: set device to supernote-nomad or kindle-scribe.
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Projects"
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
