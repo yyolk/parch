@@ -1,0 +1,13 @@
+# Engineering / computation pad — duplex sheets via PadSheet / sheet() (E6).
+#   parch press examples/pad.toml -o out/pad.pdf
+# January-only so the press stays small; pad.sheets is the duplex count.
+year = 2026
+device = "supernote-nomad"
+months = [1]
+title = "Year planner"
+
+[daily]
+notes_pages = 1
+
+[pad]
+sheets = 4

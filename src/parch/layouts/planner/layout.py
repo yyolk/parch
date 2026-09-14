@@ -10,6 +10,8 @@ from parch.components import (
     MeetingIndex,
     MonthGrid,
     Notes,
+    PadBlank,
+    PadGrid,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -43,6 +45,8 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_nav,
     paint_notes,
+    paint_pad_blank,
+    paint_pad_grid,
     paint_project,
     paint_projects_index,
     paint_quarter,
@@ -91,6 +95,16 @@ class PlannerLayout:
         match page.kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
+            case "pad_back":
+                paint_nav(
+                    plotter,
+                    device,
+                    strip_items(page),
+                    strip_active(page.kind),
+                    ramp=self.ramp,
+                )
+                well = well_rect(device, header=False)
+                self._paint_well(page, plotter, well)
             case _:
                 paint_header(
                     plotter,
@@ -155,6 +169,10 @@ class PlannerLayout:
                 )
             case "daily_notes":
                 paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
+            case "pad_front":
+                paint_pad_blank(plotter, well, _one(page, PadBlank), ramp=ramp)
+            case "pad_back":
+                paint_pad_grid(plotter, well, _one(page, PadGrid), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 
@@ -195,6 +213,8 @@ def _header_meta(page: Page) -> str:
         case "daily_notes":
             label = _one(page, Notes).label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
+        case "pad_front":
+            return str(_one(page, PadBlank).year)
         case _:
             return ""
 

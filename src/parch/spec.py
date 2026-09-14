@@ -96,6 +96,7 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
+    pad_sheets: int = 0
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -136,6 +137,8 @@ class Spec:
             raise ConfigError("meeting_index_rows must be 12–20")
         if not 4 <= self.task_rows <= 8:
             raise ConfigError("task_rows must be 4–8")
+        if not 0 <= self.pad_sheets <= 48:
+            raise ConfigError("pad_sheets must be 0–48")
 
     @property
     def weekday_start(self) -> int:
@@ -290,6 +293,21 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    @property
+    def pad_dest(self) -> str:
+        """Pad landing — sheet 1 front."""
+        return self.dest_for_pad(1)
+
+    def dest_for_pad(self, number: int, *, back: bool = False) -> str:
+        """Sheet dest, e.g. ``pad-2026-01`` / ``pad-2026-01-back``."""
+        if self.pad_sheets < 1:
+            raise ConfigError("pad dest requires pad_sheets >= 1")
+        if not 1 <= number <= self.pad_sheets:
+            raise ConfigError(f"pad sheet out of range: {number}")
+        if back:
+            return _dest(t"pad-{self.year:04d}-{number:02d}-back")
+        return _dest(t"pad-{self.year:04d}-{number:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -308,6 +326,8 @@ class Spec:
         meetings_table = meetings if isinstance(meetings, dict) else {}
         tasks = data.get("tasks")
         tasks_table = tasks if isinstance(tasks, dict) else {}
+        pad = data.get("pad")
+        pad_table = pad if isinstance(pad, dict) else {}
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -345,6 +365,7 @@ class Spec:
                 meetings_table.get("index_rows", data.get("meeting_index_rows", 16))
             ),
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
+            pad_sheets=int(pad_table.get("sheets", data.get("pad_sheets", 0))),
             type_overlay=_parse_typography(data),
         )
 

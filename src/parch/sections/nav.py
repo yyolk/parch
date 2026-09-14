@@ -75,6 +75,7 @@ def planner_nav(
     meet_dest: str | None = None,
     task_dest: str | None = None,
     rev_dest: str | None = None,
+    pad_dest: str | None = None,
 ) -> tuple[NavItem, ...]:
     landing = landing_day(spec, day=day, month=month)
     mon = spec.dest_for_month(month) if month is not None else spec.month_dest
@@ -90,6 +91,8 @@ def planner_nav(
     ]
     if spec.notes_pages > 0:
         items.append(NavItem("Notes", spec.dest_for_notes(landing, 1)))
+    if spec.pad_sheets > 0:
+        items.append(NavItem("Pad", pad_dest or spec.pad_dest))
     items.extend(
         [
             NavItem("Proj", proj_dest or spec.projects_index_dest),

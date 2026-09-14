@@ -13,6 +13,8 @@ from parch.components import (
     MeetingIndex,
     MonthGrid,
     Notes,
+    PadBlank,
+    PadGrid,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -1969,9 +1971,72 @@ def paint_daily(
     paint_notes(plotter, notes_box, notes, ramp=ramp)
 
 
-def well_rect(device: Device) -> Rect:
-    """Writable well between header slab and bottom nav, inset by writing clearance."""
-    top = device.content_top + HEADER_H + 2.2
+PAD_MINOR_PER_MAJOR = 5
+PAD_TARGET_MINOR_MM = 4.2
+
+
+def pad_grid_counts(
+    box: Rect, major: int = PAD_MINOR_PER_MAJOR
+) -> tuple[float, int, int]:
+    """Square-cell 5×5 grid: pitch from well width, rows snapped to a major."""
+    step = max(1, major)
+    cols = max(step, round(box.w / PAD_TARGET_MINOR_MM))
+    cols = max(step, (cols // step) * step)
+    pitch = box.w / cols
+    rows = max(step, int(box.h / pitch) // step * step)
+    return pitch, cols, rows
+
+
+def paint_pad_blank(
+    plotter: Plotter, box: Rect, blank: PadBlank, *, ramp: TypeRamp | None = None
+) -> None:
+    """Front well stays empty — no rules, no holes, no hole-margin gutter."""
+    if ramp is not None:
+        plotter.ramp = ramp
+    _ = (plotter, box, blank)
+
+
+def paint_pad_grid(
+    plotter: Plotter, box: Rect, grid: PadGrid, *, ramp: TypeRamp | None = None
+) -> None:
+    """5×5 major/minor square grid. Major every ``grid.major`` minors."""
+    if ramp is not None:
+        plotter.ramp = ramp
+    major = max(1, grid.major)
+    pitch, cols, rows = pad_grid_counts(box, major)
+    height = rows * pitch
+    bottom = box.y + height
+    for i in range(cols + 1):
+        x = box.x + i * pitch
+        is_major = i % major == 0
+        plotter.line(
+            x,
+            box.y,
+            x,
+            bottom,
+            stroke_width=HAIR if is_major else RULE,
+            stroke_gray=MUTED if is_major else RULE_C,
+        )
+    for j in range(rows + 1):
+        y = box.y + j * pitch
+        is_major = j % major == 0
+        plotter.line(
+            box.x,
+            y,
+            box.right,
+            y,
+            stroke_width=HAIR if is_major else RULE,
+            stroke_gray=MUTED if is_major else RULE_C,
+        )
+
+
+def well_rect(device: Device, *, header: bool = True) -> Rect:
+    """Writable well between chrome and bottom nav, inset by writing clearance.
+
+    ``header=False`` skips the header slab so a pad back can use that band
+    for the 5×5 grid. Side inset is writing clearance only — no hole margin.
+    """
+    top = device.content_top + (HEADER_H + 2.2 if header else 2.2)
     bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance
     return Rect(m, top, device.page_width - 2 * m, bottom - top)
@@ -2000,6 +2065,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
+        elif item.dest.startswith("pad-"):
+            dests["Pad"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
     match page.kind:
@@ -2034,6 +2101,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
+        case "pad_front":
+            dests["Pad"] = page.dest
+        case "pad_back":
+            dests["Pad"] = page.dest.removesuffix("-back")
     order = (
         "Year",
         "Quar",
@@ -2043,6 +2114,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         "Rev",
         "Day",
         "Notes",
+        "Pad",
         "Proj",
         "Meet",
         "Task",
@@ -2074,5 +2146,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
+        case "pad_front" | "pad_back":
+            return "Pad"
         case _:
             return "Year"

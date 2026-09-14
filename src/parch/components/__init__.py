@@ -4,6 +4,7 @@ from parch.components.habit import HabitGrid
 from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
 from parch.components.notes import Notes
+from parch.components.pad import PadBlank, PadGrid
 from parch.components.priorities import Priorities
 from parch.components.projects import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.components.quarter import QuarterGrid
@@ -28,6 +29,8 @@ type Component = (
     | MeetingSlot
     | MonthGrid
     | Notes
+    | PadBlank
+    | PadGrid
     | Priorities
     | ProjectTicket
     | ProjectsBoard
@@ -59,6 +62,8 @@ __all__ = [
     "MonthGrid",
     "MonthWeek",
     "Notes",
+    "PadBlank",
+    "PadGrid",
     "Priorities",
     "ProjectTicket",
     "ProjectsBoard",

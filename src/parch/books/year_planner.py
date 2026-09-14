@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → pad sheets → quarters → months+habits → weeks → days."""
 
 from parch.calendar import months_touching_weeks
 from parch.devices import get_device
@@ -10,6 +10,7 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    EngineeringPadSection,
     HabitSection,
     MeetingSection,
     MonthSection,
@@ -40,6 +41,7 @@ class YearPlanner:
             *MeetingSection(spec).pages(),
             *TasksSection(spec).pages(),
             *ReviewSection(spec).pages(),
+            *EngineeringPadSection(spec).pages(),
             *QuarterSection(spec).pages(),
         ]
         for number in spec.months:
