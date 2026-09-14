@@ -59,4 +59,5 @@ class YearPlanner:
             plotter,
             ramp=self.ramp,
             device=spec.device,
+            outline=spec.outline,
         )

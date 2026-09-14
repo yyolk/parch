@@ -1,0 +1,29 @@
+# PDF reader outline (bookmarks) from the page ledger. No printed TOC page.
+#   parch press examples/outline.toml -o out/outline.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Year planner"
+outline = true
+
+[daily]
+schedule_from = 7
+schedule_to = 16
+notes_pages = 0
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tasks = 4
+tickets = 8
+index_pages = 1
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
