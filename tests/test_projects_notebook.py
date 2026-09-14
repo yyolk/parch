@@ -27,6 +27,14 @@ def test_projects_notebook_kinds_and_cover_cta():
     assert cover.nav[0].dest == spec.projects_index_dest
     assert cover.components[0].eyebrow == "Projects"
     assert cover.components[0].device_name == "SuperNote Nomad"
+    index = next(page for page in pages if page.kind == "projects_index")
+    assert [(item.label, item.dest) for item in index.nav] == [
+        ("Proj", spec.projects_index_dest)
+    ]
+    leaf = next(page for page in pages if page.kind == "project")
+    assert [(item.label, item.dest) for item in leaf.nav] == [
+        ("Proj", spec.projects_index_dest)
+    ]
 
 
 def test_projects_notebook_device_agnostic_scribe():

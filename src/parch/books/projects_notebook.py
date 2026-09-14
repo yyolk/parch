@@ -4,6 +4,7 @@ from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.plotter.protocol import Plotter
 from parch.sections import CoverSection, Page, ProjectsSection
+from parch.sections.page import NavItem
 from parch.spec import Spec
 
 
@@ -13,9 +14,10 @@ class ProjectsNotebook:
 
     def pages(self, spec: Spec) -> list[Page]:
         landing = spec.projects_index_dest
+        nav = (NavItem("Proj", landing),)
         return [
             *CoverSection(spec, landing=landing, eyebrow="Projects").pages(),
-            *ProjectsSection(spec).pages(),
+            *ProjectsSection(spec, nav=nav).pages(),
         ]
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
