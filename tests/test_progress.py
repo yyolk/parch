@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from parch import progress
-from parch.books import ProjectsNotebook, YearPlanner
+from parch.books import EngineeringNotebook, ProjectsNotebook, YearPlanner
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.progress import render_progress
@@ -87,7 +87,7 @@ def test_press_signature_has_no_progress_hook():
 def test_year_planner_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
-        "parch.books.year_planner.render_progress",
+        "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
     spec = Spec(months=(1,), notes_pages=0)
@@ -102,7 +102,7 @@ def test_year_planner_plot_ticks_each_page(monkeypatch):
 def test_engineering_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
-        "parch.press.render_progress",
+        "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
     spec = Spec(engineering_sheets=1)
@@ -116,7 +116,7 @@ def test_engineering_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
 def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
-        "parch.press.render_progress",
+        "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
     spec = Spec(steno_sheets=2)
@@ -127,10 +127,25 @@ def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     ]
 
 
+def test_engineering_notebook_plot_ticks_each_page(monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(engineering_sheets=2, book="engineering-notebook")
+    book = EngineeringNotebook()
+    pages = book.pages(spec)
+    book.plot(spec, RecordingPlotter())
+    assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))
+    assert all(tick[1] == len(pages) for tick in ticks)
+    assert [tick[2] for tick in ticks] == [page.kind for page in pages]
+
+
 def test_projects_notebook_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
-        "parch.books.projects_notebook.render_progress",
+        "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
     spec = Spec(notes_pages=1, book="projects-notebook")

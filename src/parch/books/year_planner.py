@@ -1,11 +1,11 @@
 """Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
 
+from dataclasses import dataclass, field
+
+from parch.books.protocol import plot_pages
 from parch.calendar import months_touching_weeks
-from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
-from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
-from parch.progress import render_progress
 from parch.sections import (
     AnnualSection,
     CoverSection,
@@ -24,9 +24,11 @@ from parch.sections import (
 from parch.spec import Spec
 
 
+@dataclass(frozen=True, slots=True)
 class YearPlanner:
-    def __init__(self, ramp: TypeRamp | None = None) -> None:
-        self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
+    """Full year walk. Satisfies ``Book`` structurally — no base class."""
+
+    ramp: TypeRamp = field(default_factory=EffectiveRamp)
 
     def pages(self, spec: Spec) -> list[Page]:
         daily = DailySection(spec)
@@ -56,14 +58,4 @@ class YearPlanner:
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:
-        device = get_device(spec.device)
-        layout = PlannerLayout(ramp=self.ramp)
-        pages = self.pages(spec)
-        n = len(pages)
-        for page in pages:
-            plotter.reserve_dest(page.dest)
-        for i, page in enumerate(pages, start=1):
-            plotter.begin_page()
-            plotter.add_dest(page.dest)
-            layout.paint(page, plotter, device)
-            render_progress(i, n, page.kind)
+        plot_pages(self.pages(spec), spec, plotter, ramp=self.ramp)
