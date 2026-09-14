@@ -73,6 +73,8 @@ def test_spec_engineering_dests_and_toml():
     example = Spec.from_path(Path("examples/engineering-pad.toml"))
     assert example.engineering_sheets == 1
     assert example.device == "supernote-nomad"
+    assert example.year == 2026
+    assert "year =" not in Path("examples/engineering-pad.toml").read_text()
     assert Spec.from_mapping({"engineering": {"sheets": 2}}).engineering_sheets == 2
     with pytest.raises(ConfigError, match="engineering_sheets must be 0–24"):
         Spec(engineering_sheets=25)

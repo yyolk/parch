@@ -55,6 +55,8 @@ def test_spec_steno_dests_and_toml():
     assert example.steno_sheets == 1
     assert example.engineering_sheets == 0
     assert example.device == "supernote-nomad"
+    assert example.year == 2026
+    assert "year =" not in Path("examples/steno-pad.toml").read_text()
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
     with pytest.raises(ConfigError, match="steno_sheets must be 0–24"):
         Spec(steno_sheets=25)
