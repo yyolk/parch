@@ -30,9 +30,6 @@ def _pdf_outline_rows(path: Path) -> list[tuple[str, int]]:
                 walk(node, level + 1)
                 continue
             rows.append((str(node.title), level))
-            kids = getattr(node, "children", None)
-            if kids:
-                walk(kids, level + 1)
 
     walk(items, 0)
     return rows
@@ -137,6 +134,27 @@ def test_press_outline_pdf_hierarchy_and_no_toc_page(tmp_path: Path):
     dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
     assert "year-2026" in dests
     assert "cover" in dests
+    annual = next(
+        item
+        for item in reader.outline
+        if not isinstance(item, list) and item.title == "Annual"
+    )
+    year_dest = next(
+        dest
+        for key, dest in (reader.named_destinations or {}).items()
+        if str(key).lstrip("/") == "year-2026"
+    )
+    cover_dest = next(
+        dest
+        for key, dest in (reader.named_destinations or {}).items()
+        if str(key).lstrip("/") == "cover"
+    )
+    assert reader.get_destination_page_number(
+        annual
+    ) == reader.get_destination_page_number(year_dest)
+    assert reader.get_destination_page_number(
+        annual
+    ) != reader.get_destination_page_number(cover_dest)
     off = tmp_path / "off.pdf"
     press(_jan(outline=False), off)
     assert (PdfReader(off).outline or []) == []
