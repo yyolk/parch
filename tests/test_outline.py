@@ -109,7 +109,9 @@ def test_press_outline_binds_titles_to_named_dest_pages(tmp_path: Path):
     assert "Contents" not in _outline_titles(reader)
     for item, (title, dest) in zip(reader.outline, pairs, strict=True):
         assert item.title == title
-        assert reader.get_destination_page_number(item) == _named_dest_page(reader, dest)
+        assert reader.get_destination_page_number(item) == _named_dest_page(
+            reader, dest
+        )
 
 
 def test_press_pad_only_outline_and_off(tmp_path: Path):

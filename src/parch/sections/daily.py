@@ -26,7 +26,10 @@ class DailySection:
                     kind="daily",
                     title=f"{weekday[:3]} {day.day}",
                     nav=planner_nav(
-                        spec, week_dest=spec.dest_for_week(day), day=day, month=day.month
+                        spec,
+                        week_dest=spec.dest_for_week(day),
+                        day=day,
+                        month=day.month,
                     ),
                     components=(
                         Schedule(label="Schedule", hours=hours),

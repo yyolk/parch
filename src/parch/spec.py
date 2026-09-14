@@ -106,7 +106,9 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
-    outline: bool = False  # PDF reader TOC at each section's first dest; no printed page
+    outline: bool = (
+        False  # PDF reader TOC at each section's first dest; no printed page
+    )
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:

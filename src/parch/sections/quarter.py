@@ -37,7 +37,9 @@ class QuarterSection:
                     kind="quarter",
                     title=f"Q{quarter} {spec.year}",
                     nav=planner_nav(
-                        spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
+                        spec,
+                        week_dest=spec.dest_for_week(first[0]),
+                        month=landing_month,
                     ),
                     components=(
                         QuarterGrid(year=spec.year, quarter=quarter, months=months),
