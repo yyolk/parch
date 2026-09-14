@@ -22,6 +22,7 @@ from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -79,9 +80,11 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.engineering_sheets > 0``, press the duplex pad section
-    only (no engineering-notebook book yet). Year-planner specs keep
-    ``engineering_sheets = 0``.
+    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
+    section only (no steno-notebook book yet). When
+    ``spec.engineering_sheets > 0``, press the duplex pad section only
+    (no engineering-notebook book yet). Year-planner specs keep both
+    counts at 0.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -90,7 +93,9 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.engineering_sheets > 0:
+    if spec.steno_sheets > 0:
+        _plot_steno_pad(spec, plotter, resolved)
+    elif spec.engineering_sheets > 0:
         _plot_engineering_pad(spec, plotter, resolved)
     else:
         book_for(spec.book)(ramp=resolved).plot(spec, plotter)
@@ -103,6 +108,21 @@ def _plot_engineering_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
     device = get_device(spec.device)
     layout = PlannerLayout(ramp=ramp)
     pages = EngineeringPadSection(spec).pages()
+    n = len(pages)
+    for page in pages:
+        plotter.reserve_dest(page.dest)
+    for i, page in enumerate(pages, start=1):
+        plotter.begin_page()
+        plotter.add_dest(page.dest)
+        layout.paint(page, plotter, device)
+        render_progress(i, n, page.kind)
+
+
+def _plot_steno_pad(spec: Spec, plotter: Plotter, ramp: TypeRamp) -> None:
+    """Plot ``StenoPadSection`` faces. Progress ticks match the books."""
+    device = get_device(spec.device)
+    layout = PlannerLayout(ramp=ramp)
+    pages = StenoPadSection(spec).pages()
     n = len(pages)
     for page in pages:
         plotter.reserve_dest(page.dest)
