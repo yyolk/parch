@@ -100,3 +100,11 @@ def test_example_engineering_toml_enables_outline():
     spec = Spec.from_path(Path("examples/engineering.toml"))
     assert spec.outline is True
     assert spec.book == "engineering-notebook"
+
+
+def test_example_nomad_outline_toml_enables_january_outline():
+    spec = Spec.from_path(Path("examples/nomad-outline.toml"))
+    assert spec.outline is True
+    assert spec.book == "year-planner"
+    assert spec.months == (1,)
+    assert Spec.from_path(Path("examples/nomad.toml")).outline is False
