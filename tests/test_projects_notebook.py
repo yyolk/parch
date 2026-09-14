@@ -42,12 +42,12 @@ def test_press_selects_projects_notebook_from_toml(tmp_path: Path):
 
     out = tmp_path / "projects.pdf"
     press(spec, out)
-    dests = {str(key).lstrip("/") for key in (PdfReader(out).named_destinations or {})}
+    reader = PdfReader(out)
+    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
     assert "cover" in dests
     assert spec.projects_index_dest in dests
     assert spec.dest_for_project(1) in dests
     assert spec.year_dest not in dests
     assert spec.meetings_index_dest not in dests
-    assert (
-        len(PdfReader(out).pages) == 1 + spec.project_index_pages + spec.project_count
-    )
+    assert len(reader.pages) == 1 + spec.project_index_pages + spec.project_count
+    assert [item.title for item in reader.outline] == ["Projects"]

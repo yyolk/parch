@@ -1,12 +1,14 @@
 """Single-face Gregg stenographer pad — one lined page per sheet."""
 
 from parch.components.steno import StenoPad
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class StenoPadSection:
     """Emit single-face pad pages. No steno-notebook book yet — press plots this section alone."""
+
+    outline_title: str | None = "Steno"
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -25,4 +27,4 @@ class StenoPadSection:
                     components=(StenoPad(sheet=sheet, sheets=sheets),),
                 )
             )
-        return built
+        return stamp_section_outline(self, built)

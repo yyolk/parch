@@ -34,7 +34,7 @@ def plot_pages(
     ramp: TypeRamp,
     device: str,
 ) -> None:
-    """Reserve dests, then begin/add/paint. Progress ticks match the books.
+    """Reserve dests, then begin/add/paint. Outline titles bind to that page.dest.
 
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
@@ -48,5 +48,7 @@ def plot_pages(
     for i, page in enumerate(ledger, start=1):
         plotter.begin_page()
         plotter.add_dest(page.dest)
+        if page.outline_title:
+            plotter.add_outline(page.outline_title, page.dest)
         layout.paint(page, plotter, slate)
         render_progress(i, n, page.kind)

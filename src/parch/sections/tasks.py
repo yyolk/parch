@@ -3,12 +3,14 @@ from datetime import date, timedelta
 from parch.calendar import MONTH_NAMES, iso_monday, month_week_bands, quarter_of
 from parch.components import TasksIndex, TasksMonthBand, TasksWeekPage, TaskWeek
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class TasksSection:
     """``paint_tasks_index`` month bands plus ``paint_task`` dests; after Meetings in YearPlanner."""
+
+    outline_title: str | None = "Tasks"
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -51,7 +53,7 @@ class TasksSection:
             for band in bands:
                 for week in band.weeks:
                     built.append(self._dest_page(week, index_dest))
-        return built
+        return stamp_section_outline(self, built)
 
     def _bands(self, months: tuple[int, ...]) -> tuple[TasksMonthBand, ...]:
         spec = self.spec

@@ -5,11 +5,13 @@ from datetime import date
 from parch.calendar import WEEKDAY_FULL
 from parch.components import Notes
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class DailyNotesSection:
+    outline_title: str | None = "Notes"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -34,4 +36,4 @@ class DailyNotesSection:
                     components=(Notes(label=f"Notes {index}/{spec.notes_pages}"),),
                 )
             )
-        return built
+        return stamp_section_outline(self, built)

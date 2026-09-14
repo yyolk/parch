@@ -60,13 +60,15 @@ def test_press_selects_engineering_notebook_from_toml(tmp_path: Path):
 
     out = tmp_path / "engineering.pdf"
     press(spec, out)
-    dests = {str(key).lstrip("/") for key in (PdfReader(out).named_destinations or {})}
+    reader = PdfReader(out)
+    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
     assert "cover" in dests
     assert spec.dest_for_engineering_pad(1, "front") in dests
     assert spec.dest_for_engineering_pad(12, "back") in dests
     assert spec.year_dest not in dests
     assert spec.projects_index_dest not in dests
-    assert len(PdfReader(out).pages) == 1 + 2 * spec.engineering_sheets
+    assert len(reader.pages) == 1 + 2 * spec.engineering_sheets
+    assert [item.title for item in reader.outline] == ["Engineering"]
 
 
 def test_plot_pages_walks_a_section_callable_without_book():

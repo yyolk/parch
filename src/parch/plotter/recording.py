@@ -30,6 +30,10 @@ class RecordingPlotter(Plotter):
         self.ops.append(("add_dest", name, self.page))
 
     @override
+    def add_outline(self, title: str, dest: str) -> None:
+        self.ops.append(("add_outline", title, dest, self.page))
+
+    @override
     def rect(
         self,
         box: Rect,
@@ -101,6 +105,14 @@ class RecordingPlotter(Plotter):
             match op:
                 case ("add_dest", str() as name, _):
                     found.append(name)
+        return found
+
+    def outlines(self) -> list[tuple[str, str]]:
+        found: list[tuple[str, str]] = []
+        for op in self.ops:
+            match op:
+                case ("add_outline", str() as title, str() as dest, _):
+                    found.append((title, dest))
         return found
 
     def links(self) -> list[str]:

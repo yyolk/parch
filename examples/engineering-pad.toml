@@ -2,8 +2,10 @@
 # Front = SUBJECT|DATE|SHEET boxes + empty well; back = 5×5 grid.
 # Pad-only press (no cover). Sibling book: examples/engineering.toml
 #   parch press examples/engineering-pad.toml -o out/engineering-pad.pdf
+# outline = true writes a PDF reader TOC at the first pad dest.
 device = "supernote-nomad"
 title = "Engineering pad"
+outline = true
 
 [engineering]
 sheets = 1

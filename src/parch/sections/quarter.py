@@ -2,11 +2,13 @@ from parch.calendar import month_touching_weeks, months_in_quarter
 from parch.components import QuarterGrid
 from parch.sections.annual import build_annual_month
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class QuarterSection:
+    outline_title: str | None = "Quarters"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -27,16 +29,19 @@ class QuarterSection:
         )
         first = month_touching_weeks(spec.year, landing_month, spec.weekday_start)[0]
         dest = spec.dest_for_quarter(quarter)
-        return [
-            Page(
-                dest=dest,
-                kind="quarter",
-                title=f"Q{quarter} {spec.year}",
-                nav=planner_nav(
-                    spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
-                ),
-                components=(
-                    QuarterGrid(year=spec.year, quarter=quarter, months=months),
-                ),
-            )
-        ]
+        return stamp_section_outline(
+            self,
+            [
+                Page(
+                    dest=dest,
+                    kind="quarter",
+                    title=f"Q{quarter} {spec.year}",
+                    nav=planner_nav(
+                        spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
+                    ),
+                    components=(
+                        QuarterGrid(year=spec.year, quarter=quarter, months=months),
+                    ),
+                )
+            ],
+        )

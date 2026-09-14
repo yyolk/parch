@@ -1,11 +1,13 @@
 from parch.calendar import month_touching_weeks
 from parch.components import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class ProjectsSection:
+    outline_title: str | None = "Projects"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -61,4 +63,4 @@ class ProjectsSection:
             )
             for ticket in tickets
         )
-        return built
+        return stamp_section_outline(self, built)

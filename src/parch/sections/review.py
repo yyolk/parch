@@ -9,12 +9,14 @@ from parch.components import (
     ReviewWeekPage,
 )
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class ReviewSection:
     """``paint_review_index`` week-chip grid plus ``paint_review`` dests; after Tasks in YearPlanner."""
+
+    outline_title: str | None = "Review"
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -45,7 +47,7 @@ class ReviewSection:
         for band in bands:
             for week in band.weeks:
                 built.append(self._dest_page(week, index_dest))
-        return built
+        return stamp_section_outline(self, built)
 
     def _bands(self, months: tuple[int, ...]) -> tuple[ReviewMonthBand, ...]:
         spec = self.spec

@@ -3,11 +3,13 @@ from datetime import date, timedelta
 from parch.calendar import WEEKDAY_LABELS, iso_monday
 from parch.components import WeekDay, WeekStrip
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class WeeklySection:
+    outline_title: str | None = "Weeks"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -28,20 +30,25 @@ class WeeklySection:
             for day in week
         )
         dest = spec.dest_for_week(monday)
-        return [
-            Page(
-                dest=dest,
-                kind="weekly",
-                title=f"Week {iso.week:02d}",
-                nav=planner_nav(spec, week_dest=dest, day=landing, month=landing.month),
-                components=(
-                    WeekStrip(
-                        iso_year=iso.year,
-                        iso_week=iso.week,
-                        monday=monday,
-                        sunday=sunday,
-                        days=days,
+        return stamp_section_outline(
+            self,
+            [
+                Page(
+                    dest=dest,
+                    kind="weekly",
+                    title=f"Week {iso.week:02d}",
+                    nav=planner_nav(
+                        spec, week_dest=dest, day=landing, month=landing.month
                     ),
-                ),
-            )
-        ]
+                    components=(
+                        WeekStrip(
+                            iso_year=iso.year,
+                            iso_week=iso.week,
+                            monday=monday,
+                            sunday=sunday,
+                            days=days,
+                        ),
+                    ),
+                )
+            ],
+        )

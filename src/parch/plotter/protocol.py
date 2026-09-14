@@ -43,6 +43,9 @@ class Plotter(Protocol):
     def add_dest(self, name: str) -> None:
         """Bind a named destination to the current page."""
 
+    def add_outline(self, title: str, dest: str) -> None:
+        """Reader outline item on the current page, aimed at ``dest``."""
+
     def rect(
         self,
         box: Rect,

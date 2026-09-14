@@ -1,0 +1,11 @@
+# Year planner with PDF reader TOC (no printed contents page).
+# Each section's first dest is an outline item; cover is skipped.
+#   parch press examples/nomad-outline.toml -o out/nomad-outline.pdf
+year = 2026
+device = "supernote-nomad"
+month = 1
+title = "Year planner"
+outline = true
+
+[daily]
+notes_pages = 1

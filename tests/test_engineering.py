@@ -205,3 +205,4 @@ def test_press_example_toml_is_two_duplex_pages(tmp_path: Path):
     assert spec.dest_for_engineering_pad(1, "front") in dests
     assert spec.dest_for_engineering_pad(1, "back") in dests
     assert spec.year_dest not in dests
+    assert [item.title for item in reader.outline] == ["Engineering"]

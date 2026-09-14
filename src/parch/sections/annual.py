@@ -3,7 +3,7 @@ from datetime import date
 from parch.calendar import month_name, month_touching_weeks, month_weeks, weekday_labels
 from parch.components import AnnualGrid, AnnualMonth, MonthCell
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
@@ -56,6 +56,8 @@ def build_month_mini(spec: Spec, day: date) -> AnnualMonth:
 
 
 class AnnualSection:
+    outline_title: str | None = "Year"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -63,18 +65,21 @@ class AnnualSection:
         spec = self.spec
         months = tuple(build_annual_month(spec, month) for month in range(1, 13))
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
-        return [
-            Page(
-                dest=spec.year_dest,
-                kind="annual",
-                title=str(spec.year),
-                nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
-                components=(
-                    AnnualGrid(
-                        year=spec.year,
-                        months=months,
-                        quarter_dest=spec.quarter_dest,
+        return stamp_section_outline(
+            self,
+            [
+                Page(
+                    dest=spec.year_dest,
+                    kind="annual",
+                    title=str(spec.year),
+                    nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
+                    components=(
+                        AnnualGrid(
+                            year=spec.year,
+                            months=months,
+                            quarter_dest=spec.quarter_dest,
+                        ),
                     ),
-                ),
-            )
-        ]
+                )
+            ],
+        )

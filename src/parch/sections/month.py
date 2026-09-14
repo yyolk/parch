@@ -1,11 +1,13 @@
 from parch.calendar import iso_monday, month_name, month_touching_weeks, weekday_labels
 from parch.components import MonthCell, MonthGrid
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class MonthSection:
+    outline_title: str | None = "Months"
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 
@@ -29,23 +31,26 @@ class MonthSection:
             weeks.append(tuple(cells))
             monday = next((d for d in week if d.weekday() == 0), iso_monday(week[0]))
             week_dests.append(spec.dest_for_week(monday))
-        return [
-            Page(
-                dest=spec.dest_for_month(month),
-                kind="month",
-                title=f"{month_name(month)} {spec.year}",
-                nav=planner_nav(spec, week_dest=week_dests[0], month=month),
-                components=(
-                    MonthGrid(
-                        year=spec.year,
-                        month=month,
-                        month_name=month_name(month),
-                        weekday_labels=weekday_labels(spec.weekday_start),
-                        weeks=tuple(weeks),
-                        week_dests=tuple(week_dests),
-                        quarter_dest=spec.dest_for_quarter_of(month),
-                        habits_dest=spec.dest_for_habits(month),
+        return stamp_section_outline(
+            self,
+            [
+                Page(
+                    dest=spec.dest_for_month(month),
+                    kind="month",
+                    title=f"{month_name(month)} {spec.year}",
+                    nav=planner_nav(spec, week_dest=week_dests[0], month=month),
+                    components=(
+                        MonthGrid(
+                            year=spec.year,
+                            month=month,
+                            month_name=month_name(month),
+                            weekday_labels=weekday_labels(spec.weekday_start),
+                            weeks=tuple(weeks),
+                            week_dests=tuple(week_dests),
+                            quarter_dest=spec.dest_for_quarter_of(month),
+                            habits_dest=spec.dest_for_habits(month),
+                        ),
                     ),
-                ),
-            )
-        ]
+                )
+            ],
+        )

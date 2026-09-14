@@ -1,10 +1,14 @@
 from parch.calendar import month_name
 from parch.components import CoverTitle
-from parch.sections.page import NavItem, Page
+from parch.sections.page import NavItem, Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class CoverSection:
+    @property
+    def outline_title(self) -> str | None:
+        return None
+
     def __init__(
         self,
         spec: Spec,
@@ -25,21 +29,24 @@ class CoverSection:
         specs_lead = (
             f"{spec.week_start} weeks" if self.specs_lead is None else self.specs_lead
         )
-        return [
-            Page(
-                dest=spec.cover_dest,
-                kind="cover",
-                title=str(spec.year),
-                nav=(NavItem(str(spec.year), landing),),
-                components=(
-                    CoverTitle(
-                        year=spec.year,
-                        subtitle=spec.title,
-                        cta_label=f"{label}  >",
-                        cta_dest=landing,
-                        eyebrow=self.eyebrow,
-                        specs_lead=specs_lead,
+        return stamp_section_outline(
+            self,
+            [
+                Page(
+                    dest=spec.cover_dest,
+                    kind="cover",
+                    title=str(spec.year),
+                    nav=(NavItem(str(spec.year), landing),),
+                    components=(
+                        CoverTitle(
+                            year=spec.year,
+                            subtitle=spec.title,
+                            cta_label=f"{label}  >",
+                            cta_dest=landing,
+                            eyebrow=self.eyebrow,
+                            specs_lead=specs_lead,
+                        ),
                     ),
-                ),
-            )
-        ]
+                )
+            ],
+        )

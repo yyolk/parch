@@ -1,10 +1,12 @@
 # Engineering notebook — cover → duplex eng-pad fronts/backs (sibling book).
 #   parch press examples/engineering.toml -o out/engineering.pdf
 # Swap device = "kindle-scribe" for the other slate.
+# outline = true writes a PDF reader TOC at each section's first dest (cover skipped).
 book = "engineering-notebook"
 year = 2026
 device = "supernote-nomad"
 title = "Engineering"
+outline = true
 
 [engineering]
 sheets = 12

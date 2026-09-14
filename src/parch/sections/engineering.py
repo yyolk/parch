@@ -1,12 +1,14 @@
 """Duplex engineering / computation pad — one front + one back page per sheet."""
 
 from parch.components.engineering import EngineeringPad
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 
 class EngineeringPadSection:
     """Emit duplex pad faces. Reused by ``EngineeringNotebook`` and pad-only press."""
+
+    outline_title: str | None = "Engineering"
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -36,4 +38,4 @@ class EngineeringPadSection:
                     components=(pad_back,),
                 )
             )
-        return built
+        return stamp_section_outline(self, built)

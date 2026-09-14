@@ -17,6 +17,14 @@ _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 type TomlTable = dict[str, object]
 
 
+def _parse_outline(data: TomlTable) -> bool:
+    """``outline = true`` opts into a PDF reader TOC. Missing key stays off."""
+    raw = data.get("outline", False)
+    if not isinstance(raw, bool):
+        raise ConfigError("outline must be a boolean")
+    return raw
+
+
 def _parse_typography(data: TomlTable) -> TypeOverlay:
     """``[typography.overlay.<step>]`` → ``TypeOverlay``. Unknown keys fail loudly.
 
@@ -98,6 +106,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    outline: bool = False  # PDF reader TOC at each section's first dest; no printed page
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -147,6 +156,8 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if self.steno_sheets and self.engineering_sheets:
             raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
+        if not isinstance(self.outline, bool):
+            raise ConfigError("outline must be a boolean")
 
     @property
     def weekday_start(self) -> int:
@@ -382,6 +393,7 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            outline=_parse_outline(data),
             type_overlay=_parse_typography(data),
         )
 

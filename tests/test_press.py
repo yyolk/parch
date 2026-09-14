@@ -75,6 +75,7 @@ def test_press_year_pdf(tmp_path: Path):
     assert "2026-12-31" in dests
     assert "2026-07-15-notes-1" in dests
     assert _link_count(reader) >= 365
+    assert reader.outline == []
 
 
 def test_cli_press_toml(tmp_path: Path):

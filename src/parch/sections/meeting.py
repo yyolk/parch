@@ -1,7 +1,7 @@
 from parch.calendar import month_touching_weeks
 from parch.components import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, stamp_section_outline
 from parch.spec import Spec
 
 MEET_AGENDA = 4
@@ -10,6 +10,8 @@ MEET_ACTION_ITEMS = 3
 
 class MeetingSection:
     """``paint_meetings_index`` roster plus ``paint_meeting`` dests. Index rows open Meeting pages."""
+
+    outline_title: str | None = "Meetings"
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
@@ -58,4 +60,4 @@ class MeetingSection:
                     ),
                 )
             )
-        return built
+        return stamp_section_outline(self, built)
