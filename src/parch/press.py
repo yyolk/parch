@@ -80,11 +80,12 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet). When
-    ``spec.engineering_sheets > 0``, press the duplex pad section only
-    (no engineering-notebook book yet). Year-planner specs keep both
-    counts at 0.
+    Sibling books (``projects-notebook``, ``engineering-notebook``) go
+    through ``book_for``. When ``spec.steno_sheets > 0`` on the
+    year-planner book, press the single-face Gregg pad section only
+    (no steno-notebook book yet). When ``spec.engineering_sheets > 0``
+    on the year-planner book, press the duplex pad section only.
+    Year-planner specs keep both counts at 0.
     """
     device = get_device(spec.device)
     resolved = bind_ramp(
@@ -93,7 +94,9 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    if spec.book != "year-planner":
+        book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+    elif spec.steno_sheets > 0:
         _plot_steno_pad(spec, plotter, resolved)
     elif spec.engineering_sheets > 0:
         _plot_engineering_pad(spec, plotter, resolved)
