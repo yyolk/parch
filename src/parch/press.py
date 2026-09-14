@@ -19,6 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
+from parch.progress import TtyProgress
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -81,11 +82,22 @@ def press(
         overlay=merge_press_overlay(spec, overlay, proof),
         root_body=device.root_body,
     )
+    bar: TtyProgress | None = None
     if plotter is None:
-        plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    book_for(spec.book)(ramp=resolved).plot(spec, plotter)
-    plotter.finish(output)
-    return output
+        bar = TtyProgress()
+        plotter = Fpdf2Plotter(
+            device,
+            catalog=resolved.catalog,
+            ramp=resolved,
+            progress=bar if bar.enabled else None,
+        )
+    try:
+        book_for(spec.book)(ramp=resolved).plot(spec, plotter)
+        plotter.finish(output)
+        return output
+    finally:
+        if bar is not None:
+            bar.close()
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:

@@ -4,6 +4,7 @@ from parch.calendar import months_touching_weeks
 from parch.devices import get_device
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.layouts.planner import PlannerLayout
+from parch.plotter.hook import expect_page_kinds
 from parch.plotter.protocol import Plotter
 from parch.sections import (
     AnnualSection,
@@ -58,6 +59,7 @@ class YearPlanner:
         device = get_device(spec.device)
         layout = PlannerLayout(ramp=self.ramp)
         pages = self.pages(spec)
+        expect_page_kinds(plotter, (page.kind for page in pages))
         for page in pages:
             plotter.reserve_dest(page.dest)
         for page in pages:

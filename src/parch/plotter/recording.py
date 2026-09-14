@@ -5,13 +5,21 @@ from typing import override
 
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
+from parch.plotter.hook import BeginPageHook
 from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
+from parch.progress import ProgressSink
 
 type Op = tuple[object, ...]
 
 
-class RecordingPlotter(Plotter):
-    def __init__(self, ramp: TypeRamp | None = None) -> None:
+class RecordingPlotter(BeginPageHook, Plotter):
+    def __init__(
+        self,
+        ramp: TypeRamp | None = None,
+        *,
+        progress: ProgressSink | None = None,
+    ) -> None:
+        super().__init__(progress)
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
         self.ops: list[Op] = []
         self.page = 0
@@ -20,6 +28,7 @@ class RecordingPlotter(Plotter):
     def begin_page(self) -> None:
         self.page += 1
         self.ops.append(("begin_page", self.page))
+        self._hook_begin_page()
 
     @override
     def reserve_dest(self, name: str) -> None:
@@ -94,6 +103,7 @@ class RecordingPlotter(Plotter):
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(repr(self.ops), encoding="utf-8")
+        self._hook_finish()
 
     def dests(self) -> list[str]:
         found: list[str] = []

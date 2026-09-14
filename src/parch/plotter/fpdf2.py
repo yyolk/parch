@@ -9,7 +9,9 @@ from parch.devices.registry import Device
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
+from parch.plotter.hook import BeginPageHook
 from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
+from parch.progress import ProgressSink
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
@@ -23,13 +25,16 @@ def _level(gray: float) -> int:
     return max(0, min(255, int(round(gray * 255))))
 
 
-class Fpdf2Plotter(Plotter):
+class Fpdf2Plotter(BeginPageHook, Plotter):
     def __init__(
         self,
         device: Device,
         catalog: FontCatalog | None = None,
         ramp: TypeRamp | None = None,
+        *,
+        progress: ProgressSink | None = None,
     ) -> None:
+        super().__init__(progress)
         self.device = device
         if ramp is None:
             self.ramp: TypeRamp = (
@@ -103,6 +108,7 @@ class Fpdf2Plotter(Plotter):
     @override
     def begin_page(self) -> None:
         self.pdf.add_page()
+        self._hook_begin_page()
 
     @override
     def reserve_dest(self, name: str) -> None:
@@ -203,3 +209,4 @@ class Fpdf2Plotter(Plotter):
     def finish(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.pdf.output(str(path))
+        self._hook_finish()
