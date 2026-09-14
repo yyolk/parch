@@ -13,8 +13,34 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _BOOKS = frozenset({"year-planner", "projects-notebook"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_STENO_KEYS = frozenset({"pages", "line_pitch_mm", "center_rule"})
+
+# Gregg ⅓″ ruling. Allowed pitch is a closed band around ~8.5 mm.
+GREGG_LINE_PITCH_MM = 25.4 / 3
+STENO_PITCH_MIN_MM = 6.5
+STENO_PITCH_MAX_MM = 10.5
+STENO_PAGES_MAX = 80
 
 type TomlTable = dict[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class Steno:
+    """Closed Gregg-pad knobs. ``pages=0`` leaves the year planner unchanged."""
+
+    pages: int = 0
+    line_pitch_mm: float = GREGG_LINE_PITCH_MM
+    center_rule: bool = True
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.pages <= STENO_PAGES_MAX:
+            raise ConfigError(f"steno.pages must be 0–{STENO_PAGES_MAX}")
+        if not STENO_PITCH_MIN_MM <= self.line_pitch_mm <= STENO_PITCH_MAX_MM:
+            raise ConfigError(
+                f"steno.line_pitch_mm must be {STENO_PITCH_MIN_MM}–{STENO_PITCH_MAX_MM}"
+            )
+        if not isinstance(self.center_rule, bool):
+            raise ConfigError("steno.center_rule must be a bool")
 
 
 def _parse_typography(data: TomlTable) -> TypeOverlay:
@@ -39,6 +65,40 @@ def _parse_typography(data: TomlTable) -> TypeOverlay:
     if not isinstance(overlay, dict):
         raise ConfigError("typography.overlay must be a TOML table")
     return require_overlay(overlay)
+
+
+def _parse_steno(data: TomlTable) -> Steno:
+    """``[steno]`` → ``Steno``. Unknown keys fail loudly.
+
+    Missing ``[steno]`` is the closed-table default (``pages=0``, Gregg ⅓″,
+    center rule on). A present table is validated before the spec is returned.
+    """
+    raw = data.get("steno")
+    if raw is None:
+        return Steno()
+    if not isinstance(raw, dict):
+        raise ConfigError("steno must be a TOML table")
+    unknown = set(raw) - _STENO_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown steno key {key!r}")
+    kwargs: dict[str, object] = {}
+    if "pages" in raw:
+        value = raw["pages"]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ConfigError("steno.pages must be an int")
+        kwargs["pages"] = value
+    if "line_pitch_mm" in raw:
+        value = raw["line_pitch_mm"]
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise ConfigError("steno.line_pitch_mm must be a number")
+        kwargs["line_pitch_mm"] = float(value)
+    if "center_rule" in raw:
+        value = raw["center_rule"]
+        if not isinstance(value, bool):
+            raise ConfigError("steno.center_rule must be a bool")
+        kwargs["center_rule"] = value
+    return Steno(**kwargs)
 
 
 def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
@@ -97,6 +157,7 @@ class Spec:
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
+    steno: Steno = field(default_factory=Steno)
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -303,6 +364,14 @@ class Spec:
             raise ConfigError(f"engineering sheet out of range: {sheet}")
         return _dest(t"engineering-{self.year:04d}-{sheet:02d}-{face}")
 
+    def dest_for_steno(self, sheet: int) -> str:
+        """1-based single-sided dest, e.g. ``steno-2026-01``."""
+        if self.steno.pages < 1:
+            raise ConfigError("steno.pages must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= self.steno.pages:
+            raise ConfigError(f"steno sheet out of range: {sheet}")
+        return _dest(t"steno-{self.year:04d}-{sheet:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -363,6 +432,7 @@ class Spec:
             engineering_sheets=int(
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
+            steno=_parse_steno(data),
             type_overlay=_parse_typography(data),
         )
 

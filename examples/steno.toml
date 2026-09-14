@@ -1,0 +1,13 @@
+# Gregg / stenographer pad (S3). Single page, no header, no holes.
+# Device-static PDF; ruling sits in content_frame. Closed [steno] knobs:
+#   pages          sheet count (0 = year planner unchanged)
+#   line_pitch_mm  band around ~8.5; default is Gregg ⅓″
+#   center_rule    vertical midline (default true)
+# Unknown keys fail. Demo opts in:
+#   parch press examples/steno.toml -o out/steno.pdf
+year = 2026
+device = "supernote-nomad"
+title = "Gregg pad"
+
+[steno]
+pages = 1

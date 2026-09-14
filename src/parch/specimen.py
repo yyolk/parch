@@ -20,7 +20,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
-from parch.spec import Spec
+from parch.spec import Spec, Steno
 
 SAMPLE_STEMS = (
     "cover",
@@ -43,6 +43,9 @@ SAMPLE_STEMS = (
 
 # Duplex pad faces — pressed from EngineeringPadSection, not YearPlanner dests.
 ENGINEERING_STEMS = ("engineering-front", "engineering-back")
+
+# Single-sided Gregg pad — pressed from StenoPadSection at closed defaults.
+STENO_STEMS = ("steno",)
 
 PREVIEW_DPI = 96
 
@@ -215,7 +218,7 @@ def write_specimens(
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
 ) -> Path:
-    """Press a slim book plus the duplex engineering pad faces; write PNGs + index."""
+    """Press a slim book plus pad faces (engineering duplex, Gregg steno); write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -230,7 +233,12 @@ def write_specimens(
         press(replace(spec, engineering_sheets=1), pad_pdf, proof=True)
         render_page_png(pad_pdf, 1, dest / "engineering-front.png")
         render_page_png(pad_pdf, 2, dest / "engineering-back.png")
-    write_device_index(dest, spec.device, stems=(*stems, *ENGINEERING_STEMS))
+        steno_pdf = Path(tmp) / "steno-pad.pdf"
+        press(replace(spec, steno=Steno(pages=1)), steno_pdf, proof=True)
+        render_page_png(steno_pdf, 1, dest / "steno.png")
+    write_device_index(
+        dest, spec.device, stems=(*stems, *ENGINEERING_STEMS, *STENO_STEMS)
+    )
     return dest
 
 

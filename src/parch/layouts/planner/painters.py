@@ -25,6 +25,7 @@ from parch.components import (
     ReviewWeek,
     ReviewWeekPage,
     Schedule,
+    StenoPad,
     TasksIndex,
     TasksWeekPage,
     TaskWeek,
@@ -2076,7 +2077,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back":
+        case "engineering_front" | "engineering_back" | "steno":
             return ""
         case _:
             return "Year"
@@ -2230,4 +2231,73 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
             y,
             stroke_width=HAIR if major else RULE,
             stroke_gray=MUTED if major else RULE_C,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class StenoRuling:
+    """Gregg-intent ruling seated in ``content_frame``. Pitch is exact."""
+
+    origin: Rect
+    pitch: float
+    ys: tuple[float, ...]
+    center_x: float | None
+
+
+def steno_ruling(frame: Rect, pitch_mm: float, center_rule: bool) -> StenoRuling:
+    """Exact-pitch used block, top-aligned. Leftover height stays below the pad."""
+    n = int((frame.h + 1e-9) / pitch_mm)
+    if n < 1:
+        origin = Rect(frame.x, frame.y, frame.w, 0.0)
+        return StenoRuling(origin, pitch_mm, (), None)
+    origin = Rect(frame.x, frame.y, frame.w, n * pitch_mm)
+    # Interiors only — top/bottom of ``origin`` are the frame stroke.
+    ys = tuple(origin.y + i * pitch_mm for i in range(1, n))
+    return StenoRuling(
+        origin=origin,
+        pitch=pitch_mm,
+        ys=ys,
+        center_x=(origin.x + origin.w / 2) if center_rule else None,
+    )
+
+
+def paint_steno_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: StenoPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-sided Gregg pad — no header, no holes. Knobs change the ink."""
+    if ramp is not None:
+        plotter.ramp = ramp
+    frame = device.content_frame()
+    ruling = steno_ruling(frame, pad.line_pitch_mm, pad.center_rule)
+    box = ruling.origin
+    if box.h <= 0:
+        return
+    plotter.rect(
+        box,
+        stroke=True,
+        fill=False,
+        stroke_width=HAIR,
+        stroke_gray=INK,
+    )
+    for y in ruling.ys:
+        plotter.line(
+            box.x,
+            y,
+            box.right,
+            y,
+            stroke_width=HAIR,
+            stroke_gray=INK,
+        )
+    if ruling.center_x is not None:
+        plotter.line(
+            ruling.center_x,
+            box.y,
+            ruling.center_x,
+            box.bottom,
+            stroke_width=HAIR,
+            stroke_gray=INK,
         )

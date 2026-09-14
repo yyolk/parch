@@ -5,7 +5,7 @@ import pytest
 
 from parch import ConfigError
 from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
-from parch.spec import Spec
+from parch.spec import GREGG_LINE_PITCH_MM, Spec, Steno
 
 
 def test_dest_names_from_tstrings():
@@ -62,6 +62,10 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_review(date(2025, 12, 29)) == "review-2026-W01"
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
     assert spec.engineering_sheets == 0
+    assert spec.steno == Steno()
+    assert spec.steno.pages == 0
+    assert spec.steno.line_pitch_mm == pytest.approx(GREGG_LINE_PITCH_MM)
+    assert spec.steno.center_rule is True
 
 
 def test_habit_columns_from_toml_keys():
@@ -84,6 +88,8 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
     assert Spec.from_mapping({"engineering": {"sheets": 3}}).engineering_sheets == 3
     assert Spec.from_path(Path("examples/engineering-pad.toml")).engineering_sheets == 1
+    assert Spec.from_mapping({"steno": {"pages": 2}}).steno.pages == 2
+    assert Spec.from_path(Path("examples/steno.toml")).steno.pages == 1
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
     nomad = Spec.from_path(Path("examples/nomad.toml"))
@@ -98,6 +104,7 @@ def test_habit_columns_from_toml_keys():
     assert nomad.meeting_count == 16
     assert nomad.task_rows == 6
     assert nomad.type_overlay == TypeOverlay()
+    assert nomad.steno == Steno()
 
 
 def test_typography_overlay_from_toml():

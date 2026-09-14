@@ -18,6 +18,7 @@ from parch.components import (
     ReviewIndex,
     ReviewWeekPage,
     Schedule,
+    StenoPad,
     TasksIndex,
     TasksWeekPage,
     WeekStrip,
@@ -50,6 +51,7 @@ from parch.layouts.planner.painters import (
     paint_quarter,
     paint_review,
     paint_review_index,
+    paint_steno_pad,
     paint_task,
     paint_tasks_index,
     paint_toolbar,
@@ -97,6 +99,8 @@ class PlannerLayout:
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
+            case "steno":
+                paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,
