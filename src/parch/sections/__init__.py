@@ -1,4 +1,13 @@
 from parch.sections.annual import AnnualSection
+from parch.sections.bujo import (
+    BujoHabitSection,
+    BujoIndexSection,
+    BujoKeySection,
+    CollectionSection,
+    FutureLogSection,
+    MonthlyLogSection,
+    RapidLogSection,
+)
 from parch.sections.cover import CoverSection
 from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
@@ -16,7 +25,14 @@ from parch.sections.weekly import WeeklySection
 
 __all__ = [
     "AnnualSection",
+    "BujoHabitSection",
+    "BujoIndexSection",
+    "BujoKeySection",
+    "CollectionSection",
     "CoverSection",
+    "FutureLogSection",
+    "MonthlyLogSection",
+    "RapidLogSection",
     "DailyNotesSection",
     "DailySection",
     "EngineeringPadSection",

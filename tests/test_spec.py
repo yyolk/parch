@@ -62,6 +62,17 @@ def test_dest_names_from_tstrings():
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
     assert spec.outline is False
+    assert spec.bujo_index_pages == 2
+    assert spec.bujo_collections == 24
+    assert spec.bujo_key_dest == "bujo-key-2026"
+    assert spec.bujo_index_dest == "bujo-index-2026-01"
+    assert spec.dest_for_bujo_index(2) == "bujo-index-2026-02"
+    assert spec.bujo_future_pages == 4
+    assert spec.bujo_future_dest == "bujo-future-2026-01"
+    assert spec.dest_for_bujo_future(4) == "bujo-future-2026-04"
+    assert spec.dest_for_month_tasks(1) == "month-2026-01-tasks"
+    assert spec.dest_for_bujo_collection(1) == "bujo-col-2026-01"
+    assert spec.dest_for_bujo_collection(24) == "bujo-col-2026-24"
 
 
 def test_habit_columns_from_toml_keys():
@@ -93,6 +104,13 @@ def test_habit_columns_from_toml_keys():
     assert (
         Spec.from_path(Path("examples/engineering.toml")).book == "engineering-notebook"
     )
+    bujo = Spec.from_path(Path("examples/nomad-bujo.toml"))
+    assert bujo.book == "bullet-journal"
+    assert bujo.bujo_index_pages == 2
+    assert bujo.bujo_collections == 24
+    assert bujo.habit_columns == 8
+    assert Spec.from_mapping({"book": "bullet-journal"}).book == "bullet-journal"
+    assert Spec.from_mapping({"months": [1]}).bujo_future_pages == 1
     assert Spec.from_path(Path("examples/engineering.toml")).outline is True
     assert Spec.from_mapping({"outline": True}).outline is True
     with pytest.raises(ConfigError, match="outline must be a boolean"):

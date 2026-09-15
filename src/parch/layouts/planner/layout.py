@@ -4,17 +4,24 @@ from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
+    BujoIndex,
+    BujoKey,
+    CollectionLeaf,
     CoverTitle,
     EngineeringPad,
+    FutureLogPage,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
     MonthGrid,
+    MonthlyCalendarList,
+    MonthlyTaskWell,
     Notes,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
     QuarterGrid,
+    RapidLogPage,
     ReviewIndex,
     ReviewWeekPage,
     Schedule,
@@ -36,19 +43,26 @@ from parch.layouts.planner.painters import (
     daily_left_seats,
     daily_right_seats,
     paint_annual,
+    paint_bujo_index,
+    paint_bujo_key,
+    paint_collection,
     paint_cover,
     paint_daily,
     paint_engineering_pad,
+    paint_future_log,
     paint_habit_grid,
     paint_header,
     paint_meeting,
     paint_meetings_index,
     paint_month_grid,
+    paint_monthly_calendar_list,
+    paint_monthly_task_well,
     paint_nav,
     paint_notes,
     paint_project,
     paint_projects_index,
     paint_quarter,
+    paint_rapid_log,
     paint_review,
     paint_review_index,
     paint_steno_pad,
@@ -165,6 +179,24 @@ class PlannerLayout:
                 )
             case "daily_notes":
                 paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
+            case "bujo_key":
+                paint_bujo_key(plotter, well, _one(page, BujoKey), ramp=ramp)
+            case "bujo_index":
+                paint_bujo_index(plotter, well, _one(page, BujoIndex), ramp=ramp)
+            case "future_log":
+                paint_future_log(plotter, well, _one(page, FutureLogPage), ramp=ramp)
+            case "monthly_log":
+                paint_monthly_calendar_list(
+                    plotter, well, _one(page, MonthlyCalendarList), ramp=ramp
+                )
+            case "monthly_tasks":
+                paint_monthly_task_well(
+                    plotter, well, _one(page, MonthlyTaskWell), ramp=ramp
+                )
+            case "rapid_log":
+                paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
+            case "collection":
+                paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 
@@ -195,8 +227,24 @@ def _header_meta(page: Page) -> str:
             month = _one(page, MonthGrid).month
             return f"Q{quarter_of(month)}"
         case "habits":
-            month = _one(page, HabitGrid).month
-            return f"Q{quarter_of(month)}"
+            grid = _one(page, HabitGrid)
+            return f"Q{quarter_of(grid.month)}" if grid.quarter_dest else ""
+        case "bujo_key":
+            return page.dest.rsplit("-", 1)[-1]
+        case "bujo_index":
+            index = _one(page, BujoIndex)
+            return f"{index.page}/{index.pages}"
+        case "future_log":
+            future = _one(page, FutureLogPage)
+            return f"{future.page}/{future.pages}"
+        case "monthly_log":
+            return "Tasks"
+        case "monthly_tasks":
+            return _one(page, MonthlyTaskWell).month_name[:3]
+        case "rapid_log":
+            return page.dest[:4]
+        case "collection":
+            return str(_one(page, CollectionLeaf).year)
         case "weekly":
             week = _one(page, WeekStrip)
             return short_date_range(week.monday, week.sunday)
@@ -217,6 +265,10 @@ def _header_meta_dest(page: Page) -> str | None:
             return _one(page, MonthGrid).quarter_dest
         case "habits":
             return _one(page, HabitGrid).quarter_dest
+        case "monthly_log":
+            return _one(page, MonthlyCalendarList).tasks_dest
+        case "monthly_tasks":
+            return _one(page, MonthlyTaskWell).calendar_dest
         case _:
             return None
 
@@ -235,6 +287,9 @@ def _header_chip(page: Page) -> str:
         case "review":
             week = _one(page, ReviewWeekPage)
             return f"W{week.iso_week:02d}"
+        case "collection":
+            number = _one(page, CollectionLeaf).number
+            return f"{number:02d}"
         case _:
             return ""
 
@@ -249,6 +304,8 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, TasksWeekPage).index_dest or None
         case "review":
             return _one(page, ReviewWeekPage).index_dest or None
+        case "collection":
+            return _one(page, CollectionLeaf).index_dest or None
         case _:
             return None
 

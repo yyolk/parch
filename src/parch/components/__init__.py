@@ -1,4 +1,16 @@
 from parch.components.annual import AnnualGrid, AnnualMonth
+from parch.components.bujo import (
+    BujoIndex,
+    BujoIndexRow,
+    BujoKey,
+    CalendarDayRow,
+    CollectionLeaf,
+    FutureLogBand,
+    FutureLogPage,
+    MonthlyCalendarList,
+    MonthlyTaskWell,
+    RapidLogPage,
+)
 from parch.components.cover import CoverTitle
 from parch.components.engineering import EngineeringFace, EngineeringPad
 from parch.components.habit import HabitGrid
@@ -23,9 +35,16 @@ from parch.components.week import WeekDay, WeekStrip
 type Component = (
     AnnualGrid
     | AnnualMonth
+    | BujoIndex
+    | BujoKey
+    | CollectionLeaf
     | CoverTitle
     | EngineeringPad
+    | FutureLogPage
     | HabitGrid
+    | MonthlyCalendarList
+    | MonthlyTaskWell
+    | RapidLogPage
     | MeetingAgenda
     | MeetingIndex
     | MeetingSlot
@@ -53,8 +72,18 @@ type Component = (
 __all__ = [
     "AnnualGrid",
     "AnnualMonth",
+    "BujoIndex",
+    "BujoIndexRow",
+    "BujoKey",
+    "CalendarDayRow",
+    "CollectionLeaf",
     "Component",
     "CoverTitle",
+    "FutureLogBand",
+    "FutureLogPage",
+    "MonthlyCalendarList",
+    "MonthlyTaskWell",
+    "RapidLogPage",
     "EngineeringFace",
     "EngineeringPad",
     "HabitGrid",

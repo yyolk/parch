@@ -5,6 +5,7 @@ from pypdf import PdfReader
 from pypdf.generic import Destination
 
 from parch.books import (
+    BulletJournal,
     EngineeringNotebook,
     ProjectsNotebook,
     YearPlanner,
@@ -44,6 +45,8 @@ _EXCLUDED_KINDS = frozenset(
         "engineering_front",
         "engineering_back",
         "steno",
+        "monthly_tasks",
+        "rapid_log",
     }
 )
 
@@ -233,6 +236,39 @@ def test_example_engineering_toml_enables_outline():
     spec = Spec.from_path(Path("examples/engineering.toml"))
     assert spec.outline is True
     assert spec.book == "engineering-notebook"
+
+
+def test_bullet_journal_january_outline_hubs():
+    spec = Spec(
+        book="bullet-journal",
+        months=(1,),
+        bujo_index_pages=1,
+        bujo_collections=2,
+        outline=True,
+    )
+    pages = BulletJournal().pages(spec)
+    entries = outline_entries(pages)
+    dests = [dest for _title, dest in entries]
+    dest_kind = {page.dest: page.kind for page in pages}
+    assert [dest_kind[dest] for dest in dests] == [
+        "bujo_key",
+        "bujo_index",
+        "future_log",
+        "monthly_log",
+        "collection",
+    ]
+    assert dests == [
+        spec.bujo_key_dest,
+        spec.bujo_index_dest,
+        spec.bujo_future_dest,
+        spec.dest_for_month(1),
+        spec.dest_for_bujo_collection(1),
+    ]
+    assert spec.cover_dest not in dests
+    assert spec.dest_for_habits(1) not in dests
+    assert spec.dest_for_month_tasks(1) not in dests
+    assert spec.dest_for_day(date(2026, 1, 1)) not in dests
+    assert spec.dest_for_bujo_collection(2) not in dests
 
 
 def test_example_nomad_outline_toml_enables_january_outline():
