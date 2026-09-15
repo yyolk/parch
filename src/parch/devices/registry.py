@@ -79,7 +79,9 @@ NOMAD = Device(
     root_body=ROOT_BODY,
 )
 
-# 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar chrome; writing clearance 4 mm.
+# 1860×2480 @ 300 PPI → 157.48×209.97 mm. Writing clearance 4 mm.
+# Top 8 mm reserved (same toolbar_edge as Nomad): measured Send-to-Kindle
+# taps are solid from ~8 mm; paint_header chip/meta must sit below that floor.
 # Same ROOT_BODY as Nomad — type calibration knob is later, not this PR.
 SCRIBE = Device(
     id="kindle-scribe",
@@ -89,8 +91,8 @@ SCRIBE = Device(
     page_height=209.97,
     width_px=1860,
     height_px=2480,
-    toolbar_edge="none",
-    toolbar_clearance=0.0,
+    toolbar_edge="top",
+    toolbar_clearance=8.0,
     writing_clearance=4.0,
     bottom_clearance=10.0,  # measured Send-to-Kindle: hits below 10 mm miss; 10–20 mm solid.
     root_body=ROOT_BODY,

@@ -38,15 +38,19 @@ def test_scribe_geometry():
     assert SCRIBE.width_px == 1860
     assert SCRIBE.height_px == 2480
     assert SCRIBE.ppi == 300
-    assert SCRIBE.toolbar_edge == "none"
-    assert SCRIBE.toolbar_clearance == 0.0
+    assert SCRIBE.toolbar_edge == "top"
+    assert SCRIBE.toolbar_clearance == 8.0
+    assert SCRIBE.content_top == 8.0
     assert SCRIBE.writing_clearance == 4.0
     assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
-    assert SCRIBE.toolbar_slab() is None
+    slab = SCRIBE.toolbar_slab()
+    assert slab is not None
+    assert slab.y == 0
+    assert slab.h == 8.0
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
-    assert frame.y == 0.0
+    assert frame.y == 8.0
     assert frame.w == pytest.approx(157.48 - 8.0)
     assert frame.bottom == pytest.approx(209.97 - NAV_H - SCRIBE.bottom_clearance)
 

@@ -88,7 +88,7 @@ def _ink_text(
 
 
 def paint_toolbar(_plotter: Plotter, _device: Device) -> None:
-    """Nomad top 8 mm stays reserved and unmarked. No fill, no label."""
+    """Top toolbar_clearance stays reserved and unmarked. No fill, no label."""
 
 
 def paint_header(
