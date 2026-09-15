@@ -13,6 +13,7 @@ from parch.fonts.ramp import TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-notebook"})
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_MONTHS_KEYS = frozenset({"from", "to"})
 
 type TomlTable = dict[str, object]
 
@@ -54,13 +55,37 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
     return 10
 
 
+def _parse_month_bound(raw: object, key: str) -> int:
+    """Closed month bound — strings and bools fail loudly."""
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ConfigError(f"months.{key} must be an int")
+    return raw
+
+
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
+    """List of ints, ``{ from, to }`` inclusive table, omit (full year), or legacy ``month``."""
     raw = data.get("months")
-    if isinstance(raw, list) and raw:
+    if raw is None:
+        if "month" in data:
+            return (int(data["month"]),)
+        return tuple(range(1, 13))
+    if isinstance(raw, list):
         return tuple(int(month) for month in raw)
-    if "month" in data:
-        return (int(data["month"]),)
-    return tuple(range(1, 13))
+    if not isinstance(raw, dict):
+        raise ConfigError("months must be a list of ints or a { from, to } table")
+    unknown = set(raw) - _MONTHS_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown months key {key!r}")
+    if "from" not in raw:
+        raise ConfigError("months.from is required")
+    if "to" not in raw:
+        raise ConfigError("months.to is required")
+    start = _parse_month_bound(raw["from"], "from")
+    end = _parse_month_bound(raw["to"], "to")
+    if not 1 <= start <= end <= 12:
+        raise ConfigError("months from/to must be 1–12 and from ≤ to")
+    return tuple(range(start, end + 1))
 
 
 def _parse_bool(raw: object, key: str) -> bool:
