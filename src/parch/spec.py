@@ -7,7 +7,7 @@ from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
-from parch.calendar import iso_monday, month_touching_weeks, quarter_of
+from parch.calendar import quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
@@ -275,18 +275,6 @@ class Spec:
     def tasks_index_dest(self) -> str:
         """Task landing — first pressed quarter’s month-banded index."""
         return self.dest_for_tasks_index(self.pressed_quarters()[0])
-
-    def dest_for_tasks_index_of(self, day: date) -> str:
-        """Index page whose month band first lists the ISO week of ``day``."""
-        key = day.isocalendar()[:2]
-        for month in self.months:
-            for week in month_touching_weeks(self.year, month, self.weekday_start):
-                monday = next(
-                    (d for d in week if d.weekday() == 0), iso_monday(week[0])
-                )
-                if monday.isocalendar()[:2] == key:
-                    return self.dest_for_tasks_index(quarter_of(month))
-        return self.tasks_index_dest
 
     def dest_for_task(self, day: date) -> str:
         """Weekly Tasks dest, e.g. ``tasks-2026-W01`` — not the planner week page."""

@@ -17,9 +17,7 @@ from parch.layouts.planner.painters import (
     CLONE_STRIP_H,
     CLONE_TRACK_H,
     MUTED,
-    PROJECT_COL_WEIGHTS,
     PROJECT_P,
-    PROJECT_STATUS_H,
     PROJECT_STATUS_MARK,
     TICK,
     TICKET_BODY_GAP,
@@ -34,8 +32,6 @@ from parch.layouts.planner.painters import (
     clone_task_count,
     paint_project,
     paint_projects_index,
-    project_card_columns,
-    project_card_left_seats,
     project_card_seats,
     project_ticket_body_seats,
     project_ticket_link_hits,
@@ -106,24 +102,6 @@ def test_project_card_tracks():
     assert cards[-1].bottom == pytest.approx(well.bottom)
     assert cards[1].y > cards[0].bottom
     assert cards[2].y > cards[1].bottom
-
-    left, right = project_card_columns(cards[0])
-    assert left.x > cards[0].x
-    assert right.right < cards[0].right
-    assert left.right < right.x
-    assert right.w > left.w
-    share = left.w + right.w
-    assert left.w / share == pytest.approx(
-        PROJECT_COL_WEIGHTS[0] / sum(PROJECT_COL_WEIGHTS)
-    )
-
-    header, tasks, status = project_card_left_seats(left)
-    assert header.y == pytest.approx(left.y)
-    assert header.x == pytest.approx(left.x)
-    assert tasks.y > header.bottom
-    assert status.y > tasks.bottom
-    assert status.bottom == pytest.approx(left.bottom)
-    assert status.h == pytest.approx(PROJECT_STATUS_H)
 
 
 def test_projects_knobs_from_spec():
