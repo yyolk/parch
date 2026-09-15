@@ -13,14 +13,14 @@ def test_nomad_geometry():
     assert NOMAD.height_px == 1872
     assert NOMAD.ppi == 300
     assert NOMAD.toolbar_edge == "top"
-    assert NOMAD.toolbar_clearance == 8.0
+    assert NOMAD.top_clearance == 8.0
     assert NOMAD.writing_clearance == 4.0
     assert NOMAD.bottom_clearance == 0.0
     assert NOMAD.root_body == ROOT_BODY == Pt(8.5)
 
 
-def test_toolbar_is_not_the_well():
-    slab = NOMAD.toolbar_slab()
+def test_top_clearance_is_not_the_well():
+    slab = NOMAD.top_clearance_slab()
     assert slab is not None
     assert slab.y == 0
     assert slab.h == 8.0
@@ -39,12 +39,12 @@ def test_scribe_geometry():
     assert SCRIBE.height_px == 2480
     assert SCRIBE.ppi == 300
     assert SCRIBE.toolbar_edge == "top"
-    assert SCRIBE.toolbar_clearance == 8.0
+    assert SCRIBE.top_clearance == 8.0
     assert SCRIBE.content_top == 8.0
     assert SCRIBE.writing_clearance == 4.0
     assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
-    slab = SCRIBE.toolbar_slab()
+    slab = SCRIBE.top_clearance_slab()
     assert slab is not None
     assert slab.y == 0
     assert slab.h == 8.0
