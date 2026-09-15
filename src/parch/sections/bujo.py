@@ -15,7 +15,6 @@ from parch.components import (
     HabitGrid,
     MonthlyCalendarList,
     MonthlyTaskWell,
-    RapidLogDay,
     RapidLogPage,
 )
 from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
@@ -235,7 +234,9 @@ class RapidLogSection:
                     components=(
                         RapidLogPage(
                             year=spec.year,
-                            days=(RapidLogDay(moment=moment, title=title, dest=dest),),
+                            moment=moment,
+                            title=title,
+                            dest=dest,
                         ),
                     ),
                 )

@@ -53,7 +53,7 @@ def _named_dests(reader: PdfReader) -> set[str]:
 
 
 def test_sealed_component_fields():
-    assert set(RapidLogPage.__dataclass_fields__) == {"year", "days"}
+    assert set(RapidLogPage.__dataclass_fields__) == {"year", "moment", "title", "dest"}
     assert "quarter_dest" not in MonthlyCalendarList.__dataclass_fields__
     assert "pattern" not in CollectionLeaf.__dataclass_fields__
     assert "gutter_mm" not in RapidLogPage.__dataclass_fields__
@@ -127,7 +127,7 @@ def test_january_components_and_strip_active():
     assert grid.quarter_dest is None
     rapid = next(page for page in pages if page.kind == "rapid_log")
     assert isinstance(rapid.components[0], RapidLogPage)
-    assert rapid.components[0].days[0].moment == date(2026, 1, 1)
+    assert rapid.components[0].moment == date(2026, 1, 1)
     assert isinstance(by_kind["collection"].components[0], CollectionLeaf)
 
     assert strip_active("bujo_key") == "Key"

@@ -70,16 +70,11 @@ class MonthlyTaskWell:
 
 
 @dataclass(frozen=True, slots=True)
-class RapidLogDay:
+class RapidLogPage:
+    year: int
     moment: date
     title: str
     dest: str
-
-
-@dataclass(frozen=True, slots=True)
-class RapidLogPage:
-    year: int
-    days: tuple[RapidLogDay, ...]
 
 
 @dataclass(frozen=True, slots=True)
