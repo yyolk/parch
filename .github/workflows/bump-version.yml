@@ -71,6 +71,7 @@ jobs:
 
       - name: Bump ${{ steps.versions.outputs.old }} → ${{ steps.versions.outputs.new }}
         env:
+          OLD_VER: ${{ steps.versions.outputs.old }}
           NEW_VER: ${{ steps.versions.outputs.new }}
         run: |
           set -euo pipefail
@@ -110,6 +111,19 @@ jobs:
           git commit -m "chore: bump version to ${NEW_VER}." -m "Co-authored-by: Joseph Chiocchi <joe@yolk.cc>"
 
           git push -u origin "HEAD:bump/v${NEW_VER}"
+
+          if [ -n "$(git ls-remote --tags origin "refs/tags/v${OLD_VER}")" ]; then
+            compare_base="v${OLD_VER}"
+          else
+            compare_base="master"
+          fi
+          COMPARE_URL="https://github.com/${GH_REPO}/compare/${compare_base}...bump/v${NEW_VER}"
+          echo "${COMPARE_URL}"
+          {
+            echo "Bump [${OLD_VER}](${COMPARE_URL}) → [${NEW_VER}](${COMPARE_URL})"
+            echo
+            echo "Compare: ${COMPARE_URL}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$PUBLISH" = "true" ]; then
             mode_comment="<!-- parch-release: publish -->"
