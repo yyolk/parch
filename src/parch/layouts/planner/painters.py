@@ -2134,28 +2134,26 @@ def paint_monthly_task_well(
 
 
 def paint_rapid_log(
-    plotter: Plotter, box: Rect, page: RapidLogPage, *, ramp: TypeRamp | None = None
+    plotter: Plotter, box: Rect, _page: RapidLogPage, *, ramp: TypeRamp | None = None
 ) -> None:
     """8 mm signifier gutter + 5 mm dotted well. Sealed paper, not a Spec knob."""
     ramp = _bound_ramp(plotter, ramp)
-    bands = rows(box, len(page.days), gap=2.2) if len(page.days) > 1 else (box,)
-    for band, _day in zip(bands, page.days, strict=True):
-        gutter, well = band.split_left(BUJO_GUTTER_MM)
+    gutter, well = box.split_left(BUJO_GUTTER_MM)
+    plotter.line(
+        gutter.right,
+        box.y,
+        gutter.right,
+        box.bottom,
+        stroke_width=HAIR,
+        stroke_gray=SOFT,
+    )
+    y = gutter.y + BUJO_ROW_MM
+    while y < gutter.bottom - 0.2:
         plotter.line(
-            gutter.right,
-            band.y,
-            gutter.right,
-            band.bottom,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
+            gutter.x, y, gutter.right, y, stroke_width=HAIR, stroke_gray=SOFT
         )
-        y = gutter.y + BUJO_ROW_MM
-        while y < gutter.bottom - 0.2:
-            plotter.line(
-                gutter.x, y, gutter.right, y, stroke_width=HAIR, stroke_gray=SOFT
-            )
-            y += BUJO_ROW_MM
-        _paint_bujo_dots(plotter, well)
+        y += BUJO_ROW_MM
+    _paint_bujo_dots(plotter, well)
 
 
 def paint_collection(

@@ -9,7 +9,6 @@ from parch.components.bujo import (
     FutureLogPage,
     MonthlyCalendarList,
     MonthlyTaskWell,
-    RapidLogDay,
     RapidLogPage,
 )
 from parch.components.cover import CoverTitle
@@ -84,7 +83,6 @@ __all__ = [
     "FutureLogPage",
     "MonthlyCalendarList",
     "MonthlyTaskWell",
-    "RapidLogDay",
     "RapidLogPage",
     "EngineeringFace",
     "EngineeringPad",
