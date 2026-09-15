@@ -276,4 +276,10 @@ def test_example_nomad_outline_toml_enables_january_outline():
     assert spec.outline is True
     assert spec.book == "year-planner"
     assert spec.months == (1,)
-    assert Spec.from_path(Path("examples/nomad.toml")).outline is False
+
+
+def test_example_nomad_toml_enables_outline():
+    spec = Spec.from_path(Path("examples/nomad.toml"))
+    assert spec.outline is True
+    assert spec.book == "year-planner"
+    assert spec.months == tuple(range(1, 13))
