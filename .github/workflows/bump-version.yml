@@ -1,4 +1,5 @@
 name: Bump version
+run-name: Bump ${{ inputs.bump }} (${{ inputs.publish && 'publish' || 'draft' }})
 
 on:
   workflow_dispatch:
@@ -49,17 +50,30 @@ jobs:
 
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
-      - name: Compute next version and open bump PR
+      - id: versions
+        name: Compute next version
         run: |
           set -euo pipefail
 
+          OLD_VER="$(uv version --short --no-sync)"
+          OLD_VER="${OLD_VER%%$'\n'}"
           NEW_VER="$(uv version --dry-run --bump "$BUMP" --short --no-sync)"
           NEW_VER="${NEW_VER%%$'\n'}"
           if [ -z "$NEW_VER" ]; then
             echo "uv version --dry-run did not print a version" >&2
             exit 1
           fi
-          echo "Next version: ${NEW_VER} (bump=${BUMP})"
+          echo "Next version: ${OLD_VER} → ${NEW_VER} (bump=${BUMP})"
+          {
+            echo "old=${OLD_VER}"
+            echo "new=${NEW_VER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Bump ${{ steps.versions.outputs.old }} → ${{ steps.versions.outputs.new }}
+        env:
+          NEW_VER: ${{ steps.versions.outputs.new }}
+        run: |
+          set -euo pipefail
 
           if [ -n "$(git ls-remote --tags origin "refs/tags/v${NEW_VER}")" ]; then
             echo "Tag v${NEW_VER} already exists; never retag." >&2
