@@ -8,6 +8,7 @@ from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
 from parch.calendar import quarter_of
+from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
@@ -24,7 +25,6 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
-_FUTURE_LOG_MONTHS_PER_PAGE = 3
 
 type TomlTable = dict[str, object]
 
@@ -355,8 +355,8 @@ class Spec:
         """Sealed 3 months/page; at least one future-log page."""
         return max(
             1,
-            (len(self.months) + _FUTURE_LOG_MONTHS_PER_PAGE - 1)
-            // _FUTURE_LOG_MONTHS_PER_PAGE,
+            (len(self.months) + FUTURE_LOG_MONTHS_PER_PAGE - 1)
+            // FUTURE_LOG_MONTHS_PER_PAGE,
         )
 
     def dest_for_bujo_future(self, page: int) -> str:
