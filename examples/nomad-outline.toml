@@ -1,9 +1,0 @@
-# Reader sidebar outline demo (cover skipped; default false).
-year = 2026
-device = "supernote-nomad"
-months = [1]
-title = "Year planner"
-outline = true
-
-[daily]
-notes_pages = 1

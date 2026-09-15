@@ -124,6 +124,7 @@ def test_habit_columns_from_toml_keys():
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"
+    assert nomad.outline is True
     assert nomad.project_cards == 3
     assert nomad.project_tasks == 4
     assert nomad.project_tickets == 8
