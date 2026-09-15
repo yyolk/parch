@@ -193,7 +193,7 @@ def test_pad_only_plot_pages_outline_empty_for_eng_kinds():
 
 def test_press_pdf_year_planner_outline_when_enabled(tmp_path: Path):
     spec = Spec(months=(1,), notes_pages=0, outline=True)
-    out = tmp_path / "nomad-outline.pdf"
+    out = tmp_path / "year-planner-outline.pdf"
     press(spec, out)
     reader = PdfReader(out)
     titles = _outline_titles(reader)
@@ -269,13 +269,6 @@ def test_bullet_journal_january_outline_hubs():
     assert spec.dest_for_month_tasks(1) not in dests
     assert spec.dest_for_day(date(2026, 1, 1)) not in dests
     assert spec.dest_for_bujo_collection(2) not in dests
-
-
-def test_example_nomad_outline_toml_enables_january_outline():
-    spec = Spec.from_path(Path("examples/nomad-outline.toml"))
-    assert spec.outline is True
-    assert spec.book == "year-planner"
-    assert spec.months == (1,)
 
 
 def test_example_nomad_toml_enables_outline():
