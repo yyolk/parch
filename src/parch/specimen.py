@@ -20,7 +20,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
-from parch.devices import get_device, known_device_ids
+from parch.devices import get_device
 from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
@@ -53,7 +53,9 @@ PROJECTS_STEMS = ("projects-cover", "projects-index")
 # Pad-only Gregg sheet (steno_sheets=1).
 STENO_STEMS = ("steno",)
 
-GALLERY_STEMS = (*SAMPLE_STEMS, *ENGINEERING_STEMS, *PROJECTS_STEMS, *STENO_STEMS)
+# Catalog Pages devices. Do not follow known_device_ids().
+# Grow this tuple when a device should join gh-pages specimens.
+CATALOG_DEVICE_IDS = ("supernote-nomad", "kindle-scribe")
 
 
 def gallery_groups(
@@ -69,6 +71,7 @@ def gallery_groups(
 
 
 GALLERY_GROUPS = gallery_groups()
+GALLERY_STEMS = tuple(stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems)
 
 PREVIEW_DPI = 96
 
@@ -365,7 +368,7 @@ def build_catalog(
 ) -> Path:
     """Press each catalog device; write root index listing them."""
     ids = tuple(
-        dict.fromkeys(get_device(d).id for d in (device_ids or known_device_ids()))
+        dict.fromkeys(get_device(d).id for d in (device_ids or CATALOG_DEVICE_IDS))
     )
     for device_id in ids:
         write_specimens(specimens_dest(workdir, device_id), device_id)

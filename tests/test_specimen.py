@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 
 from parch import ConfigError
-from parch.devices import known_device_ids
 from parch.press import main
 from parch.specimen import (
+    CATALOG_DEVICE_IDS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
     PROJECTS_STEMS,
@@ -39,8 +39,18 @@ def test_catalog_index_html_is_device_list():
     assert "<script" not in html
 
 
+def test_catalog_device_ids_are_sealed():
+    assert CATALOG_DEVICE_IDS == ("supernote-nomad", "kindle-scribe")
+
+
+def test_gallery_stems_follow_groups():
+    assert GALLERY_STEMS == tuple(
+        stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems
+    )
+
+
 def test_catalog_index_html_lists_both_devices():
-    html = catalog_index_html(known_device_ids())
+    html = catalog_index_html(CATALOG_DEVICE_IDS)
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
     assert html.index("supernote-nomad") < html.index("kindle-scribe")
@@ -228,7 +238,7 @@ def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr("parch.specimen.write_specimens", fake_write)
     root = build_catalog(tmp_path)
-    assert written == ["supernote-nomad", "kindle-scribe"]
+    assert written == list(CATALOG_DEVICE_IDS)
     assert root == tmp_path / "specimens"
     html = (root / "index.html").read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html

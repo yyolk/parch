@@ -54,9 +54,9 @@ jobs:
         run: |
           uv run parch specimen -w out
           test -s out/specimens/index.html
-          grep -q 'href="supernote-nomad/"' out/specimens/index.html
-          grep -q 'href="kindle-scribe/"' out/specimens/index.html
-          for device in supernote-nomad kindle-scribe; do
+          devices=$(uv run python -c 'from parch.specimen import CATALOG_DEVICE_IDS; print(" ".join(CATALOG_DEVICE_IDS))')
+          for device in $devices; do
+            grep -q "href=\"$device/\"" out/specimens/index.html
             test -s out/specimens/$device/cover.png
             test -s out/specimens/$device/index.html
             test -s out/specimens/$device/projects-cover.png
