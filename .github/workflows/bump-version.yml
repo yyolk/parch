@@ -158,8 +158,6 @@ jobs:
             echo
             echo "A published Release then runs **Publish** (TestPyPI; PyPI and **Release PDFs** only when the version is not a pre-release). A draft does not, until someone publishes it in the UI."
             echo
-            echo "Auto-merge is armed after create. CI still needs the bot-PR workflow approval click before checks go green."
-            echo
             echo "Do not push tags by hand. Never retag."
           } > "$RUNNER_TEMP/pr-body.md"
 
@@ -169,5 +167,3 @@ jobs:
             --title "chore: bump version to ${NEW_VER}" \
             --label "$label" \
             --body-file "$RUNNER_TEMP/pr-body.md"
-
-          gh pr merge --auto --squash "bump/v${NEW_VER}"
