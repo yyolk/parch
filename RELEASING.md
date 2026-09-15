@@ -3,7 +3,7 @@
 Happy path:
 
 1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `rc` / `beta` / `alpha` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
-2. Merge the `bump/v…` PR when CI is green. **Bump version** enables squash auto-merge after it opens the PR (first-time bot PRs still need a workflow approval click).
+2. Merge the `bump/v…` PR when CI is green.
 3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` (Publish; **Release PDFs** only when the Release is not a pre-release).
 
 A published GitHub Release is the ship step. Tag `vX.Y.Z` must match `[project].version` in `pyproject.toml` (no `v` in the file). Hatchling embeds that file version on the tagged commit; **Publish** fails the build if the tag and file differ.
