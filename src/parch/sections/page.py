@@ -25,6 +25,13 @@ type PageKind = Literal[
     "engineering_front",
     "engineering_back",
     "steno",
+    "bujo_key",
+    "bujo_index",
+    "future_log",
+    "monthly_log",
+    "monthly_tasks",
+    "rapid_log",
+    "collection",
 ]
 
 

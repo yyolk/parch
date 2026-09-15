@@ -98,3 +98,29 @@ def planner_nav(
         ]
     )
     return tuple(items)
+
+
+def bujo_nav(
+    spec: Spec,
+    *,
+    day: date | None = None,
+    month: int | None = None,
+    index_dest: str | None = None,
+    future_dest: str | None = None,
+    collection_dest: str | None = None,
+) -> tuple[NavItem, ...]:
+    """Key · Idx · Fut · Mon · Habit · Day · Col — same strip, short chips."""
+    landing = landing_day(spec, day=day, month=month)
+    mon = spec.dest_for_month(month) if month is not None else spec.month_dest
+    habit_month = month if month is not None else landing.month
+    items = [
+        NavItem("Key", spec.bujo_key_dest),
+        NavItem("Idx", index_dest or spec.bujo_index_dest),
+        NavItem("Fut", future_dest or spec.bujo_future_dest),
+        NavItem("Mon", mon),
+        NavItem("Habit", spec.dest_for_habits(habit_month)),
+        NavItem("Day", spec.dest_for_day(landing)),
+    ]
+    if spec.bujo_collections > 0:
+        items.append(NavItem("Col", collection_dest or spec.bujo_collection_dest))
+    return tuple(items)

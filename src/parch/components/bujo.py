@@ -3,6 +3,9 @@
 from dataclasses import dataclass
 from datetime import date
 
+# Sealed grouping — not a Spec/TOML knob until a second future-log path exists.
+FUTURE_LOG_MONTHS_PER_PAGE = 3
+
 
 @dataclass(frozen=True, slots=True)
 class BujoKey:
@@ -55,7 +58,6 @@ class MonthlyCalendarList:
     month_name: str
     days: tuple[CalendarDayRow, ...]
     tasks_dest: str
-    quarter_dest: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,14 +80,10 @@ class RapidLogDay:
 class RapidLogPage:
     year: int
     days: tuple[RapidLogDay, ...]
-    gutter_mm: float
-    row_mm: float
-    pattern: str
 
 
 @dataclass(frozen=True, slots=True)
 class CollectionLeaf:
     year: int
     number: int
-    pattern: str
     index_dest: str

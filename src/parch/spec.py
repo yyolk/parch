@@ -11,8 +11,20 @@ from parch.calendar import quarter_of
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
-_BOOKS = frozenset({"year-planner", "projects-notebook", "engineering-notebook"})
+_BOOKS = frozenset(
+    {
+        "year-planner",
+        "projects-notebook",
+        "engineering-notebook",
+        "bullet-journal",
+    }
+)
+_BOOK_CHOICES = (
+    "year-planner, projects-notebook, engineering-notebook, or bullet-journal"
+)
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
+_BUJO_KEYS = frozenset({"index_pages", "collections"})
+_FUTURE_LOG_MONTHS_PER_PAGE = 3
 
 type TomlTable = dict[str, object]
 
@@ -70,6 +82,20 @@ def _parse_bool(raw: object, key: str) -> bool:
     return raw
 
 
+def _parse_bujo(data: TomlTable) -> tuple[int, int]:
+    """``[bujo]`` index_pages + collections. Unknown keys fail loudly."""
+    raw = data.get("bujo")
+    if raw is None:
+        return 2, 24
+    if not isinstance(raw, dict):
+        raise ConfigError("bujo must be a TOML table")
+    unknown = set(raw) - _BUJO_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown bujo key {key!r}")
+    return int(raw.get("index_pages", 2)), int(raw.get("collections", 24))
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -106,6 +132,8 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     outline: bool = False  # reader sidebar outline; default off
+    bujo_index_pages: int = 2
+    bujo_collections: int = 24
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -114,10 +142,7 @@ class Spec:
                 f"week_start must be monday or sunday, not {self.week_start!r}"
             )
         if self.book not in _BOOKS:
-            raise ConfigError(
-                "book must be year-planner, projects-notebook, or "
-                f"engineering-notebook, not {self.book!r}"
-            )
+            raise ConfigError(f"book must be {_BOOK_CHOICES}, not {self.book!r}")
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if not self.months:
@@ -155,6 +180,10 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if self.steno_sheets and self.engineering_sheets:
             raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
+        if not 1 <= self.bujo_index_pages <= 6:
+            raise ConfigError("bujo index_pages must be 1–6")
+        if not 0 <= self.bujo_collections <= 48:
+            raise ConfigError("bujo collections must be 0–48")
 
     @property
     def weekday_start(self) -> int:
@@ -307,6 +336,52 @@ class Spec:
             raise ConfigError(f"engineering sheet out of range: {sheet}")
         return _dest(t"engineering-{self.year:04d}-{sheet:02d}-{face}")
 
+    @property
+    def bujo_key_dest(self) -> str:
+        return _dest(t"bujo-key-{self.year:04d}")
+
+    def dest_for_bujo_index(self, page: int) -> str:
+        if not 1 <= page <= self.bujo_index_pages:
+            raise ConfigError(f"bujo index page out of range: {page}")
+        return _dest(t"bujo-index-{self.year:04d}-{page:02d}")
+
+    @property
+    def bujo_index_dest(self) -> str:
+        """Idx landing — index page 1."""
+        return self.dest_for_bujo_index(1)
+
+    @property
+    def bujo_future_pages(self) -> int:
+        """Sealed 3 months/page; at least one future-log page."""
+        return max(
+            1,
+            (len(self.months) + _FUTURE_LOG_MONTHS_PER_PAGE - 1)
+            // _FUTURE_LOG_MONTHS_PER_PAGE,
+        )
+
+    def dest_for_bujo_future(self, page: int) -> str:
+        if not 1 <= page <= self.bujo_future_pages:
+            raise ConfigError(f"bujo future-log page out of range: {page}")
+        return _dest(t"bujo-future-{self.year:04d}-{page:02d}")
+
+    @property
+    def bujo_future_dest(self) -> str:
+        """Fut landing — future-log page 1."""
+        return self.dest_for_bujo_future(1)
+
+    def dest_for_month_tasks(self, month: int) -> str:
+        return _dest(t"month-{self.year:04d}-{month:02d}-tasks")
+
+    def dest_for_bujo_collection(self, number: int) -> str:
+        if not 1 <= number <= self.bujo_collections:
+            raise ConfigError(f"bujo collection out of range: {number}")
+        return _dest(t"bujo-col-{self.year:04d}-{number:02d}")
+
+    @property
+    def bujo_collection_dest(self) -> str:
+        """Col landing — collection 01 when collections are pressed."""
+        return self.dest_for_bujo_collection(1)
+
     def dest_for_steno_pad(self, sheet: int) -> str:
         """1-based single-face dest, e.g. ``steno-2026-01``."""
         if self.steno_sheets < 1:
@@ -337,6 +412,7 @@ class Spec:
         engineering_table = engineering if isinstance(engineering, dict) else {}
         steno = data.get("steno")
         steno_table = steno if isinstance(steno, dict) else {}
+        bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -379,6 +455,8 @@ class Spec:
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
             outline=_parse_bool(data.get("outline", False), "outline"),
+            bujo_index_pages=bujo_index_pages,
+            bujo_collections=bujo_collections,
             type_overlay=_parse_typography(data),
         )
 

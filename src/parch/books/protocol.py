@@ -27,7 +27,8 @@ class Book(Protocol):
         """Reserve dests, then paint each page."""
 
 
-# Reader outline hubs only. Weeks, days, notes, leaves, habits, and pad kinds omitted.
+# Reader outline hubs only. Weeks, days, notes, leaves, habits, pad,
+# rapid-log, and monthly-task kinds omitted.
 # RUN: once per contiguous kind-run (tasks_index re-fires after task leaves).
 # EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
 _OUTLINE_RUN = frozenset(
@@ -37,9 +38,13 @@ _OUTLINE_RUN = frozenset(
         "meetings_index",
         "tasks_index",
         "review_index",
+        "bujo_key",
+        "bujo_index",
+        "future_log",
+        "collection",
     }
 )
-_OUTLINE_EACH = frozenset({"quarter", "month"})
+_OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})
 
 
 def _section_start(kind: str, prev_kind: str | None) -> bool:
@@ -83,8 +88,9 @@ def plot_pages(
     ``pages`` is a ledger factory — section ``.pages``, ``lambda: book.pages(spec)``,
     or any zero-arg callable that yields ``Page``. Not a ``Book``.
     When ``outline``, ``outline_entries`` picks reader bookmarks on ``page.dest``.
-    Cover, weekly, daily, notes, leaves, habits, and pad kinds are omitted —
-    pads with only those kinds get an empty outline.
+    Cover, weekly, daily, notes, leaves, habits, pad, rapid-log, and
+    monthly-task kinds are omitted — pads with only those kinds get an
+    empty outline.
     """
     ledger = list(pages())
     slate = get_device(device)

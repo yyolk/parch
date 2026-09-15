@@ -8,18 +8,25 @@ from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
     AnnualGrid,
     AnnualMonth,
+    BujoIndex,
+    BujoKey,
+    CollectionLeaf,
     CoverTitle,
     EngineeringPad,
+    FutureLogPage,
     HabitGrid,
     MeetingAgenda,
     MeetingIndex,
     MonthGrid,
+    MonthlyCalendarList,
+    MonthlyTaskWell,
     Notes,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
     ProjectTicket,
     QuarterGrid,
+    RapidLogPage,
     ReviewDay,
     ReviewIndex,
     ReviewWeek,
@@ -1918,6 +1925,251 @@ def daily_right_seats(right: Rect, priority_rows: int) -> tuple[Rect, Rect]:
     )
 
 
+# Sealed BuJo paper — painter constants until a second pattern exists.
+BUJO_GUTTER_MM = 8.0
+BUJO_ROW_MM = 5.0
+BUJO_DOT = 0.32
+BUJO_DOT_PITCH = 5.0
+BUJO_MIGRATE_LABEL_H = 3.4
+
+
+def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
+    """5 mm dotted well — RULE_C dots on a sealed pitch."""
+    nx = max(2, int(box.w / BUJO_DOT_PITCH))
+    ny = max(2, int(box.h / BUJO_DOT_PITCH))
+    inset = Rect(box.x, box.y, nx * BUJO_DOT_PITCH, ny * BUJO_DOT_PITCH)
+    for band in rows(inset, ny):
+        for cell in columns(band, nx):
+            plotter.rect(
+                Rect(
+                    cell.x + (cell.w - BUJO_DOT) / 2,
+                    cell.y + (cell.h - BUJO_DOT) / 2,
+                    BUJO_DOT,
+                    BUJO_DOT,
+                ),
+                stroke=False,
+                fill=True,
+                fill_gray=RULE_C,
+            )
+
+
+def paint_bujo_key(
+    plotter: Plotter, box: Rect, key: BujoKey, *, ramp: TypeRamp | None = None
+) -> None:
+    """Printed signifiers plus blank custom rows."""
+    ramp = _bound_ramp(plotter, ramp)
+    n = max(1, len(key.symbols) + max(0, key.custom_rows))
+    symbol_w = 10.0
+    for i, band in enumerate(rows(box, n)):
+        if i < len(key.symbols):
+            mark, meaning = key.symbols[i]
+            _ink_text(
+                plotter,
+                Rect(band.x, band.y, symbol_w, band.h),
+                mark,
+                TypeRef(step="title", emphasis="strong"),
+                gray=INK,
+                align="center",
+            )
+            _ink_text(
+                plotter,
+                Rect(band.x + symbol_w + 2.0, band.y, band.w - symbol_w - 2.0, band.h),
+                meaning,
+                TypeRef(step="body"),
+                gray=INK,
+                align="left",
+            )
+        plotter.line(
+            box.x,
+            band.bottom,
+            box.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+
+
+def paint_bujo_index(
+    plotter: Plotter, box: Rect, index: BujoIndex, *, ramp: TypeRamp | None = None
+) -> None:
+    """Index rows — label links; write-in stays unlinkable."""
+    ramp = _bound_ramp(plotter, ramp)
+    n = max(1, len(index.rows))
+    label_w = min(42.0, box.w * 0.42)
+    for band, row in zip(rows(box, n), index.rows, strict=False):
+        label, write = band.split_left(label_w)
+        if row.label:
+            _ink_text(
+                plotter,
+                Rect(label.x, label.y, label.w - 1.2, label.h),
+                row.label,
+                TypeRef(step="body"),
+                gray=INK,
+                align="left",
+            )
+        if row.dest:
+            plotter.link(label, row.dest)
+        plotter.line(
+            write.x,
+            write.y + write.h * 0.72,
+            write.right,
+            write.y + write.h * 0.72,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+        plotter.line(
+            box.x,
+            band.bottom,
+            box.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+
+
+def paint_future_log(
+    plotter: Plotter, box: Rect, page: FutureLogPage, *, ramp: TypeRamp | None = None
+) -> None:
+    """Stacked month bands — name links to the monthly calendar list."""
+    ramp = _bound_ramp(plotter, ramp)
+    n = max(1, len(page.months))
+    for band, month in zip(rows(box, n, gap=2.6), page.months, strict=True):
+        head, body = band.split_top(5.2)
+        _ink_text(
+            plotter,
+            head,
+            month.name,
+            TypeRef(step="title", emphasis="strong"),
+            gray=INK,
+            align="left",
+        )
+        plotter.link(head, month.dest)
+        y = body.y + 4.15
+        while y < body.bottom - 0.15:
+            plotter.line(
+                body.x, y, body.right, y, stroke_width=RULE, stroke_gray=RULE_C
+            )
+            y += 4.15
+        plotter.line(
+            box.x,
+            band.bottom,
+            box.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+
+
+def paint_monthly_calendar_list(
+    plotter: Plotter,
+    box: Rect,
+    cal: MonthlyCalendarList,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Day list — numeral + weekday; each row links to that rapid-log dest."""
+    ramp = _bound_ramp(plotter, ramp)
+    n = max(1, len(cal.days))
+    num_w = 10.0
+    for band, day in zip(rows(box, n), cal.days, strict=True):
+        _ink_text(
+            plotter,
+            Rect(band.x, band.y, num_w, band.h),
+            str(day.day),
+            TypeRef(step="body", emphasis="strong"),
+            gray=INK,
+            align="right",
+        )
+        _ink_text(
+            plotter,
+            Rect(band.x + num_w + 2.0, band.y, 16.0, band.h),
+            day.weekday,
+            TypeRef(step="label"),
+            gray=MUTED,
+            small_caps=True,
+            align="left",
+        )
+        plotter.link(band, day.dest)
+        plotter.line(
+            box.x,
+            band.bottom,
+            box.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+
+
+def paint_monthly_task_well(
+    plotter: Plotter,
+    box: Rect,
+    well: MonthlyTaskWell,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Migrate lines over a lined task well."""
+    ramp = _bound_ramp(plotter, ramp)
+    migrate_h = BUJO_MIGRATE_LABEL_H + well.migrate_lines * BUJO_ROW_MM + 2.4
+    migrate, rest = box.split_top(min(migrate_h, box.h * 0.4))
+    _ink_text(
+        plotter,
+        Rect(migrate.x, migrate.y, migrate.w, BUJO_MIGRATE_LABEL_H),
+        "Migrate",
+        TypeRef(step="label"),
+        gray=MUTED,
+        small_caps=True,
+        align="left",
+    )
+    y = migrate.y + BUJO_MIGRATE_LABEL_H + BUJO_ROW_MM
+    stop = migrate.bottom - 0.4
+    for _ in range(well.migrate_lines):
+        if y > stop:
+            break
+        plotter.line(
+            migrate.x, y, migrate.right, y, stroke_width=RULE, stroke_gray=RULE_C
+        )
+        y += BUJO_ROW_MM
+    tasks = Rect(rest.x, rest.y + 2.2, rest.w, max(rest.h - 2.2, 1))
+    _paint_note_box(plotter, tasks, label="Tasks", ramp=ramp)
+
+
+def paint_rapid_log(
+    plotter: Plotter, box: Rect, page: RapidLogPage, *, ramp: TypeRamp | None = None
+) -> None:
+    """8 mm signifier gutter + 5 mm dotted well. Sealed paper, not a Spec knob."""
+    ramp = _bound_ramp(plotter, ramp)
+    bands = rows(box, len(page.days), gap=2.2) if len(page.days) > 1 else (box,)
+    for band, _day in zip(bands, page.days, strict=True):
+        gutter, well = band.split_left(BUJO_GUTTER_MM)
+        plotter.line(
+            gutter.right,
+            band.y,
+            gutter.right,
+            band.bottom,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
+        y = gutter.y + BUJO_ROW_MM
+        while y < gutter.bottom - 0.2:
+            plotter.line(
+                gutter.x, y, gutter.right, y, stroke_width=HAIR, stroke_gray=SOFT
+            )
+            y += BUJO_ROW_MM
+        _paint_bujo_dots(plotter, well)
+
+
+def paint_collection(
+    plotter: Plotter,
+    box: Rect,
+    _leaf: CollectionLeaf,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Full-well 5 mm dots — same sealed pattern as the rapid-log well."""
+    _bound_ramp(plotter, ramp)
+    _paint_bujo_dots(plotter, box)
+
+
 def paint_daily(
     plotter: Plotter,
     box: Rect,
@@ -1956,8 +2208,18 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Quar"] = item.dest
         elif item.dest.endswith("-habits"):
             dests["Habit"] = item.dest
+        elif item.dest.endswith("-tasks"):
+            pass
         elif item.dest.startswith("month-"):
             dests["Mon"] = item.dest
+        elif item.dest.startswith("bujo-key-"):
+            dests["Key"] = item.dest
+        elif item.dest.startswith("bujo-index-"):
+            dests["Idx"] = item.dest
+        elif item.dest.startswith("bujo-future-"):
+            dests["Fut"] = item.dest
+        elif item.dest.startswith("bujo-col-"):
+            dests["Col"] = item.dest
         elif item.dest.startswith("projects-index-"):
             dests["Proj"] = item.dest
         elif item.dest.startswith("meetings-index-"):
@@ -2004,7 +2266,24 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         case "daily_notes":
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
+        case "bujo_key":
+            dests["Key"] = page.dest
+        case "bujo_index":
+            dests["Idx"] = page.dest
+        case "future_log":
+            dests["Fut"] = page.dest
+        case "monthly_log" | "monthly_tasks":
+            dests["Mon"] = (
+                page.dest if page.kind == "monthly_log" else dests.get("Mon", page.dest)
+            )
+        case "rapid_log":
+            dests["Day"] = page.dest
+        case "collection":
+            dests["Col"] = page.dest
     order = (
+        "Key",
+        "Idx",
+        "Fut",
         "Year",
         "Quar",
         "Mon",
@@ -2013,6 +2292,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         "Rev",
         "Day",
         "Notes",
+        "Col",
         "Proj",
         "Meet",
         "Task",
@@ -2046,6 +2326,18 @@ def strip_active(kind: str) -> str:
             return "Rev"
         case "engineering_front" | "engineering_back" | "steno":
             return ""
+        case "bujo_key":
+            return "Key"
+        case "bujo_index":
+            return "Idx"
+        case "future_log":
+            return "Fut"
+        case "monthly_log" | "monthly_tasks":
+            return "Mon"
+        case "rapid_log":
+            return "Day"
+        case "collection":
+            return "Col"
         case _:
             return "Year"
 

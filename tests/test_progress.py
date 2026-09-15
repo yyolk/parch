@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 
 from parch import progress
-from parch.books import EngineeringNotebook, ProjectsNotebook, YearPlanner
+from parch.books import (
+    BulletJournal,
+    EngineeringNotebook,
+    ProjectsNotebook,
+    YearPlanner,
+)
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.progress import render_progress
@@ -135,6 +140,26 @@ def test_projects_notebook_plot_ticks_each_page(monkeypatch):
     )
     spec = Spec(notes_pages=1, book="projects-notebook")
     book = ProjectsNotebook()
+    pages = book.pages(spec)
+    book.plot(spec, RecordingPlotter())
+    assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))
+    assert all(tick[1] == len(pages) for tick in ticks)
+    assert [tick[2] for tick in ticks] == [page.kind for page in pages]
+
+
+def test_bullet_journal_plot_ticks_each_page(monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(
+        book="bullet-journal",
+        months=(1,),
+        bujo_index_pages=1,
+        bujo_collections=1,
+    )
+    book = BulletJournal()
     pages = book.pages(spec)
     book.plot(spec, RecordingPlotter())
     assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))

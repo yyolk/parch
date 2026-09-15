@@ -10,16 +10,8 @@ title = "Bullet journal"
 outline = true
 
 [bujo]
-pattern = "dotted"
-gutter_mm = 8.0
-row_mm = 5.0
 index_pages = 2
-future_log_months_per_page = 3
-dated_dailies = true
-days_per_page = 1
 collections = 24
-print_key = true
-habits = true
 
 [habits]
 columns = 8
