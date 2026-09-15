@@ -1,20 +1,20 @@
 """Registered MVP devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
 
 from dataclasses import dataclass
-from typing import Literal
 
 from parch import ConfigError
 from parch.fonts.ramp import ROOT_BODY, Pt
 from parch.geom import Rect
-
-type ToolbarEdge = Literal["top", "none"]
 
 NAV_H = 8.0
 
 
 @dataclass(frozen=True, slots=True)
 class Device:
-    """Physical page. Top clearance slab is reserved; it is not a writing well."""
+    """Physical page. Top clearance slab is reserved; it is not a writing well.
+
+    ``top_clearance == 0`` means no top band.
+    """
 
     id: str
     name: str
@@ -23,7 +23,6 @@ class Device:
     page_height: float
     width_px: int
     height_px: int
-    toolbar_edge: ToolbarEdge
     top_clearance: float
     writing_clearance: float
     bottom_clearance: float
@@ -32,18 +31,12 @@ class Device:
     @property
     def content_top(self) -> float:
         """First Y chrome/content may occupy."""
-        match self.toolbar_edge:
-            case "top":
-                return self.top_clearance
-            case _:
-                return 0.0
+        return self.top_clearance
 
     def top_clearance_slab(self) -> Rect | None:
-        match self.toolbar_edge:
-            case "top" if self.top_clearance > 0:
-                return Rect(0.0, 0.0, self.page_width, self.top_clearance)
-            case _:
-                return None
+        if self.top_clearance <= 0:
+            return None
+        return Rect(0.0, 0.0, self.page_width, self.top_clearance)
 
     def content_frame(self) -> Rect:
         """Chrome + wells: below top clearance, above nav strip + bottom OS chrome.
@@ -72,7 +65,6 @@ NOMAD = Device(
     page_height=158.5,
     width_px=1404,
     height_px=1872,
-    toolbar_edge="top",
     top_clearance=8.0,
     writing_clearance=4.0,
     bottom_clearance=0.0,
@@ -91,7 +83,6 @@ SCRIBE = Device(
     page_height=209.97,
     width_px=1860,
     height_px=2480,
-    toolbar_edge="top",
     top_clearance=8.0,
     writing_clearance=4.0,
     bottom_clearance=10.0,  # measured Send-to-Kindle: hits below 10 mm miss; 10–20 mm solid.
