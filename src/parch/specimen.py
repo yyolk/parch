@@ -55,6 +55,21 @@ STENO_STEMS = ("steno",)
 
 GALLERY_STEMS = (*SAMPLE_STEMS, *ENGINEERING_STEMS, *PROJECTS_STEMS, *STENO_STEMS)
 
+
+def gallery_groups(
+    stems: Sequence[str] = SAMPLE_STEMS,
+) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+    """Section id, heading, and stems for one device gallery."""
+    return (
+        ("year-planner", "Year planner", tuple(stems)),
+        ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
+        ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
+        ("steno-pad", "Steno pad", STENO_STEMS),
+    )
+
+
+GALLERY_GROUPS = gallery_groups()
+
 PREVIEW_DPI = 96
 
 
@@ -173,22 +188,44 @@ def _catalog_style() -> str:
     )
 
 
-def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> str:
-    """Device gallery: CSS-shrunk thumbs; checkbox+label expands in place."""
-    figures = [
+def _figures(stems: Sequence[str]) -> list[str]:
+    return [
         f'<figure><input type="checkbox" id="{stem}">'
         f'<label for="{stem}"><img src="{stem}.png" alt="{stem}"></label>'
         f"<figcaption>{stem}</figcaption></figure>"
         for stem in stems
     ]
+
+
+def specimen_index_html(
+    device_id: str,
+    stems: Sequence[str] | None = None,
+    *,
+    groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
+) -> str:
+    """Device gallery: grouped sections, jump list, in-place expand."""
+    if groups is None:
+        groups = gallery_groups(SAMPLE_STEMS if stems is None else stems)
+    toc = "\n".join(
+        f'<li><a href="#{section_id}">{title}</a></li>'
+        for section_id, title, _ in groups
+    )
+    sections = []
+    for section_id, title, section_stems in groups:
+        sections.append(
+            f'<section id="{section_id}">\n'
+            f"<h2>{title}</h2>\n" + "\n".join(_figures(section_stems)) + "\n</section>"
+        )
     return (
         "<!DOCTYPE html>\n"
         f"<title>parch specimens — {device_id}</title>\n"
         + _catalog_style()
         + '<p><a href="../">specimens</a></p>\n'
-        + "<section>\n"
-        + "\n".join(figures)
-        + "\n</section>\n"
+        + "<nav>\n<ul>\n"
+        + toc
+        + "\n</ul>\n</nav>\n"
+        + "\n".join(sections)
+        + "\n"
     )
 
 
@@ -219,12 +256,15 @@ def write_device_index(
     dest: Path,
     device_id: str,
     *,
-    stems: Sequence[str] = SAMPLE_STEMS,
+    stems: Sequence[str] | None = None,
+    groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
 ) -> Path:
     """Write the per-device index.html gallery."""
     dest.mkdir(parents=True, exist_ok=True)
     index = dest / "index.html"
-    index.write_text(specimen_index_html(device_id, stems), encoding="utf-8")
+    index.write_text(
+        specimen_index_html(device_id, stems, groups=groups), encoding="utf-8"
+    )
     return index
 
 
@@ -315,11 +355,7 @@ def write_specimens(
         steno_pdf = Path(tmp) / "steno-pad.pdf"
         press(steno_spec, steno_pdf, proof=True)
         _render_stems(steno_pdf, dest, steno_page_numbers(steno_spec), STENO_STEMS)
-    write_device_index(
-        dest,
-        spec.device,
-        stems=(*stems, *ENGINEERING_STEMS, *PROJECTS_STEMS, *STENO_STEMS),
-    )
+    write_device_index(dest, spec.device, groups=gallery_groups(stems))
     return dest
 
 

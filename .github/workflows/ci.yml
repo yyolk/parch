@@ -68,6 +68,12 @@ jobs:
             grep -q 'src="steno.png"' out/specimens/$device/index.html
             grep -q '<input type="checkbox" id="cover">' out/specimens/$device/index.html
             grep -q 'input:checked+label img' out/specimens/$device/index.html
+            grep -q 'id="year-planner"' out/specimens/$device/index.html
+            grep -q 'id="engineering-notebook"' out/specimens/$device/index.html
+            grep -q 'id="projects-notebook"' out/specimens/$device/index.html
+            grep -q 'id="steno-pad"' out/specimens/$device/index.html
+            grep -q 'href="#year-planner"' out/specimens/$device/index.html
+            grep -q '<h2>Projects notebook</h2>' out/specimens/$device/index.html
             ! grep -q '<script' out/specimens/$device/index.html
             ! grep -q 'href="cover.png"' out/specimens/$device/index.html
             test ! -e out/specimens/$device/specimen.pdf

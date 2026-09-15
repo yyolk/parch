@@ -9,11 +9,10 @@ from parch import ConfigError
 from parch.devices import known_device_ids
 from parch.press import main
 from parch.specimen import (
-    ENGINEERING_STEMS,
+    GALLERY_GROUPS,
     GALLERY_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
-    STENO_STEMS,
     catalog_dest,
     catalog_index_html,
     projects_dests,
@@ -52,10 +51,10 @@ def test_specimen_index_html_is_png_gallery():
     assert "supernote-nomad" in html
     assert "<script" not in html
     assert 'href="../"' in html
-    assert html.count("<figure>") == len(SAMPLE_STEMS)
-    assert html.count("<a href=") == 1  # specimens parent link only
+    assert html.count("<figure>") == len(GALLERY_STEMS)
+    assert html.count("<a href=") == 1 + len(GALLERY_GROUPS)
     assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
-    for stem in SAMPLE_STEMS:
+    for stem in GALLERY_STEMS:
         assert f'src="{stem}.png"' in html
         assert f'href="{stem}.png"' not in html
         assert (
@@ -64,12 +63,15 @@ def test_specimen_index_html_is_png_gallery():
         ) in html
 
 
-def test_specimen_index_html_gallery_stems():
-    html = specimen_index_html("kindle-scribe", GALLERY_STEMS)
-    assert html.count("<figure>") == len(GALLERY_STEMS)
-    for stem in (*PROJECTS_STEMS, *STENO_STEMS, *ENGINEERING_STEMS):
-        assert f'src="{stem}.png"' in html
-        assert f'<input type="checkbox" id="{stem}">' in html
+def test_specimen_index_html_section_anchors():
+    html = specimen_index_html("kindle-scribe")
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'<a href="#{section_id}">{title}</a>' in html
+    assert html.index('href="#year-planner"') < html.index('id="year-planner"')
+    assert html.index('id="year-planner"') < html.index('id="engineering-notebook"')
+    assert html.index('id="projects-notebook"') < html.index('id="steno-pad"')
 
 
 def test_write_indexes(tmp_path: Path):
@@ -207,6 +209,10 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     for stem in GALLERY_STEMS:
         assert (dest / f"{stem}.png").is_file()
         assert f'src="{stem}.png"' in html
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'href="#{section_id}"' in html
 
 
 def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
@@ -251,6 +257,10 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     for stem in GALLERY_STEMS:
         assert (dest / f"{stem}.png").stat().st_size > 0
         assert f'src="{stem}.png"' in html
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'href="#{section_id}"' in html
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
