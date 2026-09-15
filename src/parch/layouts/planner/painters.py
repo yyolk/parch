@@ -266,12 +266,7 @@ def paint_annual(
 
 
 PROJECT_CARD_GAP = 2.6
-PROJECT_COL_GAP = 2.8
-PROJECT_COL_WEIGHTS = (0.48, 0.52)
-PROJECT_INSET_X = 1.8
-PROJECT_INSET_Y = 1.5
 PROJECT_HEADER_H = 6.2
-PROJECT_STATUS_H = 7.4
 PROJECT_LEFT_GAP = 1.0
 PROJECT_P = 5.0
 PROJECT_STATUS_MARK = 3.2
@@ -280,34 +275,6 @@ PROJECT_STATUS_MARK = 3.2
 def project_card_seats(well: Rect, cards: int) -> tuple[Rect, ...]:
     """One row track per project card."""
     return rows(well, cards, gap=PROJECT_CARD_GAP)
-
-
-def project_card_columns(card: Rect) -> tuple[Rect, Rect]:
-    """Tasks | notes columns inside a card, after a quiet inset."""
-    return columns(
-        card.inset(PROJECT_INSET_X, PROJECT_INSET_Y),
-        2,
-        gap=PROJECT_COL_GAP,
-        weights=PROJECT_COL_WEIGHTS,
-    )
-
-
-def project_card_left_seats(left: Rect) -> tuple[Rect, Rect, Rect]:
-    """P+name, task ticks, Todo/Doing/Done — stacked in the left column."""
-    header, rest = left.split_top(PROJECT_HEADER_H)
-    mid = Rect(
-        rest.x,
-        rest.y + PROJECT_LEFT_GAP,
-        rest.w,
-        rest.h - PROJECT_LEFT_GAP,
-    )
-    tasks, status = rows(
-        mid,
-        2,
-        gap=PROJECT_LEFT_GAP,
-        weights=(mid.h - PROJECT_STATUS_H - PROJECT_LEFT_GAP, PROJECT_STATUS_H),
-    )
-    return header, tasks, status
 
 
 TICKET_GAP = 1.4
