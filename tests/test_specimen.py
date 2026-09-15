@@ -119,7 +119,9 @@ def test_projects_dests_and_pages():
     assert spec.device == "kindle-scribe"
     dests = projects_dests(spec)
     assert dests["projects-cover"] == "cover"
-    assert dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
+    assert (
+        dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
+    )
     numbers = projects_page_numbers(spec)
     assert set(numbers) == set(PROJECTS_STEMS)
     assert numbers["projects-cover"] == 1

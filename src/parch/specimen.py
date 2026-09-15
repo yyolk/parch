@@ -85,7 +85,9 @@ def projects_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
 
 def steno_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """One Gregg pad sheet for the catalog."""
-    return replace(specimen_spec(device_id, year=year), steno_sheets=1, title="Steno pad")
+    return replace(
+        specimen_spec(device_id, year=year), steno_sheets=1, title="Steno pad"
+    )
 
 
 def sample_dests(spec: Spec) -> dict[str, str]:
