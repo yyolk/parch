@@ -92,7 +92,7 @@ __all__ = [
 
 
 class PlannerLayout:
-    """Seat components below the unmarked toolbar. Cover and pad faces skip slab/nav.
+    """Seat components below the WASH toolbar slab. Cover and pad faces skip slab/nav.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep

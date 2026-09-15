@@ -4,11 +4,28 @@ from parch.books import YearPlanner
 from parch.devices import NAV_H, NOMAD, SCRIBE
 from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.layout import well_rect
-from parch.layouts.planner.painters import HEADER_H, paint_header
+from parch.layouts.planner.painters import HEADER_H, WASH, paint_header, paint_toolbar
 from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 TOOLBAR = 8.0
+
+
+def test_toolbar_wash_fills_clearance():
+    for device in (NOMAD, SCRIBE):
+        plotter = RecordingPlotter()
+        paint_toolbar(plotter, device)
+        fills = [op for op in plotter.ops if op[0] == "rect"]
+        assert len(fills) == 1
+        box = fills[0][1]
+        assert box.y == pytest.approx(0.0)
+        assert box.h == pytest.approx(device.toolbar_clearance)
+        assert box.w == pytest.approx(device.page_width)
+        assert fills[0][2] is False
+        assert fills[0][3] is True
+        assert fills[0][5] == pytest.approx(WASH)
+        assert not any(op[0] == "text" for op in plotter.ops)
+        assert not any(op[0] == "link" for op in plotter.ops)
 
 
 def test_content_stays_below_toolbar():
@@ -21,7 +38,8 @@ def test_content_stays_below_toolbar():
         for op in plotter.ops
         if op[0] == "rect" and op[1].y == 0 and op[1].h == TOOLBAR
     ]
-    assert not toolbar_fills, "toolbar slab must stay unmarked"
+    assert toolbar_fills
+    assert all(op[3] and op[5] == pytest.approx(WASH) for op in toolbar_fills)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "toolbar 8 mm - not a well" not in texts
@@ -31,7 +49,7 @@ def test_content_stays_below_toolbar():
     for op in plotter.ops:
         if op[0] == "text":
             assert op[1].y >= TOOLBAR - 0.01
-        if op[0] == "rect":
+        if op[0] == "rect" and not (op[1].y == 0 and op[1].h == TOOLBAR):
             assert op[1].y >= TOOLBAR - 0.01
 
 
