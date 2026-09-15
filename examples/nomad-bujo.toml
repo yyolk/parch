@@ -1,0 +1,24 @@
+# Draft bullet journal for SuperNote Nomad.
+#   uv run parch press examples/nomad-bujo.toml -o out/nomad-bujo-2026.pdf
+#
+# Scaffolding + rapid-log wells. Not a year-planner reskin.
+# Full year + habits + 24 collections is ~430 pages. Slim with months = [1].
+book = "bullet-journal"
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+title = "Bullet journal"
+outline = true
+
+[bujo]
+pattern = "dotted"
+gutter_mm = 8.0
+row_mm = 5.0
+index_pages = 2
+future_log_months_per_page = 3
+dated_dailies = true
+days_per_page = 1
+collections = 24
+print_key = true
+habits = true
