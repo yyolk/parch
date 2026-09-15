@@ -30,7 +30,7 @@ jobs:
           test -s out/nomad/index.pdf
           test -s out/nomad.pdf
 
-  # One Nomad catalog path. PR events stay test-only. workflow_dispatch uploads
+  # Nomad + Scribe catalog. PR events stay test-only. workflow_dispatch uploads
   # one dry-run artifact; push to the default branch deploys Pages. No product-PDF upload.
   pages:
     if: >
@@ -50,18 +50,34 @@ jobs:
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: uv sync --group dev
-      - name: Build Nomad specimen catalog
+      - name: Build specimen catalog
         run: |
-          uv run parch specimen supernote-nomad -w out
+          uv run parch specimen -w out
           test -s out/specimens/index.html
-          test -s out/specimens/supernote-nomad/cover.png
-          test -s out/specimens/supernote-nomad/index.html
-          grep -q 'src="cover.png"' out/specimens/supernote-nomad/index.html
-          grep -q '<input type="checkbox" id="cover">' out/specimens/supernote-nomad/index.html
-          grep -q 'input:checked+label img' out/specimens/supernote-nomad/index.html
-          ! grep -q '<script' out/specimens/supernote-nomad/index.html
-          ! grep -q 'href="cover.png"' out/specimens/supernote-nomad/index.html
-          test ! -e out/specimens/supernote-nomad/specimen.pdf
+          devices=$(uv run python -c 'from parch.specimen import CATALOG_DEVICE_IDS; print(" ".join(CATALOG_DEVICE_IDS))')
+          for device in $devices; do
+            grep -q "href=\"$device/\"" out/specimens/index.html
+            test -s out/specimens/$device/cover.png
+            test -s out/specimens/$device/index.html
+            test -s out/specimens/$device/projects-cover.png
+            test -s out/specimens/$device/projects-index.png
+            test -s out/specimens/$device/steno.png
+            test -s out/specimens/$device/engineering-cover.png
+            grep -q 'src="cover.png"' out/specimens/$device/index.html
+            grep -q 'src="projects-cover.png"' out/specimens/$device/index.html
+            grep -q 'src="steno.png"' out/specimens/$device/index.html
+            grep -q '<input type="checkbox" id="cover">' out/specimens/$device/index.html
+            grep -q 'input:checked+label img' out/specimens/$device/index.html
+            grep -q 'id="year-planner"' out/specimens/$device/index.html
+            grep -q 'id="engineering-notebook"' out/specimens/$device/index.html
+            grep -q 'id="projects-notebook"' out/specimens/$device/index.html
+            grep -q 'id="steno-pad"' out/specimens/$device/index.html
+            grep -q 'href="#year-planner"' out/specimens/$device/index.html
+            grep -q '<h2>Projects notebook</h2>' out/specimens/$device/index.html
+            ! grep -q '<script' out/specimens/$device/index.html
+            ! grep -q 'href="cover.png"' out/specimens/$device/index.html
+            test ! -e out/specimens/$device/specimen.pdf
+          done
       - name: Upload catalog (dry-run)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

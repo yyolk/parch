@@ -8,15 +8,24 @@ import pytest
 from parch import ConfigError
 from parch.press import main
 from parch.specimen import (
-    ENGINEERING_STEMS,
+    CATALOG_DEVICE_IDS,
+    GALLERY_GROUPS,
+    GALLERY_STEMS,
+    PROJECTS_STEMS,
     SAMPLE_STEMS,
     catalog_dest,
     catalog_index_html,
+    projects_dests,
+    projects_page_numbers,
+    projects_specimen_spec,
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
     specimen_spec,
     specimens_dest,
+    steno_dests,
+    steno_page_numbers,
+    steno_specimen_spec,
     write_catalog_index,
     write_device_index,
 )
@@ -30,15 +39,32 @@ def test_catalog_index_html_is_device_list():
     assert "<script" not in html
 
 
+def test_catalog_device_ids_are_sealed():
+    assert CATALOG_DEVICE_IDS == ("supernote-nomad", "kindle-scribe")
+
+
+def test_gallery_stems_follow_groups():
+    assert GALLERY_STEMS == tuple(
+        stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems
+    )
+
+
+def test_catalog_index_html_lists_both_devices():
+    html = catalog_index_html(CATALOG_DEVICE_IDS)
+    assert 'href="supernote-nomad/"' in html
+    assert 'href="kindle-scribe/"' in html
+    assert html.index("supernote-nomad") < html.index("kindle-scribe")
+
+
 def test_specimen_index_html_is_png_gallery():
     html = specimen_index_html("supernote-nomad")
     assert "supernote-nomad" in html
     assert "<script" not in html
     assert 'href="../"' in html
-    assert html.count("<figure>") == len(SAMPLE_STEMS)
-    assert html.count("<a href=") == 1  # specimens parent link only
+    assert html.count("<figure>") == len(GALLERY_STEMS)
+    assert html.count("<a href=") == 1 + len(GALLERY_GROUPS)
     assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
-    for stem in SAMPLE_STEMS:
+    for stem in GALLERY_STEMS:
         assert f'src="{stem}.png"' in html
         assert f'href="{stem}.png"' not in html
         assert (
@@ -47,15 +73,27 @@ def test_specimen_index_html_is_png_gallery():
         ) in html
 
 
+def test_specimen_index_html_section_anchors():
+    html = specimen_index_html("kindle-scribe")
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'<a href="#{section_id}">{title}</a>' in html
+    assert html.index('href="#year-planner"') < html.index('id="year-planner"')
+    assert html.index('id="year-planner"') < html.index('id="engineering-notebook"')
+    assert html.index('id="projects-notebook"') < html.index('id="steno-pad"')
+
+
 def test_write_indexes(tmp_path: Path):
     device_dir = specimens_dest(tmp_path, "supernote-nomad")
     index = write_device_index(device_dir, "supernote-nomad")
     assert index == device_dir / "index.html"
     root = catalog_dest(tmp_path)
-    catalog = write_catalog_index(root, ("supernote-nomad",))
+    catalog = write_catalog_index(root, ("supernote-nomad", "kindle-scribe"))
     assert catalog == root / "index.html"
     html = catalog.read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
+    assert 'href="kindle-scribe/"' in html
 
 
 def test_sample_dests_and_pages_for_january():
@@ -87,6 +125,30 @@ def test_sample_dests_and_pages_for_january():
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
 
 
+def test_projects_dests_and_pages():
+    spec = projects_specimen_spec("kindle-scribe")
+    assert spec.book == "projects-notebook"
+    assert spec.device == "kindle-scribe"
+    dests = projects_dests(spec)
+    assert dests["projects-cover"] == "cover"
+    assert (
+        dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
+    )
+    numbers = projects_page_numbers(spec)
+    assert set(numbers) == set(PROJECTS_STEMS)
+    assert numbers["projects-cover"] == 1
+    assert numbers["projects-index"] == 2
+
+
+def test_steno_dests_and_pages():
+    spec = steno_specimen_spec("supernote-nomad")
+    assert spec.steno_sheets == 1
+    dests = steno_dests(spec)
+    assert dests["steno"] == spec.dest_for_steno_pad(1) == "steno-2026-01"
+    numbers = steno_page_numbers(spec)
+    assert numbers == {"steno": 1}
+
+
 def test_specimen_cli_help(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["specimen", "--help"])
@@ -94,6 +156,7 @@ def test_specimen_cli_help(capsys):
     out = capsys.readouterr().out
     assert "specimen" in out
     assert "--workdir" in out
+    assert "Omit to press every catalog device" in out
 
 
 def test_specimen_rejects_unknown_device_before_press(
@@ -111,6 +174,75 @@ def test_specimen_rejects_unknown_device_before_press(
 def test_specimen_spec_rejects_unknown_device():
     with pytest.raises(ConfigError, match="unknown device"):
         specimen_spec("unknown-slate")
+
+
+def test_specimen_omitted_device_builds_full_catalog(tmp_path: Path, monkeypatch):
+    seen: dict[str, object] = {}
+
+    def fake_build(workdir, device_ids=None):
+        seen["workdir"] = workdir
+        seen["device_ids"] = device_ids
+        dest = Path(workdir) / "specimens"
+        dest.mkdir(parents=True)
+        return dest
+
+    monkeypatch.setattr("parch.specimen.build_catalog", fake_build)
+    assert main(["specimen", "-w", str(tmp_path)]) == 0
+    assert seen["device_ids"] is None
+    assert seen["workdir"] == str(tmp_path)
+
+
+def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch):
+    from parch.specimen import write_specimens
+
+    presses: list[object] = []
+
+    def fake_press(spec, output, **_kwargs):
+        presses.append(spec)
+        output.write_bytes(b"%PDF")
+        return output
+
+    def fake_render(_pdf, _page, dest, **_kwargs):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"png")
+        return dest
+
+    monkeypatch.setattr("parch.press.press", fake_press)
+    monkeypatch.setattr("parch.specimen.render_page_png", fake_render)
+    dest = tmp_path / "nomad"
+    write_specimens(dest, "supernote-nomad")
+    assert any(spec.book == "year-planner" for spec in presses)
+    assert any(spec.book == "engineering-notebook" for spec in presses)
+    assert any(spec.book == "projects-notebook" for spec in presses)
+    assert any(spec.steno_sheets == 1 for spec in presses)
+    html = (dest / "index.html").read_text(encoding="utf-8")
+    for stem in GALLERY_STEMS:
+        assert (dest / f"{stem}.png").is_file()
+        assert f'src="{stem}.png"' in html
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'href="#{section_id}"' in html
+
+
+def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
+    from parch.specimen import build_catalog
+
+    written: list[str] = []
+
+    def fake_write(dest: Path, device_id: str, **_kwargs):
+        written.append(device_id)
+        dest.mkdir(parents=True)
+        (dest / "index.html").write_text("x", encoding="utf-8")
+        return dest
+
+    monkeypatch.setattr("parch.specimen.write_specimens", fake_write)
+    root = build_catalog(tmp_path)
+    assert written == list(CATALOG_DEVICE_IDS)
+    assert root == tmp_path / "specimens"
+    html = (root / "index.html").read_text(encoding="utf-8")
+    assert 'href="supernote-nomad/"' in html
+    assert 'href="kindle-scribe/"' in html
 
 
 @pytest.mark.skipif(
@@ -132,11 +264,13 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert "<script" not in html
     assert '<input type="checkbox" id="cover">' in html
     assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
-    for stem in SAMPLE_STEMS:
-        assert (dest / f"{stem}.png").is_file()
-    for stem in ENGINEERING_STEMS:
+    for stem in GALLERY_STEMS:
         assert (dest / f"{stem}.png").stat().st_size > 0
         assert f'src="{stem}.png"' in html
+    for section_id, title, _stems in GALLERY_GROUPS:
+        assert f'<section id="{section_id}">' in html
+        assert f"<h2>{title}</h2>" in html
+        assert f'href="#{section_id}"' in html
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):

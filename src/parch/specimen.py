@@ -1,7 +1,7 @@
 """fpdf2 specimen catalog: press key pages to PNG, write a static HTML gallery.
 
-One default device (SuperNote Nomad) and no paper×hand permutations.
-Catalog layout is ``<workdir>/specimens/<device-id>/``.
+Catalog devices are SuperNote Nomad and Kindle Scribe. No paper×hand
+permutations. Layout is ``<workdir>/specimens/<device-id>/``.
 Each page writes one PNG (``{stem}.png`` at ``PREVIEW_DPI``). The device
 index shrinks thumbs with CSS; a checkbox+label toggles expand in place.
 The product PDF is not part of the catalog.
@@ -18,8 +18,11 @@ from datetime import date
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
+from parch.sections.page import Page
+from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
 SAMPLE_STEMS = (
@@ -44,6 +47,32 @@ SAMPLE_STEMS = (
 # Engineering notebook — cover + duplex faces, not YearPlanner dests.
 ENGINEERING_STEMS = ("engineering-cover", "engineering-front", "engineering-back")
 
+# Projects notebook — cover + index (sibling book dests).
+PROJECTS_STEMS = ("projects-cover", "projects-index")
+
+# Pad-only Gregg sheet (steno_sheets=1).
+STENO_STEMS = ("steno",)
+
+# Catalog Pages devices. Do not follow known_device_ids().
+# Grow this tuple when a device should join gh-pages specimens.
+CATALOG_DEVICE_IDS = ("supernote-nomad", "kindle-scribe")
+
+
+def gallery_groups(
+    stems: Sequence[str] = SAMPLE_STEMS,
+) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+    """Section id, heading, and stems for one device gallery."""
+    return (
+        ("year-planner", "Year planner", tuple(stems)),
+        ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
+        ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
+        ("steno-pad", "Steno pad", STENO_STEMS),
+    )
+
+
+GALLERY_GROUPS = gallery_groups()
+GALLERY_STEMS = tuple(stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems)
+
 PREVIEW_DPI = 96
 
 
@@ -61,6 +90,22 @@ def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """Slim January press for catalog pages — not the product year book."""
     device = get_device(device_id)
     return Spec(device=device.id, year=year, months=(1,), notes_pages=1)
+
+
+def projects_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Projects notebook press for catalog cover + index."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="projects-notebook",
+        title="Projects",
+    )
+
+
+def steno_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """One Gregg pad sheet for the catalog."""
+    return replace(
+        specimen_spec(device_id, year=year), steno_sheets=1, title="Steno pad"
+    )
 
 
 def sample_dests(spec: Spec) -> dict[str, str]:
@@ -86,15 +131,23 @@ def sample_dests(spec: Spec) -> dict[str, str]:
     }
 
 
-def sample_page_numbers(
-    spec: Spec, stems: Sequence[str] = SAMPLE_STEMS
-) -> dict[str, int]:
-    """1-based page numbers for requested stems, from the year-planner walk."""
-    dests = sample_dests(spec)
-    by_dest = {
-        page.dest: index
-        for index, page in enumerate(YearPlanner().pages(spec), start=1)
+def projects_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each projects-notebook catalog stem."""
+    return {
+        "projects-cover": spec.cover_dest,
+        "projects-index": spec.projects_index_dest,
     }
+
+
+def steno_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for the pad-only steno catalog stem."""
+    return {"steno": spec.dest_for_steno_pad(1)}
+
+
+def _page_numbers(
+    pages: Sequence[Page], dests: dict[str, str], stems: Sequence[str]
+) -> dict[str, int]:
+    by_dest = {page.dest: index for index, page in enumerate(pages, start=1)}
     numbers: dict[str, int] = {}
     for stem in stems:
         dest = dests[stem]
@@ -104,6 +157,27 @@ def sample_page_numbers(
             )
         numbers[stem] = by_dest[dest]
     return numbers
+
+
+def sample_page_numbers(
+    spec: Spec, stems: Sequence[str] = SAMPLE_STEMS
+) -> dict[str, int]:
+    """1-based page numbers for requested stems, from the year-planner walk."""
+    return _page_numbers(YearPlanner().pages(spec), sample_dests(spec), stems)
+
+
+def projects_page_numbers(
+    spec: Spec, stems: Sequence[str] = PROJECTS_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the projects-notebook walk."""
+    return _page_numbers(ProjectsNotebook().pages(spec), projects_dests(spec), stems)
+
+
+def steno_page_numbers(
+    spec: Spec, stems: Sequence[str] = STENO_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the pad-only steno walk."""
+    return _page_numbers(StenoPadSection(spec).pages(), steno_dests(spec), stems)
 
 
 def _catalog_style() -> str:
@@ -117,22 +191,44 @@ def _catalog_style() -> str:
     )
 
 
-def specimen_index_html(device_id: str, stems: Sequence[str] = SAMPLE_STEMS) -> str:
-    """Device gallery: CSS-shrunk thumbs; checkbox+label expands in place."""
-    figures = [
+def _figures(stems: Sequence[str]) -> list[str]:
+    return [
         f'<figure><input type="checkbox" id="{stem}">'
         f'<label for="{stem}"><img src="{stem}.png" alt="{stem}"></label>'
         f"<figcaption>{stem}</figcaption></figure>"
         for stem in stems
     ]
+
+
+def specimen_index_html(
+    device_id: str,
+    stems: Sequence[str] | None = None,
+    *,
+    groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
+) -> str:
+    """Device gallery: grouped sections, jump list, in-place expand."""
+    if groups is None:
+        groups = gallery_groups(SAMPLE_STEMS if stems is None else stems)
+    toc = "\n".join(
+        f'<li><a href="#{section_id}">{title}</a></li>'
+        for section_id, title, _ in groups
+    )
+    sections = []
+    for section_id, title, section_stems in groups:
+        sections.append(
+            f'<section id="{section_id}">\n'
+            f"<h2>{title}</h2>\n" + "\n".join(_figures(section_stems)) + "\n</section>"
+        )
     return (
         "<!DOCTYPE html>\n"
         f"<title>parch specimens — {device_id}</title>\n"
         + _catalog_style()
         + '<p><a href="../">specimens</a></p>\n'
-        + "<section>\n"
-        + "\n".join(figures)
-        + "\n</section>\n"
+        + "<nav>\n<ul>\n"
+        + toc
+        + "\n</ul>\n</nav>\n"
+        + "\n".join(sections)
+        + "\n"
     )
 
 
@@ -163,12 +259,15 @@ def write_device_index(
     dest: Path,
     device_id: str,
     *,
-    stems: Sequence[str] = SAMPLE_STEMS,
+    stems: Sequence[str] | None = None,
+    groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
 ) -> Path:
     """Write the per-device index.html gallery."""
     dest.mkdir(parents=True, exist_ok=True)
     index = dest / "index.html"
-    index.write_text(specimen_index_html(device_id, stems), encoding="utf-8")
+    index.write_text(
+        specimen_index_html(device_id, stems, groups=groups), encoding="utf-8"
+    )
     return index
 
 
@@ -208,6 +307,13 @@ def render_page_png(
     return dest
 
 
+def _render_stems(
+    pdf: Path, dest: Path, numbers: dict[str, int], stems: Sequence[str]
+) -> None:
+    for stem in stems:
+        render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
+
+
 def write_specimens(
     dest: Path,
     device_id: str,
@@ -215,7 +321,7 @@ def write_specimens(
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
 ) -> Path:
-    """Press a slim book plus the engineering notebook; write PNGs + index."""
+    """Press slim planner, notebooks, and steno pad; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -224,8 +330,7 @@ def write_specimens(
     with tempfile.TemporaryDirectory() as tmp:
         pdf = Path(tmp) / "specimen.pdf"
         press(spec, pdf, proof=True)
-        for stem in stems:
-            render_page_png(pdf, numbers[stem], dest / f"{stem}.png")
+        _render_stems(pdf, dest, numbers, stems)
         notebook = Path(tmp) / "engineering-notebook.pdf"
         press(
             replace(
@@ -240,17 +345,43 @@ def write_specimens(
         render_page_png(notebook, 1, dest / "engineering-cover.png")
         render_page_png(notebook, 2, dest / "engineering-front.png")
         render_page_png(notebook, 3, dest / "engineering-back.png")
-    write_device_index(dest, spec.device, stems=(*stems, *ENGINEERING_STEMS))
+        projects_spec = projects_specimen_spec(device_id, year=year)
+        projects_pdf = Path(tmp) / "projects-notebook.pdf"
+        press(projects_spec, projects_pdf, proof=True)
+        _render_stems(
+            projects_pdf,
+            dest,
+            projects_page_numbers(projects_spec),
+            PROJECTS_STEMS,
+        )
+        steno_spec = steno_specimen_spec(device_id, year=year)
+        steno_pdf = Path(tmp) / "steno-pad.pdf"
+        press(steno_spec, steno_pdf, proof=True)
+        _render_stems(steno_pdf, dest, steno_page_numbers(steno_spec), STENO_STEMS)
+    write_device_index(dest, spec.device, groups=gallery_groups(stems))
     return dest
+
+
+def build_catalog(
+    workdir: str | Path,
+    device_ids: Sequence[str] | None = None,
+) -> Path:
+    """Press each catalog device; write root index listing them."""
+    ids = tuple(
+        dict.fromkeys(get_device(d).id for d in (device_ids or CATALOG_DEVICE_IDS))
+    )
+    for device_id in ids:
+        write_specimens(specimens_dest(workdir, device_id), device_id)
+    root = catalog_dest(workdir)
+    write_catalog_index(root, ids)
+    return root
 
 
 def build_device_catalog(workdir: str | Path, device_id: str) -> Path:
     """CLI entry: ``parch specimen DEVICE -w workdir``."""
     canonical = get_device(device_id).id
-    dest = specimens_dest(workdir, canonical)
-    write_specimens(dest, canonical)
-    write_catalog_index(catalog_dest(workdir), (canonical,))
-    return dest
+    build_catalog(workdir, (canonical,))
+    return specimens_dest(workdir, canonical)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -261,8 +392,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "device",
         nargs="?",
-        default="supernote-nomad",
-        help="Device id (default supernote-nomad).",
+        default=None,
+        help="Device id. Omit to press every catalog device.",
     )
     parser.add_argument(
         "-w",
@@ -272,7 +403,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
-        dest = build_device_catalog(args.workdir, args.device)
+        dest = (
+            build_catalog(args.workdir)
+            if args.device is None
+            else build_device_catalog(args.workdir, args.device)
+        )
     except ConfigError as exc:
         print(f"parch: {exc}", file=sys.stderr)
         return 2
