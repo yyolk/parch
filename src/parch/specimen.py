@@ -8,6 +8,7 @@ The product PDF is not part of the catalog.
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -56,6 +57,8 @@ STENO_STEMS = ("steno",)
 # Catalog Pages devices. Do not follow known_device_ids().
 # Grow this tuple when a device should join gh-pages specimens.
 CATALOG_DEVICE_IDS = ("supernote-nomad", "kindle-scribe")
+
+DEFAULT_REPOSITORY = "yyolk/parch"
 
 
 def gallery_groups(
@@ -181,6 +184,44 @@ def steno_page_numbers(
     return _page_numbers(StenoPadSection(spec).pages(), steno_dests(spec), stems)
 
 
+def resolve_commit_sha(explicit: str | None = None) -> str | None:
+    """Full SHA from *explicit*, ``GITHUB_SHA``, or ``git rev-parse HEAD``."""
+    if explicit:
+        return explicit.strip()
+    env = os.environ.get("GITHUB_SHA", "").strip()
+    if env:
+        return env
+    git = shutil.which("git")
+    if git is None:
+        return None
+    try:
+        completed = subprocess.run(
+            [git, "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    except subprocess.CalledProcessError:
+        return None
+    return completed.stdout.strip() or None
+
+
+def _commit_repository() -> str:
+    return os.environ.get("GITHUB_REPOSITORY", "").strip() or DEFAULT_REPOSITORY
+
+
+def _commit_footer(commit: str | None) -> str:
+    if not commit:
+        return ""
+    sha = commit.strip()
+    if not sha:
+        return ""
+    url = f"https://github.com/{_commit_repository()}/commit/{sha}"
+    return f'<footer><a href="{url}">{sha[:7]}</a></footer>\n'
+
+
 def _catalog_style() -> str:
     return (
         "<style>figure{display:inline-block;margin:1rem;vertical-align:top}"
@@ -188,7 +229,8 @@ def _catalog_style() -> str:
         "figure>label{display:block;cursor:zoom-in}"
         "figure>label img{width:16rem;height:auto;vertical-align:top}"
         "figure>input:checked+label{cursor:zoom-out}"
-        "figure>input:checked+label img{width:auto;max-width:100%}</style>\n"
+        "figure>input:checked+label img{width:auto;max-width:100%}"
+        "footer{margin:2rem 1rem 1rem;font-size:0.85rem}</style>\n"
     )
 
 
@@ -206,6 +248,7 @@ def specimen_index_html(
     stems: Sequence[str] | None = None,
     *,
     groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
+    commit: str | None = None,
 ) -> str:
     """Device gallery: grouped sections, jump list, in-place expand."""
     if groups is None:
@@ -230,10 +273,11 @@ def specimen_index_html(
         + "\n</ul>\n</nav>\n"
         + "\n".join(sections)
         + "\n"
+        + _commit_footer(commit)
     )
 
 
-def catalog_index_html(device_ids: Sequence[str]) -> str:
+def catalog_index_html(device_ids: Sequence[str], *, commit: str | None = None) -> str:
     """Dumb catalog root: device list. No galleries, no paper×hand tree."""
     items = "\n".join(
         f'<li><a href="{device_id}/">{device_id}</a></li>' for device_id in device_ids
@@ -245,14 +289,20 @@ def catalog_index_html(device_ids: Sequence[str]) -> str:
         + "<ul>\n"
         + items
         + "\n</ul>\n"
+        + _commit_footer(commit)
     )
 
 
-def write_catalog_index(root: Path, device_ids: Sequence[str]) -> Path:
+def write_catalog_index(
+    root: Path, device_ids: Sequence[str], *, commit: str | None = None
+) -> Path:
     """Write the catalog root index.html listing *device_ids*."""
     root.mkdir(parents=True, exist_ok=True)
     index = root / "index.html"
-    index.write_text(catalog_index_html(device_ids), encoding="utf-8")
+    index.write_text(
+        catalog_index_html(device_ids, commit=resolve_commit_sha(commit)),
+        encoding="utf-8",
+    )
     return index
 
 
@@ -262,12 +312,19 @@ def write_device_index(
     *,
     stems: Sequence[str] | None = None,
     groups: Sequence[tuple[str, str, Sequence[str]]] | None = None,
+    commit: str | None = None,
 ) -> Path:
     """Write the per-device index.html gallery."""
     dest.mkdir(parents=True, exist_ok=True)
     index = dest / "index.html"
     index.write_text(
-        specimen_index_html(device_id, stems, groups=groups), encoding="utf-8"
+        specimen_index_html(
+            device_id,
+            stems,
+            groups=groups,
+            commit=resolve_commit_sha(commit),
+        ),
+        encoding="utf-8",
     )
     return index
 
@@ -321,6 +378,7 @@ def write_specimens(
     *,
     stems: Sequence[str] = SAMPLE_STEMS,
     year: int = 2026,
+    commit: str | None = None,
 ) -> Path:
     """Press slim planner, notebooks, and steno pad; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
@@ -359,29 +417,34 @@ def write_specimens(
         steno_pdf = Path(tmp) / "steno-pad.pdf"
         press(steno_spec, steno_pdf, proof=True)
         _render_stems(steno_pdf, dest, steno_page_numbers(steno_spec), STENO_STEMS)
-    write_device_index(dest, spec.device, groups=gallery_groups(stems))
+    write_device_index(dest, spec.device, groups=gallery_groups(stems), commit=commit)
     return dest
 
 
 def build_catalog(
     workdir: str | Path,
     device_ids: Sequence[str] | None = None,
+    *,
+    commit: str | None = None,
 ) -> Path:
     """Press each catalog device; write root index listing them."""
+    sha = resolve_commit_sha(commit)
     ids = tuple(
         dict.fromkeys(get_device(d).id for d in (device_ids or CATALOG_DEVICE_IDS))
     )
     for device_id in ids:
-        write_specimens(specimens_dest(workdir, device_id), device_id)
+        write_specimens(specimens_dest(workdir, device_id), device_id, commit=sha)
     root = catalog_dest(workdir)
-    write_catalog_index(root, ids)
+    write_catalog_index(root, ids, commit=sha)
     return root
 
 
-def build_device_catalog(workdir: str | Path, device_id: str) -> Path:
+def build_device_catalog(
+    workdir: str | Path, device_id: str, *, commit: str | None = None
+) -> Path:
     """CLI entry: ``parch specimen DEVICE -w workdir``."""
     canonical = get_device(device_id).id
-    build_catalog(workdir, (canonical,))
+    build_catalog(workdir, (canonical,), commit=commit)
     return specimens_dest(workdir, canonical)
 
 
@@ -402,12 +465,17 @@ def main(argv: list[str] | None = None) -> int:
         default="./out",
         help="Catalog root parent (default ./out → ./out/specimens/<device>/).",
     )
+    parser.add_argument(
+        "--commit",
+        default=None,
+        help="Git SHA for the catalog footer (default: GITHUB_SHA or git HEAD).",
+    )
     args = parser.parse_args(argv)
     try:
         dest = (
-            build_catalog(args.workdir)
+            build_catalog(args.workdir, commit=args.commit)
             if args.device is None
-            else build_device_catalog(args.workdir, args.device)
+            else build_device_catalog(args.workdir, args.device, commit=args.commit)
         )
     except ConfigError as exc:
         print(f"parch: {exc}", file=sys.stderr)

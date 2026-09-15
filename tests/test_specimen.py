@@ -1,6 +1,7 @@
 """Specimen catalog: device listing, HTML index, dest → page map."""
 
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,7 @@ from parch.specimen import (
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
+    resolve_commit_sha,
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
@@ -94,6 +96,72 @@ def test_write_indexes(tmp_path: Path):
     html = catalog.read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    sha = resolve_commit_sha()
+    if sha:
+        assert f'href="https://github.com/yyolk/parch/commit/{sha}"' in html
+        assert f">{sha[:7]}<" in html
+        device_html = index.read_text(encoding="utf-8")
+        assert f">{sha[:7]}<" in device_html
+
+
+def test_resolve_commit_sha_prefers_explicit(monkeypatch):
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    assert resolve_commit_sha("c" * 40) == "c" * 40
+
+
+def test_resolve_commit_sha_prefers_github_sha(monkeypatch):
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+
+    def boom(*_args, **_kwargs):
+        raise AssertionError("should not call git")
+
+    monkeypatch.setattr("parch.specimen.subprocess.run", boom)
+    assert resolve_commit_sha() == "b" * 40
+
+
+def test_resolve_commit_sha_falls_back_to_git(monkeypatch):
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+
+    def fake_run(cmd, **_kwargs):
+        assert cmd[-2:] == ["rev-parse", "HEAD"]
+        return subprocess.CompletedProcess(cmd, 0, stdout="d" * 40 + "\n", stderr="")
+
+    monkeypatch.setattr("parch.specimen.shutil.which", lambda _name: "/usr/bin/git")
+    monkeypatch.setattr("parch.specimen.subprocess.run", fake_run)
+    assert resolve_commit_sha() == "d" * 40
+
+
+def test_resolve_commit_sha_omits_when_unavailable(monkeypatch):
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    monkeypatch.setattr("parch.specimen.shutil.which", lambda _name: None)
+    assert resolve_commit_sha() is None
+
+
+def test_specimen_index_html_commit_footer(monkeypatch):
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    sha = "abcdef1234567890"
+    html = specimen_index_html("supernote-nomad", commit=sha)
+    assert (
+        f'<footer><a href="https://github.com/yyolk/parch/commit/{sha}">abcdef1</a></footer>'
+        in html
+    )
+
+
+def test_catalog_index_html_commit_footer(monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/planner")
+    sha = "1234567890abcdef"
+    html = catalog_index_html(["supernote-nomad"], commit=sha)
+    assert (
+        f'<footer><a href="https://github.com/acme/planner/commit/{sha}">1234567</a></footer>'
+        in html
+    )
+    assert "<figure>" not in html
+
+
+def test_specimen_index_html_omits_footer_without_commit():
+    html = specimen_index_html("kindle-scribe")
+    assert "<footer>" not in html
+    assert "github.com/" not in html
 
 
 def test_sample_dests_and_pages_for_january():
@@ -159,6 +227,7 @@ def test_specimen_cli_help(capsys):
     assert "specimen" in out
     assert "--workdir" in out
     assert "Omit to press every catalog device" in out
+    assert "--commit" in out
 
 
 def test_specimen_rejects_unknown_device_before_press(
@@ -181,9 +250,10 @@ def test_specimen_spec_rejects_unknown_device():
 def test_specimen_omitted_device_builds_full_catalog(tmp_path: Path, monkeypatch):
     seen: dict[str, object] = {}
 
-    def fake_build(workdir, device_ids=None):
+    def fake_build(workdir, device_ids=None, **kwargs):
         seen["workdir"] = workdir
         seen["device_ids"] = device_ids
+        seen["commit"] = kwargs.get("commit")
         dest = Path(workdir) / "specimens"
         dest.mkdir(parents=True)
         return dest
@@ -192,6 +262,21 @@ def test_specimen_omitted_device_builds_full_catalog(tmp_path: Path, monkeypatch
     assert main(["specimen", "-w", str(tmp_path)]) == 0
     assert seen["device_ids"] is None
     assert seen["workdir"] == str(tmp_path)
+    assert seen["commit"] is None
+
+
+def test_specimen_cli_passes_commit(tmp_path: Path, monkeypatch):
+    seen: dict[str, object] = {}
+
+    def fake_build(workdir, device_ids=None, **kwargs):
+        seen["commit"] = kwargs.get("commit")
+        dest = Path(workdir) / "specimens"
+        dest.mkdir(parents=True)
+        return dest
+
+    monkeypatch.setattr("parch.specimen.build_catalog", fake_build)
+    assert main(["specimen", "-w", str(tmp_path), "--commit", "abc1234deadbeef"]) == 0
+    assert seen["commit"] == "abc1234deadbeef"
 
 
 def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch):
@@ -225,6 +310,10 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
         assert f'<section id="{section_id}">' in html
         assert f"<h2>{title}</h2>" in html
         assert f'href="#{section_id}"' in html
+    sha = resolve_commit_sha()
+    if sha:
+        assert f">{sha[:7]}<" in html
+        assert f"github.com/yyolk/parch/commit/{sha}" in html
 
 
 def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
@@ -245,6 +334,9 @@ def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
     html = (root / "index.html").read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    sha = resolve_commit_sha()
+    if sha:
+        assert f">{sha[:7]}<" in html
 
 
 @pytest.mark.skipif(
@@ -273,6 +365,10 @@ def test_write_specimens_png_catalog(tmp_path: Path):
         assert f'<section id="{section_id}">' in html
         assert f"<h2>{title}</h2>" in html
         assert f'href="#{section_id}"' in html
+    sha = resolve_commit_sha()
+    if sha:
+        assert f">{sha[:7]}<" in html
+        assert f">{sha[:7]}<" in root.read_text(encoding="utf-8")
 
 
 def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
