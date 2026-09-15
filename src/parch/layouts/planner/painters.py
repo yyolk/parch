@@ -2149,9 +2149,7 @@ def paint_rapid_log(
     )
     y = gutter.y + BUJO_ROW_MM
     while y < gutter.bottom - 0.2:
-        plotter.line(
-            gutter.x, y, gutter.right, y, stroke_width=HAIR, stroke_gray=SOFT
-        )
+        plotter.line(gutter.x, y, gutter.right, y, stroke_width=HAIR, stroke_gray=SOFT)
         y += BUJO_ROW_MM
     _paint_bujo_dots(plotter, well)
 
