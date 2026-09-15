@@ -198,6 +198,35 @@ def test_typography_unknown_keys_fail_loudly():
         Spec.from_mapping({"typography": "loud"})
 
 
+def test_parse_months_list_table_omit_and_legacy():
+    assert Spec.from_mapping({"months": [1, 2, 3]}).months == (1, 2, 3)
+    assert Spec.from_mapping({"months": [1, 3]}).months == (1, 3)
+    assert Spec.from_mapping({"months": {"from": 1, "to": 3}}).months == (1, 2, 3)
+    assert Spec.from_mapping({"months": {"from": 6, "to": 6}}).months == (6,)
+    assert Spec.from_mapping({}).months == tuple(range(1, 13))
+    assert Spec.from_mapping({"month": 7}).months == (7,)
+    with pytest.raises(ConfigError, match="months must not be empty"):
+        Spec.from_mapping({"months": []})
+    with pytest.raises(ConfigError, match="unknown months key 'step'"):
+        Spec.from_mapping({"months": {"from": 1, "to": 3, "step": 1}})
+    with pytest.raises(ConfigError, match="months.from is required"):
+        Spec.from_mapping({"months": {"to": 3}})
+    with pytest.raises(ConfigError, match="months.to is required"):
+        Spec.from_mapping({"months": {"from": 1}})
+    with pytest.raises(ConfigError, match="1–12"):
+        Spec.from_mapping({"months": {"from": 4, "to": 2}})
+    with pytest.raises(ConfigError, match="1–12"):
+        Spec.from_mapping({"months": {"from": 0, "to": 3}})
+    with pytest.raises(ConfigError, match="1–12"):
+        Spec.from_mapping({"months": {"from": 1, "to": 13}})
+    with pytest.raises(ConfigError, match="months.from must be an int"):
+        Spec.from_mapping({"months": {"from": "1", "to": 3}})
+    with pytest.raises(ConfigError, match="months.to must be an int"):
+        Spec.from_mapping({"months": {"from": 1, "to": "3"}})
+    with pytest.raises(ConfigError, match="list of ints"):
+        Spec.from_mapping({"months": "1..12"})
+
+
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
