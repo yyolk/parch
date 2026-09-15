@@ -61,10 +61,12 @@ jobs:
             test -s out/specimens/$device/index.html
             test -s out/specimens/$device/projects-cover.png
             test -s out/specimens/$device/projects-index.png
+            test -s out/specimens/$device/projects-project-1.png
             test -s out/specimens/$device/steno.png
             test -s out/specimens/$device/engineering-cover.png
             grep -q 'src="cover.png"' out/specimens/$device/index.html
             grep -q 'src="projects-cover.png"' out/specimens/$device/index.html
+            grep -q 'src="projects-project-1.png"' out/specimens/$device/index.html
             grep -q 'src="steno.png"' out/specimens/$device/index.html
             grep -q '<input type="checkbox" id="cover">' out/specimens/$device/index.html
             grep -q 'input:checked+label img' out/specimens/$device/index.html

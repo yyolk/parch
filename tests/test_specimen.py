@@ -134,10 +134,12 @@ def test_projects_dests_and_pages():
     assert (
         dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
     )
+    assert dests["projects-project-1"] == spec.dest_for_project(1) == "projects-2026-01"
     numbers = projects_page_numbers(spec)
     assert set(numbers) == set(PROJECTS_STEMS)
     assert numbers["projects-cover"] == 1
     assert numbers["projects-index"] == 2
+    assert numbers["projects-project-1"] == 3
 
 
 def test_steno_dests_and_pages():

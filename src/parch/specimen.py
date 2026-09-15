@@ -47,8 +47,8 @@ SAMPLE_STEMS = (
 # Engineering notebook — cover + duplex faces, not YearPlanner dests.
 ENGINEERING_STEMS = ("engineering-cover", "engineering-front", "engineering-back")
 
-# Projects notebook — cover + index (sibling book dests).
-PROJECTS_STEMS = ("projects-cover", "projects-index")
+# Projects notebook — cover + index + one project (sibling book dests).
+PROJECTS_STEMS = ("projects-cover", "projects-index", "projects-project-1")
 
 # Pad-only Gregg sheet (steno_sheets=1).
 STENO_STEMS = ("steno",)
@@ -93,7 +93,7 @@ def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
 
 
 def projects_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
-    """Projects notebook press for catalog cover + index."""
+    """Projects notebook press for catalog cover + index + one project."""
     return replace(
         specimen_spec(device_id, year=year),
         book="projects-notebook",
@@ -136,6 +136,7 @@ def projects_dests(spec: Spec) -> dict[str, str]:
     return {
         "projects-cover": spec.cover_dest,
         "projects-index": spec.projects_index_dest,
+        "projects-project-1": spec.dest_for_project(1),
     }
 
 
