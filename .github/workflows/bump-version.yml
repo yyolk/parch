@@ -1,4 +1,5 @@
 name: Bump version
+run-name: Bump ${{ inputs.bump }} (${{ inputs.publish && 'publish' || 'draft' }})
 
 on:
   workflow_dispatch:
@@ -49,17 +50,31 @@ jobs:
 
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
-      - name: Compute next version and open bump PR
+      - id: versions
+        name: Compute next version
         run: |
           set -euo pipefail
 
+          OLD_VER="$(uv version --short --no-sync)"
+          OLD_VER="${OLD_VER%%$'\n'}"
           NEW_VER="$(uv version --dry-run --bump "$BUMP" --short --no-sync)"
           NEW_VER="${NEW_VER%%$'\n'}"
           if [ -z "$NEW_VER" ]; then
             echo "uv version --dry-run did not print a version" >&2
             exit 1
           fi
-          echo "Next version: ${NEW_VER} (bump=${BUMP})"
+          echo "Next version: ${OLD_VER} → ${NEW_VER} (bump=${BUMP})"
+          {
+            echo "old=${OLD_VER}"
+            echo "new=${NEW_VER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Bump ${{ steps.versions.outputs.old }} → ${{ steps.versions.outputs.new }}
+        env:
+          OLD_VER: ${{ steps.versions.outputs.old }}
+          NEW_VER: ${{ steps.versions.outputs.new }}
+        run: |
+          set -euo pipefail
 
           if [ -n "$(git ls-remote --tags origin "refs/tags/v${NEW_VER}")" ]; then
             echo "Tag v${NEW_VER} already exists; never retag." >&2
@@ -97,6 +112,23 @@ jobs:
 
           git push -u origin "HEAD:bump/v${NEW_VER}"
 
+          if [ -n "$(git ls-remote --tags origin "refs/tags/v${OLD_VER}")" ]; then
+            compare_base="v${OLD_VER}"
+          else
+            compare_base="master"
+          fi
+          OLD_TREE_URL="https://github.com/${GH_REPO}/tree/${compare_base}"
+          NEW_TREE_URL="https://github.com/${GH_REPO}/tree/bump/v${NEW_VER}"
+          COMPARE_URL="https://github.com/${GH_REPO}/compare/${compare_base}...bump/v${NEW_VER}"
+          echo "${OLD_TREE_URL}"
+          echo "${NEW_TREE_URL}"
+          echo "${COMPARE_URL}"
+          {
+            echo "Bump [${OLD_VER}](${OLD_TREE_URL}) → [${NEW_VER}](${NEW_TREE_URL})"
+            echo
+            echo "Compare: ${COMPARE_URL}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
           if [ "$PUBLISH" = "true" ]; then
             mode_comment="<!-- parch-release: publish -->"
             label="release:publish"
@@ -126,6 +158,8 @@ jobs:
             echo
             echo "A published Release then runs **Publish** (TestPyPI; PyPI and **Release PDFs** only when the version is not a pre-release). A draft does not, until someone publishes it in the UI."
             echo
+            echo "Auto-merge is armed after create. CI still needs the bot-PR workflow approval click before checks go green."
+            echo
             echo "Do not push tags by hand. Never retag."
           } > "$RUNNER_TEMP/pr-body.md"
 
@@ -135,3 +169,5 @@ jobs:
             --title "chore: bump version to ${NEW_VER}" \
             --label "$label" \
             --body-file "$RUNNER_TEMP/pr-body.md"
+
+          gh pr merge --auto --squash "bump/v${NEW_VER}"
