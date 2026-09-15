@@ -117,10 +117,14 @@ jobs:
           else
             compare_base="master"
           fi
+          OLD_TREE_URL="https://github.com/${GH_REPO}/tree/${compare_base}"
+          NEW_TREE_URL="https://github.com/${GH_REPO}/tree/bump/v${NEW_VER}"
           COMPARE_URL="https://github.com/${GH_REPO}/compare/${compare_base}...bump/v${NEW_VER}"
+          echo "${OLD_TREE_URL}"
+          echo "${NEW_TREE_URL}"
           echo "${COMPARE_URL}"
           {
-            echo "Bump [${OLD_VER}](${COMPARE_URL}) → [${NEW_VER}](${COMPARE_URL})"
+            echo "Bump [${OLD_VER}](${OLD_TREE_URL}) → [${NEW_VER}](${NEW_TREE_URL})"
             echo
             echo "Compare: ${COMPARE_URL}"
           } >> "$GITHUB_STEP_SUMMARY"
