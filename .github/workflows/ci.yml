@@ -26,8 +26,7 @@ jobs:
       - run: uv run pytest
       - name: Press Nomad MVP
         run: |
-          uv run parch press examples/nomad.toml -w out/nomad -o out/nomad.pdf
-          test -s out/nomad/index.pdf
+          uv run parch press examples/nomad.toml -o out/nomad.pdf
           test -s out/nomad.pdf
 
   # Nomad + Scribe catalog. PR events stay test-only. workflow_dispatch uploads
