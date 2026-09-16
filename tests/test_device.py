@@ -22,10 +22,6 @@ def test_nomad_geometry():
 
 
 def test_top_clearance_is_not_the_well():
-    slab = NOMAD.top_clearance_slab()
-    assert slab is not None
-    assert slab.y == 0
-    assert slab.h == 8.0
     frame = NOMAD.content_frame()
     assert frame.y == 8.0
     assert frame.x == 4.0
@@ -45,10 +41,6 @@ def test_scribe_geometry():
     assert SCRIBE.writing_clearance == 4.0
     assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
-    slab = SCRIBE.top_clearance_slab()
-    assert slab is not None
-    assert slab.y == 0
-    assert slab.h == 8.0
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
     assert frame.y == 8.0
@@ -56,10 +48,9 @@ def test_scribe_geometry():
     assert frame.bottom == pytest.approx(209.97 - NAV_H - SCRIBE.bottom_clearance)
 
 
-def test_zero_top_clearance_has_no_slab():
+def test_zero_top_clearance_is_content_top_zero():
     bare = replace(NOMAD, top_clearance=0.0)
     assert bare.content_top == 0.0
-    assert bare.top_clearance_slab() is None
 
 
 def test_bottom_clearance_seats_content_frame():

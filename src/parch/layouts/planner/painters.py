@@ -2186,7 +2186,7 @@ def paint_daily(
 
 
 def well_rect(device: Device) -> Rect:
-    """Writable well between header slab and bottom nav, inset by writing clearance."""
+    """Writable well between header and bottom nav, inset by writing clearance."""
     top = device.content_top + HEADER_H + 2.2
     bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance

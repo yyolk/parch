@@ -11,7 +11,7 @@ NAV_H = 8.0
 
 @dataclass(frozen=True, slots=True)
 class Device:
-    """Physical page. Top clearance slab is reserved; it is not a writing well.
+    """Physical page. ``top_clearance`` is reserved; it is not a writing well.
 
     ``top_clearance == 0`` means no top band.
     """
@@ -32,11 +32,6 @@ class Device:
     def content_top(self) -> float:
         """First Y chrome/content may occupy."""
         return self.top_clearance
-
-    def top_clearance_slab(self) -> Rect | None:
-        if self.top_clearance <= 0:
-            return None
-        return Rect(0.0, 0.0, self.page_width, self.top_clearance)
 
     def content_frame(self) -> Rect:
         """Chrome + wells: below top clearance, above nav strip + bottom OS chrome.
