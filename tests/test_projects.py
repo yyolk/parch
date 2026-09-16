@@ -69,19 +69,21 @@ _PROJ_STRIP = (
 )
 
 
-def test_projects_page_after_annual():
+def test_projects_after_review_in_year_book():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert pages[1].dest == "year-2026"
-    page = pages[2]
-    assert page.dest == "projects-index-2026-01"
+    dests = [page.dest for page in pages]
+    assert dests[:3] == ["cover", "year-2026", "quarter-2026-Q1"]
+    assert dests.index("projects-index-2026-01") > dests.index("review-2026-W53")
+    page = next(p for p in pages if p.dest == "projects-index-2026-01")
     assert page.kind == "projects_index"
     assert page.title == "Projects"
-    assert pages[3].dest == "projects-2026-01"
-    assert pages[11].dest == "meetings-index-2026"
-    assert pages[28].dest == "tasks-index-2026-Q1"
-    assert pages[85].dest == "review-index-2026"
-    assert pages[139].dest == "quarter-2026-Q1"
+    proj = dests.index("projects-index-2026-01")
+    assert dests[proj + 1] == "projects-2026-01"
+    assert dests[proj + 9] == "meetings-index-2026"
+    assert dests.index("tasks-index-2026-Q1") > dests.index("meeting-2026-16")
+    assert dests.index("review-index-2026") > dests.index("2026-12-31")
+    assert dests[2] == "quarter-2026-Q1"
     assert not any(p.kind == "projects" for p in pages)
 
     roster = next(item for item in page.components if isinstance(item, ProjectsIndex))
@@ -144,14 +146,20 @@ def test_projects_index_tickets_and_proj_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2] == "projects-index-2026-01"
-    assert dests[3:11] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
-    assert dests[11] == "meetings-index-2026"
-    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
-    assert dests[28] == "tasks-index-2026-Q1"
-    assert dests[139] == "quarter-2026-Q1"
+    proj = dests.index("projects-index-2026-01")
+    assert dests[proj : proj + 9] == [
+        "projects-index-2026-01",
+        *[f"projects-2026-{slot:02d}" for slot in range(1, 9)],
+    ]
+    assert dests[proj + 9] == "meetings-index-2026"
+    assert dests[proj + 10 : proj + 26] == [
+        f"meeting-2026-{slot:02d}" for slot in range(1, 17)
+    ]
+    assert dests[proj + 26] == "tasks-index-2026-Q1"
+    assert dests[2] == "quarter-2026-Q1"
+    assert dests.index("review-index-2026") < proj
 
-    index = pages[2]
+    index = pages[proj]
     assert index.kind == "projects_index"
     assert index.title == "Projects"
     assert strip_active(index.kind) == "Proj"
@@ -519,14 +527,18 @@ def test_projects_index_pages_knob():
     assert spec.project_count == 24
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2:5] == [
+    proj = dests.index("projects-index-2026-01")
+    assert dests[proj : proj + 3] == [
         "projects-index-2026-01",
         "projects-index-2026-02",
         "projects-index-2026-03",
     ]
-    assert dests[5:29] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
-    assert dests[29] == "meetings-index-2026"
-    assert dests[157] == "quarter-2026-Q1"
+    assert dests[proj + 3 : proj + 27] == [
+        f"projects-2026-{slot:02d}" for slot in range(1, 25)
+    ]
+    assert dests[proj + 27] == "meetings-index-2026"
+    assert dests[2] == "quarter-2026-Q1"
+    assert dests.index("review-index-2026") < proj
 
     indexes = [page for page in pages if page.kind == "projects_index"]
     assert len(indexes) == 3

@@ -68,11 +68,12 @@ def test_tasks_in_year_planner_after_meetings():
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
     kinds = [page.kind for page in pages]
-    assert dests[11] == "meetings-index-2026"
-    assert dests[28] == "tasks-index-2026-Q1"
-    assert dests[29] == "tasks-2026-W01"
-    assert dests[85] == "review-index-2026"
-    assert dests[139] == "quarter-2026-Q1"
+    task = dests.index("tasks-index-2026-Q1")
+    assert dests[2] == "quarter-2026-Q1"
+    assert dests.index("meetings-index-2026") < task
+    assert dests[task : task + 2] == ["tasks-index-2026-Q1", "tasks-2026-W01"]
+    assert dests.index("review-index-2026") < dests.index("projects-index-2026-01")
+    assert dests.index("projects-index-2026-01") < dests.index("meetings-index-2026")
     assert kinds.count("tasks_index") == 4
     assert kinds.count("task") == 53
     assert "tasks-index-2026-Q4" in dests

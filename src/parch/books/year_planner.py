@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → projects index/dests → meetings → tasks → review → quarters → months+habits → weeks → days."""
+"""Year planner book — cover → annual → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks."""
 
 from parch.books.protocol import plot_pages
 from parch.calendar import months_touching_weeks
@@ -35,10 +35,6 @@ class YearPlanner:
         built = [
             *CoverSection(spec).pages(),
             *AnnualSection(spec).pages(),
-            *ProjectsSection(spec).pages(),
-            *MeetingSection(spec).pages(),
-            *TasksSection(spec).pages(),
-            *ReviewSection(spec).pages(),
             *QuarterSection(spec).pages(),
         ]
         for number in spec.months:
@@ -51,6 +47,10 @@ class YearPlanner:
                     continue
                 built.extend(daily.pages_for(day))
                 built.extend(notes.pages_for(day))
+        built.extend(ReviewSection(spec).pages())
+        built.extend(ProjectsSection(spec).pages())
+        built.extend(MeetingSection(spec).pages())
+        built.extend(TasksSection(spec).pages())
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

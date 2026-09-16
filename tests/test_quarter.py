@@ -19,20 +19,19 @@ from parch.tracks import rows
 def test_quarter_page_and_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:4]] == [
+    dests = [page.dest for page in pages]
+    assert dests[:7] == [
         "cover",
         "year-2026",
-        "projects-index-2026-01",
-        "projects-2026-01",
-    ]
-    assert [page.dest for page in pages[11:12]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[139:144]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
         "quarter-2026-Q4",
         "month-2026-01",
     ]
+    assert dests.index("review-index-2026") > dests.index("2026-12-31")
+    assert dests.index("projects-index-2026-01") > dests.index("review-2026-W53")
+    assert dests.index("meetings-index-2026") > dests.index("projects-2026-08")
     assert [page.dest for page in pages if page.dest.startswith("quarter-")] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",

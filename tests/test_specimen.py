@@ -189,6 +189,27 @@ def test_sample_dests_and_pages_for_january():
     assert set(numbers) == set(SAMPLE_STEMS)
     assert numbers["cover"] == 1
     assert numbers["annual"] == 2
+    assert numbers["quarterly-q1"] == 3
+    assert numbers["monthly-jan"] == 4
+    assert numbers["habits-jan"] == 5
+    assert (
+        numbers["cover"]
+        < numbers["annual"]
+        < numbers["quarterly-q1"]
+        < numbers["monthly-jan"]
+        < numbers["habits-jan"]
+        < numbers["weekly-w01"]
+        < numbers["daily-jan1"]
+        < numbers["notes-jan1"]
+        < numbers["review"]
+        < numbers["review-w01"]
+        < numbers["projects"]
+        < numbers["project-1"]
+        < numbers["meetings"]
+        < numbers["meeting-1"]
+        < numbers["tasks"]
+        < numbers["tasks-w01"]
+    )
     assert all(page >= 1 for page in numbers.values())
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
 

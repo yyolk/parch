@@ -64,16 +64,23 @@ _REV_STRIP = (
 )
 
 
-def test_review_in_year_planner_after_tasks():
+def test_review_after_calendar_in_year_planner():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
     kinds = [page.kind for page in pages]
-    assert dests[28] == "tasks-index-2026-Q1"
-    assert dests[85] == "review-index-2026"
-    assert dests[86] == "review-2026-W01"
-    assert dests[138] == "review-2026-W53"
-    assert dests[139] == "quarter-2026-Q1"
+    rev = dests.index("review-index-2026")
+    assert dests[2] == "quarter-2026-Q1"
+    assert dests.index("week-2026-W53") < rev
+    assert dests.index("2026-12-31") < rev
+    assert dests[rev : rev + 3] == [
+        "review-index-2026",
+        "review-2026-W01",
+        "review-2026-W02",
+    ]
+    assert dests[rev + 53] == "review-2026-W53"
+    assert dests[rev + 54] == "projects-index-2026-01"
+    assert dests.index("tasks-index-2026-Q1") > dests.index("meetings-index-2026")
     assert kinds.count("review_index") == 1
     assert kinds.count("review") == 53
     year = next(page for page in pages if page.kind == "annual")

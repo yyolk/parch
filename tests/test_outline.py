@@ -100,12 +100,12 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
 
     assert dests == [
         spec.year_dest,
+        spec.quarter_dest,
+        spec.month_dest,
+        spec.review_index_dest,
         spec.projects_index_dest,
         spec.meetings_index_dest,
         spec.tasks_index_dest,
-        spec.review_index_dest,
-        spec.quarter_dest,
-        spec.month_dest,
     ]
     assert plotter.outlines() == outline_entries(pages)
     titles = [title for title, _dest in plotter.outlines()]
@@ -140,12 +140,12 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
 
     assert titles == [
         str(spec.year),
+        *quarter_titles,
+        *month_titles,
+        "Review",
         "Projects",
         "Meetings",
         *tasks_titles,
-        "Review",
-        *quarter_titles,
-        *month_titles,
     ]
     assert [title for title, dest in entries if dest_kind[dest] == "tasks_index"] == [
         page.title for page in pressed_tasks
@@ -199,12 +199,12 @@ def test_press_pdf_year_planner_outline_when_enabled(tmp_path: Path):
     titles = _outline_titles(reader)
     assert titles == [
         "2026",
+        "Q1 2026",
+        "January 2026",
+        "Review",
         "Projects",
         "Meetings",
         "Tasks Q1 2026",
-        "Review",
-        "Q1 2026",
-        "January 2026",
     ]
     assert all(title.lower() != "cover" for title in titles)
     first = next(item for item in reader.outline if isinstance(item, Destination))
