@@ -3,34 +3,39 @@ import pytest
 from parch.books import YearPlanner
 from parch.devices import NAV_H, NOMAD, SCRIBE
 from parch.fonts.ramp import EffectiveRamp
-from parch.layouts.planner.layout import well_rect
-from parch.layouts.planner.painters import (
-    HEADER_H,
-    WASH,
-    paint_header,
-    paint_top_clearance,
-)
+from parch.layouts.planner.layout import PlannerLayout, well_rect
+from parch.layouts.planner.painters import HEADER_H, INK, paint_header
 from parch.plotter import RecordingPlotter
+from parch.sections.cover import CoverSection
 from parch.spec import Spec
 
 TOP_CLEARANCE = 8.0
 
 
-def test_top_clearance_wash_fills_slab():
+def test_header_owns_top_clearance():
+    """One INK rect from y=0 through top_clearance + HEADER_H. Hits stay at content_top."""
     for device in (NOMAD, SCRIBE):
         plotter = RecordingPlotter()
-        paint_top_clearance(plotter, device)
-        fills = [op for op in plotter.ops if op[0] == "rect"]
+        paint_header(
+            plotter,
+            device,
+            "Year",
+            "2026",
+            chip="01",
+            ramp=EffectiveRamp(),
+        )
+        fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
         assert len(fills) == 1
         box = fills[0][1]
         assert box.y == pytest.approx(0.0)
-        assert box.h == pytest.approx(device.top_clearance)
+        assert box.h == pytest.approx(device.top_clearance + HEADER_H)
         assert box.w == pytest.approx(device.page_width)
         assert fills[0][2] is False
-        assert fills[0][3] is True
-        assert fills[0][5] == pytest.approx(WASH)
-        assert not any(op[0] == "text" for op in plotter.ops)
-        assert not any(op[0] == "link" for op in plotter.ops)
+        assert fills[0][5] == pytest.approx(INK)
+        for op in plotter.ops:
+            if op[0] in {"text", "link"}:
+                assert op[1].y == pytest.approx(device.content_top)
+                assert op[1].h == pytest.approx(HEADER_H)
 
 
 def test_content_stays_below_top_clearance():
@@ -38,13 +43,26 @@ def test_content_stays_below_top_clearance():
     plotter = RecordingPlotter()
     YearPlanner().plot(spec, plotter)
 
-    clearance_fills = [
+    header_bands = [
         op
         for op in plotter.ops
-        if op[0] == "rect" and op[1].y == 0 and op[1].h == TOP_CLEARANCE
+        if op[0] == "rect"
+        and op[3]
+        and op[1].y == pytest.approx(0.0)
+        and op[1].h == pytest.approx(TOP_CLEARANCE + HEADER_H)
+        and op[1].w == pytest.approx(NOMAD.page_width)
     ]
-    assert clearance_fills
-    assert all(op[3] and op[5] == pytest.approx(WASH) for op in clearance_fills)
+    assert header_bands
+    assert all(op[5] == pytest.approx(INK) for op in header_bands)
+
+    wash_only = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[1].y == pytest.approx(0.0)
+        and op[1].h == pytest.approx(TOP_CLEARANCE)
+    ]
+    assert not wash_only
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "toolbar 8 mm - not a well" not in texts
@@ -54,7 +72,10 @@ def test_content_stays_below_top_clearance():
     for op in plotter.ops:
         if op[0] == "text":
             assert op[1].y >= TOP_CLEARANCE - 0.01
-        if op[0] == "rect" and not (op[1].y == 0 and op[1].h == TOP_CLEARANCE):
+        if op[0] == "rect" and not (
+            op[1].y == pytest.approx(0.0)
+            and op[1].h == pytest.approx(TOP_CLEARANCE + HEADER_H)
+        ):
             assert op[1].y >= TOP_CLEARANCE - 0.01
 
 
@@ -69,20 +90,31 @@ def test_scribe_header_sits_below_tap_floor():
         chip="01",
         ramp=EffectiveRamp(),
     )
-    slabs = [
-        op
-        for op in plotter.ops
-        if op[0] == "rect"
-        and op[3]
-        and op[1].y == pytest.approx(SCRIBE.content_top)
-        and op[1].h == pytest.approx(HEADER_H)
-    ]
-    assert slabs
-    assert slabs[0][1].y == pytest.approx(8.0)
-    assert slabs[0][1].h == pytest.approx(9.0)
+    fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
+    assert len(fills) == 1
+    assert fills[0][1].y == pytest.approx(0.0)
+    assert fills[0][1].h == pytest.approx(SCRIBE.top_clearance + HEADER_H)
+    assert fills[0][5] == pytest.approx(INK)
     for op in plotter.ops:
-        if op[0] in {"rect", "text"}:
+        if op[0] in {"text", "link"}:
+            assert op[1].y == pytest.approx(SCRIBE.content_top)
             assert op[1].y >= TOP_CLEARANCE - 0.01
+
+
+def test_cover_has_no_top_fill():
+    page = CoverSection(Spec()).pages()[0]
+    for device in (NOMAD, SCRIBE):
+        ink = RecordingPlotter()
+        PlannerLayout().paint(page, ink, device)
+        top_fills = [
+            op
+            for op in ink.ops
+            if op[0] == "rect"
+            and op[3]
+            and op[1].y == pytest.approx(0.0)
+            and op[1].w == pytest.approx(device.page_width)
+        ]
+        assert not top_fills
 
 
 def test_well_sits_above_strip_and_clearance():

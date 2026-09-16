@@ -87,14 +87,6 @@ def _ink_text(
     plotter.text(box, content, ink=mark, gray=gray, align=align, small_caps=small_caps)
 
 
-def paint_top_clearance(plotter: Plotter, device: Device) -> None:
-    """Fill the top_clearance slab with WASH. No labels or links."""
-    slab = device.top_clearance_slab()
-    if slab is None:
-        return
-    plotter.rect(slab, stroke=False, fill=True, fill_gray=WASH)
-
-
 def paint_header(
     plotter: Plotter,
     device: Device,
@@ -106,13 +98,15 @@ def paint_header(
     chip: str = "",
     chip_dest: str | None = None,
 ) -> None:
-    slab = Rect(0.0, device.content_top, device.page_width, HEADER_H)
-    plotter.rect(slab, stroke=False, fill=True, fill_gray=INK)
+    """One INK rect from y=0 through top_clearance + HEADER_H. Hits stay at content_top."""
+    band = Rect(0.0, 0.0, device.page_width, device.top_clearance + HEADER_H)
+    plotter.rect(band, stroke=False, fill=True, fill_gray=INK)
+    seat = Rect(0.0, device.content_top, device.page_width, HEADER_H)
     gutter = device.writing_clearance
     meta_w = 18.0
     chip_w = 16.0 if chip else 0.0
     title_box = Rect(
-        gutter, slab.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, slab.h
+        gutter, seat.y, device.page_width - 2 * gutter - meta_w - chip_w - 1.5, seat.h
     )
     plotter.ramp = ramp
     _ink_text(
@@ -121,7 +115,7 @@ def paint_header(
     chrome = TypeRef(step="chrome")
     if chip:
         chip_box = Rect(
-            device.page_width - gutter - meta_w - chip_w - 1.2, slab.y, chip_w, slab.h
+            device.page_width - gutter - meta_w - chip_w - 1.2, seat.y, chip_w, seat.h
         )
         _ink_text(
             plotter,
@@ -135,7 +129,7 @@ def paint_header(
         if chip_dest:
             plotter.link(chip_box, chip_dest)
     if meta:
-        meta_box = Rect(device.page_width - gutter - meta_w, slab.y, meta_w, slab.h)
+        meta_box = Rect(device.page_width - gutter - meta_w, seat.y, meta_w, seat.h)
         _ink_text(
             plotter,
             meta_box,
@@ -203,7 +197,7 @@ def paint_cover(
 ) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
-    # Frame sits below the WASH top-clearance slab and above unmarked bottom OS chrome.
+    # Frame sits below top clearance and above unmarked bottom OS chrome.
     ox, oy = outer, max(outer, top + 0.6)
     o_bottom = max(outer, device.bottom_clearance + 0.6)
     plotter.rect(
@@ -2192,7 +2186,7 @@ def paint_daily(
 
 
 def well_rect(device: Device) -> Rect:
-    """Writable well between header slab and bottom nav, inset by writing clearance."""
+    """Writable well between header and bottom nav, inset by writing clearance."""
     top = device.content_top + HEADER_H + 2.2
     bottom = device.page_height - device.bottom_clearance - NAV_H - 2.2
     m = device.writing_clearance

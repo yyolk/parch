@@ -68,7 +68,6 @@ from parch.layouts.planner.painters import (
     paint_steno_pad,
     paint_task,
     paint_tasks_index,
-    paint_top_clearance,
     paint_week,
     strip_active,
     strip_items,
@@ -92,7 +91,7 @@ __all__ = [
 
 
 class PlannerLayout:
-    """Seat components below the WASH top-clearance slab. Cover and pad faces skip slab/nav.
+    """Seat components below the INK header. Cover and pad faces skip header/nav.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
@@ -105,7 +104,6 @@ class PlannerLayout:
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp
-        paint_top_clearance(plotter, device)
         match page.kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
