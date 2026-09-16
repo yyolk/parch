@@ -1,20 +1,20 @@
 """Registered MVP devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
 
 from dataclasses import dataclass
-from typing import Literal
 
 from parch import ConfigError
 from parch.fonts.ramp import ROOT_BODY, Pt
 from parch.geom import Rect
-
-type ToolbarEdge = Literal["top", "none"]
 
 NAV_H = 8.0
 
 
 @dataclass(frozen=True, slots=True)
 class Device:
-    """Physical page. Toolbar slab is reserved; it is not a writing well."""
+    """Physical page. Top clearance slab is reserved; it is not a writing well.
+
+    ``top_clearance == 0`` means no top band.
+    """
 
     id: str
     name: str
@@ -23,8 +23,7 @@ class Device:
     page_height: float
     width_px: int
     height_px: int
-    toolbar_edge: ToolbarEdge
-    toolbar_clearance: float
+    top_clearance: float
     writing_clearance: float
     bottom_clearance: float
     root_body: Pt = ROOT_BODY
@@ -32,21 +31,15 @@ class Device:
     @property
     def content_top(self) -> float:
         """First Y chrome/content may occupy."""
-        match self.toolbar_edge:
-            case "top":
-                return self.toolbar_clearance
-            case _:
-                return 0.0
+        return self.top_clearance
 
-    def toolbar_slab(self) -> Rect | None:
-        match self.toolbar_edge:
-            case "top" if self.toolbar_clearance > 0:
-                return Rect(0.0, 0.0, self.page_width, self.toolbar_clearance)
-            case _:
-                return None
+    def top_clearance_slab(self) -> Rect | None:
+        if self.top_clearance <= 0:
+            return None
+        return Rect(0.0, 0.0, self.page_width, self.top_clearance)
 
     def content_frame(self) -> Rect:
-        """Chrome + wells: below toolbar, above nav strip + bottom OS chrome.
+        """Chrome + wells: below top clearance, above nav strip + bottom OS chrome.
 
         Side inset is writing_clearance. Bottom inset is the nav strip plus
         bottom_clearance — not writing_clearance, which used to overlap the strip.
@@ -62,7 +55,7 @@ class Device:
         )
 
 
-# 1404×1872 @ 300 PPI → 118.87×158.50 mm. Toolbar top 8 mm.
+# 1404×1872 @ 300 PPI → 118.87×158.50 mm. Top clearance 8 mm.
 # Body root 8.5pt: month day nums land on pre-snap 8.5; ratios follow.
 NOMAD = Device(
     id="supernote-nomad",
@@ -72,14 +65,15 @@ NOMAD = Device(
     page_height=158.5,
     width_px=1404,
     height_px=1872,
-    toolbar_edge="top",
-    toolbar_clearance=8.0,
+    top_clearance=8.0,
     writing_clearance=4.0,
     bottom_clearance=0.0,
     root_body=ROOT_BODY,
 )
 
-# 1860×2480 @ 300 PPI → 157.48×209.97 mm. No toolbar chrome; writing clearance 4 mm.
+# 1860×2480 @ 300 PPI → 157.48×209.97 mm. Writing clearance 4 mm.
+# Top 8 mm is a measured chrome inset (not a physical Kindle toolbar):
+# Send-to-Kindle taps are solid from ~8 mm; paint_header chip/meta sit below that floor.
 # Same ROOT_BODY as Nomad — type calibration knob is later, not this PR.
 SCRIBE = Device(
     id="kindle-scribe",
@@ -89,8 +83,7 @@ SCRIBE = Device(
     page_height=209.97,
     width_px=1860,
     height_px=2480,
-    toolbar_edge="none",
-    toolbar_clearance=0.0,
+    top_clearance=8.0,
     writing_clearance=4.0,
     bottom_clearance=10.0,  # measured Send-to-Kindle: hits below 10 mm miss; 10–20 mm solid.
     root_body=ROOT_BODY,

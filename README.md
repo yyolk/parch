@@ -26,7 +26,7 @@ Device → Component (data only) → Section (build Page) → Layout (chrome + s
 
 | Device | id | size | resolution | notes |
 | --- | --- | --- | --- | --- |
-| SuperNote Nomad | `supernote-nomad` | 118.87 × 158.5 mm | 1404×1872 @ 300 PPI | top toolbar 8 mm reserved; writing clearance 4 mm; `root_body` 8.5pt |
+| SuperNote Nomad | `supernote-nomad` | 118.87 × 158.5 mm | 1404×1872 @ 300 PPI | top clearance 8 mm reserved; writing clearance 4 mm; `root_body` 8.5pt |
 
 ## Tests
 

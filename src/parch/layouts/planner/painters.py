@@ -87,8 +87,12 @@ def _ink_text(
     plotter.text(box, content, ink=mark, gray=gray, align=align, small_caps=small_caps)
 
 
-def paint_toolbar(_plotter: Plotter, _device: Device) -> None:
-    """Nomad top 8 mm stays reserved and unmarked. No fill, no label."""
+def paint_top_clearance(plotter: Plotter, device: Device) -> None:
+    """Fill the top_clearance slab with WASH. No labels or links."""
+    slab = device.top_clearance_slab()
+    if slab is None:
+        return
+    plotter.rect(slab, stroke=False, fill=True, fill_gray=WASH)
 
 
 def paint_header(
@@ -199,7 +203,7 @@ def paint_cover(
 ) -> None:
     top = device.content_top
     outer, inner = 3.2, 4.6
-    # Frame sits below the unmarked toolbar and above unmarked bottom OS chrome.
+    # Frame sits below the WASH top-clearance slab and above unmarked bottom OS chrome.
     ox, oy = outer, max(outer, top + 0.6)
     o_bottom = max(outer, device.bottom_clearance + 0.6)
     plotter.rect(

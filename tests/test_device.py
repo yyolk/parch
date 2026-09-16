@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from parch import ConfigError
@@ -12,15 +14,15 @@ def test_nomad_geometry():
     assert NOMAD.width_px == 1404
     assert NOMAD.height_px == 1872
     assert NOMAD.ppi == 300
-    assert NOMAD.toolbar_edge == "top"
-    assert NOMAD.toolbar_clearance == 8.0
+    assert NOMAD.top_clearance == 8.0
+    assert NOMAD.content_top == 8.0
     assert NOMAD.writing_clearance == 4.0
     assert NOMAD.bottom_clearance == 0.0
     assert NOMAD.root_body == ROOT_BODY == Pt(8.5)
 
 
-def test_toolbar_is_not_the_well():
-    slab = NOMAD.toolbar_slab()
+def test_top_clearance_is_not_the_well():
+    slab = NOMAD.top_clearance_slab()
     assert slab is not None
     assert slab.y == 0
     assert slab.h == 8.0
@@ -38,17 +40,26 @@ def test_scribe_geometry():
     assert SCRIBE.width_px == 1860
     assert SCRIBE.height_px == 2480
     assert SCRIBE.ppi == 300
-    assert SCRIBE.toolbar_edge == "none"
-    assert SCRIBE.toolbar_clearance == 0.0
+    assert SCRIBE.top_clearance == 8.0
+    assert SCRIBE.content_top == SCRIBE.top_clearance == 8.0
     assert SCRIBE.writing_clearance == 4.0
     assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
-    assert SCRIBE.toolbar_slab() is None
+    slab = SCRIBE.top_clearance_slab()
+    assert slab is not None
+    assert slab.y == 0
+    assert slab.h == 8.0
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
-    assert frame.y == 0.0
+    assert frame.y == 8.0
     assert frame.w == pytest.approx(157.48 - 8.0)
     assert frame.bottom == pytest.approx(209.97 - NAV_H - SCRIBE.bottom_clearance)
+
+
+def test_zero_top_clearance_has_no_slab():
+    bare = replace(NOMAD, top_clearance=0.0)
+    assert bare.content_top == 0.0
+    assert bare.top_clearance_slab() is None
 
 
 def test_bottom_clearance_seats_content_frame():
