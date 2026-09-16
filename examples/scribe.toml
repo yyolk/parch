@@ -1,11 +1,12 @@
-# Kindle Scribe (1st gen) geometry proof — not a release-PDF shard.
-# PRESSABLE / release press stays supernote-nomad → examples/nomad.toml.
-# Slim January keeps the press cheap.
+# Kindle Scribe (1st gen) — cover → annual → projects index/dests → meetings → tasks → review → Q1–Q4 → each month + habits → each touching ISO week once → days + notes.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
 year = 2026
 device = "kindle-scribe"
 week_start = "monday"
-months = [1]
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 title = "Year planner"
+# Reader sidebar outline (bookmarks). Cover is skipped.
+outline = true
 
 [daily]
 schedule_from = 7
@@ -20,7 +21,7 @@ columns = 10
 cards = 3
 tasks = 4
 tickets = 8
-index_pages = 1
+index_pages = 3
 
 [meetings]
 index_rows = 16

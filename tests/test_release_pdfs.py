@@ -17,24 +17,30 @@ from parch.services.release_pdfs import (
 
 def test_pressable_shards_json():
     shards = matrix_shards()
-    assert shards == [{"device": "supernote-nomad"}]
+    assert shards == [
+        {"device": "supernote-nomad"},
+        {"device": "kindle-scribe"},
+    ]
     assert json.loads(matrix_json()) == shards
-    assert PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
+    assert PRESSABLE_DEVICE_IDS == ("supernote-nomad", "kindle-scribe")
 
 
 def test_pressable_is_not_registry():
-    assert PRESSABLE_DEVICE_IDS != known_device_ids()
+    # PRESSABLE is an explicit table, not known_device_ids() (aliases, future devices).
     assert "kindle-scribe" in known_device_ids()
-    assert "kindle-scribe" not in PRESSABLE_DEVICE_IDS
+    assert "kindle-scribe" in PRESSABLE_DEVICE_IDS
+    assert "scribe" not in PRESSABLE_DEVICE_IDS
+    assert "nomad" not in PRESSABLE_DEVICE_IDS
 
 
-def test_toml_for_pressable_nomad():
+def test_toml_for_pressable_devices():
     assert toml_for("supernote-nomad") == "examples/nomad.toml"
+    assert toml_for("kindle-scribe") == "examples/scribe.toml"
 
 
 def test_toml_for_rejects_unpressable():
     with pytest.raises(ValueError, match="is not pressable"):
-        toml_for("kindle-scribe")
+        toml_for("scribe")
     with pytest.raises(ValueError, match="is not pressable"):
         toml_for("unknown-slate")
 
