@@ -1,6 +1,7 @@
 from datetime import date
 
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.calendar import month_week_bands, short_date_range
@@ -79,19 +80,21 @@ def test_tasks_in_year_planner_after_meetings():
     assert "tasks-2026-W53" in dests
     year = next(page for page in pages if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]
-    assert labels == [
-        "Year",
-        "Quar",
-        "Mon",
-        "Habit",
-        "Week",
-        "Rev",
-        "Day",
-        "Notes",
-        "Proj",
-        "Meet",
-        "Task",
-    ]
+    assert labels == snapshot(
+        [
+            "Year",
+            "Quar",
+            "Mon",
+            "Habit",
+            "Week",
+            "Rev",
+            "Day",
+            "Notes",
+            "Proj",
+            "Meet",
+            "Task",
+        ]
+    )
     assert dict(strip_items(year))["Task"] == spec.tasks_index_dest
 
 
@@ -105,7 +108,9 @@ def test_tasks_index_page():
     assert index.quarter == 1
     assert index.dest == "tasks-index-2026-Q1"
     assert [band.month for band in index.bands] == [1, 2, 3]
-    assert [band.name for band in index.bands] == ["January", "February", "March"]
+    assert [band.name for band in index.bands] == snapshot(
+        ["January", "February", "March"]
+    )
     assert [len(band.weeks) for band in index.bands] == [5, 4, 5]
     assert index.bands[0].weeks[0].dest == "tasks-2026-W01"
     assert index.bands[0].weeks[-1].iso_week == 5

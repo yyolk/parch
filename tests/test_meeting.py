@@ -1,4 +1,5 @@
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.components import MeetingAgenda, MeetingIndex
@@ -62,7 +63,26 @@ def test_meeting_after_projects_in_year_book():
     dests = [page.dest for page in pages]
     assert dests[2] == "projects-index-2026-01"
     assert dests[11] == "meetings-index-2026"
-    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
+    assert dests[12:28] == snapshot(
+        [
+            "meeting-2026-01",
+            "meeting-2026-02",
+            "meeting-2026-03",
+            "meeting-2026-04",
+            "meeting-2026-05",
+            "meeting-2026-06",
+            "meeting-2026-07",
+            "meeting-2026-08",
+            "meeting-2026-09",
+            "meeting-2026-10",
+            "meeting-2026-11",
+            "meeting-2026-12",
+            "meeting-2026-13",
+            "meeting-2026-14",
+            "meeting-2026-15",
+            "meeting-2026-16",
+        ]
+    )
     assert dests[28] == "tasks-index-2026-Q1"
     assert dests[139] == "quarter-2026-Q1"
     assert [page.kind for page in pages].count("meetings_index") == 1
@@ -78,10 +98,29 @@ def test_meeting_index_page():
     assert roster.year == 2026
     assert roster.dest == "meetings-index-2026"
     assert len(roster.slots) == 16
-    assert [slot.number for slot in roster.slots] == list(range(1, 17))
-    assert [slot.dest for slot in roster.slots] == [
-        f"meeting-2026-{slot:02d}" for slot in range(1, 17)
-    ]
+    assert [slot.number for slot in roster.slots] == snapshot(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    )
+    assert [slot.dest for slot in roster.slots] == snapshot(
+        [
+            "meeting-2026-01",
+            "meeting-2026-02",
+            "meeting-2026-03",
+            "meeting-2026-04",
+            "meeting-2026-05",
+            "meeting-2026-06",
+            "meeting-2026-07",
+            "meeting-2026-08",
+            "meeting-2026-09",
+            "meeting-2026-10",
+            "meeting-2026-11",
+            "meeting-2026-12",
+            "meeting-2026-13",
+            "meeting-2026-14",
+            "meeting-2026-15",
+            "meeting-2026-16",
+        ]
+    )
     assert strip_active(page.kind) == "Meet"
     assert strip_items(page) == _MEET_STRIP
 

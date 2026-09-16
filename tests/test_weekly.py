@@ -1,5 +1,7 @@
 from datetime import date
 
+from inline_snapshot import snapshot
+
 from parch.books import YearPlanner
 from parch.calendar import month_touching_weeks, months_touching_weeks
 from parch.layouts.planner.painters import strip_active, strip_items
@@ -38,40 +40,95 @@ def test_week_dests_and_nav_strip():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[0:4] == [
-        "cover",
-        "year-2026",
-        "projects-index-2026-01",
-        "projects-2026-01",
-    ]
+    assert dests[0:4] == snapshot(
+        ["cover", "year-2026", "projects-index-2026-01", "projects-2026-01"]
+    )
     assert dests[11] == "meetings-index-2026"
-    assert dests[139:144] == [
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
-    ]
+    assert dests[139:144] == snapshot(
+        [
+            "quarter-2026-Q1",
+            "quarter-2026-Q2",
+            "quarter-2026-Q3",
+            "quarter-2026-Q4",
+            "month-2026-01",
+        ]
+    )
     assert dests.index("week-2026-W02") < dests.index("2026-01-05")
     assert dests.index("week-2026-W05") < dests.index("2026-01-26")
     assert dests.index("month-2026-07") < dests.index("week-2026-W01")
-    assert [name for name in dests if name.startswith("week-")] == [
-        f"week-2026-W{week:02d}" for week in range(1, 54)
-    ]
+    assert [name for name in dests if name.startswith("week-")] == snapshot(
+        [
+            "week-2026-W01",
+            "week-2026-W02",
+            "week-2026-W03",
+            "week-2026-W04",
+            "week-2026-W05",
+            "week-2026-W06",
+            "week-2026-W07",
+            "week-2026-W08",
+            "week-2026-W09",
+            "week-2026-W10",
+            "week-2026-W11",
+            "week-2026-W12",
+            "week-2026-W13",
+            "week-2026-W14",
+            "week-2026-W15",
+            "week-2026-W16",
+            "week-2026-W17",
+            "week-2026-W18",
+            "week-2026-W19",
+            "week-2026-W20",
+            "week-2026-W21",
+            "week-2026-W22",
+            "week-2026-W23",
+            "week-2026-W24",
+            "week-2026-W25",
+            "week-2026-W26",
+            "week-2026-W27",
+            "week-2026-W28",
+            "week-2026-W29",
+            "week-2026-W30",
+            "week-2026-W31",
+            "week-2026-W32",
+            "week-2026-W33",
+            "week-2026-W34",
+            "week-2026-W35",
+            "week-2026-W36",
+            "week-2026-W37",
+            "week-2026-W38",
+            "week-2026-W39",
+            "week-2026-W40",
+            "week-2026-W41",
+            "week-2026-W42",
+            "week-2026-W43",
+            "week-2026-W44",
+            "week-2026-W45",
+            "week-2026-W46",
+            "week-2026-W47",
+            "week-2026-W48",
+            "week-2026-W49",
+            "week-2026-W50",
+            "week-2026-W51",
+            "week-2026-W52",
+            "week-2026-W53",
+        ]
+    )
 
     month = next(page for page in pages if page.dest == "month-2026-01")
-    assert strip_items(month) == (
-        ("Year", "year-2026"),
-        ("Quar", "quarter-2026-Q1"),
-        ("Mon", "month-2026-01"),
-        ("Habit", "month-2026-01-habits"),
-        ("Week", "week-2026-W01"),
-        ("Rev", "review-index-2026"),
-        ("Day", "2026-01-01"),
-        ("Notes", "2026-01-01-notes-1"),
-        ("Proj", "projects-index-2026-01"),
-        ("Meet", "meetings-index-2026"),
-        ("Task", "tasks-index-2026-Q1"),
+    assert strip_items(month) == snapshot(
+        (
+            ("Year", "year-2026"),
+            ("Quar", "quarter-2026-Q1"),
+            ("Mon", "month-2026-01"),
+            ("Habit", "month-2026-01-habits"),
+            ("Week", "week-2026-W01"),
+            ("Rev", "review-index-2026"),
+            ("Day", "2026-01-01"),
+            ("Notes", "2026-01-01-notes-1"),
+            ("Proj", "projects-index-2026-01"),
+            ("Meet", "meetings-index-2026"),
+            ("Task", "tasks-index-2026-Q1"),
+        )
     )
     assert strip_active(month.kind) == "Mon"
 

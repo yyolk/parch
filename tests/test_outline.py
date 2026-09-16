@@ -1,6 +1,7 @@
 from datetime import date
 from pathlib import Path
 
+from inline_snapshot import snapshot
 from pypdf import PdfReader
 from pypdf.generic import Destination
 
@@ -98,15 +99,17 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
     dest_kind = {page.dest: page.kind for page in pages}
     outlined_kinds = {dest_kind[dest] for dest in dests}
 
-    assert dests == [
-        spec.year_dest,
-        spec.projects_index_dest,
-        spec.meetings_index_dest,
-        spec.tasks_index_dest,
-        spec.review_index_dest,
-        spec.quarter_dest,
-        spec.month_dest,
-    ]
+    assert dests == snapshot(
+        [
+            "year-2026",
+            "projects-index-2026-01",
+            "meetings-index-2026",
+            "tasks-index-2026-Q1",
+            "review-index-2026",
+            "quarter-2026-Q1",
+            "month-2026-01",
+        ]
+    )
     assert plotter.outlines() == outline_entries(pages)
     titles = [title for title, _dest in plotter.outlines()]
     assert titles.count("Tasks Q1 2026") == 1
@@ -138,15 +141,34 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     tasks_titles = [f"Tasks Q{quarter} {spec.year}" for quarter in range(1, 5)]
     pressed_tasks = [page for page in pages if page.kind == "tasks_index"]
 
-    assert titles == [
-        str(spec.year),
-        "Projects",
-        "Meetings",
-        *tasks_titles,
-        "Review",
-        *quarter_titles,
-        *month_titles,
-    ]
+    assert titles == snapshot(
+        [
+            "2026",
+            "Projects",
+            "Meetings",
+            "Tasks Q1 2026",
+            "Tasks Q2 2026",
+            "Tasks Q3 2026",
+            "Tasks Q4 2026",
+            "Review",
+            "Q1 2026",
+            "Q2 2026",
+            "Q3 2026",
+            "Q4 2026",
+            "January 2026",
+            "February 2026",
+            "March 2026",
+            "April 2026",
+            "May 2026",
+            "June 2026",
+            "July 2026",
+            "August 2026",
+            "September 2026",
+            "October 2026",
+            "November 2026",
+            "December 2026",
+        ]
+    )
     assert [title for title, dest in entries if dest_kind[dest] == "tasks_index"] == [
         page.title for page in pressed_tasks
     ]
@@ -197,15 +219,17 @@ def test_press_pdf_year_planner_outline_when_enabled(tmp_path: Path):
     press(spec, out)
     reader = PdfReader(out)
     titles = _outline_titles(reader)
-    assert titles == [
-        "2026",
-        "Projects",
-        "Meetings",
-        "Tasks Q1 2026",
-        "Review",
-        "Q1 2026",
-        "January 2026",
-    ]
+    assert titles == snapshot(
+        [
+            "2026",
+            "Projects",
+            "Meetings",
+            "Tasks Q1 2026",
+            "Review",
+            "Q1 2026",
+            "January 2026",
+        ]
+    )
     assert all(title.lower() != "cover" for title in titles)
     first = next(item for item in reader.outline if isinstance(item, Destination))
     assert reader.get_destination_page_number(first) == 1
@@ -250,20 +274,18 @@ def test_bullet_journal_january_outline_hubs():
     entries = outline_entries(pages)
     dests = [dest for _title, dest in entries]
     dest_kind = {page.dest: page.kind for page in pages}
-    assert [dest_kind[dest] for dest in dests] == [
-        "bujo_key",
-        "bujo_index",
-        "future_log",
-        "monthly_log",
-        "collection",
-    ]
-    assert dests == [
-        spec.bujo_key_dest,
-        spec.bujo_index_dest,
-        spec.bujo_future_dest,
-        spec.dest_for_month(1),
-        spec.dest_for_bujo_collection(1),
-    ]
+    assert [dest_kind[dest] for dest in dests] == snapshot(
+        ["bujo_key", "bujo_index", "future_log", "monthly_log", "collection"]
+    )
+    assert dests == snapshot(
+        [
+            "bujo-key-2026",
+            "bujo-index-2026-01",
+            "bujo-future-2026-01",
+            "month-2026-01",
+            "bujo-col-2026-01",
+        ]
+    )
     assert spec.cover_dest not in dests
     assert spec.dest_for_habits(1) not in dests
     assert spec.dest_for_month_tasks(1) not in dests

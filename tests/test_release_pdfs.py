@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 import pytest
+from inline_snapshot import snapshot
 
 from parch.devices import known_device_ids
 from parch.services.release_pdfs import (
@@ -17,7 +18,7 @@ from parch.services.release_pdfs import (
 
 def test_pressable_shards_json():
     shards = matrix_shards()
-    assert shards == [{"device": "supernote-nomad"}]
+    assert shards == snapshot([{"device": "supernote-nomad"}])
     assert json.loads(matrix_json()) == shards
     assert PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
 

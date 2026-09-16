@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from inline_snapshot import snapshot
 from pypdf import PdfReader
 
 from parch.books import ProjectsNotebook, YearPlanner, book_for
@@ -12,7 +13,7 @@ from parch.spec import Spec
 def test_projects_notebook_is_cover_then_projects():
     spec = Spec(notes_pages=1, book="projects-notebook")
     pages = ProjectsNotebook().pages(spec)
-    assert [page.kind for page in pages[:2]] == ["cover", "projects_index"]
+    assert [page.kind for page in pages[:2]] == snapshot(["cover", "projects_index"])
     assert {page.kind for page in pages} == {"cover", "projects_index", "project"}
     assert len(pages) == 1 + spec.project_index_pages + spec.project_count
 

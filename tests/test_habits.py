@@ -1,4 +1,5 @@
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.components import HabitGrid
@@ -23,14 +24,31 @@ def test_habit_pages_follow_each_month():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[143:147] == [
-        "month-2026-01",
-        "month-2026-01-habits",
-        "month-2026-02",
-        "month-2026-02-habits",
-    ]
+    assert dests[143:147] == snapshot(
+        [
+            "month-2026-01",
+            "month-2026-01-habits",
+            "month-2026-02",
+            "month-2026-02-habits",
+        ]
+    )
     habits = [name for name in dests if name.endswith("-habits")]
-    assert habits == [f"month-2026-{month:02d}-habits" for month in range(1, 13)]
+    assert habits == snapshot(
+        [
+            "month-2026-01-habits",
+            "month-2026-02-habits",
+            "month-2026-03-habits",
+            "month-2026-04-habits",
+            "month-2026-05-habits",
+            "month-2026-06-habits",
+            "month-2026-07-habits",
+            "month-2026-08-habits",
+            "month-2026-09-habits",
+            "month-2026-10-habits",
+            "month-2026-11-habits",
+            "month-2026-12-habits",
+        ]
+    )
 
     july = next(page for page in pages if page.dest == "month-2026-07-habits")
     assert july.kind == "habits"
@@ -40,19 +58,21 @@ def test_habit_pages_follow_each_month():
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)
     labels = [label for label, _ in strip_items(july)]
-    assert labels == [
-        "Year",
-        "Quar",
-        "Mon",
-        "Habit",
-        "Week",
-        "Rev",
-        "Day",
-        "Notes",
-        "Proj",
-        "Meet",
-        "Task",
-    ]
+    assert labels == snapshot(
+        [
+            "Year",
+            "Quar",
+            "Mon",
+            "Habit",
+            "Week",
+            "Rev",
+            "Day",
+            "Notes",
+            "Proj",
+            "Meet",
+            "Task",
+        ]
+    )
 
     grid = next(item for item in july.components if isinstance(item, HabitGrid))
     assert grid.days == 31
