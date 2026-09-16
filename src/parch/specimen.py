@@ -76,7 +76,7 @@ def gallery_groups(
 GALLERY_GROUPS = gallery_groups()
 GALLERY_STEMS = tuple(stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems)
 
-PREVIEW_DPI = 96
+PREVIEW_DPI = 192
 
 
 def catalog_dest(workdir: str | Path) -> Path:
