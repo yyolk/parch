@@ -14,7 +14,7 @@ from parch.spec import Spec
 
 
 class ReviewSection:
-    """``paint_review_index`` week-chip grid plus ``paint_review`` dests; after Tasks in YearPlanner."""
+    """``paint_review_index`` week-chip grid plus ``paint_review`` dests; after days+notes in YearPlanner."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

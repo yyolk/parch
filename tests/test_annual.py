@@ -8,23 +8,20 @@ from parch.spec import Spec
 def test_annual_page_and_year_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:4]] == [
+    dests = [page.dest for page in pages]
+    assert dests[:7] == [
         "cover",
         "year-2026",
-        "projects-index-2026-01",
-        "projects-2026-01",
-    ]
-    assert [page.dest for page in pages[3:11]] == [
-        f"projects-2026-{slot:02d}" for slot in range(1, 9)
-    ]
-    assert [page.dest for page in pages[11:12]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[139:144]] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
         "quarter-2026-Q4",
         "month-2026-01",
     ]
+    assert dests.index("review-index-2026") > dests.index("2026-12-31")
+    assert dests.index("projects-index-2026-01") > dests.index("review-2026-W53")
+    assert dests.index("meetings-index-2026") > dests.index("projects-2026-08")
+    assert dests.index("tasks-index-2026-Q1") > dests.index("meeting-2026-16")
     cover = pages[0]
     assert cover.components[0].cta_dest == "year-2026"
 
@@ -68,15 +65,16 @@ def test_annual_paint_links_all_months():
     dests = plotter.dests()
     links = plotter.links()
     assert dests[1] == "year-2026"
-    assert dests[2] == "projects-index-2026-01"
-    assert dests[3:11] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
-    assert dests[11] == "meetings-index-2026"
-    assert dests[139:143] == [
+    assert dests[2:6] == [
         "quarter-2026-Q1",
         "quarter-2026-Q2",
         "quarter-2026-Q3",
         "quarter-2026-Q4",
     ]
+    assert dests.index("review-index-2026") > dests.index("2026-12-31")
+    assert dests.index("projects-index-2026-01") > dests.index("review-2026-W53")
+    assert dests.index("meetings-index-2026") > dests.index("projects-2026-08")
+    assert dests.index("tasks-index-2026-Q1") > dests.index("meeting-2026-16")
     assert "year-2026" in links
     assert "quarter-2026-Q1" in links
     assert "quarter-2026-Q3" in links

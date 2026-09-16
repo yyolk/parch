@@ -36,19 +36,6 @@ from parch.spec import Spec
 def _year_dests(*, notes_pages: int) -> list[str]:
     spec = Spec()
     dests = ["cover", spec.year_dest]
-    dests.extend(
-        spec.dest_for_projects_index(page)
-        for page in range(1, spec.project_index_pages + 1)
-    )
-    dests.extend(
-        spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1)
-    )
-    dests.append(spec.meetings_index_dest)
-    dests.extend(
-        spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1)
-    )
-    dests.extend(page.dest for page in TasksSection(spec).pages())
-    dests.extend(page.dest for page in ReviewSection(spec).pages())
     dests.extend(spec.dest_for_quarter(quarter) for quarter in spec.pressed_quarters())
     for month in spec.months:
         dests.append(spec.dest_for_month(month))
@@ -61,6 +48,19 @@ def _year_dests(*, notes_pages: int) -> list[str]:
             dests.append(day.isoformat())
             if notes_pages:
                 dests.append(f"{day.isoformat()}-notes-1")
+    dests.extend(page.dest for page in ReviewSection(spec).pages())
+    dests.extend(
+        spec.dest_for_projects_index(page)
+        for page in range(1, spec.project_index_pages + 1)
+    )
+    dests.extend(
+        spec.dest_for_project(slot) for slot in range(1, spec.project_count + 1)
+    )
+    dests.append(spec.meetings_index_dest)
+    dests.extend(
+        spec.dest_for_meeting(slot) for slot in range(1, spec.meeting_count + 1)
+    )
+    dests.extend(page.dest for page in TasksSection(spec).pages())
     return dests
 
 
