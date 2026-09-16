@@ -177,22 +177,31 @@ def test_back_paints_grid_without_header():
 
 def test_layout_skips_planner_slab_and_nav():
     spec = Spec(engineering_sheets=1)
-    page = EngineeringPadSection(spec).pages()[0]
-    ink = RecordingPlotter()
-    PlannerLayout().paint(page, ink, NOMAD)
-    texts = _texts(ink)
-    assert "Year" not in texts
-    assert "Quar" not in texts
-    slabs = [
-        op
-        for op in ink.ops
-        if op[0] == "rect"
-        and op[3]
-        and op[1].y == pytest.approx(NOMAD.content_top)
-        and op[1].h == pytest.approx(HEADER_H)
-        and op[5] == pytest.approx(INK)
-    ]
-    assert not slabs
+    for page in EngineeringPadSection(spec).pages():
+        ink = RecordingPlotter()
+        PlannerLayout().paint(page, ink, NOMAD)
+        texts = _texts(ink)
+        assert "Year" not in texts
+        assert "Quar" not in texts
+        slabs = [
+            op
+            for op in ink.ops
+            if op[0] == "rect"
+            and op[3]
+            and op[1].y == pytest.approx(NOMAD.content_top)
+            and op[1].h == pytest.approx(HEADER_H)
+            and op[5] == pytest.approx(INK)
+        ]
+        assert not slabs
+        top_fills = [
+            op
+            for op in ink.ops
+            if op[0] == "rect"
+            and op[3]
+            and op[1].y == pytest.approx(0.0)
+            and op[1].w == pytest.approx(NOMAD.page_width)
+        ]
+        assert not top_fills
 
 
 def test_press_example_toml_is_two_duplex_pages(tmp_path: Path):
