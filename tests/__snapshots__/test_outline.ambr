@@ -1,0 +1,556 @@
+# serializer version: 1
+# name: test_bullet_journal_january_outline_hubs
+  list([
+    tuple(
+      'Key',
+      'bujo-key-2026',
+    ),
+    tuple(
+      'Index',
+      'bujo-index-2026-01',
+    ),
+    tuple(
+      'Future log',
+      'bujo-future-2026-01',
+    ),
+    tuple(
+      'January 2026',
+      'month-2026-01',
+    ),
+    tuple(
+      'Collections',
+      'bujo-col-2026-01',
+    ),
+  ])
+# ---
+# name: test_year_planner_full_year_outline_once_indexes_each_quarter_month
+  list([
+    tuple(
+      '2026',
+      'year-2026',
+    ),
+    tuple(
+      'Projects',
+      'projects-index-2026-01',
+    ),
+    tuple(
+      'Meetings',
+      'meetings-index-2026',
+    ),
+    tuple(
+      'Tasks Q1 2026',
+      'tasks-index-2026-Q1',
+    ),
+    tuple(
+      'Tasks Q2 2026',
+      'tasks-index-2026-Q2',
+    ),
+    tuple(
+      'Tasks Q3 2026',
+      'tasks-index-2026-Q3',
+    ),
+    tuple(
+      'Tasks Q4 2026',
+      'tasks-index-2026-Q4',
+    ),
+    tuple(
+      'Review',
+      'review-index-2026',
+    ),
+    tuple(
+      'Q1 2026',
+      'quarter-2026-Q1',
+    ),
+    tuple(
+      'Q2 2026',
+      'quarter-2026-Q2',
+    ),
+    tuple(
+      'Q3 2026',
+      'quarter-2026-Q3',
+    ),
+    tuple(
+      'Q4 2026',
+      'quarter-2026-Q4',
+    ),
+    tuple(
+      'January 2026',
+      'month-2026-01',
+    ),
+    tuple(
+      'February 2026',
+      'month-2026-02',
+    ),
+    tuple(
+      'March 2026',
+      'month-2026-03',
+    ),
+    tuple(
+      'April 2026',
+      'month-2026-04',
+    ),
+    tuple(
+      'May 2026',
+      'month-2026-05',
+    ),
+    tuple(
+      'June 2026',
+      'month-2026-06',
+    ),
+    tuple(
+      'July 2026',
+      'month-2026-07',
+    ),
+    tuple(
+      'August 2026',
+      'month-2026-08',
+    ),
+    tuple(
+      'September 2026',
+      'month-2026-09',
+    ),
+    tuple(
+      'October 2026',
+      'month-2026-10',
+    ),
+    tuple(
+      'November 2026',
+      'month-2026-11',
+    ),
+    tuple(
+      'December 2026',
+      'month-2026-12',
+    ),
+  ])
+# ---
+# name: test_year_planner_outlines_annual_indexes_quarter_month[ledger]
+  list([
+    tuple(
+      'cover',
+      'cover',
+      '2026',
+    ),
+    tuple(
+      'annual',
+      'year-2026',
+      '2026',
+    ),
+    tuple(
+      'projects_index',
+      'projects-index-2026-01',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-01',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-02',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-03',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-04',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-05',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-06',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-07',
+      'Projects',
+    ),
+    tuple(
+      'project',
+      'projects-2026-08',
+      'Projects',
+    ),
+    tuple(
+      'meetings_index',
+      'meetings-index-2026',
+      'Meetings',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-01',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-02',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-03',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-04',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-05',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-06',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-07',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-08',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-09',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-10',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-11',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-12',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-13',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-14',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-15',
+      'Meeting',
+    ),
+    tuple(
+      'meeting',
+      'meeting-2026-16',
+      'Meeting',
+    ),
+    tuple(
+      'tasks_index',
+      'tasks-index-2026-Q1',
+      'Tasks Q1 2026',
+    ),
+    tuple(
+      'task',
+      'tasks-2026-W01',
+      'Tasks',
+    ),
+    tuple(
+      'task',
+      'tasks-2026-W02',
+      'Tasks',
+    ),
+    tuple(
+      'task',
+      'tasks-2026-W03',
+      'Tasks',
+    ),
+    tuple(
+      'task',
+      'tasks-2026-W04',
+      'Tasks',
+    ),
+    tuple(
+      'task',
+      'tasks-2026-W05',
+      'Tasks',
+    ),
+    tuple(
+      'review_index',
+      'review-index-2026',
+      'Review',
+    ),
+    tuple(
+      'review',
+      'review-2026-W01',
+      'Review',
+    ),
+    tuple(
+      'review',
+      'review-2026-W02',
+      'Review',
+    ),
+    tuple(
+      'review',
+      'review-2026-W03',
+      'Review',
+    ),
+    tuple(
+      'review',
+      'review-2026-W04',
+      'Review',
+    ),
+    tuple(
+      'review',
+      'review-2026-W05',
+      'Review',
+    ),
+    tuple(
+      'quarter',
+      'quarter-2026-Q1',
+      'Q1 2026',
+    ),
+    tuple(
+      'month',
+      'month-2026-01',
+      'January 2026',
+    ),
+    tuple(
+      'habits',
+      'month-2026-01-habits',
+      'Habits · January 2026',
+    ),
+    tuple(
+      'weekly',
+      'week-2026-W01',
+      'Week 01',
+    ),
+    tuple(
+      'daily',
+      '2026-01-01',
+      'Thu 1',
+    ),
+    tuple(
+      'daily',
+      '2026-01-02',
+      'Fri 2',
+    ),
+    tuple(
+      'daily',
+      '2026-01-03',
+      'Sat 3',
+    ),
+    tuple(
+      'daily',
+      '2026-01-04',
+      'Sun 4',
+    ),
+    tuple(
+      'weekly',
+      'week-2026-W02',
+      'Week 02',
+    ),
+    tuple(
+      'daily',
+      '2026-01-05',
+      'Mon 5',
+    ),
+    tuple(
+      'daily',
+      '2026-01-06',
+      'Tue 6',
+    ),
+    tuple(
+      'daily',
+      '2026-01-07',
+      'Wed 7',
+    ),
+    tuple(
+      'daily',
+      '2026-01-08',
+      'Thu 8',
+    ),
+    tuple(
+      'daily',
+      '2026-01-09',
+      'Fri 9',
+    ),
+    tuple(
+      'daily',
+      '2026-01-10',
+      'Sat 10',
+    ),
+    tuple(
+      'daily',
+      '2026-01-11',
+      'Sun 11',
+    ),
+    tuple(
+      'weekly',
+      'week-2026-W03',
+      'Week 03',
+    ),
+    tuple(
+      'daily',
+      '2026-01-12',
+      'Mon 12',
+    ),
+    tuple(
+      'daily',
+      '2026-01-13',
+      'Tue 13',
+    ),
+    tuple(
+      'daily',
+      '2026-01-14',
+      'Wed 14',
+    ),
+    tuple(
+      'daily',
+      '2026-01-15',
+      'Thu 15',
+    ),
+    tuple(
+      'daily',
+      '2026-01-16',
+      'Fri 16',
+    ),
+    tuple(
+      'daily',
+      '2026-01-17',
+      'Sat 17',
+    ),
+    tuple(
+      'daily',
+      '2026-01-18',
+      'Sun 18',
+    ),
+    tuple(
+      'weekly',
+      'week-2026-W04',
+      'Week 04',
+    ),
+    tuple(
+      'daily',
+      '2026-01-19',
+      'Mon 19',
+    ),
+    tuple(
+      'daily',
+      '2026-01-20',
+      'Tue 20',
+    ),
+    tuple(
+      'daily',
+      '2026-01-21',
+      'Wed 21',
+    ),
+    tuple(
+      'daily',
+      '2026-01-22',
+      'Thu 22',
+    ),
+    tuple(
+      'daily',
+      '2026-01-23',
+      'Fri 23',
+    ),
+    tuple(
+      'daily',
+      '2026-01-24',
+      'Sat 24',
+    ),
+    tuple(
+      'daily',
+      '2026-01-25',
+      'Sun 25',
+    ),
+    tuple(
+      'weekly',
+      'week-2026-W05',
+      'Week 05',
+    ),
+    tuple(
+      'daily',
+      '2026-01-26',
+      'Mon 26',
+    ),
+    tuple(
+      'daily',
+      '2026-01-27',
+      'Tue 27',
+    ),
+    tuple(
+      'daily',
+      '2026-01-28',
+      'Wed 28',
+    ),
+    tuple(
+      'daily',
+      '2026-01-29',
+      'Thu 29',
+    ),
+    tuple(
+      'daily',
+      '2026-01-30',
+      'Fri 30',
+    ),
+    tuple(
+      'daily',
+      '2026-01-31',
+      'Sat 31',
+    ),
+  ])
+# ---
+# name: test_year_planner_outlines_annual_indexes_quarter_month[outline]
+  list([
+    tuple(
+      '2026',
+      'year-2026',
+    ),
+    tuple(
+      'Projects',
+      'projects-index-2026-01',
+    ),
+    tuple(
+      'Meetings',
+      'meetings-index-2026',
+    ),
+    tuple(
+      'Tasks Q1 2026',
+      'tasks-index-2026-Q1',
+    ),
+    tuple(
+      'Review',
+      'review-index-2026',
+    ),
+    tuple(
+      'Q1 2026',
+      'quarter-2026-Q1',
+    ),
+    tuple(
+      'January 2026',
+      'month-2026-01',
+    ),
+  ])
+# ---

@@ -170,18 +170,17 @@ def test_review_dest_page():
     assert ("Week", "week-2026-W01") in strip_items(page)
 
 
-def test_review_section_order_index_then_weeks():
+def test_review_section_order_index_then_weeks(snapshot):
     spec = Spec(notes_pages=1)
     dests = [page.dest for page in ReviewSection(spec).pages()]
-    assert dests[0] == "review-index-2026"
-    assert dests[1:] == [f"review-2026-W{week:02d}" for week in range(1, 54)]
+    assert dests == snapshot
     assert dests.count("review-index-2026") == 1
     assert [page.kind for page in ReviewSection(spec).pages()].count(
         "review_index"
     ) == 1
     assert [page.kind for page in ReviewSection(spec).pages()].count("review") == 53
     week_dests = [dest for dest in dests if dest.startswith("review-2026-W")]
-    assert week_dests == [f"review-2026-W{week:02d}" for week in range(1, 54)]
+    assert len(week_dests) == 53
     assert len(week_dests) == len(set(week_dests))
     july = next(p for p in ReviewSection(spec).pages() if p.dest == "review-2026-W29")
     well = next(item for item in july.components if isinstance(item, ReviewWeekPage))

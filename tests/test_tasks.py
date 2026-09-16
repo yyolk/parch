@@ -134,18 +134,16 @@ def test_tasks_dest_page():
     assert ("Week", "week-2026-W01") in strip_items(page)
 
 
-def test_tasks_section_order_indexes_then_weeks():
+def test_tasks_section_order_indexes_then_weeks(snapshot):
     spec = Spec(notes_pages=1)
     dests = [page.dest for page in TasksSection(spec).pages()]
-    assert dests[0] == "tasks-index-2026-Q1"
-    assert dests[1:15] == [f"tasks-2026-W{week:02d}" for week in range(1, 15)]
-    assert dests[15] == "tasks-index-2026-Q2"
+    assert dests == snapshot
     assert dests.count("tasks-index-2026-Q1") == 1
     assert dests.count("tasks-index-2026-Q4") == 1
     assert [page.kind for page in TasksSection(spec).pages()].count("tasks_index") == 4
     assert [page.kind for page in TasksSection(spec).pages()].count("task") == 53
     week_dests = [dest for dest in dests if dest.startswith("tasks-2026-W")]
-    assert week_dests == [f"tasks-2026-W{week:02d}" for week in range(1, 54)]
+    assert len(week_dests) == 53
     assert len(week_dests) == len(set(week_dests))
     july = next(p for p in TasksSection(spec).pages() if p.dest == "tasks-2026-W29")
     well = next(item for item in july.components if isinstance(item, TasksWeekPage))

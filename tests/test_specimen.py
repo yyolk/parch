@@ -33,9 +33,9 @@ from parch.specimen import (
 )
 
 
-def test_catalog_index_html_is_device_list():
+def test_catalog_index_html_is_device_list(snapshot):
     html = catalog_index_html(["supernote-nomad"])
-    assert 'href="supernote-nomad/"' in html
+    assert html == snapshot
     assert "<figure>" not in html
     assert ".png" not in html
     assert "<script" not in html
@@ -51,36 +51,25 @@ def test_gallery_stems_follow_groups():
     )
 
 
-def test_catalog_index_html_lists_both_devices():
+def test_catalog_index_html_lists_both_devices(snapshot):
     html = catalog_index_html(CATALOG_DEVICE_IDS)
-    assert 'href="supernote-nomad/"' in html
-    assert 'href="kindle-scribe/"' in html
+    assert html == snapshot
     assert html.index("supernote-nomad") < html.index("kindle-scribe")
 
 
-def test_specimen_index_html_is_png_gallery():
+def test_specimen_index_html_is_png_gallery(snapshot):
     html = specimen_index_html("supernote-nomad")
-    assert "supernote-nomad" in html
+    assert html == snapshot
     assert "<script" not in html
-    assert 'href="../"' in html
     assert html.count("<figure>") == len(GALLERY_STEMS)
     assert html.count("<a href=") == 1 + len(GALLERY_GROUPS)
-    assert "figure>input:checked+label img{width:auto;max-width:100%}" in html
     for stem in GALLERY_STEMS:
-        assert f'src="{stem}.png"' in html
         assert f'href="{stem}.png"' not in html
-        assert (
-            f'<figure><input type="checkbox" id="{stem}">'
-            f'<label for="{stem}"><img src="{stem}.png" alt="{stem}"></label>'
-        ) in html
 
 
-def test_specimen_index_html_section_anchors():
+def test_specimen_index_html_section_anchors(snapshot):
     html = specimen_index_html("kindle-scribe")
-    for section_id, title, _stems in GALLERY_GROUPS:
-        assert f'<section id="{section_id}">' in html
-        assert f"<h2>{title}</h2>" in html
-        assert f'<a href="#{section_id}">{title}</a>' in html
+    assert html == snapshot
     assert html.index('href="#year-planner"') < html.index('id="year-planner"')
     assert html.index('id="year-planner"') < html.index('id="engineering-notebook"')
     assert html.index('id="projects-notebook"') < html.index('id="steno-pad"')
@@ -164,59 +153,40 @@ def test_specimen_index_html_omits_footer_without_commit():
     assert "github.com/" not in html
 
 
-def test_sample_dests_and_pages_for_january():
+def test_sample_dests_and_pages_for_january(snapshot):
     spec = specimen_spec("supernote-nomad")
     assert spec.months == (1,)
     assert spec.notes_pages == 1
     dests = sample_dests(spec)
-    assert dests["cover"] == "cover"
-    assert dests["annual"] == "year-2026"
-    assert dests["projects"] == "projects-index-2026-01"
-    assert dests["project-1"] == "projects-2026-01"
-    assert dests["meetings"] == "meetings-index-2026"
-    assert dests["meeting-1"] == "meeting-2026-01"
-    assert dests["tasks"] == "tasks-index-2026-Q1"
-    assert dests["tasks-w01"] == "tasks-2026-W01"
-    assert dests["review"] == "review-index-2026"
-    assert dests["review-w01"] == "review-2026-W01"
-    assert dests["quarterly-q1"] == "quarter-2026-Q1"
-    assert dests["monthly-jan"] == "month-2026-01"
-    assert dests["habits-jan"] == "month-2026-01-habits"
-    assert dests["weekly-w01"] == "week-2026-W01"
-    assert dests["daily-jan1"] == "2026-01-01"
-    assert dests["notes-jan1"] == "2026-01-01-notes-1"
+    assert dests == snapshot(name="dests")
     numbers = sample_page_numbers(spec)
+    assert numbers == snapshot(name="pages")
     assert set(numbers) == set(SAMPLE_STEMS)
-    assert numbers["cover"] == 1
-    assert numbers["annual"] == 2
     assert all(page >= 1 for page in numbers.values())
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
 
 
-def test_projects_dests_and_pages():
+def test_projects_dests_and_pages(snapshot):
     spec = projects_specimen_spec("kindle-scribe")
     assert spec.book == "projects-notebook"
     assert spec.device == "kindle-scribe"
     dests = projects_dests(spec)
-    assert dests["projects-cover"] == "cover"
-    assert (
-        dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
-    )
-    assert dests["projects-project-1"] == spec.dest_for_project(1) == "projects-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["projects-index"] == spec.projects_index_dest
+    assert dests["projects-project-1"] == spec.dest_for_project(1)
     numbers = projects_page_numbers(spec)
+    assert numbers == snapshot(name="pages")
     assert set(numbers) == set(PROJECTS_STEMS)
-    assert numbers["projects-cover"] == 1
-    assert numbers["projects-index"] == 2
-    assert numbers["projects-project-1"] == 3
 
 
-def test_steno_dests_and_pages():
+def test_steno_dests_and_pages(snapshot):
     spec = steno_specimen_spec("supernote-nomad")
     assert spec.steno_sheets == 1
     dests = steno_dests(spec)
-    assert dests["steno"] == spec.dest_for_steno_pad(1) == "steno-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["steno"] == spec.dest_for_steno_pad(1)
     numbers = steno_page_numbers(spec)
-    assert numbers == {"steno": 1}
+    assert numbers == snapshot(name="pages")
 
 
 def test_specimen_cli_help(capsys):

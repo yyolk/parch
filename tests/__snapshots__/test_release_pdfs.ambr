@@ -1,0 +1,15 @@
+# serializer version: 1
+# name: test_module_prints_matrix_json
+  list([
+    dict({
+      'device': 'supernote-nomad',
+    }),
+  ])
+# ---
+# name: test_pressable_shards_json
+  list([
+    dict({
+      'device': 'supernote-nomad',
+    }),
+  ])
+# ---
