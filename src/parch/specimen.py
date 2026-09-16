@@ -26,23 +26,24 @@ from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
+# After cover, Year planner figures follow planner_nav.
 SAMPLE_STEMS = (
     "cover",
     "annual",
     "quarterly-q1",
     "monthly-jan",
+    "habits-jan",
     "weekly-w01",
+    "review",
+    "review-w01",
     "daily-jan1",
     "notes-jan1",
     "projects",
     "project-1",
-    "habits-jan",
-    "review",
-    "review-w01",
-    "tasks",
-    "tasks-w01",
     "meetings",
     "meeting-1",
+    "tasks",
+    "tasks-w01",
 )
 
 # Engineering notebook — cover + duplex faces, not YearPlanner dests.
