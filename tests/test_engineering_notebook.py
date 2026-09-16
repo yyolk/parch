@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from inline_snapshot import snapshot
 from pypdf import PdfReader
 
 from parch.books import (
@@ -20,13 +21,15 @@ from parch.spec import Spec
 def test_engineering_notebook_is_cover_then_duplex_pads():
     spec = Spec(book="engineering-notebook", engineering_sheets=2, title="Engineering")
     pages = EngineeringNotebook().pages(spec)
-    assert [page.kind for page in pages] == [
-        "cover",
-        "engineering_front",
-        "engineering_back",
-        "engineering_front",
-        "engineering_back",
-    ]
+    assert [page.kind for page in pages] == snapshot(
+        [
+            "cover",
+            "engineering_front",
+            "engineering_back",
+            "engineering_front",
+            "engineering_back",
+        ]
+    )
     assert len(pages) == 1 + 2 * spec.engineering_sheets
 
     cover = pages[0].components[0]
@@ -78,8 +81,7 @@ def test_plot_pages_walks_a_section_callable_without_book():
         ramp=EffectiveRamp(),
         device=spec.device,
     )
-    assert plotter.dests() == [
-        spec.dest_for_engineering_pad(1, "front"),
-        spec.dest_for_engineering_pad(1, "back"),
-    ]
+    assert plotter.dests() == snapshot(
+        ["engineering-2026-01-front", "engineering-2026-01-back"]
+    )
     assert "cover" not in plotter.dests()

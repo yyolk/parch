@@ -1,4 +1,5 @@
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.components import ProjectsBoard, ProjectsIndex
@@ -145,9 +146,39 @@ def test_projects_index_tickets_and_proj_nav():
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
     assert dests[2] == "projects-index-2026-01"
-    assert dests[3:11] == [f"projects-2026-{slot:02d}" for slot in range(1, 9)]
+    assert dests[3:11] == snapshot(
+        [
+            "projects-2026-01",
+            "projects-2026-02",
+            "projects-2026-03",
+            "projects-2026-04",
+            "projects-2026-05",
+            "projects-2026-06",
+            "projects-2026-07",
+            "projects-2026-08",
+        ]
+    )
     assert dests[11] == "meetings-index-2026"
-    assert dests[12:28] == [f"meeting-2026-{slot:02d}" for slot in range(1, 17)]
+    assert dests[12:28] == snapshot(
+        [
+            "meeting-2026-01",
+            "meeting-2026-02",
+            "meeting-2026-03",
+            "meeting-2026-04",
+            "meeting-2026-05",
+            "meeting-2026-06",
+            "meeting-2026-07",
+            "meeting-2026-08",
+            "meeting-2026-09",
+            "meeting-2026-10",
+            "meeting-2026-11",
+            "meeting-2026-12",
+            "meeting-2026-13",
+            "meeting-2026-14",
+            "meeting-2026-15",
+            "meeting-2026-16",
+        ]
+    )
     assert dests[28] == "tasks-index-2026-Q1"
     assert dests[139] == "quarter-2026-Q1"
 
@@ -161,10 +192,21 @@ def test_projects_index_tickets_and_proj_nav():
     assert roster.year == 2026
     assert roster.dest == "projects-index-2026-01"
     assert len(roster.tickets) == 8
-    assert [ticket.dest for ticket in roster.tickets] == [
-        f"projects-2026-{slot:02d}" for slot in range(1, 9)
-    ]
-    assert [ticket.number for ticket in roster.tickets] == list(range(1, 9))
+    assert [ticket.dest for ticket in roster.tickets] == snapshot(
+        [
+            "projects-2026-01",
+            "projects-2026-02",
+            "projects-2026-03",
+            "projects-2026-04",
+            "projects-2026-05",
+            "projects-2026-06",
+            "projects-2026-07",
+            "projects-2026-08",
+        ]
+    )
+    assert [ticket.number for ticket in roster.tickets] == snapshot(
+        [1, 2, 3, 4, 5, 6, 7, 8]
+    )
 
     leaf = next(page for page in pages if page.dest == "projects-2026-03")
     assert leaf.kind == "project"
@@ -519,12 +561,37 @@ def test_projects_index_pages_knob():
     assert spec.project_count == 24
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[2:5] == [
-        "projects-index-2026-01",
-        "projects-index-2026-02",
-        "projects-index-2026-03",
-    ]
-    assert dests[5:29] == [f"projects-2026-{slot:02d}" for slot in range(1, 25)]
+    assert dests[2:5] == snapshot(
+        ["projects-index-2026-01", "projects-index-2026-02", "projects-index-2026-03"]
+    )
+    assert dests[5:29] == snapshot(
+        [
+            "projects-2026-01",
+            "projects-2026-02",
+            "projects-2026-03",
+            "projects-2026-04",
+            "projects-2026-05",
+            "projects-2026-06",
+            "projects-2026-07",
+            "projects-2026-08",
+            "projects-2026-09",
+            "projects-2026-10",
+            "projects-2026-11",
+            "projects-2026-12",
+            "projects-2026-13",
+            "projects-2026-14",
+            "projects-2026-15",
+            "projects-2026-16",
+            "projects-2026-17",
+            "projects-2026-18",
+            "projects-2026-19",
+            "projects-2026-20",
+            "projects-2026-21",
+            "projects-2026-22",
+            "projects-2026-23",
+            "projects-2026-24",
+        ]
+    )
     assert dests[29] == "meetings-index-2026"
     assert dests[157] == "quarter-2026-Q1"
 
@@ -539,7 +606,13 @@ def test_projects_index_pages_knob():
         ]
         for page in indexes
     ]
-    assert slices == [list(range(1, 9)), list(range(9, 17)), list(range(17, 25))]
+    assert slices == snapshot(
+        [
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16],
+            [17, 18, 19, 20, 21, 22, 23, 24],
+        ]
+    )
 
     page_two = next(
         item for item in indexes[1].components if isinstance(item, ProjectsIndex)

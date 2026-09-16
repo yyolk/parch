@@ -41,6 +41,7 @@ package = true
 
 [dependency-groups]
 dev = [
+    "inline-snapshot>=0.35.4",
     "pillow>=12.3.0",
     "pypdf>=6.16.2",
     "pytest>=8.0",
@@ -50,6 +51,12 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.inline-snapshot]
+# Rewrite snapshot() values with the same formatter as `uv run ruff format`.
+# Update/review: pytest --inline-snapshot=create|fix|trim|update|review|report
+# CI uses --inline-snapshot=disable (compare only; no source rewrite).
+format-command = "ruff format --stdin-filename {filename}"
 
 [tool.ruff]
 target-version = "py314"

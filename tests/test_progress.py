@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from inline_snapshot import snapshot
 
 from parch import progress
 from parch.books import (
@@ -112,10 +113,7 @@ def test_engineering_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     )
     spec = Spec(engineering_sheets=1)
     press(spec, tmp_path / "pad.pdf", plotter=RecordingPlotter())
-    assert ticks == [
-        (1, 2, "engineering_front"),
-        (2, 2, "engineering_back"),
-    ]
+    assert ticks == snapshot([(1, 2, "engineering_front"), (2, 2, "engineering_back")])
 
 
 def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
@@ -126,10 +124,7 @@ def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     )
     spec = Spec(steno_sheets=2)
     press(spec, tmp_path / "steno.pdf", plotter=RecordingPlotter())
-    assert ticks == [
-        (1, 2, "steno"),
-        (2, 2, "steno"),
-    ]
+    assert ticks == snapshot([(1, 2, "steno"), (2, 2, "steno")])
 
 
 def test_projects_notebook_plot_ticks_each_page(monkeypatch):

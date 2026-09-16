@@ -1,4 +1,5 @@
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.components import QuarterGrid
@@ -19,48 +20,48 @@ from parch.tracks import rows
 def test_quarter_page_and_nav():
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
-    assert [page.dest for page in pages[:4]] == [
-        "cover",
-        "year-2026",
-        "projects-index-2026-01",
-        "projects-2026-01",
-    ]
-    assert [page.dest for page in pages[11:12]] == ["meetings-index-2026"]
-    assert [page.dest for page in pages[139:144]] == [
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
-    ]
-    assert [page.dest for page in pages if page.dest.startswith("quarter-")] == [
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-    ]
+    assert [page.dest for page in pages[:4]] == snapshot(
+        ["cover", "year-2026", "projects-index-2026-01", "projects-2026-01"]
+    )
+    assert [page.dest for page in pages[11:12]] == snapshot(["meetings-index-2026"])
+    assert [page.dest for page in pages[139:144]] == snapshot(
+        [
+            "quarter-2026-Q1",
+            "quarter-2026-Q2",
+            "quarter-2026-Q3",
+            "quarter-2026-Q4",
+            "month-2026-01",
+        ]
+    )
+    assert [
+        page.dest for page in pages if page.dest.startswith("quarter-")
+    ] == snapshot(
+        ["quarter-2026-Q1", "quarter-2026-Q2", "quarter-2026-Q3", "quarter-2026-Q4"]
+    )
 
     quarter = next(page for page in pages if page.dest == "quarter-2026-Q1")
     assert quarter.kind == "quarter"
     assert quarter.title == "Q1 2026"
     assert strip_active(quarter.kind) == "Quar"
-    assert strip_items(quarter) == (
-        ("Year", "year-2026"),
-        ("Quar", "quarter-2026-Q1"),
-        ("Mon", "month-2026-01"),
-        ("Habit", "month-2026-01-habits"),
-        ("Week", "week-2026-W01"),
-        ("Rev", "review-index-2026"),
-        ("Day", "2026-01-01"),
-        ("Notes", "2026-01-01-notes-1"),
-        ("Proj", "projects-index-2026-01"),
-        ("Meet", "meetings-index-2026"),
-        ("Task", "tasks-index-2026-Q1"),
+    assert strip_items(quarter) == snapshot(
+        (
+            ("Year", "year-2026"),
+            ("Quar", "quarter-2026-Q1"),
+            ("Mon", "month-2026-01"),
+            ("Habit", "month-2026-01-habits"),
+            ("Week", "week-2026-W01"),
+            ("Rev", "review-index-2026"),
+            ("Day", "2026-01-01"),
+            ("Notes", "2026-01-01-notes-1"),
+            ("Proj", "projects-index-2026-01"),
+            ("Meet", "meetings-index-2026"),
+            ("Task", "tasks-index-2026-Q1"),
+        )
     )
 
     grid = next(item for item in quarter.components if isinstance(item, QuarterGrid))
     assert grid.quarter == 1
-    assert [month.name[:3] for month in grid.months] == ["Jan", "Feb", "Mar"]
+    assert [month.name[:3] for month in grid.months] == snapshot(["Jan", "Feb", "Mar"])
     assert grid.months[0].dest == "month-2026-01"
     assert any(
         cell.dest == "2026-01-15" for week in grid.months[0].weeks for cell in week

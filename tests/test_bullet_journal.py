@@ -2,6 +2,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from inline_snapshot import snapshot
 from pypdf import PdfReader
 
 from parch import ConfigError
@@ -64,9 +65,11 @@ def test_sealed_component_fields():
 def test_bullet_journal_is_cover_then_bujo_hubs():
     pages = BulletJournal().pages(_JAN)
     kinds = [page.kind for page in pages]
-    assert kinds[:5] == ["cover", "bujo_key", "bujo_index", "future_log", "monthly_log"]
-    assert kinds[5:8] == ["monthly_tasks", "habits", "rapid_log"]
-    assert kinds[-2:] == ["collection", "collection"]
+    assert kinds[:5] == snapshot(
+        ["cover", "bujo_key", "bujo_index", "future_log", "monthly_log"]
+    )
+    assert kinds[5:8] == snapshot(["monthly_tasks", "habits", "rapid_log"])
+    assert kinds[-2:] == snapshot(["collection", "collection"])
     assert kinds.count("rapid_log") == 31
     assert kinds.count("monthly_log") == 1
     assert kinds.count("habits") == 1
@@ -157,28 +160,28 @@ def test_january_outline_run_and_each():
     book.plot(_JAN, plotter)
     dests = [dest for _title, dest in plotter.outlines()]
     dest_kind = {page.dest: page.kind for page in pages}
-    assert dests == [
-        _JAN.bujo_key_dest,
-        _JAN.bujo_index_dest,
-        _JAN.bujo_future_dest,
-        _JAN.dest_for_month(1),
-        _JAN.dest_for_bujo_collection(1),
-    ]
+    assert dests == snapshot(
+        [
+            "bujo-key-2026",
+            "bujo-index-2026-01",
+            "bujo-future-2026-01",
+            "month-2026-01",
+            "bujo-col-2026-01",
+        ]
+    )
     assert plotter.outlines() == outline_entries(pages)
-    assert [dest_kind[dest] for dest in dests] == [
-        "bujo_key",
-        "bujo_index",
-        "future_log",
-        "monthly_log",
-        "collection",
-    ]
+    assert [dest_kind[dest] for dest in dests] == snapshot(
+        ["bujo_key", "bujo_index", "future_log", "monthly_log", "collection"]
+    )
     assert _JAN.cover_dest not in dests
     assert _JAN.dest_for_month_tasks(1) not in dests
     assert _JAN.dest_for_habits(1) not in dests
     assert _JAN.dest_for_day(date(2026, 1, 15)) not in dests
     assert _JAN.dest_for_bujo_collection(2) not in dests
     titles = [title for title, _dest in plotter.outlines()]
-    assert titles == ["Key", "Index", "Future log", "January 2026", "Collections"]
+    assert titles == snapshot(
+        ["Key", "Index", "Future log", "January 2026", "Collections"]
+    )
 
 
 def test_january_pressable_pdf(tmp_path: Path):

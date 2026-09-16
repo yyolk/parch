@@ -1,6 +1,7 @@
 from datetime import date
 
 import pytest
+from inline_snapshot import snapshot
 
 from parch.books import YearPlanner
 from parch.calendar import month_week_bands
@@ -78,19 +79,21 @@ def test_review_in_year_planner_after_tasks():
     assert kinds.count("review") == 53
     year = next(page for page in pages if page.kind == "annual")
     labels = [label for label, _ in strip_items(year)]
-    assert labels == [
-        "Year",
-        "Quar",
-        "Mon",
-        "Habit",
-        "Week",
-        "Rev",
-        "Day",
-        "Notes",
-        "Proj",
-        "Meet",
-        "Task",
-    ]
+    assert labels == snapshot(
+        [
+            "Year",
+            "Quar",
+            "Mon",
+            "Habit",
+            "Week",
+            "Rev",
+            "Day",
+            "Notes",
+            "Proj",
+            "Meet",
+            "Task",
+        ]
+    )
     assert dict(strip_items(year))["Rev"] == spec.review_index_dest
 
 
@@ -103,20 +106,22 @@ def test_review_index_page():
     assert index.year == 2026
     assert index.dest == "review-index-2026"
     assert [band.month for band in index.bands] == list(range(1, 13))
-    assert [band.name for band in index.bands] == [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ]
+    assert [band.name for band in index.bands] == snapshot(
+        [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ]
+    )
     assert [len(band.weeks) for band in index.bands] == [
         5,
         4,
