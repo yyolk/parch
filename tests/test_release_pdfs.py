@@ -15,9 +15,9 @@ from parch.services.release_pdfs import (
 )
 
 
-def test_pressable_shards_json():
+def test_pressable_shards_json(snapshot):
     shards = matrix_shards()
-    assert shards == [{"device": "supernote-nomad"}]
+    assert shards == snapshot
     assert json.loads(matrix_json()) == shards
     assert PRESSABLE_DEVICE_IDS == ("supernote-nomad",)
 
@@ -39,11 +39,12 @@ def test_toml_for_rejects_unpressable():
         toml_for("unknown-slate")
 
 
-def test_module_prints_matrix_json():
+def test_module_prints_matrix_json(snapshot):
     out = subprocess.check_output(
         [sys.executable, "-m", "parch.services.release_pdfs"],
         text=True,
     )
+    assert json.loads(out) == snapshot
     assert json.loads(out) == matrix_shards()
 
 

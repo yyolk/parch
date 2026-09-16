@@ -1,0 +1,18 @@
+# serializer version: 1
+# name: test_meeting_rows_knob
+  list([
+    'meetings-index-2026',
+    'meeting-2026-01',
+    'meeting-2026-02',
+    'meeting-2026-03',
+    'meeting-2026-04',
+    'meeting-2026-05',
+    'meeting-2026-06',
+    'meeting-2026-07',
+    'meeting-2026-08',
+    'meeting-2026-09',
+    'meeting-2026-10',
+    'meeting-2026-11',
+    'meeting-2026-12',
+  ])
+# ---

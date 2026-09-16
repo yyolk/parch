@@ -61,16 +61,13 @@ def test_sealed_component_fields():
     assert BUJO_ROW_MM == 5.0
 
 
-def test_bullet_journal_is_cover_then_bujo_hubs():
+def test_bullet_journal_is_cover_then_bujo_hubs(snapshot):
     pages = BulletJournal().pages(_JAN)
     kinds = [page.kind for page in pages]
-    assert kinds[:5] == ["cover", "bujo_key", "bujo_index", "future_log", "monthly_log"]
-    assert kinds[5:8] == ["monthly_tasks", "habits", "rapid_log"]
-    assert kinds[-2:] == ["collection", "collection"]
+    assert [(page.kind, page.dest) for page in pages] == snapshot
     assert kinds.count("rapid_log") == 31
     assert kinds.count("monthly_log") == 1
     assert kinds.count("habits") == 1
-    assert len(pages) == 1 + 1 + 1 + 1 + 1 + 1 + 1 + 31 + 2
 
     cover = pages[0].components[0]
     assert isinstance(cover, CoverTitle)
@@ -150,20 +147,14 @@ def test_january_future_log_is_one_band():
     assert band.months[0].dest == _JAN.dest_for_month(1)
 
 
-def test_january_outline_run_and_each():
+def test_january_outline_run_and_each(snapshot):
     book = BulletJournal()
     pages = book.pages(_JAN)
     plotter = RecordingPlotter()
     book.plot(_JAN, plotter)
     dests = [dest for _title, dest in plotter.outlines()]
     dest_kind = {page.dest: page.kind for page in pages}
-    assert dests == [
-        _JAN.bujo_key_dest,
-        _JAN.bujo_index_dest,
-        _JAN.bujo_future_dest,
-        _JAN.dest_for_month(1),
-        _JAN.dest_for_bujo_collection(1),
-    ]
+    assert plotter.outlines() == snapshot
     assert plotter.outlines() == outline_entries(pages)
     assert [dest_kind[dest] for dest in dests] == [
         "bujo_key",

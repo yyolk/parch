@@ -45,6 +45,7 @@ dev = [
     "pypdf>=6.16.2",
     "pytest>=8.0",
     "ruff>=0.16.7",
+    "syrupy>=6.0.0,<7",
 ]
 
 [tool.pytest.ini_options]
