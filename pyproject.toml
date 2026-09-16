@@ -1,6 +1,6 @@
 [project]
 name = "parch"
-version = "0.3.8"
+version = "0.3.9"
 description = "parch — fixed e-ink PDF pages (fpdf2 / Nomad)."
 readme = "README.md"
 license = { file = "LICENSE" }
