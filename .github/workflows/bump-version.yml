@@ -161,9 +161,14 @@ jobs:
             echo "Do not push tags by hand. Never retag."
           } > "$RUNNER_TEMP/pr-body.md"
 
-          gh pr create \
+          PR_URL="$(gh pr create \
             --base master \
             --head "bump/v${NEW_VER}" \
             --title "chore: bump version to ${NEW_VER}" \
             --label "$label" \
-            --body-file "$RUNNER_TEMP/pr-body.md"
+            --body-file "$RUNNER_TEMP/pr-body.md")"
+          echo "${PR_URL}"
+          {
+            echo
+            echo "PR: [#${PR_URL##*/}](${PR_URL})"
+          } >> "$GITHUB_STEP_SUMMARY"
