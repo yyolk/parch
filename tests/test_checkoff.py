@@ -11,6 +11,7 @@ from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.painters import (
     CHECKOFF_CIRCLE_SEGS,
     CHECKOFF_COL_PREF,
+    CHECKOFF_DEFAULT,
     CHECKOFF_DIAMOND_STROKE,
     CHECKOFF_GAP,
     CHECKOFF_LABEL_INSET,
@@ -19,6 +20,7 @@ from parch.layouts.planner.painters import (
     HAIR,
     INK,
     MUTED,
+    CheckoffStyle,
     checkoff_columns,
     checkoff_label,
     checkoff_mark,
@@ -275,3 +277,28 @@ def test_checkoff_header_strip_and_outline_when_enabled():
         title for title, dest in plotter.outlines() if dest == "checkoff-365-2026"
     ]
     assert titles == ["365 Days Check-Off Sheet"]
+
+
+def test_checkoff_style_keeps_label_inside_mark():
+    well = well_rect(NOMAD)
+    dense = CheckoffStyle(gap=0.30, mark_frac=0.91, col_penalty=0.08)
+    larger = CheckoffStyle(
+        gap=0.30, mark_frac=0.91, col_penalty=0.08, numeral_scale=0.90
+    )
+    assert CHECKOFF_DEFAULT.gap == CHECKOFF_GAP
+    for style in (CHECKOFF_DEFAULT, dense, larger):
+        mark = checkoff_mark(checkoff_seats(well, 365, style)[99], style)
+        label = checkoff_label(mark, style)
+        assert label.w < mark.w
+        assert label.h < mark.h
+        assert label.x > mark.x
+        assert label.right < mark.right
+        assert label.y > mark.y
+        assert label.bottom < mark.bottom
+        assert label.x + label.w / 2 == pytest.approx(mark.x + mark.w / 2)
+        assert label.y + label.h / 2 == pytest.approx(mark.y + mark.h / 2)
+        ink = checkoff_numeral_ink(EffectiveRamp(), style)
+        assert ink.size < 4.3 * 1.01
+    default_mark = checkoff_mark(checkoff_seats(well, 365)[0])
+    dense_mark = checkoff_mark(checkoff_seats(well, 365, dense)[0], dense)
+    assert dense_mark.w > default_mark.w

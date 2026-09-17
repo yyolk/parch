@@ -290,95 +290,125 @@ CHECKOFF_NUMERAL_SCALE = 0.74
 CHECKOFF_LABEL_INSET = 0.20
 
 
+@dataclass(frozen=True, slots=True)
+class CheckoffStyle:
+    """Pack + type knobs for the circle/diamond sheet. Not a Spec flag.
+
+    Proofs pass a style; product press uses ``CHECKOFF_DEFAULT``.
+    """
+
+    gap: float = CHECKOFF_GAP
+    mark_frac: float = CHECKOFF_MARK_FRAC
+    col_pref: int = CHECKOFF_COL_PREF
+    col_penalty: float = CHECKOFF_COL_PENALTY
+    numeral_scale: float = CHECKOFF_NUMERAL_SCALE
+    label_inset: float = CHECKOFF_LABEL_INSET
+    numeral_gray: float = CHECKOFF_NUMERAL_GRAY
+
+
+CHECKOFF_DEFAULT = CheckoffStyle()
+
+
 def checkoff_milestone(day: int) -> bool:
     """Every 10th day is a diamond marker (10, 20, …)."""
     return day > 0 and day % 10 == 0
 
 
-def checkoff_columns(well: Rect, days: int) -> int:
+def checkoff_columns(well: Rect, days: int, style: CheckoffStyle | None = None) -> int:
     """Column count from well geometry + day count.
 
     Prefer larger seats; extra columns past the ~16 reference are penalized so
     Nomad lands near the Hobonichi density without hardcoding 16.
     """
+    pack = style or CHECKOFF_DEFAULT
     n = max(1, days)
     best_cols = 1
     best_score = float("-inf")
     max_cols = min(n, max(1, int(well.w)))
     for cols in range(1, max_cols + 1):
         row_n = (n + cols - 1) // cols
-        inner_w = well.w - CHECKOFF_GAP * (cols - 1)
-        inner_h = well.h - CHECKOFF_GAP * (row_n - 1)
+        inner_w = well.w - pack.gap * (cols - 1)
+        inner_h = well.h - pack.gap * (row_n - 1)
         if inner_w <= 0 or inner_h <= 0:
             continue
         size = min(inner_w / cols, inner_h / row_n)
-        score = size - CHECKOFF_COL_PENALTY * max(0, cols - CHECKOFF_COL_PREF)
+        score = size - pack.col_penalty * max(0, cols - pack.col_pref)
         if score > best_score:
             best_score = score
             best_cols = cols
     return best_cols
 
 
-def checkoff_seats(well: Rect, days: int) -> tuple[Rect, ...]:
+def checkoff_seats(
+    well: Rect, days: int, style: CheckoffStyle | None = None
+) -> tuple[Rect, ...]:
     """Equal row tracks fill the well; leftover last-row cells stay empty."""
+    pack = style or CHECKOFF_DEFAULT
     n = max(1, days)
-    cols = checkoff_columns(well, n)
+    cols = checkoff_columns(well, n, pack)
     row_n = (n + cols - 1) // cols
     seats: list[Rect] = []
     remaining = n
-    for band in rows(well, row_n, gap=CHECKOFF_GAP):
+    for band in rows(well, row_n, gap=pack.gap):
         take = min(cols, remaining)
-        seats.extend(columns(band, cols, gap=CHECKOFF_GAP)[:take])
+        seats.extend(columns(band, cols, gap=pack.gap)[:take])
         remaining -= take
         if remaining <= 0:
             break
     return tuple(seats)
 
 
-def checkoff_mark(cell: Rect) -> Rect:
+def checkoff_mark(cell: Rect, style: CheckoffStyle | None = None) -> Rect:
     """Largest inscribed square, inset so neighboring marks do not touch."""
-    s = min(cell.w, cell.h) * CHECKOFF_MARK_FRAC
+    pack = style or CHECKOFF_DEFAULT
+    s = min(cell.w, cell.h) * pack.mark_frac
     return Rect(cell.x + (cell.w - s) / 2, cell.y + (cell.h - s) / 2, s, s)
 
 
-def checkoff_label(mark: Rect) -> Rect:
+def checkoff_label(mark: Rect, style: CheckoffStyle | None = None) -> Rect:
     """Concentric inset of the mark — padding from the stroke, not the seat width."""
-    pad = min(mark.w, mark.h) * CHECKOFF_LABEL_INSET
+    pack = style or CHECKOFF_DEFAULT
+    pad = min(mark.w, mark.h) * pack.label_inset
     return mark.inset(pad)
 
 
-def checkoff_numeral_ink(ramp: TypeRamp) -> TypeInk:
+def checkoff_numeral_ink(ramp: TypeRamp, style: CheckoffStyle | None = None) -> TypeInk:
     """Micro scaled down, medium weight. Strong flooded the mark; book stayed muddy."""
+    pack = style or CHECKOFF_DEFAULT
     base = ramp.ink("micro")
     return TypeInk(
         family=base.family,
         weight="medium",
-        size=Pt(float(base.size) * CHECKOFF_NUMERAL_SCALE),
+        size=Pt(float(base.size) * pack.numeral_scale),
     )
 
 
 def paint_checkoff_365(
-    plotter: Plotter, box: Rect, sheet: Checkoff365, *, ramp: TypeRamp | None = None
+    plotter: Plotter,
+    box: Rect,
+    sheet: Checkoff365,
+    *,
+    ramp: TypeRamp | None = None,
+    style: CheckoffStyle | None = None,
 ) -> None:
-    """Dense 1…N check-off grid. Circles; diamonds on every 10th day.
-
-    Chrome owns the title — this painter inks the grid only.
-    """
+    """1…N circle grid; diamonds on every 10th day. Chrome owns the title."""
+    pack = style or CHECKOFF_DEFAULT
     ramp = _bound_ramp(plotter, ramp)
-    numeral = checkoff_numeral_ink(ramp)
+    numeral = checkoff_numeral_ink(ramp, pack)
     dests = sheet.day_dests
-    for day, seat in enumerate(checkoff_seats(box, sheet.days), start=1):
-        mark = checkoff_mark(seat)
+    for day, seat in enumerate(checkoff_seats(box, sheet.days, pack), start=1):
+        mark = checkoff_mark(seat, pack)
+        label = checkoff_label(mark, pack)
         if checkoff_milestone(day):
             _paint_diamond(plotter, mark, stroke_width=CHECKOFF_DIAMOND_STROKE)
         else:
             _stroke_circle(plotter, mark)
         _ink_text(
             plotter,
-            checkoff_label(mark),
+            label,
             str(day),
             numeral,
-            gray=CHECKOFF_NUMERAL_GRAY,
+            gray=pack.numeral_gray,
             align="center",
         )
         if day <= len(dests) and dests[day - 1]:
