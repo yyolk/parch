@@ -2327,6 +2327,8 @@ def strip_active(kind: str) -> str:
             return "Rev"
         case "engineering_front" | "engineering_back" | "steno":
             return ""
+        case "favorites" | "my_100" | "days_365":
+            return ""
         case "bujo_key":
             return "Key"
         case "bujo_index":

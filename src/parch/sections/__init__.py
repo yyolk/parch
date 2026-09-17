@@ -13,6 +13,7 @@ from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
 from parch.sections.engineering import EngineeringPadSection
 from parch.sections.habit import HabitSection
+from parch.sections.lists import Days365Section, FavoritesSection, My100Section
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
 from parch.sections.page import NavItem, Page, PageKind
@@ -35,9 +36,12 @@ __all__ = [
     "RapidLogSection",
     "DailyNotesSection",
     "DailySection",
+    "Days365Section",
     "EngineeringPadSection",
+    "FavoritesSection",
     "HabitSection",
     "MeetingSection",
+    "My100Section",
     "MonthSection",
     "ProjectsSection",
     "NavItem",

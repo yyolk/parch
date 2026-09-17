@@ -61,6 +61,12 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
+    assert spec.lists_favorites is False
+    assert spec.lists_my_100 is False
+    assert spec.lists_days_365 is False
+    assert spec.favorites_dest == "favorites-2026"
+    assert spec.my_100_dest == "my-100-2026"
+    assert spec.days_365_dest == "days-365-2026"
     assert spec.outline is False
     assert spec.bujo_index_pages == 2
     assert spec.bujo_collections == 24

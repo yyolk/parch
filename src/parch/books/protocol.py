@@ -42,6 +42,9 @@ _OUTLINE_RUN = frozenset(
         "bujo_index",
         "future_log",
         "collection",
+        "favorites",
+        "my_100",
+        "days_365",
     }
 )
 _OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})

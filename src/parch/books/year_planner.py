@@ -1,4 +1,4 @@
-"""Year planner book — cover → annual → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks."""
+"""Year planner book — cover → annual → quarters → months+habits → weeks → days+notes → optional lists → review → projects → meetings → tasks."""
 
 from parch.books.protocol import plot_pages
 from parch.calendar import months_touching_weeks
@@ -9,9 +9,12 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    Days365Section,
+    FavoritesSection,
     HabitSection,
     MeetingSection,
     MonthSection,
+    My100Section,
     Page,
     ProjectsSection,
     QuarterSection,
@@ -47,6 +50,11 @@ class YearPlanner:
                     continue
                 built.extend(daily.pages_for(day))
                 built.extend(notes.pages_for(day))
+        # Optional year lists (defaults off). After the calendar-first walk
+        # so Year→Quar→Mon→…→Day stay contiguous; before review tools.
+        built.extend(FavoritesSection(spec).pages())
+        built.extend(My100Section(spec).pages())
+        built.extend(Days365Section(spec).pages())
         built.extend(ReviewSection(spec).pages())
         built.extend(ProjectsSection(spec).pages())
         built.extend(MeetingSection(spec).pages())

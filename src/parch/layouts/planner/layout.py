@@ -195,6 +195,8 @@ class PlannerLayout:
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
             case "collection":
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
+            case "favorites" | "my_100" | "days_365":
+                paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
             case _:
                 raise ValueError(f"unknown page kind {page.kind!r}")
 
@@ -251,6 +253,8 @@ def _header_meta(page: Page) -> str:
         case "daily_notes":
             label = _one(page, Notes).label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
+        case "favorites" | "my_100" | "days_365":
+            return page.dest.rsplit("-", 1)[-1]
         case _:
             return ""
 

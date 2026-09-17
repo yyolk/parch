@@ -32,6 +32,9 @@ type PageKind = Literal[
     "monthly_tasks",
     "rapid_log",
     "collection",
+    "favorites",
+    "my_100",
+    "days_365",
 ]
 
 

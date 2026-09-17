@@ -25,6 +25,7 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_LISTS_KEYS = frozenset({"favorites", "my_100", "days_365"})
 
 type TomlTable = dict[str, object]
 
@@ -96,6 +97,24 @@ def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     return int(raw.get("index_pages", 2)), int(raw.get("collections", 24))
 
 
+def _parse_lists(data: TomlTable) -> tuple[bool, bool, bool]:
+    """``[lists]`` Favorites / My 100 / 365 Days. Defaults off. Unknown keys fail loudly."""
+    raw = data.get("lists")
+    if raw is None:
+        return False, False, False
+    if not isinstance(raw, dict):
+        raise ConfigError("lists must be a TOML table")
+    unknown = set(raw) - _LISTS_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown lists key {key!r}")
+    return (
+        _parse_bool(raw.get("favorites", False), "lists.favorites"),
+        _parse_bool(raw.get("my_100", False), "lists.my_100"),
+        _parse_bool(raw.get("days_365", False), "lists.days_365"),
+    )
+
+
 def _dest(template: Template) -> str:
     """Flatten a dest t-string (prefix + fields + format specs)."""
     chunks: list[str] = []
@@ -134,6 +153,9 @@ class Spec:
     outline: bool = False  # reader sidebar outline; default off
     bujo_index_pages: int = 2
     bujo_collections: int = 24
+    lists_favorites: bool = False  # optional Favorites page; off keeps year-planner walk
+    lists_my_100: bool = False  # optional My 100 page
+    lists_days_365: bool = False  # optional 365 Days check-off
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
@@ -390,6 +412,18 @@ class Spec:
             raise ConfigError(f"steno sheet out of range: {sheet}")
         return _dest(t"steno-{self.year:04d}-{sheet:02d}")
 
+    @property
+    def favorites_dest(self) -> str:
+        return _dest(t"favorites-{self.year:04d}")
+
+    @property
+    def my_100_dest(self) -> str:
+        return _dest(t"my-100-{self.year:04d}")
+
+    @property
+    def days_365_dest(self) -> str:
+        return _dest(t"days-365-{self.year:04d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -413,6 +447,7 @@ class Spec:
         steno = data.get("steno")
         steno_table = steno if isinstance(steno, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
+        lists_favorites, lists_my_100, lists_days_365 = _parse_lists(data)
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -457,6 +492,9 @@ class Spec:
             outline=_parse_bool(data.get("outline", False), "outline"),
             bujo_index_pages=bujo_index_pages,
             bujo_collections=bujo_collections,
+            lists_favorites=lists_favorites,
+            lists_my_100=lists_my_100,
+            lists_days_365=lists_days_365,
             type_overlay=_parse_typography(data),
         )
 
