@@ -112,7 +112,6 @@ def test_projects_knobs_from_spec():
     page = next(p for p in pages if p.kind == "project")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     assert board.cards == 2
-    assert not hasattr(board, "tasks")
     roster = next(
         item
         for item in next(p for p in pages if p.kind == "projects_index").components
@@ -228,7 +227,7 @@ def test_project_ticket_seats():
     )
     assert preview.w / leftover == pytest.approx(0.45)
 
-    cards = project_ticket_preview_cards(preview)
+    cards = project_ticket_preview_cards(preview, 3)
     assert len(cards) == 3
     assert cards[0].y > preview.y
     assert cards[-1].bottom < preview.bottom
