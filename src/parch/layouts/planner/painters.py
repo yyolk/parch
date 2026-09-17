@@ -731,27 +731,32 @@ def _fav_icon_book(plotter: Plotter, box: Rect) -> None:
 
 
 def _fav_icon_note(plotter: Plotter, box: Rect) -> None:
-    """Eighth-note stand-in — head, stem, one flag."""
-    head = Rect(box.x + box.w * 0.10, box.y + box.h * 0.54, box.w * 0.50, box.h * 0.36)
+    """Eighth-note stand-in — head, stem, two flags for upper mass."""
+    head = Rect(box.x + box.w * 0.08, box.y + box.h * 0.52, box.w * 0.54, box.h * 0.40)
     _fav_box(plotter, head)
     stem_x = head.right
-    top = box.y + box.h * 0.08
-    _fav_stroke(plotter, stem_x, head.y + head.h * 0.12, stem_x, top)
-    _fav_stroke(plotter, stem_x, top, box.x + box.w * 0.90, box.y + box.h * 0.28)
+    top = box.y + box.h * 0.06
+    _fav_stroke(plotter, stem_x, head.y + head.h * 0.10, stem_x, top)
+    _fav_stroke(plotter, stem_x, top, box.x + box.w * 0.92, box.y + box.h * 0.24)
+    _fav_stroke(
+        plotter, stem_x, box.y + box.h * 0.18, box.x + box.w * 0.92, box.y + box.h * 0.36
+    )
 
 
 def _fav_icon_utensils(plotter: Plotter, box: Rect) -> None:
     top = box.y + box.h * 0.08
-    join = box.y + box.h * 0.40
+    join = box.y + box.h * 0.42
     bot = box.bottom - box.h * 0.06
-    for t in (0.16, 0.30, 0.44):
+    for t in (0.12, 0.28, 0.44):
         x = box.x + box.w * t
         _fav_stroke(plotter, x, top, x, join)
-    handle = box.x + box.w * 0.30
-    _fav_stroke(plotter, box.x + box.w * 0.16, join, box.x + box.w * 0.44, join)
+    handle = box.x + box.w * 0.28
+    _fav_stroke(plotter, box.x + box.w * 0.12, join, box.x + box.w * 0.44, join)
     _fav_stroke(plotter, handle, join, handle, bot)
-    knife = box.x + box.w * 0.76
+    knife = box.x + box.w * 0.78
     _fav_stroke(plotter, knife, top, knife, bot)
+    _fav_stroke(plotter, knife + box.w * 0.10, top, knife + box.w * 0.10, join)
+    _fav_stroke(plotter, knife, top, knife + box.w * 0.10, top)
 
 
 def _fav_icon_bag(plotter: Plotter, box: Rect) -> None:
