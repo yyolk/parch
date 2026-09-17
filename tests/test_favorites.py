@@ -116,8 +116,8 @@ def test_favorites_paint_cards_slash_and_icons():
         "note",
         "utensils",
         "bag",
-        "applause",
     )
+    assert "applause" not in FAVORITES_ICONS
     assert 1.6 <= FAVORITES_ICON_GAP <= 2.0
     assert 0.70 <= FAVORITES_ICON_SCALE <= 0.78
     assert FAVORITES_ICON_STROKE > HAIR

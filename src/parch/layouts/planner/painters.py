@@ -571,7 +571,7 @@ FAVORITES_ICON_GAP = 1.8
 FAVORITES_ICON_SCALE = 0.74
 FAVORITES_ICON_STROKE = 0.24
 FAVORITES_ROW_H = 7.2
-FAVORITES_ICONS = ("camera", "book", "note", "utensils", "bag", "applause")
+FAVORITES_ICONS = ("camera", "book", "note", "utensils", "bag")
 
 
 def favorites_seats(well: Rect) -> tuple[Rect, ...]:
@@ -683,8 +683,6 @@ def _paint_favorites_icon(plotter: Plotter, box: Rect, kind: str) -> None:
             _fav_icon_utensils(plotter, box)
         case "bag":
             _fav_icon_bag(plotter, box)
-        case "applause":
-            _fav_icon_applause(plotter, box)
         case _:
             raise ValueError(f"unknown favorites icon {kind!r}")
 
@@ -749,20 +747,6 @@ def _fav_icon_bag(plotter: Plotter, box: Rect) -> None:
     _fav_stroke(plotter, left, body.y, left, box.y + box.h * 0.10)
     _fav_stroke(plotter, left, box.y + box.h * 0.10, right, box.y + box.h * 0.10)
     _fav_stroke(plotter, right, box.y + box.h * 0.10, right, body.y)
-
-
-def _fav_icon_applause(plotter: Plotter, box: Rect) -> None:
-    """Two 3-finger fans — clapping stand-in."""
-    mid = box.x + box.w / 2
-    _fav_hand(plotter, Rect(box.x, box.y, mid - box.x - 0.14, box.h))
-    _fav_hand(plotter, Rect(mid + 0.14, box.y, box.right - mid - 0.14, box.h))
-
-
-def _fav_hand(plotter: Plotter, box: Rect) -> None:
-    palm_x = box.x + box.w * 0.50
-    palm_y = box.y + box.h * 0.78
-    for t in (0.12, 0.50, 0.88):
-        _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * t, box.y + box.h * 0.10)
 
 
 PROJECT_CARD_GAP = 2.6
