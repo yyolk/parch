@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import pytest
@@ -230,6 +231,26 @@ def test_my_100_paginated_dests_and_chip():
         assert leaf.numbers[0] == my_100_page_numbers(well, 2)[0]
 
 
+def test_my_100_presses_into_year_pdf(tmp_path: Path):
+    spec = Spec(my_100=True, months=(1,), notes_pages=0)
+    pages = YearPlanner().pages(spec)
+    plotter = Fpdf2Plotter(NOMAD)
+    plot_pages(
+        lambda: pages,
+        plotter,
+        ramp=EffectiveRamp(),
+        device=spec.device,
+    )
+    pdf = tmp_path / "my-100.pdf"
+    plotter.finish(pdf)
+    assert pdf.stat().st_size > 0
+    dests = [page.dest for page in pages]
+    assert dests.index(spec.my_100_dest) == dests.index(spec.year_dest) + 1
+
+
+@pytest.mark.skipif(
+    shutil.which("pdftoppm") is None, reason="pdftoppm (poppler-utils) required"
+)
 def test_my_100_png_proof(tmp_path: Path):
     spec = Spec(my_100=True, months=(1,), notes_pages=0)
     pages = YearPlanner().pages(spec)
