@@ -467,7 +467,7 @@ def my_100_page_numbers(
 
 
 def my_100_open_seat(well: Rect, n_entries: int) -> Rect | None:
-    """Unused column(s) as one empty field. None when the page fills both tracks."""
+    """Unused column(s) as unmarked paper. None when the page fills both tracks."""
     tracks = my_100_columns(well)
     _cols, n_rows = my_100_grid(well)
     used = min(len(tracks), (max(n_entries, 0) + n_rows - 1) // n_rows) if n_rows else 0
@@ -549,22 +549,13 @@ def _paint_my_100_row(plotter: Plotter, row: Rect, number: int) -> None:
 def paint_my_100(
     plotter: Plotter, box: Rect, page: My100Page, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Two equal columns of numbered write-ins. Unused last-page track is empty paper."""
+    """Two equal columns of numbered write-ins. Unused last-page track stays blank."""
     _bound_ramp(plotter, ramp)
     tracks = my_100_columns(box)
     _n_cols, n_rows = my_100_grid(box)
     cells = [row for col in tracks for row in rows(col, n_rows, gap=0)]
     for cell, number in zip(cells, page.numbers, strict=False):
         _paint_my_100_row(plotter, cell, number)
-    open_box = my_100_open_seat(box, len(page.numbers))
-    if open_box is not None:
-        plotter.rect(
-            open_box,
-            stroke=True,
-            fill=False,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
-        )
 
 
 PROJECT_CARD_GAP = 2.6

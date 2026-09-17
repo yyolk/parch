@@ -214,7 +214,7 @@ def test_my_100_paint_numbers_checks_no_caption_or_local_title():
     ]
     assert leftover_nums == [f"{n}." for n in last.numbers]
     assert len(rules) == len(last.numbers)
-    assert len(frames) == 1
+    assert frames == []
 
 
 def test_my_100_layout_header_title_once():
