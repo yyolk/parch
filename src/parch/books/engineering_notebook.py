@@ -17,7 +17,7 @@ class EngineeringNotebook:
             *CoverSection(
                 spec,
                 landing_dest=landing,
-                eyebrow="Engineering",
+                display_title="Engineering",
                 specs_lead="",
             ).pages(),
             *EngineeringPadSection(spec).pages(),

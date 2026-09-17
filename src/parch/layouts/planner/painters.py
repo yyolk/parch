@@ -218,21 +218,28 @@ def paint_cover(
     )
 
     plotter.ramp = ramp
-    brow = Rect(0.0, 38.0, device.page_width, 8.0)
-    _ink_text(
-        plotter,
-        brow,
-        cover.eyebrow,
-        TypeRef(step="eyebrow"),
-        gray=MUTED,
-        small_caps=True,
-        align="center",
-    )
+    if cover.display_title:
+        brow_text = str(cover.year) if cover.year else ""
+        headline = cover.display_title
+    else:
+        brow_text = cover.eyebrow
+        headline = str(cover.year)
+    if brow_text:
+        brow = Rect(0.0, 38.0, device.page_width, 8.0)
+        _ink_text(
+            plotter,
+            brow,
+            brow_text,
+            TypeRef(step="eyebrow"),
+            gray=MUTED,
+            small_caps=True,
+            align="center",
+        )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
     _ink_text(
         plotter,
         year_box,
-        str(cover.year),
+        headline,
         TypeRef(step="display"),
         gray=INK,
         align="center",

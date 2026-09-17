@@ -166,6 +166,27 @@ def test_header_uses_title_and_chrome_steps():
     assert _family(meta) == "jost"
 
 
+def test_cover_display_title_is_headline_year_is_eyebrow():
+    cover = CoverTitle(
+        year=2026,
+        subtitle="",
+        cta_label="",
+        cta_dest="projects-index-2026-01",
+        display_title="Projects",
+    )
+    plotter = RecordingPlotter()
+    paint_cover(plotter, NOMAD, cover, ramp=EffectiveRamp())
+    title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
+    assert title[3] == 42
+    assert title[9] == "heavy"
+    year = next(op for op in plotter.ops if op[0] == "text" and op[2] == "2026")
+    assert year[3] == 10
+    assert year[9] == "medium"
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "Year Book" not in texts
+    assert cover.cta_dest in plotter.links()
+
+
 def test_cover_honors_stub_ramp():
     class StubRamp:
         def __init__(self) -> None:

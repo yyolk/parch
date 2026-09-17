@@ -12,11 +12,13 @@ class CoverSection:
         landing_dest: str | None = None,
         eyebrow: str = "Year Book",
         specs_lead: str | None = None,
+        display_title: str | None = None,
     ) -> None:
         self.spec = spec
         self.landing_dest = landing_dest
         self.eyebrow = eyebrow
         self.specs_lead = specs_lead
+        self.display_title = display_title
 
     def pages(self) -> list[Page]:
         spec = self.spec
@@ -39,6 +41,7 @@ class CoverSection:
                         cta_dest=landing,
                         eyebrow=self.eyebrow,
                         specs_lead=specs_lead,
+                        display_title=self.display_title,
                     ),
                 ),
             )

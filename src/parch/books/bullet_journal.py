@@ -28,7 +28,7 @@ class BulletJournal:
             *CoverSection(
                 spec,
                 landing_dest=spec.bujo_key_dest,
-                eyebrow="Bullet journal",
+                display_title="Bullet Journal",
                 specs_lead="",
             ).pages(),
             *BujoKeySection(spec).pages(),

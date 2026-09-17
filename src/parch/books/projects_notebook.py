@@ -25,7 +25,7 @@ class ProjectsNotebook:
             *CoverSection(
                 spec,
                 landing_dest=spec.projects_index_dest,
-                eyebrow="Projects",
+                display_title="Projects",
                 specs_lead="",
             ).pages(),
         ]
