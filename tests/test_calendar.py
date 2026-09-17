@@ -8,6 +8,8 @@ from parch.calendar import (
     month_weeks,
     months_touching_weeks,
     weekday_labels,
+    year_day,
+    year_days,
 )
 
 
@@ -47,3 +49,9 @@ def test_month_week_bands_first_seen():
         week[0].isocalendar()[:2] for week in months_touching_weeks(2026, (1, 2, 3))
     ]
     assert len(keys) == len(set(keys)) == 14
+
+
+def test_year_days_365_or_366():
+    assert year_days(2026) == 365
+    assert year_days(2028) == 366
+    assert year_day(2028, 366) == date(2028, 12, 31)

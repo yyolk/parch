@@ -10,6 +10,7 @@ from parch.components import (
     AnnualMonth,
     BujoIndex,
     BujoKey,
+    Checkoff365,
     CollectionLeaf,
     CoverTitle,
     EngineeringPad,
@@ -39,7 +40,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
-from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
+from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
@@ -275,6 +276,116 @@ def paint_annual(
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
+
+
+# Product pick: dense pack + 0.90× micro.
+# Nomad scores ~18 cols / ~5.33 mm marks. Score bias only — not a hardcoded return.
+CHECKOFF_GAP = 0.30
+CHECKOFF_MARK_FRAC = 0.91
+CHECKOFF_CIRCLE_SEGS = 32
+CHECKOFF_COL_PREF = 16
+CHECKOFF_COL_PENALTY = 0.08
+CHECKOFF_DIAMOND_STROKE = HAIR * 1.4
+CHECKOFF_NUMERAL_GRAY = MUTED
+CHECKOFF_NUMERAL_SCALE = 0.90
+CHECKOFF_LABEL_INSET = 0.18
+
+
+def checkoff_milestone(day: int) -> bool:
+    """Every 10th day is a diamond marker (10, 20, …)."""
+    return day > 0 and day % 10 == 0
+
+
+def checkoff_columns(well: Rect, days: int) -> int:
+    """Column count from well geometry + day count.
+
+    Prefer larger seats; extra columns past the ~16 reference are lightly
+    penalized so Nomad's dense pack scores ~18 without hardcoding a column.
+    """
+    n = max(1, days)
+    best_cols = 1
+    best_score = float("-inf")
+    max_cols = min(n, max(1, int(well.w)))
+    for cols in range(1, max_cols + 1):
+        row_n = (n + cols - 1) // cols
+        inner_w = well.w - CHECKOFF_GAP * (cols - 1)
+        inner_h = well.h - CHECKOFF_GAP * (row_n - 1)
+        if inner_w <= 0 or inner_h <= 0:
+            continue
+        size = min(inner_w / cols, inner_h / row_n)
+        score = size - CHECKOFF_COL_PENALTY * max(0, cols - CHECKOFF_COL_PREF)
+        if score > best_score:
+            best_score = score
+            best_cols = cols
+    return best_cols
+
+
+def checkoff_seats(well: Rect, days: int) -> tuple[Rect, ...]:
+    """Equal row tracks fill the well; leftover last-row cells stay empty."""
+    n = max(1, days)
+    cols = checkoff_columns(well, n)
+    row_n = (n + cols - 1) // cols
+    seats: list[Rect] = []
+    remaining = n
+    for band in rows(well, row_n, gap=CHECKOFF_GAP):
+        take = min(cols, remaining)
+        seats.extend(columns(band, cols, gap=CHECKOFF_GAP)[:take])
+        remaining -= take
+        if remaining <= 0:
+            break
+    return tuple(seats)
+
+
+def checkoff_mark(cell: Rect) -> Rect:
+    """Largest inscribed square, inset so neighboring marks do not touch."""
+    s = min(cell.w, cell.h) * CHECKOFF_MARK_FRAC
+    return Rect(cell.x + (cell.w - s) / 2, cell.y + (cell.h - s) / 2, s, s)
+
+
+def checkoff_label(mark: Rect) -> Rect:
+    """Concentric inset of the mark — padding from the stroke, not the seat width."""
+    pad = min(mark.w, mark.h) * CHECKOFF_LABEL_INSET
+    return mark.inset(pad)
+
+
+def checkoff_numeral_ink(ramp: TypeRamp) -> TypeInk:
+    """Micro scaled down, medium weight. Strong flooded the mark; book stayed muddy."""
+    base = ramp.ink("micro")
+    return TypeInk(
+        family=base.family,
+        weight="medium",
+        size=Pt(float(base.size) * CHECKOFF_NUMERAL_SCALE),
+    )
+
+
+def paint_checkoff_365(
+    plotter: Plotter,
+    box: Rect,
+    sheet: Checkoff365,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """1…N circle grid; diamonds on every 10th day. Chrome owns the title."""
+    ramp = _bound_ramp(plotter, ramp)
+    numeral = checkoff_numeral_ink(ramp)
+    dests = sheet.day_dests
+    for day, seat in enumerate(checkoff_seats(box, sheet.days), start=1):
+        mark = checkoff_mark(seat)
+        label = checkoff_label(mark)
+        if checkoff_milestone(day):
+            _paint_diamond(plotter, mark, stroke_width=CHECKOFF_DIAMOND_STROKE)
+        else:
+            _stroke_circle(plotter, mark)
+        _ink_text(
+            plotter,
+            label,
+            str(day),
+            numeral,
+            gray=CHECKOFF_NUMERAL_GRAY,
+            align="center",
+        )
+        if day <= len(dests) and dests[day - 1]:
+            plotter.link(mark, dests[day - 1])
 
 
 PROJECT_CARD_GAP = 2.6
@@ -623,14 +734,34 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
         plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_diamond(plotter: Plotter, box: Rect) -> None:
-    """Hairline rhombus — favorite/tag stand-in where ★ is missing."""
+def _paint_diamond(plotter: Plotter, box: Rect, *, stroke_width: float = HAIR) -> None:
+    """Open rhombus — never filled. Check-off milestones pass a heavier stroke."""
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
-    plotter.line(cx, box.y, box.right, cy, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(cx, box.y, box.right, cy, stroke_width=stroke_width, stroke_gray=INK)
+    plotter.line(
+        box.right, cy, cx, box.bottom, stroke_width=stroke_width, stroke_gray=INK
+    )
+    plotter.line(cx, box.bottom, box.x, cy, stroke_width=stroke_width, stroke_gray=INK)
+    plotter.line(box.x, cy, cx, box.y, stroke_width=stroke_width, stroke_gray=INK)
+
+
+def _stroke_circle(plotter: Plotter, box: Rect) -> None:
+    """Hairline ellipse inscribed in ``box``. Plotter has no native ellipse."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    n = CHECKOFF_CIRCLE_SEGS
+    pts = [
+        (
+            cx + rx * math.cos(math.tau * i / n),
+            cy + ry * math.sin(math.tau * i / n),
+        )
+        for i in range(n)
+    ]
+    for (x1, y1), (x2, y2) in zip(pts, pts[1:] + pts[:1], strict=True):
+        plotter.line(x1, y1, x2, y2, stroke_width=HAIR, stroke_gray=INK)
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
@@ -2238,6 +2369,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
+        case "checkoff_365":
+            pass
         case "quarter":
             dests["Quar"] = page.dest
         case "month":
@@ -2305,6 +2438,8 @@ def strip_active(kind: str) -> str:
     match kind:
         case "annual":
             return "Year"
+        case "checkoff_365":
+            return ""
         case "quarter":
             return "Quar"
         case "month":

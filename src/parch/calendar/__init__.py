@@ -112,3 +112,13 @@ def short_date_range(start: date, end: date) -> str:
 def month_days(year: int, month: int) -> list[date]:
     last = pycal.monthrange(year, month)[1]
     return [date(year, month, day) for day in range(1, last + 1)]
+
+
+def year_days(year: int) -> int:
+    """Civil day count for ``year`` — 366 when February has 29 days, else 365."""
+    return 366 if pycal.isleap(year) else 365
+
+
+def year_day(year: int, number: int) -> date:
+    """1-based day-of-year date (1 January through 31 December; 366 on leap years)."""
+    return date(year, 1, 1) + timedelta(days=number - 1)

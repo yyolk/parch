@@ -11,6 +11,7 @@ from parch.components.bujo import (
     MonthlyTaskWell,
     RapidLogPage,
 )
+from parch.components.checkoff import Checkoff365
 from parch.components.cover import CoverTitle
 from parch.components.engineering import EngineeringFace, EngineeringPad
 from parch.components.habit import HabitGrid
@@ -36,6 +37,7 @@ type Component = (
     AnnualGrid
     | AnnualMonth
     | BujoIndex
+    | Checkoff365
     | BujoKey
     | CollectionLeaf
     | CoverTitle
@@ -73,6 +75,7 @@ __all__ = [
     "AnnualGrid",
     "AnnualMonth",
     "BujoIndex",
+    "Checkoff365",
     "BujoIndexRow",
     "BujoKey",
     "CalendarDayRow",
