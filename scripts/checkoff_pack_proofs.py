@@ -1,6 +1,8 @@
 """Nomad check-off pack/type proofs. Circle + diamond-every-10th only.
 
-Not a Spec knob. Run: ``uv run python scripts/checkoff_pack_proofs.py -o dest``.
+Product press is dense pack + 0.90× micro (``CHECKOFF_DEFAULT`` /
+``checkoff_var_dense_text_larger``). This matrix is replay only — not a Spec
+knob. Run: ``uv run python scripts/checkoff_pack_proofs.py -o dest``.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ from parch.components import Checkoff365
 from parch.devices import NOMAD
 from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.painters import (
+    CHECKOFF_DEFAULT,
     CheckoffStyle,
     checkoff_columns,
     checkoff_mark,
@@ -46,15 +49,9 @@ VARIANTS: tuple[tuple[str, CheckoffStyle], ...] = (
         ),
     ),
     (
+        # Locked as CHECKOFF_DEFAULT / product press.
         "checkoff_var_dense_text_larger",
-        CheckoffStyle(
-            gap=DENSE.gap,
-            mark_frac=DENSE.mark_frac,
-            col_pref=DENSE.col_pref,
-            col_penalty=DENSE.col_penalty,
-            numeral_scale=0.90,
-            label_inset=0.18,
-        ),
+        CHECKOFF_DEFAULT,
     ),
     (
         "checkoff_var_dense_text_smaller",

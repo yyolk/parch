@@ -278,16 +278,17 @@ def paint_annual(
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
 
 
-CHECKOFF_GAP = 0.85
-CHECKOFF_MARK_FRAC = 0.78
+# Product pick: dense pack + 0.90× micro (checkoff_var_dense_text_larger).
+# Nomad scores ~18 cols / ~5.33 mm marks. Score bias only — not a hardcoded return.
+CHECKOFF_GAP = 0.30
+CHECKOFF_MARK_FRAC = 0.91
 CHECKOFF_CIRCLE_SEGS = 32
-# Soft Nomad-like density. Score bias only — not a hardcoded column return.
 CHECKOFF_COL_PREF = 16
-CHECKOFF_COL_PENALTY = 0.35
+CHECKOFF_COL_PENALTY = 0.08
 CHECKOFF_DIAMOND_STROKE = HAIR * 1.4
 CHECKOFF_NUMERAL_GRAY = MUTED
-CHECKOFF_NUMERAL_SCALE = 0.74
-CHECKOFF_LABEL_INSET = 0.20
+CHECKOFF_NUMERAL_SCALE = 0.90
+CHECKOFF_LABEL_INSET = 0.18
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,8 +318,8 @@ def checkoff_milestone(day: int) -> bool:
 def checkoff_columns(well: Rect, days: int, style: CheckoffStyle | None = None) -> int:
     """Column count from well geometry + day count.
 
-    Prefer larger seats; extra columns past the ~16 reference are penalized so
-    Nomad lands near the Hobonichi density without hardcoding 16.
+    Prefer larger seats; extra columns past the ~16 reference are lightly
+    penalized so Nomad's dense pack scores ~18 without hardcoding a column.
     """
     pack = style or CHECKOFF_DEFAULT
     n = max(1, days)

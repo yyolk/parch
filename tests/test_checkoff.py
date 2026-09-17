@@ -141,19 +141,44 @@ def test_checkoff_january_only_links_pressed_days():
     assert sheet.day_dests[364] is None
 
 
+def test_checkoff_default_is_dense_larger_pick():
+    """Product press constants match yolk's dense + 0.90× micro pick."""
+    assert CHECKOFF_GAP == 0.30
+    assert CHECKOFF_MARK_FRAC == 0.91
+    assert CHECKOFF_COL_PREF == 16
+    assert CHECKOFF_COL_PENALTY == 0.08
+    assert CHECKOFF_NUMERAL_SCALE == 0.90
+    assert CHECKOFF_LABEL_INSET == 0.18
+    assert CHECKOFF_DEFAULT == CheckoffStyle(
+        gap=0.30,
+        mark_frac=0.91,
+        col_pref=16,
+        col_penalty=0.08,
+        numeral_scale=0.90,
+        label_inset=0.18,
+        numeral_gray=MUTED,
+    )
+    nomad = well_rect(NOMAD)
+    assert checkoff_columns(nomad, 365) == 18
+    mark = checkoff_mark(checkoff_seats(nomad, 365)[0])
+    assert mark.w == pytest.approx(5.33, abs=0.05)
+    ink = checkoff_numeral_ink(EffectiveRamp())
+    assert ink.weight == "medium"
+    assert ink.size == pytest.approx(4.3 * 0.90)
+
+
 def test_checkoff_columns_derived_from_well_not_magic_16():
     nomad = well_rect(NOMAD)
     scribe = well_rect(SCRIBE)
     nomad_cols = checkoff_columns(nomad, 365)
     scribe_cols = checkoff_columns(scribe, 365)
-    assert 15 <= nomad_cols <= 17
-    assert abs(nomad_cols - CHECKOFF_COL_PREF) <= 1
-    assert 14 <= scribe_cols <= 20
+    assert 17 <= nomad_cols <= 19
+    assert nomad_cols != CHECKOFF_COL_PREF
+    assert 14 <= scribe_cols <= 22
     nomad_mark = checkoff_mark(checkoff_seats(nomad, 365)[0])
     scribe_mark = checkoff_mark(checkoff_seats(scribe, 365)[0])
     assert scribe_mark.w > nomad_mark.w
     assert nomad_cols != 10
-    assert nomad_cols != 18
     assert checkoff_columns(nomad, 366) >= 14
     seats = checkoff_seats(nomad, 365)
     assert len(seats) == 365
@@ -281,12 +306,12 @@ def test_checkoff_header_strip_and_outline_when_enabled():
 
 def test_checkoff_style_keeps_label_inside_mark():
     well = well_rect(NOMAD)
-    dense = CheckoffStyle(gap=0.30, mark_frac=0.91, col_penalty=0.08)
-    larger = CheckoffStyle(
-        gap=0.30, mark_frac=0.91, col_penalty=0.08, numeral_scale=0.90
+    loose = CheckoffStyle(
+        gap=0.85, mark_frac=0.78, col_penalty=0.35, numeral_scale=0.74
     )
     assert CHECKOFF_DEFAULT.gap == CHECKOFF_GAP
-    for style in (CHECKOFF_DEFAULT, dense, larger):
+    assert CHECKOFF_DEFAULT.numeral_scale == CHECKOFF_NUMERAL_SCALE
+    for style in (CHECKOFF_DEFAULT, loose):
         mark = checkoff_mark(checkoff_seats(well, 365, style)[99], style)
         label = checkoff_label(mark, style)
         assert label.w < mark.w
@@ -300,5 +325,5 @@ def test_checkoff_style_keeps_label_inside_mark():
         ink = checkoff_numeral_ink(EffectiveRamp(), style)
         assert ink.size < 4.3 * 1.01
     default_mark = checkoff_mark(checkoff_seats(well, 365)[0])
-    dense_mark = checkoff_mark(checkoff_seats(well, 365, dense)[0], dense)
-    assert dense_mark.w > default_mark.w
+    loose_mark = checkoff_mark(checkoff_seats(well, 365, loose)[0], loose)
+    assert default_mark.w > loose_mark.w
