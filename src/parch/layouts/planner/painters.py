@@ -558,9 +558,11 @@ def paint_my_100(
     for cell, number in zip(cells, page.numbers, strict=False):
         _paint_my_100_row(plotter, cell, number)
 
-# Optional Favorites well — two ranking cards. Sealed; not a strip chip.
+# Optional Favorites well — 2×3 ranking cards. Sealed; not a strip chip.
 # No page-local title/caption band — well height goes to the cards.
-FAVORITES_COL_GAP = 3.6
+FAVORITES_COLS = 2
+FAVORITES_GRID_ROWS = 3
+FAVORITES_CARD_GAP = 3.2
 FAVORITES_INSET = 1.2
 FAVORITES_HEAD_H = 9.0
 FAVORITES_SLASH_W = 6.0
@@ -568,19 +570,21 @@ FAVORITES_ICON_W = 26.0
 FAVORITES_ICON_GAP = 1.8
 FAVORITES_ICON_SCALE = 0.74
 FAVORITES_ICON_STROKE = 0.24
-FAVORITES_ROW_H = 8.2
+FAVORITES_ROW_H = 7.2
 FAVORITES_ICONS = ("camera", "book", "note", "utensils", "bag", "applause")
 
 
-def favorites_seats(well: Rect) -> tuple[Rect, Rect]:
-    """Two equal ranking cards. No title/caption band above."""
-    left, right = columns(well, 2, gap=FAVORITES_COL_GAP)
-    return left, right
+def favorites_seats(well: Rect) -> tuple[Rect, ...]:
+    """Six equal ranking cards in a 2×3 grid. No title/caption band above."""
+    cards: list[Rect] = []
+    for band in rows(well, FAVORITES_GRID_ROWS, gap=FAVORITES_CARD_GAP):
+        cards.extend(columns(band, FAVORITES_COLS, gap=FAVORITES_CARD_GAP))
+    return tuple(cards)
 
 
 def favorites_card_parts(card: Rect) -> tuple[Rect, Rect]:
     """Single three-cell header over a lined write-in well."""
-    return card.split_top(min(FAVORITES_HEAD_H, card.h * 0.2))
+    return card.split_top(min(FAVORITES_HEAD_H, card.h * 0.28))
 
 
 def favorites_header_parts(header: Rect) -> tuple[Rect, Rect, Rect]:
@@ -607,7 +611,7 @@ def favorites_body_rows(body: Rect) -> tuple[Rect, ...]:
 def paint_favorites(
     plotter: Plotter, box: Rect, _page: FavoritesPage, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Two framed ranking cards — `/` | name | icons, then write-ins."""
+    """2×3 framed ranking cards — `/` | name | icons, then write-ins."""
     ramp = _bound_ramp(plotter, ramp)
     for card in favorites_seats(box):
         _paint_favorites_card(plotter, card)

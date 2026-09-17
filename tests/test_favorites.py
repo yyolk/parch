@@ -8,6 +8,8 @@ from parch.devices.registry import NOMAD
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
+    FAVORITES_COLS,
+    FAVORITES_GRID_ROWS,
     FAVORITES_ICON_GAP,
     FAVORITES_ICON_SCALE,
     FAVORITES_ICON_STROKE,
@@ -65,16 +67,22 @@ def test_favorites_after_annual_when_enabled():
     ]
 
 
-def test_favorites_seats_two_cards():
+def test_favorites_seats_grid():
     well = well_rect(NOMAD)
-    left, right = favorites_seats(well)
-    assert left.x == pytest.approx(well.x)
-    assert left.y == pytest.approx(well.y)
-    assert right.right == pytest.approx(well.right)
-    assert right.x > left.right
-    header, body = favorites_card_parts(left)
-    assert header.y == pytest.approx(left.y)
-    assert body.bottom == pytest.approx(left.bottom)
+    seats = favorites_seats(well)
+    assert FAVORITES_COLS == 2
+    assert FAVORITES_GRID_ROWS == 3
+    assert len(seats) == 6
+    assert seats[0].x == pytest.approx(well.x)
+    assert seats[0].y == pytest.approx(well.y)
+    assert seats[1].right == pytest.approx(well.right)
+    assert seats[1].x > seats[0].right
+    assert seats[2].y > seats[0].bottom
+    assert seats[5].right == pytest.approx(well.right)
+    assert seats[5].bottom == pytest.approx(well.bottom)
+    header, body = favorites_card_parts(seats[0])
+    assert header.y == pytest.approx(seats[0].y)
+    assert body.bottom == pytest.approx(seats[0].bottom)
     slash, name, icons = favorites_header_parts(header)
     assert slash.y == pytest.approx(name.y)
     assert icons.y == pytest.approx(slash.y)
@@ -84,11 +92,11 @@ def test_favorites_seats_two_cards():
     assert icons.x == pytest.approx(name.right)
     assert icons.w > name.w
     assert icons.w >= 20
-    rows = favorites_body_rows(body)
-    assert len(rows) >= 10
-    assert rows[0].y > header.bottom
-    assert rows[0].x > left.x
-    assert rows[0].right < left.right
+    write = favorites_body_rows(body)
+    assert 3 <= len(write) <= 5
+    assert write[0].y > header.bottom
+    assert write[0].x > seats[0].x
+    assert write[0].right < seats[0].right
 
 
 def test_favorites_paint_cards_slash_and_icons():
@@ -101,7 +109,7 @@ def test_favorites_paint_cards_slash_and_icons():
     assert "Favorites" not in texts
     assert "five stars" not in " ".join(texts)
     assert "rankings" not in " ".join(texts)
-    assert texts.count("/") == 2
+    assert texts.count("/") == 6
     assert FAVORITES_ICONS == (
         "camera",
         "book",
@@ -123,7 +131,7 @@ def test_favorites_paint_cards_slash_and_icons():
         and op[1].w > 40
         and op[6] == pytest.approx(INK)
     ]
-    assert len(frames) == 2
+    assert len(frames) == 6
     cages = [
         op
         for op in plotter.ops
@@ -139,7 +147,7 @@ def test_favorites_paint_cards_slash_and_icons():
         for op in plotter.ops
         if op[0] == "rect" and op[3] and not op[2] and op[5] == pytest.approx(WASH)
     ]
-    assert len(washes) == 2
+    assert len(washes) == 6
     header_rules = [
         op
         for op in plotter.ops
@@ -147,7 +155,7 @@ def test_favorites_paint_cards_slash_and_icons():
         and op[5] == pytest.approx(HAIR)
         and op[6] == pytest.approx(INK)
     ]
-    assert len(header_rules) == 2
+    assert len(header_rules) == 6
     rules = [op for op in plotter.ops if op[0] == "line"]
     assert len(rules) > 20
 
