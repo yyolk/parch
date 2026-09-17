@@ -29,6 +29,9 @@ from parch.spec import Spec
 SAMPLE_STEMS = (
     "cover",
     "annual",
+    "favorites",
+    "my-100",
+    "checkoff-365",
     "quarterly-q1",
     "monthly-jan",
     "weekly-w01",
@@ -92,7 +95,15 @@ def specimens_dest(workdir: str | Path, device_id: str) -> Path:
 def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """Slim January press for catalog pages — not the product year book."""
     device = get_device(device_id)
-    return Spec(device=device.id, year=year, months=(1,), notes_pages=1)
+    return Spec(
+        device=device.id,
+        year=year,
+        months=(1,),
+        notes_pages=1,
+        favorites_pages=1,
+        my_100=True,
+        checkoff_365=True,
+    )
 
 
 def projects_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
@@ -117,6 +128,9 @@ def sample_dests(spec: Spec) -> dict[str, str]:
     return {
         "cover": spec.cover_dest,
         "annual": spec.year_dest,
+        "favorites": spec.favorites_dest,
+        "my-100": spec.my_100_dest,
+        "checkoff-365": spec.checkoff_365_dest,
         "quarterly-q1": spec.dest_for_quarter(1),
         "monthly-jan": spec.dest_for_month(1),
         "weekly-w01": spec.dest_for_week(jan1),

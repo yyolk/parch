@@ -134,6 +134,15 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"my_100": True}).my_100 is True
     assert Spec.from_path(Path("examples/nomad-my-100.toml")).my_100 is True
     assert Spec.from_path(Path("examples/nomad.toml")).my_100 is False
+    assert Spec.from_path(Path("examples/nomad.toml")).favorites_pages == 0
+    assert Spec.from_path(Path("examples/nomad.toml")).checkoff_365 is False
+    assert Spec.from_path(Path("examples/nomad-checkoff-365.toml")).checkoff_365 is True
+    lists = Spec.from_path(Path("examples/nomad-lists.toml"))
+    assert lists.favorites_pages == 1
+    assert lists.my_100 is True
+    assert lists.checkoff_365 is True
+    assert lists.notes_pages == 0
+    assert lists.months == (1,)
     with pytest.raises(ConfigError, match="my_100 must be a boolean"):
         Spec.from_mapping({"my_100": 1})
     with pytest.raises(ConfigError, match="my 100 page must be >= 1"):

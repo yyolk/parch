@@ -1,0 +1,11 @@
+# Optional 365 Days Check-Off Sheet. Default is off.
+#   parch press examples/nomad-checkoff-365.toml -o out/nomad-checkoff-365.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1]
+title = "Year planner"
+checkoff_365 = true
+
+[daily]
+notes_pages = 0
