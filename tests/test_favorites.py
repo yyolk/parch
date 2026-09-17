@@ -142,6 +142,21 @@ def test_favorites_paint_cards_slash_and_icons():
         and 4.0 < op[1].h < 8.0
     ]
     assert cages == []
+    icon_rects = [
+        op[1]
+        for op in plotter.ops
+        if op[0] == "rect" and op[2] and not op[3] and op[1].w < 8 and op[1].h < 8
+    ]
+    for inner in icon_rects:
+        for outer in icon_rects:
+            if inner == outer:
+                continue
+            assert not (
+                inner.x > outer.x + 0.05
+                and inner.right < outer.right - 0.05
+                and inner.y > outer.y + 0.05
+                and inner.bottom < outer.bottom - 0.05
+            )
     washes = [
         op
         for op in plotter.ops

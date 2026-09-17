@@ -702,9 +702,24 @@ def _fav_box(plotter: Plotter, box: Rect) -> None:
 
 
 def _fav_icon_camera(plotter: Plotter, box: Rect) -> None:
-    body = Rect(box.x + box.w * 0.08, box.y + box.h * 0.32, box.w * 0.84, box.h * 0.58)
+    """Movie camera — twin reels, body, barrel. Not a nested frame."""
+    reel = min(box.w, box.h) * 0.32
+    top = box.y + box.h * 0.04
+    left = Rect(box.x + box.w * 0.08, top, reel, reel)
+    right = Rect(box.x + box.w * 0.42, top, reel, reel)
+    _fav_box(plotter, left)
+    _fav_box(plotter, right)
+    body_top = left.bottom + box.h * 0.06
+    body = Rect(box.x + box.w * 0.02, body_top, box.w * 0.68, box.h * 0.50)
     _fav_box(plotter, body)
-    lens = body.inset(body.w * 0.28, body.h * 0.22)
+    lens_h = body.h * 0.56
+    lens = Rect(
+        body.right,
+        body.y + (body.h - lens_h) / 2,
+        box.w * 0.24,
+        lens_h,
+    )
+    _fav_box(plotter, lens)
     _fav_box(plotter, lens)
 
 
