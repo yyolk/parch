@@ -21,6 +21,7 @@ from parch.components import (
     MonthGrid,
     MonthlyCalendarList,
     MonthlyTaskWell,
+    My100Page,
     Notes,
     Priorities,
     ProjectsBoard,
@@ -386,6 +387,175 @@ def paint_checkoff_365(
         )
         if day <= len(dests) and dests[day - 1]:
             plotter.link(mark, dests[day - 1])
+
+
+MY_100_COUNT = 100
+MY_100_MIN_COL_W = 32.0
+MY_100_MIN_ROW_H = 5.6
+MY_100_COL_GAP = COL_GAP
+MY_100_MAX_COLS = 2  # painter constant — not a Spec knob
+MY_100_NUM_W = 8.0
+MY_100_CHECK = 2.4
+MY_100_CHECK_GAP = 1.6
+MY_100_WRITE_GAP = 1.2
+MY_100_DASH = 0.40
+MY_100_DASH_GAP = 0.32
+
+
+def _my_100_fill_rows(max_rows: int, entries: int) -> int:
+    """Largest row count that leaves remainder as full columns (e.g. 20 → 40+40+20)."""
+    for n_rows in range(max_rows, 0, -1):
+        if entries % n_rows == 0:
+            return n_rows
+    return max_rows
+
+
+def my_100_grid(well: Rect) -> tuple[int, int]:
+    """Two equal columns. Rows from the well, preferring a full-column remainder."""
+    n_cols = max(
+        1,
+        int((well.w + MY_100_COL_GAP) / (MY_100_MIN_COL_W + MY_100_COL_GAP)),
+    )
+    n_cols = min(n_cols, MY_100_MAX_COLS)
+    max_rows = max(1, int(well.h / MY_100_MIN_ROW_H))
+    return n_cols, _my_100_fill_rows(max_rows, MY_100_COUNT)
+
+
+def my_100_capacity(well: Rect) -> int:
+    cols, row_n = my_100_grid(well)
+    return max(1, cols * row_n)
+
+
+def my_100_row_h(well: Rect) -> float:
+    _cols, row_n = my_100_grid(well)
+    return well.h / row_n
+
+
+def my_100_columns(well: Rect) -> tuple[Rect, ...]:
+    """Same column tracks on every page — width does not change mid-book."""
+    n_cols, _n_rows = my_100_grid(well)
+    return columns(well, n_cols, gap=MY_100_COL_GAP)
+
+
+def my_100_row_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Number stub, write-in, dashed checkbox — checkbox hugs the row end."""
+    num, rest = row.split_left(MY_100_NUM_W)
+    write_w = max(rest.w - MY_100_CHECK_GAP - MY_100_CHECK, 1.0)
+    write = Rect(rest.x + MY_100_WRITE_GAP, rest.y, write_w - MY_100_WRITE_GAP, rest.h)
+    check = Rect(row.right - MY_100_CHECK, rest.y, MY_100_CHECK, rest.h)
+    return num, write, check
+
+
+def my_100_page_count(well: Rect, *, entries: int = MY_100_COUNT) -> int:
+    """How many pages the device well needs to seat ``entries`` at two columns."""
+    per = my_100_capacity(well)
+    return max(1, (max(entries, 0) + per - 1) // per)
+
+
+def my_100_page_numbers(
+    well: Rect, page: int, *, entries: int = MY_100_COUNT
+) -> tuple[int, ...]:
+    """1-based entry numbers on this 1-based page (column-major fill)."""
+    if page < 1:
+        return ()
+    per = my_100_capacity(well)
+    start = (page - 1) * per + 1
+    stop = min(entries, page * per)
+    if start > entries or stop < start:
+        return ()
+    return tuple(range(start, stop + 1))
+
+
+def my_100_open_seat(well: Rect, n_entries: int) -> Rect | None:
+    """Unused column(s) as unmarked paper. None when the page fills both tracks."""
+    tracks = my_100_columns(well)
+    _cols, n_rows = my_100_grid(well)
+    used = min(len(tracks), (max(n_entries, 0) + n_rows - 1) // n_rows) if n_rows else 0
+    if used >= len(tracks):
+        return None
+    first = tracks[used]
+    last = tracks[-1]
+    return Rect(first.x, well.y, last.right - first.x, well.h)
+
+
+def _paint_dashed_rect(plotter: Plotter, box: Rect) -> None:
+    """Small dashed checkbox — four perforated sides, not a solid tick."""
+    _paint_perforation(
+        plotter,
+        box.x,
+        box.y,
+        box.right,
+        box.y,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.right,
+        box.y,
+        box.right,
+        box.bottom,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.right,
+        box.bottom,
+        box.x,
+        box.bottom,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.x,
+        box.bottom,
+        box.x,
+        box.y,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+
+
+def _paint_my_100_row(plotter: Plotter, row: Rect, number: int) -> None:
+    num, write, check = my_100_row_parts(row)
+    _ink_text(
+        plotter,
+        num,
+        f"{number}.",
+        TypeRef(step="micro"),
+        gray=MUTED,
+        align="right",
+    )
+    rule_y = write.y + write.h * 0.72
+    plotter.line(
+        write.x,
+        rule_y,
+        write.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    mark = Rect(
+        check.x,
+        rule_y - MY_100_CHECK,
+        MY_100_CHECK,
+        MY_100_CHECK,
+    )
+    _paint_dashed_rect(plotter, mark)
+
+
+def paint_my_100(
+    plotter: Plotter, box: Rect, page: My100Page, *, ramp: TypeRamp | None = None
+) -> None:
+    """Two equal columns of numbered write-ins. Unused last-page track stays blank."""
+    _bound_ramp(plotter, ramp)
+    tracks = my_100_columns(box)
+    _n_cols, n_rows = my_100_grid(box)
+    cells = [row for col in tracks for row in rows(col, n_rows, gap=0)]
+    for cell, number in zip(cells, page.numbers, strict=False):
+        _paint_my_100_row(plotter, cell, number)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -2369,7 +2539,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
-        case "checkoff_365":
+        case "my_100" | "checkoff_365":
             pass
         case "quarter":
             dests["Quar"] = page.dest
@@ -2437,6 +2607,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
 def strip_active(kind: str) -> str:
     match kind:
         case "annual":
+            return "Year"
+        case "my_100":
             return "Year"
         case "checkoff_365":
             return ""

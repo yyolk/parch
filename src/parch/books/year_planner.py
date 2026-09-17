@@ -1,7 +1,7 @@
-"""Year planner book — cover → annual → [checkoff-365] → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks.
+"""Year planner book — cover → annual → my 100 → checkoff → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks.
 
-``spec.checkoff_365`` (default off) inserts ``Checkoff365Section`` after
-annual and before quarters. Dest ``checkoff-365-{year}``. No strip chip.
+``spec.my_100`` and ``spec.checkoff_365`` (both default off) insert after
+annual and before quarters; when both are on, my 100 then checkoff.
 """
 
 from parch.books.protocol import plot_pages
@@ -17,6 +17,7 @@ from parch.sections import (
     HabitSection,
     MeetingSection,
     MonthSection,
+    My100Section,
     Page,
     ProjectsSection,
     QuarterSection,
@@ -40,7 +41,7 @@ class YearPlanner:
         built = [
             *CoverSection(spec).pages(),
             *AnnualSection(spec).pages(),
-            # Optional 365 Days Check-Off Sheet — after annual, before quarters.
+            *My100Section(spec).pages(),
             *Checkoff365Section(spec).pages(),
             *QuarterSection(spec).pages(),
         ]

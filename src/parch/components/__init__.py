@@ -17,6 +17,7 @@ from parch.components.engineering import EngineeringFace, EngineeringPad
 from parch.components.habit import HabitGrid
 from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
+from parch.components.my_100 import My100Page
 from parch.components.notes import Notes
 from parch.components.priorities import Priorities
 from parch.components.projects import ProjectsBoard, ProjectsIndex, ProjectTicket
@@ -51,6 +52,7 @@ type Component = (
     | MeetingIndex
     | MeetingSlot
     | MonthGrid
+    | My100Page
     | Notes
     | Priorities
     | ProjectTicket
@@ -96,6 +98,7 @@ __all__ = [
     "MonthCell",
     "MonthGrid",
     "MonthWeek",
+    "My100Page",
     "Notes",
     "Priorities",
     "ProjectTicket",
