@@ -12,7 +12,6 @@ from parch.layouts.planner.painters import (
     CHECKOFF_CIRCLE_SEGS,
     CHECKOFF_COL_PENALTY,
     CHECKOFF_COL_PREF,
-    CHECKOFF_DEFAULT,
     CHECKOFF_DIAMOND_STROKE,
     CHECKOFF_GAP,
     CHECKOFF_LABEL_INSET,
@@ -22,7 +21,6 @@ from parch.layouts.planner.painters import (
     HAIR,
     INK,
     MUTED,
-    CheckoffStyle,
     checkoff_columns,
     checkoff_label,
     checkoff_mark,
@@ -151,15 +149,7 @@ def test_checkoff_default_is_dense_larger_pick():
     assert CHECKOFF_COL_PENALTY == 0.08
     assert CHECKOFF_NUMERAL_SCALE == 0.90
     assert CHECKOFF_LABEL_INSET == 0.18
-    assert CHECKOFF_DEFAULT == CheckoffStyle(
-        gap=0.30,
-        mark_frac=0.91,
-        col_pref=16,
-        col_penalty=0.08,
-        numeral_scale=0.90,
-        label_inset=0.18,
-        numeral_gray=MUTED,
-    )
+    assert CHECKOFF_NUMERAL_GRAY == MUTED
     nomad = well_rect(NOMAD)
     assert checkoff_columns(nomad, 365) == 18
     mark = checkoff_mark(checkoff_seats(nomad, 365)[0])
@@ -306,26 +296,17 @@ def test_checkoff_header_strip_and_outline_when_enabled():
     assert titles == ["365 Days Check-Off Sheet"]
 
 
-def test_checkoff_style_keeps_label_inside_mark():
+def test_checkoff_label_stays_inside_mark():
     well = well_rect(NOMAD)
-    loose = CheckoffStyle(
-        gap=0.85, mark_frac=0.78, col_penalty=0.35, numeral_scale=0.74
-    )
-    assert CHECKOFF_DEFAULT.gap == CHECKOFF_GAP
-    assert CHECKOFF_DEFAULT.numeral_scale == CHECKOFF_NUMERAL_SCALE
-    for style in (CHECKOFF_DEFAULT, loose):
-        mark = checkoff_mark(checkoff_seats(well, 365, style)[99], style)
-        label = checkoff_label(mark, style)
-        assert label.w < mark.w
-        assert label.h < mark.h
-        assert label.x > mark.x
-        assert label.right < mark.right
-        assert label.y > mark.y
-        assert label.bottom < mark.bottom
-        assert label.x + label.w / 2 == pytest.approx(mark.x + mark.w / 2)
-        assert label.y + label.h / 2 == pytest.approx(mark.y + mark.h / 2)
-        ink = checkoff_numeral_ink(EffectiveRamp(), style)
-        assert ink.size < 4.3 * 1.01
-    default_mark = checkoff_mark(checkoff_seats(well, 365)[0])
-    loose_mark = checkoff_mark(checkoff_seats(well, 365, loose)[0], loose)
-    assert default_mark.w > loose_mark.w
+    mark = checkoff_mark(checkoff_seats(well, 365)[99])
+    label = checkoff_label(mark)
+    assert label.w < mark.w
+    assert label.h < mark.h
+    assert label.x > mark.x
+    assert label.right < mark.right
+    assert label.y > mark.y
+    assert label.bottom < mark.bottom
+    assert label.x + label.w / 2 == pytest.approx(mark.x + mark.w / 2)
+    assert label.y + label.h / 2 == pytest.approx(mark.y + mark.h / 2)
+    ink = checkoff_numeral_ink(EffectiveRamp())
+    assert ink.size < 4.3 * 1.01
