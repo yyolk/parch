@@ -75,7 +75,7 @@ def test_bullet_journal_is_cover_then_bujo_hubs():
     cover = pages[0].components[0]
     assert isinstance(cover, CoverTitle)
     assert cover.cta_dest == _JAN.bujo_key_dest
-    assert cover.display_title == "Bullet journal"
+    assert cover.display_title == "Bullet Journal"
     assert cover.specs_lead == ""
     assert cover.subtitle == "Bullet journal"
 
@@ -258,7 +258,7 @@ def test_january_plot_paints_key_and_gutter():
     assert "Thu 1" in texts
     assert "Collections" in texts
     title = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "Bullet journal"
+        op for op in plotter.ops if op[0] == "text" and op[2] == "Bullet Journal"
     )
     assert title[3] == 42
     year = next(
