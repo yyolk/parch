@@ -2,9 +2,6 @@ import inspect
 import sys
 from pathlib import Path
 
-import pytest
-
-from parch import progress
 from parch.books import (
     BulletJournal,
     EngineeringNotebook,
@@ -17,11 +14,7 @@ from parch.progress import render_progress
 from parch.spec import Spec
 
 
-@pytest.fixture(autouse=True)
-def _reset_progress_width():
-    progress._last_width = 0
-    yield
-    progress._last_width = 0
+_EL = "\033[K"
 
 
 class _TTY:
@@ -54,14 +47,14 @@ def test_render_progress_bar_on_tty(monkeypatch):
     tty = _TTY()
     monkeypatch.setattr(sys, "stderr", tty)
     render_progress(4, 10, "cover")
-    assert "".join(tty.chunks) == "\rparch |████░░░░░░| 4/10  cover"
+    assert "".join(tty.chunks) == f"\rparch |████░░░░░░| 4/10  cover{_EL}"
 
 
 def test_render_progress_finishes_with_newline(monkeypatch):
     tty = _TTY()
     monkeypatch.setattr(sys, "stderr", tty)
     render_progress(10, 10, "daily")
-    assert "".join(tty.chunks) == "\rparch |██████████| 10/10  daily\n"
+    assert "".join(tty.chunks) == f"\rparch |██████████| 10/10  daily{_EL}\n"
 
 
 def test_render_progress_quiet_off_tty(monkeypatch):
@@ -76,7 +69,7 @@ def test_render_progress_space_pads_shorter_label(monkeypatch):
     render_progress(3, 10, "cover")
     long = "parch |██░░░░░░░░| 2/10  projects_index"
     short = "parch |███░░░░░░░| 3/10  cover"
-    assert tty.chunks == [f"\r{long}", f"\r{short.ljust(len(long))}"]
+    assert tty.chunks == [f"\r{long}{_EL}", f"\r{short}{_EL}"]
 
 
 def test_press_signature_has_no_progress_hook():
