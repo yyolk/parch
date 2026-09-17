@@ -153,11 +153,9 @@ class Spec:
     outline: bool = False  # reader sidebar outline; default off
     bujo_index_pages: int = 2
     bujo_collections: int = 24
-    lists_favorites: bool = (
-        False  # optional Favorites page; off keeps year-planner walk
-    )
-    lists_my_100: bool = False  # optional My 100 page
-    lists_days_365: bool = False  # optional 365 Days check-off
+    lists_favorites: bool = False  # optional Favorites page; default off
+    lists_my_100: bool = False  # optional My 100 page; default off
+    lists_days_365: bool = False  # optional 365 Days check-off; default off
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
