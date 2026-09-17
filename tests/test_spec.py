@@ -37,7 +37,6 @@ def test_dest_names_from_tstrings():
     assert spec.projects_index_dest == "projects-index-2026-01"
     assert spec.dest_for_projects_index(1) == "projects-index-2026-01"
     assert spec.project_cards == 3
-    assert spec.project_tasks == 4
     assert spec.project_tickets == 8
     assert spec.project_index_pages == 1
     assert spec.project_count == 8
@@ -90,8 +89,10 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"habits": {"rows": 6}}).habit_columns == 6
     assert Spec.from_mapping({"habit_rows": 7}).habit_columns == 7
     assert Spec.from_path(Path("examples/nomad.toml")).habit_columns == 10
-    assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_cards == 2
-    assert Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}}).project_tasks == 5
+    assert Spec.from_mapping({"projects": {"cards": 2}}).project_cards == 2
+    leftover = Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}})
+    assert leftover.project_cards == 2
+    assert not hasattr(leftover, "project_tasks")
     assert Spec.from_mapping({"projects": {"tickets": 6}}).project_tickets == 6
     assert Spec.from_mapping({"projects": {"tickets_per_page": 7}}).project_tickets == 7
     triple = Spec.from_mapping({"projects": {"index_pages": 3, "tickets": 8}})
@@ -156,7 +157,6 @@ def test_habit_columns_from_toml_keys():
     assert nomad.book == "year-planner"
     assert nomad.outline is True
     assert nomad.project_cards == 3
-    assert nomad.project_tasks == 4
     assert nomad.project_tickets == 8
     assert nomad.project_index_pages == 3
     assert nomad.project_count == 24

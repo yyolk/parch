@@ -1,4 +1,4 @@
-"""Projects board, ticket index, and per-ticket three-card pages — data only."""
+"""Projects board, ticket index, and per-ticket dest pages — data only."""
 
 from dataclasses import dataclass
 
@@ -9,14 +9,13 @@ class ProjectsBoard:
 
     year: int
     cards: int
-    tasks: int
     index_dest: str = ""
     number: int = 0
 
 
 @dataclass(frozen=True, slots=True)
 class ProjectTicket:
-    """One stacked ticket on the index — stub number + three-card projects dest."""
+    """One stacked ticket on the index — stub number + stacked-card projects dest."""
 
     number: int
     dest: str
@@ -24,8 +23,12 @@ class ProjectTicket:
 
 @dataclass(frozen=True, slots=True)
 class ProjectsIndex:
-    """Stacked tickets for ``paint_projects_index``. Stub and preview cards link; write-in stays unlinkable."""
+    """Stacked tickets for ``paint_projects_index``. Stub and preview cards link; write-in stays unlinkable.
+
+    ``cards`` is the dest stack count and the index preview-square count.
+    """
 
     year: int
     dest: str
     tickets: tuple[ProjectTicket, ...]
+    cards: int

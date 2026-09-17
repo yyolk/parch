@@ -35,6 +35,7 @@ class ProjectsSection:
                             year=spec.year,
                             dest=dest,
                             tickets=slice_tickets,
+                            cards=spec.project_cards,
                         ),
                     ),
                 )
@@ -53,7 +54,6 @@ class ProjectsSection:
                     ProjectsBoard(
                         year=spec.year,
                         cards=spec.project_cards,
-                        tasks=spec.project_tasks,
                         index_dest=spec.dest_for_projects_index_of(ticket.number),
                         number=ticket.number,
                     ),

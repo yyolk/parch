@@ -133,7 +133,6 @@ class Spec:
     habit_columns: int = 10
     priority_rows: int = 6
     project_cards: int = 3
-    project_tasks: int = 4
     project_tickets: int = 8
     project_index_pages: int = 1
     meeting_index_rows: int = 16
@@ -176,8 +175,6 @@ class Spec:
             raise ConfigError("priority_rows must be 4–8")
         if not 2 <= self.project_cards <= 4:
             raise ConfigError("project_cards must be 2–4")
-        if not 3 <= self.project_tasks <= 6:
-            raise ConfigError("project_tasks must be 3–6")
         if not 6 <= self.project_tickets <= 10:
             raise ConfigError("project_tickets must be 6–10")
         if not 1 <= self.project_index_pages <= 6:
@@ -475,9 +472,6 @@ class Spec:
             ),
             project_cards=int(
                 projects_table.get("cards", data.get("project_cards", 3))
-            ),
-            project_tasks=int(
-                projects_table.get("tasks", data.get("project_tasks", 4))
             ),
             project_tickets=int(
                 projects_table.get(
