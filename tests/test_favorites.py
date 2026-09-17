@@ -67,6 +67,27 @@ def test_favorites_after_annual_when_enabled():
     ]
 
 
+def test_favorites_then_my_100_then_checkoff_when_all_on():
+    spec = Spec(
+        favorites_pages=1,
+        my_100=True,
+        checkoff_365=True,
+        months=(1,),
+        notes_pages=0,
+    )
+    dests = [page.dest for page in YearPlanner().pages(spec)]
+    annual = dests.index(spec.year_dest)
+    fav = dests.index(spec.favorites_dest)
+    landing = dests.index(spec.my_100_dest)
+    checkoff = dests.index(spec.checkoff_365_dest)
+    quarter = dests.index(spec.dest_for_quarter(1))
+    assert dests[:2] == ["cover", spec.year_dest]
+    assert annual < fav < landing < checkoff < quarter
+    assert dests[annual + 1] == spec.favorites_dest
+    last_my = max(i for i, dest in enumerate(dests) if dest.startswith("my-100-"))
+    assert last_my + 1 == checkoff
+
+
 def test_favorites_seats_grid():
     well = well_rect(NOMAD)
     seats = favorites_seats(well)
