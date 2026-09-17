@@ -12,6 +12,8 @@ def test_dest_names_from_tstrings():
     spec = Spec()
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
+    assert spec.favorites_pages == 0
+    assert spec.favorites_dest == "favorites-2026"
     assert spec.checkoff_365 is False
     assert spec.year_day_count == 365
     assert spec.checkoff_365_dest == "checkoff-365-2026"
@@ -123,6 +125,12 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"outline": True}).outline is True
     with pytest.raises(ConfigError, match="outline must be a boolean"):
         Spec.from_mapping({"outline": "true"})
+    assert Spec.from_mapping({"favorites": True}).favorites_pages == 1
+    assert Spec.from_mapping({"favorites_pages": 1}).favorites_pages == 1
+    with pytest.raises(ConfigError, match="favorites must be a boolean"):
+        Spec.from_mapping({"favorites": "true"})
+    with pytest.raises(ConfigError, match="favorites_pages must be"):
+        Spec(favorites_pages=2)
     assert Spec.from_mapping({"my_100": True}).my_100 is True
     assert Spec.from_path(Path("examples/nomad-my-100.toml")).my_100 is True
     assert Spec.from_path(Path("examples/nomad.toml")).my_100 is False

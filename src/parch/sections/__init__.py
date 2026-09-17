@@ -13,6 +13,7 @@ from parch.sections.cover import CoverSection
 from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.favorites import FavoritesSection
 from parch.sections.habit import HabitSection
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
@@ -39,6 +40,7 @@ __all__ = [
     "DailyNotesSection",
     "DailySection",
     "EngineeringPadSection",
+    "FavoritesSection",
     "HabitSection",
     "MeetingSection",
     "MonthSection",

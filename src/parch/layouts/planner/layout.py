@@ -10,6 +10,7 @@ from parch.components import (
     CollectionLeaf,
     CoverTitle,
     EngineeringPad,
+    FavoritesPage,
     FutureLogPage,
     HabitGrid,
     MeetingAgenda,
@@ -52,6 +53,7 @@ from parch.layouts.planner.painters import (
     paint_cover,
     paint_daily,
     paint_engineering_pad,
+    paint_favorites,
     paint_future_log,
     paint_habit_grid,
     paint_header,
@@ -143,6 +145,8 @@ class PlannerLayout:
         match page.kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
+            case "favorites":
+                paint_favorites(plotter, well, _one(page, FavoritesPage), ramp=ramp)
             case "my_100":
                 paint_my_100(plotter, well, _one(page, My100Page), ramp=ramp)
             case "checkoff_365":
@@ -211,6 +215,8 @@ def _header_meta(page: Page) -> str:
     match page.kind:
         case "annual":
             return "Q1–Q4"
+        case "favorites":
+            return str(_one(page, FavoritesPage).year)
         case "my_100":
             return str(_one(page, My100Page).year)
         case "checkoff_365":

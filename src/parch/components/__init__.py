@@ -14,6 +14,7 @@ from parch.components.bujo import (
 from parch.components.checkoff import Checkoff365
 from parch.components.cover import CoverTitle
 from parch.components.engineering import EngineeringFace, EngineeringPad
+from parch.components.favorites import FavoritesPage
 from parch.components.habit import HabitGrid
 from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
@@ -43,6 +44,7 @@ type Component = (
     | CollectionLeaf
     | CoverTitle
     | EngineeringPad
+    | FavoritesPage
     | FutureLogPage
     | HabitGrid
     | MonthlyCalendarList
@@ -91,6 +93,7 @@ __all__ = [
     "RapidLogPage",
     "EngineeringFace",
     "EngineeringPad",
+    "FavoritesPage",
     "HabitGrid",
     "MeetingAgenda",
     "MeetingIndex",

@@ -1,7 +1,8 @@
-"""Year planner book — cover → annual → my 100 → checkoff → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks.
+"""Year planner book — cover → annual → favorites → my 100 → checkoff → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks.
 
-``spec.my_100`` and ``spec.checkoff_365`` (both default off) insert after
-annual and before quarters; when both are on, my 100 then checkoff.
+``spec.favorites_pages``, ``spec.my_100``, and ``spec.checkoff_365`` (all
+default off) insert after annual and before quarters; when on, favorites
+then my 100 then checkoff.
 """
 
 from parch.books.protocol import plot_pages
@@ -14,6 +15,7 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    FavoritesSection,
     HabitSection,
     MeetingSection,
     MonthSection,
@@ -41,6 +43,7 @@ class YearPlanner:
         built = [
             *CoverSection(spec).pages(),
             *AnnualSection(spec).pages(),
+            *FavoritesSection(spec).pages(),
             *My100Section(spec).pages(),
             *Checkoff365Section(spec).pages(),
             *QuarterSection(spec).pages(),

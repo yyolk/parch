@@ -82,6 +82,15 @@ def _parse_bool(raw: object, key: str) -> bool:
     return raw
 
 
+def _parse_favorites_pages(data: TomlTable) -> int:
+    """``favorites_pages`` count, or ``favorites`` bool. Default 0 (off)."""
+    if "favorites_pages" in data:
+        return int(data["favorites_pages"])
+    if "favorites" in data:
+        return 1 if _parse_bool(data["favorites"], "favorites") else 0
+    return 0
+
+
 def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     """``[bujo]`` index_pages + collections. Unknown keys fail loudly."""
     raw = data.get("bujo")
@@ -132,6 +141,7 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     outline: bool = False  # reader sidebar outline; default off
+    favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
     checkoff_365: bool = False  # optional year check-off sheet; default off
     bujo_index_pages: int = 2
@@ -180,6 +190,8 @@ class Spec:
             raise ConfigError("engineering_sheets must be 0–100")
         if not 0 <= self.steno_sheets <= 100:
             raise ConfigError("steno_sheets must be 0–100")
+        if not 0 <= self.favorites_pages <= 1:
+            raise ConfigError("favorites_pages must be 0–1")
         if self.steno_sheets and self.engineering_sheets:
             raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -215,6 +227,11 @@ class Spec:
     def year_day_count(self) -> int:
         """365 or 366 from ``self.year`` — February length, not a hardcoded 365."""
         return year_days(self.year)
+
+    @property
+    def favorites_dest(self) -> str:
+        """Year-scoped Favorites dest, e.g. ``favorites-2026``. Emitted only when enabled."""
+        return _dest(t"favorites-{self.year:04d}")
 
     @property
     def checkoff_365_dest(self) -> str:
@@ -480,6 +497,7 @@ class Spec:
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
             outline=_parse_bool(data.get("outline", False), "outline"),
+            favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
             checkoff_365=_parse_bool(data.get("checkoff_365", False), "checkoff_365"),
             bujo_index_pages=bujo_index_pages,

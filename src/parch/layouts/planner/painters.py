@@ -14,6 +14,7 @@ from parch.components import (
     CollectionLeaf,
     CoverTitle,
     EngineeringPad,
+    FavoritesPage,
     FutureLogPage,
     HabitGrid,
     MeetingAgenda,
@@ -556,6 +557,222 @@ def paint_my_100(
     cells = [row for col in tracks for row in rows(col, n_rows, gap=0)]
     for cell, number in zip(cells, page.numbers, strict=False):
         _paint_my_100_row(plotter, cell, number)
+
+
+# Optional Favorites well — 2×3 ranking cards. Sealed; not a strip chip.
+# No page-local title/caption band — well height goes to the cards.
+FAVORITES_COLS = 2
+FAVORITES_GRID_ROWS = 3
+FAVORITES_CARD_GAP = 3.2
+FAVORITES_INSET = 1.2
+FAVORITES_HEAD_H = 9.0
+FAVORITES_SLASH_W = 6.0
+FAVORITES_ICON_W = 26.0
+FAVORITES_ICON_GAP = 1.8
+FAVORITES_ICON_SCALE = 0.74
+FAVORITES_ICON_STROKE = 0.24
+FAVORITES_ROW_H = 7.2
+# Box / line / box / line / box — even optical weight across the strip.
+FAVORITES_ICONS = ("camera", "note", "book", "utensils", "bag")
+
+
+def favorites_seats(well: Rect) -> tuple[Rect, ...]:
+    """Six equal ranking cards in a 2×3 grid. No title/caption band above."""
+    cards: list[Rect] = []
+    for band in rows(well, FAVORITES_GRID_ROWS, gap=FAVORITES_CARD_GAP):
+        cards.extend(columns(band, FAVORITES_COLS, gap=FAVORITES_CARD_GAP))
+    return tuple(cards)
+
+
+def favorites_card_parts(card: Rect) -> tuple[Rect, Rect]:
+    """Single three-cell header over a lined write-in well."""
+    return card.split_top(min(FAVORITES_HEAD_H, card.h * 0.28))
+
+
+def favorites_header_parts(header: Rect) -> tuple[Rect, Rect, Rect]:
+    """One row: slash | name | icons. Same y, same h."""
+    inner = header.inset(FAVORITES_INSET, 0.8)
+    slash, rest = inner.split_left(min(FAVORITES_SLASH_W, inner.w * 0.16))
+    icon_w = min(FAVORITES_ICON_W, rest.w * 0.58)
+    name, icons = rest.split_left(rest.w - icon_w)
+    return slash, name, icons
+
+
+def favorites_body_rows(body: Rect) -> tuple[Rect, ...]:
+    """Full-width write-in rows. No slash column."""
+    inner = Rect(
+        body.x + FAVORITES_INSET,
+        body.y + 0.8,
+        body.w - 2 * FAVORITES_INSET,
+        max(body.h - FAVORITES_INSET - 0.8, FAVORITES_ROW_H),
+    )
+    n = max(1, int(inner.h / FAVORITES_ROW_H))
+    return rows(inner, n)
+
+
+def paint_favorites(
+    plotter: Plotter, box: Rect, _page: FavoritesPage, *, ramp: TypeRamp | None = None
+) -> None:
+    """2×3 framed ranking cards — `/` | name | icons, then write-ins."""
+    ramp = _bound_ramp(plotter, ramp)
+    for card in favorites_seats(box):
+        _paint_favorites_card(plotter, card)
+
+
+def _paint_favorites_card(plotter: Plotter, card: Rect) -> None:
+    header, body = favorites_card_parts(card)
+    _wash(plotter, header, WASH)
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    slash, name, icons = favorites_header_parts(header)
+    _ink_text(
+        plotter,
+        slash,
+        "/",
+        TypeRef(step="label"),
+        gray=MUTED,
+        align="center",
+    )
+    plotter.line(
+        name.x + 0.4,
+        name.y + name.h * 0.72,
+        name.right - 0.4,
+        name.y + name.h * 0.72,
+        stroke_width=RULE,
+        stroke_gray=MUTED,
+    )
+    _paint_favorites_icons(plotter, icons)
+    plotter.line(
+        card.x,
+        header.bottom,
+        card.right,
+        header.bottom,
+        stroke_width=HAIR,
+        stroke_gray=INK,
+    )
+    for row in favorites_body_rows(body):
+        plotter.line(
+            row.x,
+            row.y + row.h * 0.72,
+            row.right,
+            row.y + row.h * 0.72,
+            stroke_width=RULE,
+            stroke_gray=RULE_C,
+        )
+
+
+def _paint_favorites_icons(plotter: Plotter, box: Rect) -> None:
+    slots = columns(box, len(FAVORITES_ICONS), gap=FAVORITES_ICON_GAP)
+    mark = min(min(slot.h, slot.w) for slot in slots) * FAVORITES_ICON_SCALE
+    for slot, kind in zip(slots, FAVORITES_ICONS, strict=True):
+        icon = Rect(
+            slot.x + (slot.w - mark) / 2,
+            slot.y + (slot.h - mark) / 2,
+            mark,
+            mark,
+        )
+        _paint_favorites_icon(plotter, icon, kind)
+
+
+def _paint_favorites_icon(plotter: Plotter, box: Rect, kind: str) -> None:
+    match kind:
+        case "camera":
+            _fav_icon_camera(plotter, box)
+        case "book":
+            _fav_icon_book(plotter, box)
+        case "note":
+            _fav_icon_note(plotter, box)
+        case "utensils":
+            _fav_icon_utensils(plotter, box)
+        case "bag":
+            _fav_icon_bag(plotter, box)
+        case _:
+            raise ValueError(f"unknown favorites icon {kind!r}")
+
+
+def _fav_stroke(plotter: Plotter, x1: float, y1: float, x2: float, y2: float) -> None:
+    plotter.line(x1, y1, x2, y2, stroke_width=FAVORITES_ICON_STROKE, stroke_gray=INK)
+
+
+def _fav_box(plotter: Plotter, box: Rect) -> None:
+    plotter.rect(
+        box,
+        stroke=True,
+        fill=False,
+        stroke_width=FAVORITES_ICON_STROKE,
+        stroke_gray=INK,
+    )
+
+
+def _fav_icon_camera(plotter: Plotter, box: Rect) -> None:
+    """Movie camera — twin reels, body, barrel. Not a nested frame."""
+    reel = min(box.w, box.h) * 0.28
+    top = box.y + box.h * 0.08
+    left = Rect(box.x + box.w * 0.10, top, reel, reel)
+    right = Rect(box.x + box.w * 0.46, top, reel, reel)
+    _fav_box(plotter, left)
+    _fav_box(plotter, right)
+    body_top = left.bottom + box.h * 0.06
+    body = Rect(box.x + box.w * 0.08, body_top, box.w * 0.58, box.h * 0.46)
+    _fav_box(plotter, body)
+    lens_h = body.h * 0.58
+    lens = Rect(
+        body.right,
+        body.y + (body.h - lens_h) / 2,
+        box.w * 0.22,
+        lens_h,
+    )
+    _fav_box(plotter, lens)
+
+
+def _fav_icon_book(plotter: Plotter, box: Rect) -> None:
+    page = Rect(box.x + box.w * 0.18, box.y + box.h * 0.10, box.w * 0.64, box.h * 0.80)
+    _fav_box(plotter, page)
+    spine = page.x + page.w * 0.34
+    _fav_stroke(plotter, spine, page.y, spine, page.bottom)
+
+
+def _fav_icon_note(plotter: Plotter, box: Rect) -> None:
+    """Eighth-note stand-in — head, stem, two flags for upper mass."""
+    head = Rect(box.x + box.w * 0.08, box.y + box.h * 0.52, box.w * 0.54, box.h * 0.40)
+    _fav_box(plotter, head)
+    stem_x = head.right
+    top = box.y + box.h * 0.06
+    _fav_stroke(plotter, stem_x, head.y + head.h * 0.10, stem_x, top)
+    _fav_stroke(plotter, stem_x, top, box.x + box.w * 0.92, box.y + box.h * 0.24)
+    _fav_stroke(
+        plotter,
+        stem_x,
+        box.y + box.h * 0.18,
+        box.x + box.w * 0.92,
+        box.y + box.h * 0.36,
+    )
+
+
+def _fav_icon_utensils(plotter: Plotter, box: Rect) -> None:
+    top = box.y + box.h * 0.08
+    join = box.y + box.h * 0.42
+    bot = box.bottom - box.h * 0.06
+    for t in (0.12, 0.28, 0.44):
+        x = box.x + box.w * t
+        _fav_stroke(plotter, x, top, x, join)
+    handle = box.x + box.w * 0.28
+    _fav_stroke(plotter, box.x + box.w * 0.12, join, box.x + box.w * 0.44, join)
+    _fav_stroke(plotter, handle, join, handle, bot)
+    knife = box.x + box.w * 0.78
+    _fav_stroke(plotter, knife, top, knife, bot)
+    _fav_stroke(plotter, knife + box.w * 0.10, top, knife + box.w * 0.10, join)
+    _fav_stroke(plotter, knife, top, knife + box.w * 0.10, top)
+
+
+def _fav_icon_bag(plotter: Plotter, box: Rect) -> None:
+    body = Rect(box.x + box.w * 0.14, box.y + box.h * 0.36, box.w * 0.72, box.h * 0.54)
+    _fav_box(plotter, body)
+    left = box.x + box.w * 0.34
+    right = box.right - box.w * 0.34
+    top = box.y + box.h * 0.12
+    _fav_stroke(plotter, left, body.y, left, top)
+    _fav_stroke(plotter, left, top, right, top)
+    _fav_stroke(plotter, right, top, right, body.y)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -2539,7 +2756,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
-        case "my_100" | "checkoff_365":
+        case "favorites" | "my_100" | "checkoff_365":
             pass
         case "quarter":
             dests["Quar"] = page.dest
@@ -2608,7 +2825,7 @@ def strip_active(kind: str) -> str:
     match kind:
         case "annual":
             return "Year"
-        case "my_100":
+        case "favorites" | "my_100":
             return "Year"
         case "checkoff_365":
             return ""
