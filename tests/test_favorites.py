@@ -9,7 +9,10 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
     FAVORITES_ICON_GAP,
+    FAVORITES_ICON_SCALE,
+    FAVORITES_ICON_STROKE,
     FAVORITES_ICONS,
+    HAIR,
     INK,
     WASH,
     favorites_body_rows,
@@ -73,13 +76,19 @@ def test_favorites_seats_two_cards():
     assert header.y == pytest.approx(left.y)
     assert body.bottom == pytest.approx(left.bottom)
     slash, name, icons = favorites_header_parts(header)
-    assert slash.x > header.x
+    assert slash.y == pytest.approx(name.y)
+    assert icons.y == pytest.approx(slash.y)
+    assert slash.h == pytest.approx(name.h)
+    assert icons.h == pytest.approx(slash.h)
     assert name.x == pytest.approx(slash.right)
-    assert icons.y == pytest.approx(slash.bottom)
+    assert icons.x == pytest.approx(name.right)
     assert icons.w > name.w
+    assert icons.w >= 20
     rows = favorites_body_rows(body)
-    assert len(rows) >= 8
+    assert len(rows) >= 10
     assert rows[0].y > header.bottom
+    assert rows[0].x > left.x
+    assert rows[0].right < left.right
 
 
 def test_favorites_paint_cards_slash_and_icons():
@@ -101,7 +110,9 @@ def test_favorites_paint_cards_slash_and_icons():
         "bag",
         "applause",
     )
-    assert FAVORITES_ICON_GAP == pytest.approx(2.2)
+    assert 1.6 <= FAVORITES_ICON_GAP <= 2.0
+    assert 0.70 <= FAVORITES_ICON_SCALE <= 0.78
+    assert FAVORITES_ICON_STROKE > HAIR
 
     frames = [
         op
@@ -113,12 +124,30 @@ def test_favorites_paint_cards_slash_and_icons():
         and op[6] == pytest.approx(INK)
     ]
     assert len(frames) == 2
+    cages = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and 4.0 < op[1].w < 8.0
+        and 4.0 < op[1].h < 8.0
+    ]
+    assert cages == []
     washes = [
         op
         for op in plotter.ops
         if op[0] == "rect" and op[3] and not op[2] and op[5] == pytest.approx(WASH)
     ]
     assert len(washes) == 2
+    header_rules = [
+        op
+        for op in plotter.ops
+        if op[0] == "line"
+        and op[5] == pytest.approx(HAIR)
+        and op[6] == pytest.approx(INK)
+    ]
+    assert len(header_rules) == 2
     rules = [op for op in plotter.ops if op[0] == "line"]
     assert len(rules) > 20
 
