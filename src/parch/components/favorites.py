@@ -5,6 +5,6 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class FavoritesPage:
-    """Year-scoped Hobonichi-style rankings well. Caption and icons are painter-sealed."""
+    """Year-scoped rankings well. Two cards; icons are painter-sealed."""
 
     year: int

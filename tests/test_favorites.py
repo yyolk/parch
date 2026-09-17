@@ -8,12 +8,13 @@ from parch.devices.registry import NOMAD
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
-    FAVORITES_CAPTION,
+    FAVORITES_ICON_GAP,
     FAVORITES_ICONS,
-    FAVORITES_TITLE,
-    favorites_column_rows,
-    favorites_head_seats,
-    favorites_row_parts,
+    INK,
+    WASH,
+    favorites_body_rows,
+    favorites_card_parts,
+    favorites_header_parts,
     favorites_seats,
     paint_favorites,
     strip_active,
@@ -61,37 +62,36 @@ def test_favorites_after_annual_when_enabled():
     ]
 
 
-def test_favorites_seats_two_columns():
+def test_favorites_seats_two_cards():
     well = well_rect(NOMAD)
-    head, (left, right) = favorites_seats(well)
-    assert head.y == pytest.approx(well.y)
+    left, right = favorites_seats(well)
     assert left.x == pytest.approx(well.x)
+    assert left.y == pytest.approx(well.y)
     assert right.right == pytest.approx(well.right)
     assert right.x > left.right
-    title, caption = favorites_head_seats(head)
-    assert title.x == pytest.approx(head.x)
-    assert caption.right == pytest.approx(head.right)
-    header, body = favorites_column_rows(left)
+    header, body = favorites_card_parts(left)
     assert header.y == pytest.approx(left.y)
-    assert len(body) >= 8
-    assert body[-1].bottom == pytest.approx(left.bottom)
-    slash, name, icons = favorites_row_parts(header)
-    assert slash.x == pytest.approx(header.x)
-    assert icons.right == pytest.approx(header.right)
+    assert body.bottom == pytest.approx(left.bottom)
+    slash, name, icons = favorites_header_parts(header)
+    assert slash.x > header.x
     assert name.x == pytest.approx(slash.right)
-    assert name.right == pytest.approx(icons.x)
+    assert icons.y == pytest.approx(slash.bottom)
+    assert icons.w > name.w
+    rows = favorites_body_rows(body)
+    assert len(rows) >= 8
+    assert rows[0].y > header.bottom
 
 
-def test_favorites_paint_caption_slash_and_rules():
+def test_favorites_paint_cards_slash_and_icons():
     page = FavoritesPage(year=2026)
     well = well_rect(NOMAD)
     plotter = RecordingPlotter()
     paint_favorites(plotter, well, page)
 
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert FAVORITES_TITLE in texts
-    for line in FAVORITES_CAPTION:
-        assert line in texts
+    assert "Favorites" not in texts
+    assert "five stars" not in " ".join(texts)
+    assert "rankings" not in " ".join(texts)
     assert texts.count("/") == 2
     assert FAVORITES_ICONS == (
         "camera",
@@ -101,15 +101,26 @@ def test_favorites_paint_caption_slash_and_rules():
         "bag",
         "applause",
     )
+    assert FAVORITES_ICON_GAP == pytest.approx(2.2)
 
     frames = [
         op
         for op in plotter.ops
-        if op[0] == "rect" and op[2] and not op[3] and op[1].w > 40
+        if op[0] == "rect"
+        and op[2]
+        and not op[3]
+        and op[1].w > 40
+        and op[6] == pytest.approx(INK)
     ]
     assert len(frames) == 2
+    washes = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[3] and not op[2] and op[5] == pytest.approx(WASH)
+    ]
+    assert len(washes) == 2
     rules = [op for op in plotter.ops if op[0] == "line"]
-    assert len(rules) > 40
+    assert len(rules) > 20
 
 
 def test_favorites_chrome_year_and_no_fav_tab():
@@ -119,9 +130,9 @@ def test_favorites_chrome_year_and_no_fav_tab():
     plotter.begin_page()
     PlannerLayout().paint(page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "Favorites" in texts
+    assert texts.count("Favorites") == 1
     assert "2026" in texts
-    assert texts.count("Favorites") >= 1
+    assert "five stars" not in " ".join(texts)
     for label in (
         "Year",
         "Quar",

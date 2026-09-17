@@ -558,134 +558,121 @@ def paint_my_100(
     for cell, number in zip(cells, page.numbers, strict=False):
         _paint_my_100_row(plotter, cell, number)
 
-# Optional Favorites well — Hobonichi-style rankings. Sealed; not a strip chip.
-FAVORITES_TITLE = "Favorites"
-FAVORITES_CAPTION = (
-    "This is a great place to list rankings for movies, books, music,",
-    "restaurants, events, games and more — on a sliding scale of five stars.",
-)
-FAVORITES_TITLE_W = 28.0
-FAVORITES_HEAD_H = 10.4
-FAVORITES_COL_GAP = 4.0
-FAVORITES_SLASH_W = 6.2
-FAVORITES_ICON_W = 16.4
-FAVORITES_ROW_H = 8.4
+# Optional Favorites well — two ranking cards. Sealed; not a strip chip.
+FAVORITES_COL_GAP = 3.6
+FAVORITES_INSET = 1.4
+FAVORITES_NAME_H = 7.2
+FAVORITES_ICON_H = 6.6
+FAVORITES_ICON_GAP = 2.2
+FAVORITES_ICON_SCALE = 0.68
+FAVORITES_SLASH_W = 6.4
+FAVORITES_ROW_H = 8.2
 FAVORITES_ICONS = ("camera", "book", "note", "utensils", "bag", "applause")
 
 
-def favorites_seats(well: Rect) -> tuple[Rect, tuple[Rect, Rect]]:
-    """Caption band over two equal columns."""
-    head, body = well.split_top(min(FAVORITES_HEAD_H, well.h * 0.2))
-    left, right = columns(body, 2, gap=FAVORITES_COL_GAP)
-    return head, (left, right)
+def favorites_header_height() -> float:
+    """Washed chrome: inset + slash/name + icon strip + inset."""
+    return (
+        FAVORITES_INSET
+        + FAVORITES_NAME_H
+        + FAVORITES_ICON_GAP
+        + FAVORITES_ICON_H
+        + FAVORITES_INSET
+    )
 
 
-def favorites_head_seats(head: Rect) -> tuple[Rect, Rect]:
-    title, caption = head.split_left(min(FAVORITES_TITLE_W, head.w * 0.36))
-    return title, caption
+def favorites_seats(well: Rect) -> tuple[Rect, Rect]:
+    """Two equal ranking cards."""
+    left, right = columns(well, 2, gap=FAVORITES_COL_GAP)
+    return left, right
 
 
-def favorites_column_rows(col: Rect) -> tuple[Rect, tuple[Rect, ...]]:
-    """Header row plus fitted write-in rows. Pitch is sealed."""
-    header, rest = col.split_top(min(FAVORITES_ROW_H, col.h * 0.2))
-    n = max(1, int(rest.h / FAVORITES_ROW_H))
-    return header, rows(rest, n)
+def favorites_card_parts(card: Rect) -> tuple[Rect, Rect]:
+    """Header chrome over a lined write-in well."""
+    return card.split_top(min(favorites_header_height(), card.h * 0.32))
 
 
-def favorites_row_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
-    """Slash box | name field | category-icon strip."""
-    slash, rest = row.split_left(min(FAVORITES_SLASH_W, row.w * 0.22))
-    icon_w = min(FAVORITES_ICON_W, rest.w * 0.34)
-    name, icons = rest.split_left(rest.w - icon_w)
+def favorites_header_parts(header: Rect) -> tuple[Rect, Rect, Rect]:
+    """Slash box, name field, and full-width icon strip."""
+    inner = header.inset(FAVORITES_INSET, FAVORITES_INSET)
+    name_row, icons = inner.split_top(FAVORITES_NAME_H)
+    slash, name = name_row.split_left(min(FAVORITES_SLASH_W, name_row.w * 0.22))
     return slash, name, icons
+
+
+def favorites_body_rows(body: Rect) -> tuple[Rect, ...]:
+    """Fitted write-in rows inside the card well. Pitch is sealed."""
+    inner = Rect(
+        body.x + FAVORITES_INSET,
+        body.y + 0.8,
+        body.w - 2 * FAVORITES_INSET,
+        max(body.h - FAVORITES_INSET - 0.8, FAVORITES_ROW_H),
+    )
+    n = max(1, int(inner.h / FAVORITES_ROW_H))
+    return rows(inner, n)
 
 
 def paint_favorites(
     plotter: Plotter, box: Rect, _page: FavoritesPage, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Title + ranking caption, then two slash / name / icon columns."""
+    """Two framed ranking cards — slash/name + category icons, then write-ins."""
     ramp = _bound_ramp(plotter, ramp)
-    head, (left, right) = favorites_seats(box)
-    title, caption = favorites_head_seats(head)
+    for card in favorites_seats(box):
+        _paint_favorites_card(plotter, card)
+
+
+def _paint_favorites_card(plotter: Plotter, card: Rect) -> None:
+    header, body = favorites_card_parts(card)
+    _wash(plotter, header, WASH)
+    plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
+    slash, name, icons = favorites_header_parts(header)
+    mark = Rect(
+        slash.x,
+        slash.y + (slash.h - min(slash.w, slash.h) + 0.4) / 2,
+        min(slash.w, slash.h) - 0.4,
+        min(slash.w, slash.h) - 0.4,
+    )
+    plotter.rect(mark, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _ink_text(
         plotter,
-        title,
-        FAVORITES_TITLE,
-        TypeRef(step="title", emphasis="strong"),
-        gray=INK,
-        align="left",
+        mark,
+        "/",
+        TypeRef(step="label"),
+        gray=MUTED,
+        align="center",
     )
-    line_h = caption.h / max(1, len(FAVORITES_CAPTION))
-    for i, line in enumerate(FAVORITES_CAPTION):
-        _ink_text(
-            plotter,
-            Rect(caption.x, caption.y + i * line_h, caption.w, line_h),
-            line,
-            TypeRef(step="caption"),
-            gray=MUTED,
-            align="left",
-        )
-    for col in (left, right):
-        _paint_favorites_column(plotter, col)
-
-
-def _paint_favorites_column(plotter: Plotter, col: Rect) -> None:
-    header, body = favorites_column_rows(col)
-    plotter.rect(col, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    _paint_favorites_row(plotter, header, header=True)
-    for row in body:
-        _paint_favorites_row(plotter, row, header=False)
     plotter.line(
-        col.x,
+        name.x + 0.6,
+        name.y + name.h * 0.72,
+        name.right - 0.2,
+        name.y + name.h * 0.72,
+        stroke_width=RULE,
+        stroke_gray=MUTED,
+    )
+    _paint_favorites_icons(plotter, icons)
+    plotter.line(
+        card.x,
         header.bottom,
-        col.right,
+        card.right,
         header.bottom,
         stroke_width=HAIR,
         stroke_gray=SOFT,
     )
-
-
-def _paint_favorites_row(plotter: Plotter, row: Rect, *, header: bool) -> None:
-    slash, name, icons = favorites_row_parts(row)
-    plotter.line(
-        slash.right, row.y, slash.right, row.bottom, stroke_width=HAIR, stroke_gray=SOFT
-    )
-    if header:
+    for row in favorites_body_rows(body):
         plotter.line(
-            name.right,
-            row.y,
-            name.right,
-            row.bottom,
-            stroke_width=HAIR,
-            stroke_gray=SOFT,
-        )
-        _ink_text(
-            plotter,
-            slash.inset(0.4),
-            "/",
-            TypeRef(step="label"),
-            gray=MUTED,
-            align="center",
-        )
-        _paint_favorites_icons(plotter, icons.inset(0.45, 1.35))
-    else:
-        plotter.line(
-            name.x + 0.8,
-            name.y + name.h * 0.72,
-            icons.right - 0.8,
-            name.y + name.h * 0.72,
+            row.x,
+            row.y + row.h * 0.72,
+            row.right,
+            row.y + row.h * 0.72,
             stroke_width=RULE,
             stroke_gray=RULE_C,
         )
-    plotter.line(
-        row.x, row.bottom, row.right, row.bottom, stroke_width=HAIR, stroke_gray=SOFT
-    )
 
 
 def _paint_favorites_icons(plotter: Plotter, box: Rect) -> None:
-    slots = columns(box, len(FAVORITES_ICONS), gap=0.7)
+    slots = columns(box, len(FAVORITES_ICONS), gap=FAVORITES_ICON_GAP)
     for slot, kind in zip(slots, FAVORITES_ICONS, strict=True):
-        s = min(slot.h, slot.w) * 0.92
+        s = min(slot.h, slot.w) * FAVORITES_ICON_SCALE
         icon = Rect(slot.x + (slot.w - s) / 2, slot.y + (slot.h - s) / 2, s, s)
         _paint_favorites_icon(plotter, icon, kind)
 
@@ -717,90 +704,78 @@ def _fav_box(plotter: Plotter, box: Rect) -> None:
 
 
 def _fav_icon_camera(plotter: Plotter, box: Rect) -> None:
-    body = Rect(box.x, box.y + box.h * 0.30, box.w, box.h * 0.66)
-    flash = Rect(box.x + box.w * 0.28, box.y + box.h * 0.04, box.w * 0.44, box.h * 0.30)
+    body = Rect(box.x + box.w * 0.06, box.y + box.h * 0.34, box.w * 0.88, box.h * 0.58)
+    flash = Rect(box.x + box.w * 0.32, box.y + box.h * 0.10, box.w * 0.36, box.h * 0.28)
     _fav_box(plotter, body)
     _fav_box(plotter, flash)
-    cx, cy = body.x + body.w / 2, body.y + body.h / 2
-    r = min(body.w, body.h) * 0.22
-    _fav_box(plotter, Rect(cx - r, cy - r, r * 2, r * 2))
+    lens = body.inset(body.w * 0.30, body.h * 0.22)
+    _fav_box(plotter, lens)
 
 
 def _fav_icon_book(plotter: Plotter, box: Rect) -> None:
-    page = box.inset(0.08, 0.04)
-    spine = page.x + page.w * 0.12
-    _fav_stroke(plotter, spine, page.y, page.right, page.y)
-    _fav_stroke(plotter, page.right, page.y, page.right, page.bottom)
-    _fav_stroke(plotter, page.right, page.bottom, spine, page.bottom)
-    _fav_stroke(plotter, spine, page.bottom, page.x, page.y + page.h * 0.12)
-    _fav_stroke(plotter, page.x, page.y + page.h * 0.12, page.x, page.y + page.h * 0.88)
-    _fav_stroke(plotter, page.x, page.y + page.h * 0.88, spine, page.y)
+    page = box.inset(0.12, 0.08)
+    _fav_box(plotter, page)
+    spine = page.x + page.w * 0.28
     _fav_stroke(plotter, spine, page.y, spine, page.bottom)
-    for t in (0.35, 0.55, 0.75):
+    for t in (0.38, 0.62):
         y = page.y + page.h * t
-        _fav_stroke(plotter, spine + 0.2, y, page.right - 0.25, y)
+        _fav_stroke(plotter, spine + 0.22, y, page.right - 0.22, y)
 
 
 def _fav_icon_note(plotter: Plotter, box: Rect) -> None:
-    """Eighth-note stand-in — oval head, stem, flag."""
-    head = Rect(box.x + box.w * 0.04, box.y + box.h * 0.58, box.w * 0.52, box.h * 0.34)
+    """Eighth-note stand-in — head, stem, one flag."""
+    head = Rect(box.x + box.w * 0.08, box.y + box.h * 0.58, box.w * 0.48, box.h * 0.32)
     _fav_box(plotter, head)
     stem_x = head.right
-    _fav_stroke(plotter, stem_x, head.y + head.h * 0.15, stem_x, box.y + box.h * 0.06)
-    flag_y = box.y + box.h * 0.06
-    _fav_stroke(plotter, stem_x, flag_y, box.right - 0.05, flag_y + box.h * 0.22)
+    _fav_stroke(plotter, stem_x, head.y + head.h * 0.2, stem_x, box.y + box.h * 0.10)
     _fav_stroke(
-        plotter, stem_x, flag_y + box.h * 0.14, box.right - 0.05, flag_y + box.h * 0.36
+        plotter, stem_x, box.y + box.h * 0.10, box.right - 0.08, box.y + box.h * 0.34
     )
 
 
 def _fav_icon_utensils(plotter: Plotter, box: Rect) -> None:
-    fork_x = box.x + box.w * 0.30
-    _fav_stroke(plotter, fork_x, box.y + box.h * 0.40, fork_x, box.bottom - 0.05)
-    for t in (0.10, 0.30, 0.50):
-        x = box.x + box.w * t
-        _fav_stroke(plotter, x, box.y + 0.05, fork_x, box.y + box.h * 0.40)
-    knife_x = box.x + box.w * 0.74
-    _fav_stroke(plotter, knife_x, box.y + 0.05, knife_x, box.bottom - 0.05)
-    _fav_stroke(plotter, knife_x, box.y + 0.05, box.right - 0.05, box.y + box.h * 0.42)
-    _fav_stroke(
-        plotter, box.right - 0.05, box.y + box.h * 0.42, knife_x, box.y + box.h * 0.50
-    )
+    fork_x = box.x + box.w * 0.32
+    _fav_stroke(plotter, fork_x, box.y + box.h * 0.42, fork_x, box.bottom - 0.06)
+    for t in (0.12, 0.32, 0.52):
+        _fav_stroke(
+            plotter, box.x + box.w * t, box.y + 0.08, fork_x, box.y + box.h * 0.42
+        )
+    knife_x = box.x + box.w * 0.76
+    _fav_stroke(plotter, knife_x, box.y + 0.08, knife_x, box.bottom - 0.06)
+    _fav_stroke(plotter, knife_x, box.y + 0.08, box.right - 0.08, box.y + box.h * 0.40)
 
 
 def _fav_icon_bag(plotter: Plotter, box: Rect) -> None:
-    top = box.y + box.h * 0.38
-    _fav_stroke(plotter, box.x + box.w * 0.16, top, box.x + 0.05, box.bottom - 0.05)
+    top = box.y + box.h * 0.42
+    _fav_stroke(plotter, box.x + box.w * 0.18, top, box.x + 0.08, box.bottom - 0.06)
     _fav_stroke(
-        plotter, box.right - box.w * 0.16, top, box.right - 0.05, box.bottom - 0.05
+        plotter, box.right - box.w * 0.18, top, box.right - 0.08, box.bottom - 0.06
     )
     _fav_stroke(
-        plotter, box.x + 0.05, box.bottom - 0.05, box.right - 0.05, box.bottom - 0.05
+        plotter, box.x + 0.08, box.bottom - 0.06, box.right - 0.08, box.bottom - 0.06
     )
-    _fav_stroke(plotter, box.x + box.w * 0.16, top, box.right - box.w * 0.16, top)
-    left = box.x + box.w * 0.32
-    right = box.right - box.w * 0.32
-    peak = box.y + box.h * 0.04
-    _fav_stroke(plotter, left, top, left, box.y + box.h * 0.16)
-    _fav_stroke(plotter, left, box.y + box.h * 0.16, box.x + box.w / 2, peak)
-    _fav_stroke(plotter, box.x + box.w / 2, peak, right, box.y + box.h * 0.16)
-    _fav_stroke(plotter, right, box.y + box.h * 0.16, right, top)
+    _fav_stroke(plotter, box.x + box.w * 0.18, top, box.right - box.w * 0.18, top)
+    left = box.x + box.w * 0.34
+    right = box.right - box.w * 0.34
+    _fav_stroke(plotter, left, top, left, box.y + box.h * 0.14)
+    _fav_stroke(plotter, left, box.y + box.h * 0.14, right, box.y + box.h * 0.14)
+    _fav_stroke(plotter, right, box.y + box.h * 0.14, right, top)
 
 
 def _fav_icon_applause(plotter: Plotter, box: Rect) -> None:
-    """Two facing finger-fans — clapping stand-in."""
+    """Two 3-finger fans — clapping stand-in."""
     mid = box.x + box.w / 2
-    _fav_hand(plotter, Rect(box.x, box.y, mid - box.x - 0.08, box.h))
-    _fav_hand(plotter, Rect(mid + 0.08, box.y, box.right - mid - 0.08, box.h))
+    _fav_hand(plotter, Rect(box.x, box.y, mid - box.x - 0.16, box.h))
+    _fav_hand(plotter, Rect(mid + 0.16, box.y, box.right - mid - 0.16, box.h))
 
 
 def _fav_hand(plotter: Plotter, box: Rect) -> None:
     palm_x = box.x + box.w * 0.50
-    palm_y = box.y + box.h * 0.70
-    for t in (0.08, 0.36, 0.64, 0.92):
-        _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * t, box.y + box.h * 0.08)
-    _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * 0.20, box.bottom - 0.04)
-    _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * 0.80, box.bottom - 0.04)
+    palm_y = box.y + box.h * 0.68
+    for t in (0.15, 0.50, 0.85):
+        _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * t, box.y + box.h * 0.10)
+    _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * 0.35, box.bottom - 0.06)
+    _fav_stroke(plotter, palm_x, palm_y, box.x + box.w * 0.65, box.bottom - 0.06)
 
 
 PROJECT_CARD_GAP = 2.6
