@@ -112,8 +112,8 @@ def test_favorites_paint_cards_slash_and_icons():
     assert texts.count("/") == 6
     assert FAVORITES_ICONS == (
         "camera",
-        "book",
         "note",
+        "book",
         "utensils",
         "bag",
     )

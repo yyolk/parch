@@ -571,7 +571,8 @@ FAVORITES_ICON_GAP = 1.8
 FAVORITES_ICON_SCALE = 0.74
 FAVORITES_ICON_STROKE = 0.24
 FAVORITES_ROW_H = 7.2
-FAVORITES_ICONS = ("camera", "book", "note", "utensils", "bag")
+# Box / line / box / line / box — even optical weight across the strip.
+FAVORITES_ICONS = ("camera", "note", "book", "utensils", "bag")
 
 
 def favorites_seats(well: Rect) -> tuple[Rect, ...]:
@@ -703,64 +704,65 @@ def _fav_box(plotter: Plotter, box: Rect) -> None:
 
 def _fav_icon_camera(plotter: Plotter, box: Rect) -> None:
     """Movie camera — twin reels, body, barrel. Not a nested frame."""
-    reel = min(box.w, box.h) * 0.30
-    top = box.y + box.h * 0.04
-    left = Rect(box.x + box.w * 0.08, top, reel, reel)
+    reel = min(box.w, box.h) * 0.28
+    top = box.y + box.h * 0.08
+    left = Rect(box.x + box.w * 0.10, top, reel, reel)
     right = Rect(box.x + box.w * 0.46, top, reel, reel)
     _fav_box(plotter, left)
     _fav_box(plotter, right)
     body_top = left.bottom + box.h * 0.06
-    body = Rect(box.x + box.w * 0.04, body_top, box.w * 0.64, box.h * 0.50)
+    body = Rect(box.x + box.w * 0.08, body_top, box.w * 0.58, box.h * 0.46)
     _fav_box(plotter, body)
     lens_h = body.h * 0.58
     lens = Rect(
         body.right,
         body.y + (body.h - lens_h) / 2,
-        box.w * 0.26,
+        box.w * 0.22,
         lens_h,
     )
     _fav_box(plotter, lens)
 
 
 def _fav_icon_book(plotter: Plotter, box: Rect) -> None:
-    page = box.inset(0.10, 0.08)
+    page = Rect(box.x + box.w * 0.18, box.y + box.h * 0.10, box.w * 0.64, box.h * 0.80)
     _fav_box(plotter, page)
-    spine = page.x + page.w * 0.30
+    spine = page.x + page.w * 0.34
     _fav_stroke(plotter, spine, page.y, spine, page.bottom)
 
 
 def _fav_icon_note(plotter: Plotter, box: Rect) -> None:
     """Eighth-note stand-in — head, stem, one flag."""
-    head = Rect(box.x + box.w * 0.08, box.y + box.h * 0.58, box.w * 0.46, box.h * 0.30)
+    head = Rect(box.x + box.w * 0.10, box.y + box.h * 0.54, box.w * 0.50, box.h * 0.36)
     _fav_box(plotter, head)
     stem_x = head.right
-    _fav_stroke(plotter, stem_x, head.y + head.h * 0.2, stem_x, box.y + box.h * 0.10)
-    _fav_stroke(
-        plotter, stem_x, box.y + box.h * 0.10, box.right - 0.08, box.y + box.h * 0.32
-    )
+    top = box.y + box.h * 0.08
+    _fav_stroke(plotter, stem_x, head.y + head.h * 0.12, stem_x, top)
+    _fav_stroke(plotter, stem_x, top, box.x + box.w * 0.90, box.y + box.h * 0.28)
 
 
 def _fav_icon_utensils(plotter: Plotter, box: Rect) -> None:
-    fork_x = box.x + box.w * 0.34
-    _fav_stroke(plotter, fork_x, box.y + box.h * 0.40, fork_x, box.bottom - 0.06)
-    _fav_stroke(
-        plotter, box.x + box.w * 0.14, box.y + 0.08, fork_x, box.y + box.h * 0.40
-    )
-    _fav_stroke(
-        plotter, box.x + box.w * 0.50, box.y + 0.08, fork_x, box.y + box.h * 0.40
-    )
-    knife_x = box.x + box.w * 0.78
-    _fav_stroke(plotter, knife_x, box.y + 0.08, knife_x, box.bottom - 0.06)
+    top = box.y + box.h * 0.08
+    join = box.y + box.h * 0.40
+    bot = box.bottom - box.h * 0.06
+    for t in (0.16, 0.30, 0.44):
+        x = box.x + box.w * t
+        _fav_stroke(plotter, x, top, x, join)
+    handle = box.x + box.w * 0.30
+    _fav_stroke(plotter, box.x + box.w * 0.16, join, box.x + box.w * 0.44, join)
+    _fav_stroke(plotter, handle, join, handle, bot)
+    knife = box.x + box.w * 0.76
+    _fav_stroke(plotter, knife, top, knife, bot)
 
 
 def _fav_icon_bag(plotter: Plotter, box: Rect) -> None:
-    body = Rect(box.x + 0.08, box.y + box.h * 0.38, box.w - 0.16, box.h * 0.54)
+    body = Rect(box.x + box.w * 0.14, box.y + box.h * 0.36, box.w * 0.72, box.h * 0.54)
     _fav_box(plotter, body)
-    left = box.x + box.w * 0.32
-    right = box.right - box.w * 0.32
-    _fav_stroke(plotter, left, body.y, left, box.y + box.h * 0.10)
-    _fav_stroke(plotter, left, box.y + box.h * 0.10, right, box.y + box.h * 0.10)
-    _fav_stroke(plotter, right, box.y + box.h * 0.10, right, body.y)
+    left = box.x + box.w * 0.34
+    right = box.right - box.w * 0.34
+    top = box.y + box.h * 0.12
+    _fav_stroke(plotter, left, body.y, left, top)
+    _fav_stroke(plotter, left, top, right, top)
+    _fav_stroke(plotter, right, top, right, body.y)
 
 
 PROJECT_CARD_GAP = 2.6
