@@ -278,9 +278,14 @@ def paint_annual(
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
 
 
-CHECKOFF_GAP = 0.55
-CHECKOFF_MARK_FRAC = 0.88
+CHECKOFF_GAP = 0.85
+CHECKOFF_MARK_FRAC = 0.78
 CHECKOFF_CIRCLE_SEGS = 32
+# Soft Nomad-like density. Score bias only — not a hardcoded column return.
+CHECKOFF_COL_PREF = 16
+CHECKOFF_COL_PENALTY = 0.35
+CHECKOFF_DIAMOND_STROKE = HAIR * 1.4
+CHECKOFF_NUMERAL = TypeRef(step="micro", emphasis="strong")
 
 
 def checkoff_milestone(day: int) -> bool:
@@ -289,13 +294,14 @@ def checkoff_milestone(day: int) -> bool:
 
 
 def checkoff_columns(well: Rect, days: int) -> int:
-    """Column count from well geometry + day count. Maximize the inscribed cell.
+    """Column count from well geometry + day count.
 
-    Reference sheets land near 16-across; the count is derived, not hardcoded.
+    Prefer larger seats; extra columns past the ~16 reference are penalized so
+    Nomad lands near the Hobonichi density without hardcoding 16.
     """
     n = max(1, days)
     best_cols = 1
-    best_size = 0.0
+    best_score = float("-inf")
     max_cols = min(n, max(1, int(well.w)))
     for cols in range(1, max_cols + 1):
         row_n = (n + cols - 1) // cols
@@ -304,8 +310,9 @@ def checkoff_columns(well: Rect, days: int) -> int:
         if inner_w <= 0 or inner_h <= 0:
             continue
         size = min(inner_w / cols, inner_h / row_n)
-        if size > best_size:
-            best_size = size
+        score = size - CHECKOFF_COL_PENALTY * max(0, cols - CHECKOFF_COL_PREF)
+        if score > best_score:
+            best_score = score
             best_cols = cols
     return best_cols
 
@@ -332,23 +339,31 @@ def checkoff_mark(cell: Rect) -> Rect:
     return Rect(cell.x + (cell.w - s) / 2, cell.y + (cell.h - s) / 2, s, s)
 
 
+def checkoff_label(cell: Rect, mark: Rect) -> Rect:
+    """Full seat width, mark height — 3-digit micro uses the wider pocket."""
+    return Rect(cell.x, mark.y, cell.w, mark.h)
+
+
 def paint_checkoff_365(
     plotter: Plotter, box: Rect, sheet: Checkoff365, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Dense 1…N check-off grid. Circles; diamonds on every 10th day."""
+    """Dense 1…N check-off grid. Circles; diamonds on every 10th day.
+
+    Chrome owns the title — this painter inks the grid only.
+    """
     ramp = _bound_ramp(plotter, ramp)
     dests = sheet.day_dests
     for day, seat in enumerate(checkoff_seats(box, sheet.days), start=1):
         mark = checkoff_mark(seat)
         if checkoff_milestone(day):
-            _paint_diamond(plotter, mark)
+            _paint_diamond(plotter, mark, stroke_width=CHECKOFF_DIAMOND_STROKE)
         else:
             _stroke_circle(plotter, mark)
         _ink_text(
             plotter,
-            mark,
+            checkoff_label(seat, mark),
             str(day),
-            TypeRef(step="micro"),
+            CHECKOFF_NUMERAL,
             gray=INK,
             align="center",
         )
@@ -702,14 +717,16 @@ def _paint_clone_status_track(plotter: Plotter, box: Rect) -> None:
         plotter.line(cx, above.bottom, cx, below.y, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_diamond(plotter: Plotter, box: Rect) -> None:
-    """Hairline rhombus — favorite/tag stand-in where ★ is missing."""
+def _paint_diamond(plotter: Plotter, box: Rect, *, stroke_width: float = HAIR) -> None:
+    """Open rhombus — never filled. Check-off milestones pass a heavier stroke."""
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
-    plotter.line(cx, box.y, box.right, cy, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
-    plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
+    plotter.line(cx, box.y, box.right, cy, stroke_width=stroke_width, stroke_gray=INK)
+    plotter.line(
+        box.right, cy, cx, box.bottom, stroke_width=stroke_width, stroke_gray=INK
+    )
+    plotter.line(cx, box.bottom, box.x, cy, stroke_width=stroke_width, stroke_gray=INK)
+    plotter.line(box.x, cy, cx, box.y, stroke_width=stroke_width, stroke_gray=INK)
 
 
 def _stroke_circle(plotter: Plotter, box: Rect) -> None:

@@ -9,8 +9,13 @@ from parch.components import Checkoff365
 from parch.devices import NOMAD, SCRIBE
 from parch.layouts.planner.painters import (
     CHECKOFF_CIRCLE_SEGS,
+    CHECKOFF_COL_PREF,
+    CHECKOFF_DIAMOND_STROKE,
     CHECKOFF_GAP,
+    CHECKOFF_NUMERAL,
+    HAIR,
     checkoff_columns,
+    checkoff_label,
     checkoff_mark,
     checkoff_milestone,
     checkoff_seats,
@@ -133,12 +138,14 @@ def test_checkoff_columns_derived_from_well_not_magic_16():
     scribe = well_rect(SCRIBE)
     nomad_cols = checkoff_columns(nomad, 365)
     scribe_cols = checkoff_columns(scribe, 365)
-    assert 14 <= nomad_cols <= 20
-    assert 14 <= scribe_cols <= 22
+    assert 15 <= nomad_cols <= 17
+    assert abs(nomad_cols - CHECKOFF_COL_PREF) <= 1
+    assert 14 <= scribe_cols <= 20
     nomad_mark = checkoff_mark(checkoff_seats(nomad, 365)[0])
     scribe_mark = checkoff_mark(checkoff_seats(scribe, 365)[0])
     assert scribe_mark.w > nomad_mark.w
     assert nomad_cols != 10
+    assert nomad_cols != 18
     assert checkoff_columns(nomad, 366) >= 14
     seats = checkoff_seats(nomad, 365)
     assert len(seats) == 365
@@ -179,6 +186,15 @@ def test_checkoff_paint_numbers_circles_diamonds_and_links():
     assert "366" not in texts
     assert "Favorites" not in texts
     assert "My 100" not in texts
+    assert "365 Days Check-Off Sheet" not in texts
+    assert CHECKOFF_NUMERAL.step == "micro"
+    assert CHECKOFF_NUMERAL.emphasis == "strong"
+    text_ops = [op for op in plotter.ops if op[0] == "text"]
+    assert all(op[9] == "bold" for op in text_ops)
+    assert all(
+        op[1] == checkoff_label(seat, checkoff_mark(seat))
+        for op, seat in zip(text_ops, checkoff_seats(well, 365), strict=True)
+    )
 
     seats = checkoff_seats(well, 365)
     diamond_days = [day for day in range(1, 366) if checkoff_milestone(day)]
@@ -188,6 +204,15 @@ def test_checkoff_paint_numbers_circles_diamonds_and_links():
 
     lines = [op for op in plotter.ops if op[0] == "line"]
     assert len(lines) == len(diamond_days) * 4 + len(circle_days) * CHECKOFF_CIRCLE_SEGS
+    diamond_strokes = [
+        op[5] for op in lines if op[5] == pytest.approx(CHECKOFF_DIAMOND_STROKE)
+    ]
+    circle_strokes = [op[5] for op in lines if op[5] == pytest.approx(HAIR)]
+    assert len(diamond_strokes) == len(diamond_days) * 4
+    assert len(circle_strokes) == len(circle_days) * CHECKOFF_CIRCLE_SEGS
+    assert HAIR * 1.25 <= CHECKOFF_DIAMOND_STROKE <= HAIR * 1.5
+    fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
+    assert fills == []
 
     links = [(op[1], op[2]) for op in plotter.ops if op[0] == "link"]
     assert links[0][1] == "2026-01-01"
@@ -222,7 +247,7 @@ def test_checkoff_header_strip_and_outline_when_enabled():
     assert dests[1] == "year-2026"
     assert dests[2] == "checkoff-365-2026"
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "365 Days Check-Off Sheet" in texts
+    assert texts.count("365 Days Check-Off Sheet") == 1
     assert "2026" in texts
     assert strip_active("checkoff_365") == ""
     outlined = [dest for _title, dest in plotter.outlines()]
