@@ -10,6 +10,7 @@ from parch.components import (
     AnnualMonth,
     BujoIndex,
     BujoKey,
+    Checkoff365,
     CollectionLeaf,
     CoverTitle,
     EngineeringPad,
@@ -275,6 +276,84 @@ def paint_annual(
     for r, band in enumerate(rows(box, 4, gap=2.6)):
         for c, cell in enumerate(columns(band, 3, gap=3.4)):
             _paint_mini_month(plotter, cell, grid.months[r * 3 + c], ramp=ramp)
+
+
+CHECKOFF_GAP = 0.55
+CHECKOFF_MARK_FRAC = 0.88
+CHECKOFF_CIRCLE_SEGS = 32
+
+
+def checkoff_milestone(day: int) -> bool:
+    """Every 10th day is a diamond marker (10, 20, …)."""
+    return day > 0 and day % 10 == 0
+
+
+def checkoff_columns(well: Rect, days: int) -> int:
+    """Column count from well geometry + day count. Maximize the inscribed cell.
+
+    Reference sheets land near 16-across; the count is derived, not hardcoded.
+    """
+    n = max(1, days)
+    best_cols = 1
+    best_size = 0.0
+    max_cols = min(n, max(1, int(well.w)))
+    for cols in range(1, max_cols + 1):
+        row_n = (n + cols - 1) // cols
+        inner_w = well.w - CHECKOFF_GAP * (cols - 1)
+        inner_h = well.h - CHECKOFF_GAP * (row_n - 1)
+        if inner_w <= 0 or inner_h <= 0:
+            continue
+        size = min(inner_w / cols, inner_h / row_n)
+        if size > best_size:
+            best_size = size
+            best_cols = cols
+    return best_cols
+
+
+def checkoff_seats(well: Rect, days: int) -> tuple[Rect, ...]:
+    """Equal row tracks fill the well; leftover last-row cells stay empty."""
+    n = max(1, days)
+    cols = checkoff_columns(well, n)
+    row_n = (n + cols - 1) // cols
+    seats: list[Rect] = []
+    remaining = n
+    for band in rows(well, row_n, gap=CHECKOFF_GAP):
+        take = min(cols, remaining)
+        seats.extend(columns(band, cols, gap=CHECKOFF_GAP)[:take])
+        remaining -= take
+        if remaining <= 0:
+            break
+    return tuple(seats)
+
+
+def checkoff_mark(cell: Rect) -> Rect:
+    """Largest inscribed square, inset so neighboring marks do not touch."""
+    s = min(cell.w, cell.h) * CHECKOFF_MARK_FRAC
+    return Rect(cell.x + (cell.w - s) / 2, cell.y + (cell.h - s) / 2, s, s)
+
+
+def paint_checkoff_365(
+    plotter: Plotter, box: Rect, sheet: Checkoff365, *, ramp: TypeRamp | None = None
+) -> None:
+    """Dense 1…N check-off grid. Circles; diamonds on every 10th day."""
+    ramp = _bound_ramp(plotter, ramp)
+    dests = sheet.day_dests
+    for day, seat in enumerate(checkoff_seats(box, sheet.days), start=1):
+        mark = checkoff_mark(seat)
+        if checkoff_milestone(day):
+            _paint_diamond(plotter, mark)
+        else:
+            _stroke_circle(plotter, mark)
+        _ink_text(
+            plotter,
+            mark,
+            str(day),
+            TypeRef(step="micro"),
+            gray=INK,
+            align="center",
+        )
+        if day <= len(dests) and dests[day - 1]:
+            plotter.link(mark, dests[day - 1])
 
 
 PROJECT_CARD_GAP = 2.6
@@ -631,6 +710,24 @@ def _paint_diamond(plotter: Plotter, box: Rect) -> None:
     plotter.line(box.right, cy, cx, box.bottom, stroke_width=HAIR, stroke_gray=INK)
     plotter.line(cx, box.bottom, box.x, cy, stroke_width=HAIR, stroke_gray=INK)
     plotter.line(box.x, cy, cx, box.y, stroke_width=HAIR, stroke_gray=INK)
+
+
+def _stroke_circle(plotter: Plotter, box: Rect) -> None:
+    """Hairline ellipse inscribed in ``box``. Plotter has no native ellipse."""
+    cx = box.x + box.w / 2
+    cy = box.y + box.h / 2
+    rx = box.w / 2
+    ry = box.h / 2
+    n = CHECKOFF_CIRCLE_SEGS
+    pts = [
+        (
+            cx + rx * math.cos(math.tau * i / n),
+            cy + ry * math.sin(math.tau * i / n),
+        )
+        for i in range(n)
+    ]
+    for (x1, y1), (x2, y2) in zip(pts, pts[1:] + pts[:1], strict=True):
+        plotter.line(x1, y1, x2, y2, stroke_width=HAIR, stroke_gray=INK)
 
 
 def _paint_clone_icon_strip(plotter: Plotter, box: Rect) -> None:
@@ -2238,6 +2335,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
+        case "checkoff_365":
+            pass
         case "quarter":
             dests["Quar"] = page.dest
         case "month":
@@ -2305,6 +2404,8 @@ def strip_active(kind: str) -> str:
     match kind:
         case "annual":
             return "Year"
+        case "checkoff_365":
+            return ""
         case "quarter":
             return "Quar"
         case "month":

@@ -6,6 +6,7 @@ from parch.components import (
     AnnualMonth,
     BujoIndex,
     BujoKey,
+    Checkoff365,
     CollectionLeaf,
     CoverTitle,
     EngineeringPad,
@@ -45,6 +46,7 @@ from parch.layouts.planner.painters import (
     paint_annual,
     paint_bujo_index,
     paint_bujo_key,
+    paint_checkoff_365,
     paint_collection,
     paint_cover,
     paint_daily,
@@ -139,6 +141,8 @@ class PlannerLayout:
         match page.kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
+            case "checkoff_365":
+                paint_checkoff_365(plotter, well, _one(page, Checkoff365), ramp=ramp)
             case "projects_index":
                 paint_projects_index(
                     plotter, well, _one(page, ProjectsIndex), ramp=ramp
@@ -203,6 +207,8 @@ def _header_meta(page: Page) -> str:
     match page.kind:
         case "annual":
             return "Q1–Q4"
+        case "checkoff_365":
+            return str(_one(page, Checkoff365).year)
         case "projects_index":
             return str(_one(page, ProjectsIndex).year)
         case "project":

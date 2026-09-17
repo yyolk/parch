@@ -12,6 +12,9 @@ def test_dest_names_from_tstrings():
     spec = Spec()
     assert spec.cover_dest == "cover"
     assert spec.year_dest == "year-2026"
+    assert spec.checkoff_365 is False
+    assert spec.year_day_count == 365
+    assert spec.checkoff_365_dest == "checkoff-365-2026"
     assert spec.book == "year-planner"
     assert spec.months == tuple(range(1, 13))
     assert spec.month == 1
@@ -62,6 +65,7 @@ def test_dest_names_from_tstrings():
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
     assert spec.outline is False
+    assert spec.checkoff_365 is False
     assert spec.bujo_index_pages == 2
     assert spec.bujo_collections == 24
     assert spec.bujo_key_dest == "bujo-key-2026"

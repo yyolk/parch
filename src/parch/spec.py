@@ -7,7 +7,7 @@ from pathlib import Path
 from string.templatelib import Interpolation, Template
 
 from parch import ConfigError
-from parch.calendar import quarter_of
+from parch.calendar import quarter_of, year_days
 from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
 from parch.fonts.ramp import TypeOverlay, require_overlay
 
@@ -132,6 +132,7 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     outline: bool = False  # reader sidebar outline; default off
+    checkoff_365: bool = False  # optional year check-off sheet; default off
     bujo_index_pages: int = 2
     bujo_collections: int = 24
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
@@ -208,6 +209,16 @@ class Spec:
     @property
     def year_dest(self) -> str:
         return _dest(t"year-{self.year:04d}")
+
+    @property
+    def year_day_count(self) -> int:
+        """365 or 366 from ``self.year`` — February length, not a hardcoded 365."""
+        return year_days(self.year)
+
+    @property
+    def checkoff_365_dest(self) -> str:
+        """Optional sheet dest, e.g. ``checkoff-365-2026``. Name keeps 365 as the product id."""
+        return _dest(t"checkoff-365-{self.year:04d}")
 
     @property
     def month_dest(self) -> str:
@@ -455,6 +466,7 @@ class Spec:
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
             outline=_parse_bool(data.get("outline", False), "outline"),
+            checkoff_365=_parse_bool(data.get("checkoff_365", False), "checkoff_365"),
             bujo_index_pages=bujo_index_pages,
             bujo_collections=bujo_collections,
             type_overlay=_parse_typography(data),
