@@ -13,7 +13,6 @@ from parch.press import press
 from parch.progress import render_progress
 from parch.spec import Spec
 
-
 _EL = "\033[K"
 
 
