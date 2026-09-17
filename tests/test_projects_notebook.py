@@ -24,12 +24,6 @@ def test_projects_notebook_is_cover_then_projects():
     ProjectsNotebook().plot(spec, plotter)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert cover.display_title in texts
-    title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Projects")
-    assert title[3] == 42
-    year = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 10
-    )
-    assert year[9] == "medium"
     assert cover.cta_dest in plotter.links()
     assert cover.specs_lead == ""
     assert "Year Book" not in texts

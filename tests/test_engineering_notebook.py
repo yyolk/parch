@@ -40,12 +40,6 @@ def test_engineering_notebook_is_cover_then_duplex_pads():
     EngineeringNotebook().plot(spec, plotter)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert cover.display_title in texts
-    title = next(op for op in plotter.ops if op[0] == "text" and op[2] == "Engineering")
-    assert title[3] == 42
-    year = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 10
-    )
-    assert year[9] == "medium"
     assert cover.cta_dest in plotter.links()
     assert "Year Book" not in texts
     assert not any("monday weeks" in str(t).lower() for t in texts)

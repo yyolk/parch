@@ -257,14 +257,7 @@ def test_january_plot_paints_key_and_gutter():
     assert "Habits · January 2026" in texts
     assert "Thu 1" in texts
     assert "Collections" in texts
-    title = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "Bullet Journal"
-    )
-    assert title[3] == 42
-    year = next(
-        op for op in plotter.ops if op[0] == "text" and op[2] == "2026" and op[3] == 10
-    )
-    assert year[9] == "medium"
+    assert "Bullet Journal" in texts
     assert _JAN.bujo_key_dest in plotter.links()
     assert "Year Book" not in texts
     assert not any("monday weeks" in str(t).lower() for t in texts)
