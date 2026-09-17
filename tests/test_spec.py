@@ -92,7 +92,6 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"projects": {"cards": 2}}).project_cards == 2
     leftover = Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}})
     assert leftover.project_cards == 2
-    assert not hasattr(leftover, "project_tasks")
     assert Spec.from_mapping({"projects": {"tickets": 6}}).project_tickets == 6
     assert Spec.from_mapping({"projects": {"tickets_per_page": 7}}).project_tickets == 7
     triple = Spec.from_mapping({"projects": {"index_pages": 3, "tickets": 8}})

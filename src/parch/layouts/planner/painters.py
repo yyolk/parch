@@ -853,7 +853,7 @@ def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
     return columns(body, 2, gap=TICKET_BODY_GAP, weights=TICKET_NAME_WEIGHTS)
 
 
-def project_ticket_preview_cards(preview: Rect, cards: int = 3) -> tuple[Rect, ...]:
+def project_ticket_preview_cards(preview: Rect, cards: int) -> tuple[Rect, ...]:
     """``paint_project`` dest cards, side-by-side thumbnail — hairline open frames.
 
     ``cards`` is the dest stack count (2–4). Frames share the same preview
@@ -878,7 +878,7 @@ def project_ticket_name_seats(name: Rect) -> tuple[Rect, Rect]:
     return write, strip
 
 
-def project_ticket_link_hits(ticket: Rect, cards: int = 3) -> tuple[Rect, ...]:
+def project_ticket_link_hits(ticket: Rect, cards: int) -> tuple[Rect, ...]:
     """Stub column + each preview card. Write-in and symbol strip stay unlinkable."""
     stub, body = project_ticket_parts(ticket)
     _, preview = project_ticket_body_seats(body)
@@ -1086,8 +1086,8 @@ def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
     return mark.bottom
 
 
-def _paint_clone_tasks(plotter: Plotter, box: Rect, n: int | None = None) -> None:
-    count = clone_task_count(box) if n is None else max(1, n)
+def _paint_clone_tasks(plotter: Plotter, box: Rect) -> None:
+    count = clone_task_count(box)
     y = box.y + CLONE_TASK_TOP
     star_right = box.right - CLONE_STAR - 1.0
     for _ in range(count):
