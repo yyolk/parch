@@ -12,19 +12,19 @@ from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.layout import well_rect
 from parch.layouts.planner.painters import (
-    MY_100_CAPTION_LINES,
     MY_100_CHECK,
     MY_100_COUNT,
+    MY_100_MAX_COLS,
     MY_100_MIN_COL_W,
     MY_100_MIN_ROW_H,
     MY_100_NUM_W,
-    MY_100_TITLE,
+    my_100_capacity,
     my_100_grid,
-    my_100_head_seats,
     my_100_page_count,
     my_100_page_numbers,
+    my_100_remainder_seats,
+    my_100_row_h,
     my_100_row_parts,
-    my_100_seats,
     paint_my_100,
     strip_active,
     strip_items,
@@ -55,6 +55,16 @@ def _on(**kwargs: object) -> Spec:
     return Spec(my_100=True, **kwargs)
 
 
+def _numbers(pages: list) -> list[int]:
+    return [
+        n
+        for page in pages
+        for item in page.components
+        if isinstance(item, My100Page)
+        for n in item.numbers
+    ]
+
+
 def test_my_100_off_by_default_and_section_empty():
     spec = Spec(notes_pages=1)
     assert spec.my_100 is False
@@ -82,14 +92,7 @@ def test_my_100_inserts_after_annual_before_quarters():
     my_pages = [page for page in pages if page.kind == "my_100"]
     assert my_pages
     assert my_pages[0].dest == spec.my_100_dest
-    numbers = [
-        n
-        for page in my_pages
-        for item in page.components
-        if isinstance(item, My100Page)
-        for n in item.numbers
-    ]
-    assert numbers == list(range(1, MY_100_COUNT + 1))
+    assert _numbers(my_pages) == list(range(1, MY_100_COUNT + 1))
 
 
 def test_my_100_page_and_strip():
@@ -108,40 +111,39 @@ def test_my_100_page_and_strip():
     assert all(label != "100" for label, _ in strip_items(page))
 
 
-def test_my_100_grid_fits_device_well():
+def test_my_100_grid_is_two_columns_from_the_well():
+    assert MY_100_MAX_COLS == 2
     for device in (NOMAD, SCRIBE):
         well = well_rect(device)
-        head, list_box = my_100_seats(well)
-        assert head.bottom + 2.8 == pytest.approx(list_box.y)
-        cols, row_n = my_100_grid(list_box)
-        assert cols >= 2
+        cols, row_n = my_100_grid(well)
+        assert cols == 2
         assert row_n >= 1
-        assert list_box.w >= cols * MY_100_MIN_COL_W + (cols - 1) * 3.0 - 1e-6
-        assert list_box.h >= row_n * MY_100_MIN_ROW_H - 1e-6
+        assert well.w >= cols * MY_100_MIN_COL_W + (cols - 1) * 3.0 - 1e-6
+        assert well.h >= row_n * MY_100_MIN_ROW_H - 1e-6
         pages_n = my_100_page_count(well)
         assert pages_n >= 1
         seen: list[int] = []
         for page in range(1, pages_n + 1):
             seen.extend(my_100_page_numbers(well, page))
         assert seen == list(range(1, MY_100_COUNT + 1))
-        title, caption = my_100_head_seats(head)
-        assert title.w == pytest.approx(24.0)
-        assert caption.x == pytest.approx(title.right)
 
 
-def test_my_100_last_page_shrinks_empty_columns():
+def test_my_100_nomad_two_full_pages_then_remainder():
     well = well_rect(NOMAD)
-    pages_n = my_100_page_count(well)
-    assert pages_n >= 1
-    _head, list_box = my_100_seats(well)
-    full_cols, full_rows = my_100_grid(list_box)
-    last = my_100_page_numbers(well, pages_n)
-    last_cols, last_rows = my_100_grid(list_box, entries=len(last))
-    assert last_cols * last_rows >= len(last)
-    assert last_cols <= full_cols
-    assert last_rows <= full_rows
-    if len(last) <= full_rows:
-        assert last_cols == 1 or last_cols * last_rows == len(last)
+    cap = my_100_capacity(well)
+    assert my_100_grid(well)[0] == 2
+    assert cap * 2 < MY_100_COUNT
+    assert my_100_page_count(well) == 3
+    assert my_100_page_numbers(well, 1) == tuple(range(1, cap + 1))
+    assert my_100_page_numbers(well, 2) == tuple(range(cap + 1, cap * 2 + 1))
+    last = my_100_page_numbers(well, 3)
+    assert last == tuple(range(cap * 2 + 1, MY_100_COUNT + 1))
+    assert last
+    list_box, open_box = my_100_remainder_seats(well, len(last))
+    assert my_100_grid(list_box, entries=len(last))[0] == 2
+    assert list_box.bottom <= open_box.y
+    assert open_box.h > list_box.h
+    assert open_box.bottom == pytest.approx(well.bottom)
 
 
 def test_my_100_row_parts_number_writein_checkbox():
@@ -155,7 +157,7 @@ def test_my_100_row_parts_number_writein_checkbox():
     assert write.w > MY_100_CHECK
 
 
-def test_my_100_paint_title_caption_numbers_and_checks():
+def test_my_100_paint_numbers_checks_no_caption_or_local_title():
     spec = _on(months=(1,), notes_pages=0)
     pages = My100Section(spec).pages()
     well = well_rect(NOMAD)
@@ -164,27 +166,35 @@ def test_my_100_paint_title_caption_numbers_and_checks():
         leaf = next(item for item in page.components if isinstance(item, My100Page))
         paint_my_100(plotter, well, leaf)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert texts.count(MY_100_TITLE) == len(pages)
-    for line in MY_100_CAPTION_LINES:
-        assert line in texts
+    assert "My 100" not in texts
+    assert not any("hundred" in t.lower() for t in texts)
     assert "1." in texts
     assert f"{MY_100_COUNT}." in texts
     assert [t for t in texts if t.endswith(".") and t[:-1].isdigit()] == [
         f"{n}." for n in range(1, MY_100_COUNT + 1)
     ]
-    rules = [
-        op for op in plotter.ops if op[0] == "line" and op[5] == pytest.approx(0.12)
+    last = next(item for item in pages[-1].components if isinstance(item, My100Page))
+    leftover = RecordingPlotter()
+    paint_my_100(leftover, well, last)
+    leftover_nums = [
+        op[2]
+        for op in leftover.ops
+        if op[0] == "text" and str(op[2]).endswith(".") and str(op[2])[:-1].isdigit()
     ]
-    assert len(rules) == MY_100_COUNT
+    rules = [
+        op for op in leftover.ops if op[0] == "line" and op[5] == pytest.approx(0.12)
+    ]
+    assert leftover_nums == [f"{n}." for n in last.numbers]
+    assert len(rules) > len(last.numbers)
 
 
-def test_my_100_layout_header_and_year_strip():
+def test_my_100_layout_header_title_once():
     spec = _on(months=(1,), notes_pages=1)
     page = My100Section(spec).pages()[0]
     plotter = RecordingPlotter()
     PlannerLayout().paint(page, plotter, NOMAD)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert "My 100" in texts
+    assert texts.count("My 100") == 1
     assert "2026" in texts
     assert "Year" in texts
     assert "Quar" in texts
@@ -195,22 +205,16 @@ def test_my_100_layout_header_and_year_strip():
     assert spec.tasks_index_dest in links
 
 
-def test_my_100_scribe_uses_same_packer_not_a_scribe_grid():
+def test_my_100_scribe_uses_same_two_col_packer():
     nomad_pages = my_100_page_count(well_rect(NOMAD))
     scribe_pages = my_100_page_count(well_rect(SCRIBE))
     assert nomad_pages >= 1
     assert scribe_pages >= 1
+    assert my_100_grid(well_rect(SCRIBE))[0] == 2
     scribe = Spec(device="kindle-scribe", my_100=True, months=(1,), notes_pages=0)
     pages = My100Section(scribe).pages()
     assert len(pages) == scribe_pages
-    numbers = [
-        n
-        for page in pages
-        for item in page.components
-        if isinstance(item, My100Page)
-        for n in item.numbers
-    ]
-    assert numbers == list(range(1, MY_100_COUNT + 1))
+    assert _numbers(pages) == list(range(1, MY_100_COUNT + 1))
     if scribe_pages > 1:
         assert pages[1].dest == scribe.dest_for_my_100(2)
 
@@ -229,6 +233,8 @@ def test_my_100_paginated_dests_and_chip():
         assert leaf.pages == pages_n
         assert leaf.index_dest == "my-100-2026"
         assert leaf.numbers[0] == my_100_page_numbers(well, 2)[0]
+    if pages_n > 2:
+        assert pages[2].dest == "my-100-2026-03"
 
 
 def test_my_100_presses_into_year_pdf(tmp_path: Path):
@@ -265,12 +271,14 @@ def test_my_100_png_proof(tmp_path: Path):
     plotter.finish(pdf)
     dests = [page.dest for page in pages]
     first = dests.index(spec.my_100_dest) + 1
-    dest = tmp_path / "my-100-2026.png"
-    render_page_png(pdf, first, dest)
-    assert dest.is_file()
-    assert dest.stat().st_size > 0
     my_pages = [page for page in pages if page.kind == "my_100"]
-    if len(my_pages) > 1:
-        dest2 = tmp_path / "my-100-2026-02.png"
-        render_page_png(pdf, first + 1, dest2)
-        assert dest2.stat().st_size > 0
+    for offset, _page in enumerate(my_pages):
+        dest = tmp_path / f"my-100-2026-{offset + 1:02d}.png"
+        render_page_png(pdf, first + offset, dest)
+        assert dest.stat().st_size > 0
+
+
+def test_my_100_row_h_matches_full_grid():
+    well = well_rect(NOMAD)
+    _cols, row_n = my_100_grid(well)
+    assert my_100_row_h(well) == pytest.approx(well.h / row_n)

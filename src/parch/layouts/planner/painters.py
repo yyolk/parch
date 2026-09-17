@@ -390,47 +390,24 @@ def paint_checkoff_365(
 
 
 MY_100_COUNT = 100
-MY_100_TITLE = "My 100"
-MY_100_CAPTION_LINES = (
-    "Make a list of up to a hundred entries for anything you want:",
-    "things to accomplish this year, books you've read, movies you've seen,",
-    "snacks you've tried, shops you want to visit — it's up to you!",
-)
-MY_100_TITLE_W = 24.0
-MY_100_HEAD_H = 14.0
-MY_100_HEAD_GAP = 2.8
-MY_100_CAPTION_LINE_H = 3.6
 MY_100_MIN_COL_W = 32.0
 MY_100_MIN_ROW_H = 5.6
 MY_100_COL_GAP = COL_GAP
-MY_100_MAX_COLS = 5
+MY_100_MAX_COLS = 2
 MY_100_NUM_W = 8.0
 MY_100_CHECK = 2.4
 MY_100_CHECK_GAP = 1.6
 MY_100_WRITE_GAP = 1.2
 MY_100_DASH = 0.40
 MY_100_DASH_GAP = 0.32
-
-
-def my_100_seats(box: Rect) -> tuple[Rect, Rect]:
-    """Title+caption band over the numbered-list well."""
-    head, rest = box.split_top(MY_100_HEAD_H)
-    return head, Rect(
-        rest.x, rest.y + MY_100_HEAD_GAP, rest.w, rest.h - MY_100_HEAD_GAP
-    )
-
-
-def my_100_head_seats(head: Rect) -> tuple[Rect, Rect]:
-    """Title stub + caption column — Hobonichi-style left title, right blurb."""
-    return head.split_left(MY_100_TITLE_W)
+MY_100_OPEN_GAP = 2.4
 
 
 def my_100_grid(list_box: Rect, *, entries: int | None = None) -> tuple[int, int]:
-    """Columns × rows that fit ``list_box``. Width-first; Nomad-sized well is the floor.
+    """At most two columns. Row count comes from the well, not a fixed total.
 
-    Capacity ignores ``entries``. When ``entries`` is set (a single page's
-    slice), shrink columns then rows so a short last page does not leave a
-    ghost column.
+    Capacity ignores ``entries``. A remainder slice keeps two columns when
+    more than one number is left, so the last page is never a lonely stub.
     """
     n_cols = max(
         1,
@@ -439,9 +416,19 @@ def my_100_grid(list_box: Rect, *, entries: int | None = None) -> tuple[int, int
     n_cols = min(n_cols, MY_100_MAX_COLS)
     n_rows = max(1, int(list_box.h / MY_100_MIN_ROW_H))
     if entries:
-        n_cols = min(n_cols, max(1, (entries + n_rows - 1) // n_rows))
+        n_cols = min(n_cols, 2 if entries > 1 else 1)
         n_rows = min(n_rows, max(1, (entries + n_cols - 1) // n_cols))
     return n_cols, n_rows
+
+
+def my_100_capacity(well: Rect) -> int:
+    cols, row_n = my_100_grid(well)
+    return max(1, cols * row_n)
+
+
+def my_100_row_h(well: Rect) -> float:
+    _cols, row_n = my_100_grid(well)
+    return well.h / row_n
 
 
 def my_100_columns(list_box: Rect) -> tuple[Rect, ...]:
@@ -459,10 +446,8 @@ def my_100_row_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
 
 
 def my_100_page_count(well: Rect, *, entries: int = MY_100_COUNT) -> int:
-    """How many pages the device well needs to seat ``entries``."""
-    _head, list_box = my_100_seats(well)
-    cols, row_n = my_100_grid(list_box)
-    per = max(1, cols * row_n)
+    """How many pages the device well needs to seat ``entries`` at two columns."""
+    per = my_100_capacity(well)
     return max(1, (max(entries, 0) + per - 1) // per)
 
 
@@ -472,14 +457,22 @@ def my_100_page_numbers(
     """1-based entry numbers on this 1-based page (column-major fill)."""
     if page < 1:
         return ()
-    _head, list_box = my_100_seats(well)
-    cols, row_n = my_100_grid(list_box)
-    per = max(1, cols * row_n)
+    per = my_100_capacity(well)
     start = (page - 1) * per + 1
     stop = min(entries, page * per)
     if start > entries or stop < start:
         return ()
     return tuple(range(start, stop + 1))
+
+
+def my_100_remainder_seats(well: Rect, n_entries: int) -> tuple[Rect, Rect]:
+    """Leftover numbered block over an open ruled field. Same pitch as full pages."""
+    _n_cols, n_rows = my_100_grid(well, entries=max(n_entries, 1))
+    list_h = n_rows * my_100_row_h(well)
+    list_box, rest = well.split_top(min(list_h, well.h))
+    open_y = min(rest.y + MY_100_OPEN_GAP, well.bottom)
+    open_box = Rect(rest.x, open_y, rest.w, max(well.bottom - open_y, 0.0))
+    return list_box, open_box
 
 
 def _paint_dashed_rect(plotter: Plotter, box: Rect) -> None:
@@ -550,40 +543,41 @@ def _paint_my_100_row(plotter: Plotter, row: Rect, number: int) -> None:
     _paint_dashed_rect(plotter, mark)
 
 
+def _paint_my_100_list(plotter: Plotter, box: Rect, numbers: tuple[int, ...]) -> None:
+    if not numbers:
+        return
+    n_cols, n_rows = my_100_grid(box, entries=len(numbers))
+    cells = [
+        row
+        for col in columns(box, n_cols, gap=MY_100_COL_GAP)
+        for row in rows(col, n_rows, gap=0)
+    ]
+    for cell, number in zip(cells, numbers, strict=False):
+        _paint_my_100_row(plotter, cell, number)
+
+
+def _paint_my_100_open(plotter: Plotter, box: Rect, row_h: float) -> None:
+    """Ruled unknown field — write-in rhythm, no numbers or ticks."""
+    if box.h <= 0.5 or row_h <= 0:
+        return
+    y = box.y + row_h * 0.72
+    while y < box.bottom - 0.3:
+        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += row_h
+
+
 def paint_my_100(
     plotter: Plotter, box: Rect, page: My100Page, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Hobonichi-style My 100 — title + caption over a multi-column numbered list."""
+    """Two-column numbered write-ins. A short last page adds an open ruled field."""
     _bound_ramp(plotter, ramp)
-    head, list_box = my_100_seats(box)
-    title, caption = my_100_head_seats(head)
-    _ink_text(
-        plotter,
-        title,
-        MY_100_TITLE,
-        TypeRef(step="eyebrow", emphasis="strong"),
-        gray=INK,
-        align="left",
-    )
-    line_h = min(MY_100_CAPTION_LINE_H, caption.h / max(len(MY_100_CAPTION_LINES), 1))
-    for i, line in enumerate(MY_100_CAPTION_LINES):
-        seat = Rect(caption.x, caption.y + i * line_h, caption.w, line_h)
-        _ink_text(
-            plotter,
-            seat,
-            line,
-            TypeRef(step="caption"),
-            gray=MUTED,
-            align="left",
-        )
-    n_cols, n_rows = my_100_grid(list_box, entries=len(page.numbers))
-    cells = [
-        row
-        for col in columns(list_box, n_cols, gap=MY_100_COL_GAP)
-        for row in rows(col, n_rows, gap=0)
-    ]
-    for cell, number in zip(cells, page.numbers, strict=False):
-        _paint_my_100_row(plotter, cell, number)
+    numbers = page.numbers
+    if numbers and len(numbers) < my_100_capacity(box):
+        list_box, open_box = my_100_remainder_seats(box, len(numbers))
+        _paint_my_100_list(plotter, list_box, numbers)
+        _paint_my_100_open(plotter, open_box, my_100_row_h(box))
+        return
+    _paint_my_100_list(plotter, box, numbers)
 
 
 PROJECT_CARD_GAP = 2.6
