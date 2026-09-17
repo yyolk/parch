@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -58,6 +59,12 @@ def test_spec_checkoff_default_off_and_dest():
     assert Spec.from_mapping({"checkoff_365": True}).checkoff_365 is True
     with pytest.raises(ConfigError, match="checkoff_365 must be a boolean"):
         Spec.from_mapping({"checkoff_365": "true"})
+    example = Spec.from_path(Path("examples/nomad-extras.toml"))
+    assert example.checkoff_365 is True
+    assert example.favorites_pages == 1
+    assert example.my_100 is True
+    assert example.notes_pages == 0
+    assert example.months == (1,)
 
 
 def test_year_planner_omits_checkoff_when_disabled():

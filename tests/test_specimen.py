@@ -168,9 +168,15 @@ def test_sample_dests_and_pages_for_january():
     spec = specimen_spec("supernote-nomad")
     assert spec.months == (1,)
     assert spec.notes_pages == 1
+    assert spec.favorites_pages == 1
+    assert spec.my_100 is True
+    assert spec.checkoff_365 is True
     dests = sample_dests(spec)
     assert dests["cover"] == "cover"
     assert dests["annual"] == "year-2026"
+    assert dests["favorites"] == "favorites-2026"
+    assert dests["my-100"] == "my-100-2026"
+    assert dests["checkoff-365"] == "checkoff-365-2026"
     assert dests["projects"] == "projects-index-2026-01"
     assert dests["project-1"] == "projects-2026-01"
     assert dests["meetings"] == "meetings-index-2026"
@@ -189,12 +195,18 @@ def test_sample_dests_and_pages_for_january():
     assert set(numbers) == set(SAMPLE_STEMS)
     assert numbers["cover"] == 1
     assert numbers["annual"] == 2
-    assert numbers["quarterly-q1"] == 3
-    assert numbers["monthly-jan"] == 4
-    assert numbers["habits-jan"] == 5
+    assert numbers["favorites"] == 3
+    assert numbers["my-100"] == 4
+    assert numbers["checkoff-365"] == 7
+    assert numbers["quarterly-q1"] == 8
+    assert numbers["monthly-jan"] == 9
+    assert numbers["habits-jan"] == 10
     assert (
         numbers["cover"]
         < numbers["annual"]
+        < numbers["favorites"]
+        < numbers["my-100"]
+        < numbers["checkoff-365"]
         < numbers["quarterly-q1"]
         < numbers["monthly-jan"]
         < numbers["habits-jan"]

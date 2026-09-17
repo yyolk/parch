@@ -230,8 +230,10 @@ def test_favorites_toml_knobs():
     assert Spec.from_mapping({"favorites_pages": 1}).favorites_pages == 1
     assert Spec.from_mapping({}).favorites_pages == 0
     assert Spec.from_mapping({"favorites_pages": 1}).favorites_dest == "favorites-2026"
-    example = Spec.from_path(Path("examples/favorites.toml"))
+    example = Spec.from_path(Path("examples/nomad-extras.toml"))
     assert example.favorites_pages == 1
+    assert example.my_100 is True
+    assert example.checkoff_365 is True
     assert example.notes_pages == 0
     assert example.months == (1,)
 
