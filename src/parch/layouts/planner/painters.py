@@ -393,32 +393,32 @@ MY_100_COUNT = 100
 MY_100_MIN_COL_W = 32.0
 MY_100_MIN_ROW_H = 5.6
 MY_100_COL_GAP = COL_GAP
-MY_100_MAX_COLS = 2
+MY_100_MAX_COLS = 2  # painter constant — not a Spec knob
 MY_100_NUM_W = 8.0
 MY_100_CHECK = 2.4
 MY_100_CHECK_GAP = 1.6
 MY_100_WRITE_GAP = 1.2
 MY_100_DASH = 0.40
 MY_100_DASH_GAP = 0.32
-MY_100_OPEN_GAP = 2.4
 
 
-def my_100_grid(list_box: Rect, *, entries: int | None = None) -> tuple[int, int]:
-    """At most two columns. Row count comes from the well, not a fixed total.
+def _my_100_fill_rows(max_rows: int, entries: int) -> int:
+    """Largest row count that leaves remainder as full columns (e.g. 20 → 40+40+20)."""
+    for n_rows in range(max_rows, 0, -1):
+        if entries % n_rows == 0:
+            return n_rows
+    return max_rows
 
-    Capacity ignores ``entries``. A remainder slice keeps two columns when
-    more than one number is left, so the last page is never a lonely stub.
-    """
+
+def my_100_grid(well: Rect) -> tuple[int, int]:
+    """Two equal columns. Rows from the well, preferring a full-column remainder."""
     n_cols = max(
         1,
-        int((list_box.w + MY_100_COL_GAP) / (MY_100_MIN_COL_W + MY_100_COL_GAP)),
+        int((well.w + MY_100_COL_GAP) / (MY_100_MIN_COL_W + MY_100_COL_GAP)),
     )
     n_cols = min(n_cols, MY_100_MAX_COLS)
-    n_rows = max(1, int(list_box.h / MY_100_MIN_ROW_H))
-    if entries:
-        n_cols = min(n_cols, 2 if entries > 1 else 1)
-        n_rows = min(n_rows, max(1, (entries + n_cols - 1) // n_cols))
-    return n_cols, n_rows
+    max_rows = max(1, int(well.h / MY_100_MIN_ROW_H))
+    return n_cols, _my_100_fill_rows(max_rows, MY_100_COUNT)
 
 
 def my_100_capacity(well: Rect) -> int:
@@ -431,9 +431,10 @@ def my_100_row_h(well: Rect) -> float:
     return well.h / row_n
 
 
-def my_100_columns(list_box: Rect) -> tuple[Rect, ...]:
-    n_cols, _n_rows = my_100_grid(list_box)
-    return columns(list_box, n_cols, gap=MY_100_COL_GAP)
+def my_100_columns(well: Rect) -> tuple[Rect, ...]:
+    """Same column tracks on every page — width does not change mid-book."""
+    n_cols, _n_rows = my_100_grid(well)
+    return columns(well, n_cols, gap=MY_100_COL_GAP)
 
 
 def my_100_row_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
@@ -465,14 +466,16 @@ def my_100_page_numbers(
     return tuple(range(start, stop + 1))
 
 
-def my_100_remainder_seats(well: Rect, n_entries: int) -> tuple[Rect, Rect]:
-    """Leftover numbered block over an open ruled field. Same pitch as full pages."""
-    _n_cols, n_rows = my_100_grid(well, entries=max(n_entries, 1))
-    list_h = n_rows * my_100_row_h(well)
-    list_box, rest = well.split_top(min(list_h, well.h))
-    open_y = min(rest.y + MY_100_OPEN_GAP, well.bottom)
-    open_box = Rect(rest.x, open_y, rest.w, max(well.bottom - open_y, 0.0))
-    return list_box, open_box
+def my_100_open_seat(well: Rect, n_entries: int) -> Rect | None:
+    """Unused column(s) as one empty field. None when the page fills both tracks."""
+    tracks = my_100_columns(well)
+    _cols, n_rows = my_100_grid(well)
+    used = min(len(tracks), (max(n_entries, 0) + n_rows - 1) // n_rows) if n_rows else 0
+    if used >= len(tracks):
+        return None
+    first = tracks[used]
+    last = tracks[-1]
+    return Rect(first.x, well.y, last.right - first.x, well.h)
 
 
 def _paint_dashed_rect(plotter: Plotter, box: Rect) -> None:
@@ -543,41 +546,25 @@ def _paint_my_100_row(plotter: Plotter, row: Rect, number: int) -> None:
     _paint_dashed_rect(plotter, mark)
 
 
-def _paint_my_100_list(plotter: Plotter, box: Rect, numbers: tuple[int, ...]) -> None:
-    if not numbers:
-        return
-    n_cols, n_rows = my_100_grid(box, entries=len(numbers))
-    cells = [
-        row
-        for col in columns(box, n_cols, gap=MY_100_COL_GAP)
-        for row in rows(col, n_rows, gap=0)
-    ]
-    for cell, number in zip(cells, numbers, strict=False):
-        _paint_my_100_row(plotter, cell, number)
-
-
-def _paint_my_100_open(plotter: Plotter, box: Rect, row_h: float) -> None:
-    """Ruled unknown field — write-in rhythm, no numbers or ticks."""
-    if box.h <= 0.5 or row_h <= 0:
-        return
-    y = box.y + row_h * 0.72
-    while y < box.bottom - 0.3:
-        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
-        y += row_h
-
-
 def paint_my_100(
     plotter: Plotter, box: Rect, page: My100Page, *, ramp: TypeRamp | None = None
 ) -> None:
-    """Two-column numbered write-ins. A short last page adds an open ruled field."""
+    """Two equal columns of numbered write-ins. Unused last-page track is empty paper."""
     _bound_ramp(plotter, ramp)
-    numbers = page.numbers
-    if numbers and len(numbers) < my_100_capacity(box):
-        list_box, open_box = my_100_remainder_seats(box, len(numbers))
-        _paint_my_100_list(plotter, list_box, numbers)
-        _paint_my_100_open(plotter, open_box, my_100_row_h(box))
-        return
-    _paint_my_100_list(plotter, box, numbers)
+    tracks = my_100_columns(box)
+    _n_cols, n_rows = my_100_grid(box)
+    cells = [row for col in tracks for row in rows(col, n_rows, gap=0)]
+    for cell, number in zip(cells, page.numbers, strict=False):
+        _paint_my_100_row(plotter, cell, number)
+    open_box = my_100_open_seat(box, len(page.numbers))
+    if open_box is not None:
+        plotter.rect(
+            open_box,
+            stroke=True,
+            fill=False,
+            stroke_width=HAIR,
+            stroke_gray=SOFT,
+        )
 
 
 PROJECT_CARD_GAP = 2.6

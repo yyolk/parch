@@ -19,10 +19,11 @@ from parch.layouts.planner.painters import (
     MY_100_MIN_ROW_H,
     MY_100_NUM_W,
     my_100_capacity,
+    my_100_columns,
     my_100_grid,
+    my_100_open_seat,
     my_100_page_count,
     my_100_page_numbers,
-    my_100_remainder_seats,
     my_100_row_h,
     my_100_row_parts,
     paint_my_100,
@@ -128,22 +129,44 @@ def test_my_100_grid_is_two_columns_from_the_well():
         assert seen == list(range(1, MY_100_COUNT + 1))
 
 
-def test_my_100_nomad_two_full_pages_then_remainder():
+def test_my_100_nomad_is_two_col_pages_then_full_column():
     well = well_rect(NOMAD)
+    cols, row_n = my_100_grid(well)
     cap = my_100_capacity(well)
-    assert my_100_grid(well)[0] == 2
-    assert cap * 2 < MY_100_COUNT
+    assert cols == 2
+    assert row_n == 20
+    assert cap == 40
     assert my_100_page_count(well) == 3
-    assert my_100_page_numbers(well, 1) == tuple(range(1, cap + 1))
-    assert my_100_page_numbers(well, 2) == tuple(range(cap + 1, cap * 2 + 1))
+    assert my_100_page_numbers(well, 1) == tuple(range(1, 41))
+    assert my_100_page_numbers(well, 2) == tuple(range(41, 81))
     last = my_100_page_numbers(well, 3)
-    assert last == tuple(range(cap * 2 + 1, MY_100_COUNT + 1))
-    assert last
-    list_box, open_box = my_100_remainder_seats(well, len(last))
-    assert my_100_grid(list_box, entries=len(last))[0] == 2
-    assert list_box.bottom <= open_box.y
-    assert open_box.h > list_box.h
-    assert open_box.bottom == pytest.approx(well.bottom)
+    assert last == tuple(range(81, 101))
+    assert len(last) == row_n
+    tracks = my_100_columns(well)
+    assert len(tracks) == 2
+    assert tracks[0].w == pytest.approx(tracks[1].w)
+    open_box = my_100_open_seat(well, len(last))
+    assert open_box is not None
+    assert open_box.x == pytest.approx(tracks[1].x)
+    assert open_box.w == pytest.approx(tracks[1].w)
+    assert open_box.h == pytest.approx(well.h)
+    assert my_100_open_seat(well, cap) is None
+
+
+def test_my_100_column_width_is_stable_across_pages():
+    well = well_rect(NOMAD)
+    tracks = my_100_columns(well)
+    assert len(tracks) == MY_100_MAX_COLS
+    assert tracks[0].w == pytest.approx(tracks[1].w)
+    for page in range(1, my_100_page_count(well) + 1):
+        assert my_100_columns(well)[0].w == pytest.approx(tracks[0].w)
+        assert my_100_columns(well)[1].x == pytest.approx(tracks[1].x)
+
+
+def test_my_100_cap_is_painter_constant_not_spec():
+    assert MY_100_MAX_COLS == 2
+    assert not hasattr(Spec(), "my_100_columns")
+    assert not hasattr(Spec(), "my_100_pages")
 
 
 def test_my_100_row_parts_number_writein_checkbox():
@@ -184,8 +207,14 @@ def test_my_100_paint_numbers_checks_no_caption_or_local_title():
     rules = [
         op for op in leftover.ops if op[0] == "line" and op[5] == pytest.approx(0.12)
     ]
+    frames = [
+        op
+        for op in leftover.ops
+        if op[0] == "rect" and op[2] is True and op[3] is False
+    ]
     assert leftover_nums == [f"{n}." for n in last.numbers]
-    assert len(rules) > len(last.numbers)
+    assert len(rules) == len(last.numbers)
+    assert len(frames) == 1
 
 
 def test_my_100_layout_header_title_once():
