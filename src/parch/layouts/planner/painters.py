@@ -558,6 +558,7 @@ def paint_my_100(
     for cell, number in zip(cells, page.numbers, strict=False):
         _paint_my_100_row(plotter, cell, number)
 
+
 # Optional Favorites well — 2×3 ranking cards. Sealed; not a strip chip.
 # No page-local title/caption band — well height goes to the cards.
 FAVORITES_COLS = 2
@@ -739,7 +740,11 @@ def _fav_icon_note(plotter: Plotter, box: Rect) -> None:
     _fav_stroke(plotter, stem_x, head.y + head.h * 0.10, stem_x, top)
     _fav_stroke(plotter, stem_x, top, box.x + box.w * 0.92, box.y + box.h * 0.24)
     _fav_stroke(
-        plotter, stem_x, box.y + box.h * 0.18, box.x + box.w * 0.92, box.y + box.h * 0.36
+        plotter,
+        stem_x,
+        box.y + box.h * 0.18,
+        box.x + box.w * 0.92,
+        box.y + box.h * 0.36,
     )
 
 
