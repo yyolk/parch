@@ -17,6 +17,7 @@ from parch.components import (
     MonthGrid,
     MonthlyCalendarList,
     MonthlyTaskWell,
+    My100Page,
     Notes,
     Priorities,
     ProjectsBoard,
@@ -59,6 +60,7 @@ from parch.layouts.planner.painters import (
     paint_month_grid,
     paint_monthly_calendar_list,
     paint_monthly_task_well,
+    paint_my_100,
     paint_nav,
     paint_notes,
     paint_project,
@@ -141,6 +143,8 @@ class PlannerLayout:
         match page.kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
+            case "my_100":
+                paint_my_100(plotter, well, _one(page, My100Page), ramp=ramp)
             case "checkoff_365":
                 paint_checkoff_365(plotter, well, _one(page, Checkoff365), ramp=ramp)
             case "projects_index":
@@ -207,6 +211,8 @@ def _header_meta(page: Page) -> str:
     match page.kind:
         case "annual":
             return "Q1–Q4"
+        case "my_100":
+            return str(_one(page, My100Page).year)
         case "checkoff_365":
             return str(_one(page, Checkoff365).year)
         case "projects_index":
@@ -279,6 +285,9 @@ def _header_meta_dest(page: Page) -> str | None:
 
 def _header_chip(page: Page) -> str:
     match page.kind:
+        case "my_100":
+            leaf = _one(page, My100Page)
+            return f"{leaf.page:02d}" if leaf.pages > 1 else ""
         case "project":
             number = _one(page, ProjectsBoard).number
             return f"{number:02d}" if number else ""
@@ -300,6 +309,9 @@ def _header_chip(page: Page) -> str:
 
 def _header_chip_dest(page: Page) -> str | None:
     match page.kind:
+        case "my_100":
+            leaf = _one(page, My100Page)
+            return leaf.index_dest if leaf.pages > 1 else None
         case "project":
             return _one(page, ProjectsBoard).index_dest or None
         case "meeting":

@@ -21,6 +21,7 @@ from parch.components import (
     MonthGrid,
     MonthlyCalendarList,
     MonthlyTaskWell,
+    My100Page,
     Notes,
     Priorities,
     ProjectsBoard,
@@ -386,6 +387,203 @@ def paint_checkoff_365(
         )
         if day <= len(dests) and dests[day - 1]:
             plotter.link(mark, dests[day - 1])
+
+
+MY_100_COUNT = 100
+MY_100_TITLE = "My 100"
+MY_100_CAPTION_LINES = (
+    "Make a list of up to a hundred entries for anything you want:",
+    "things to accomplish this year, books you've read, movies you've seen,",
+    "snacks you've tried, shops you want to visit — it's up to you!",
+)
+MY_100_TITLE_W = 24.0
+MY_100_HEAD_H = 14.0
+MY_100_HEAD_GAP = 2.8
+MY_100_CAPTION_LINE_H = 3.6
+MY_100_MIN_COL_W = 32.0
+MY_100_MIN_ROW_H = 5.6
+MY_100_COL_GAP = COL_GAP
+MY_100_MAX_COLS = 5
+MY_100_NUM_W = 8.0
+MY_100_CHECK = 2.4
+MY_100_CHECK_GAP = 1.6
+MY_100_WRITE_GAP = 1.2
+MY_100_DASH = 0.40
+MY_100_DASH_GAP = 0.32
+
+
+def my_100_seats(box: Rect) -> tuple[Rect, Rect]:
+    """Title+caption band over the numbered-list well."""
+    head, rest = box.split_top(MY_100_HEAD_H)
+    return head, Rect(
+        rest.x, rest.y + MY_100_HEAD_GAP, rest.w, rest.h - MY_100_HEAD_GAP
+    )
+
+
+def my_100_head_seats(head: Rect) -> tuple[Rect, Rect]:
+    """Title stub + caption column — Hobonichi-style left title, right blurb."""
+    return head.split_left(MY_100_TITLE_W)
+
+
+def my_100_grid(list_box: Rect, *, entries: int | None = None) -> tuple[int, int]:
+    """Columns × rows that fit ``list_box``. Width-first; Nomad-sized well is the floor.
+
+    Capacity ignores ``entries``. When ``entries`` is set (a single page's
+    slice), shrink columns then rows so a short last page does not leave a
+    ghost column.
+    """
+    n_cols = max(
+        1,
+        int((list_box.w + MY_100_COL_GAP) / (MY_100_MIN_COL_W + MY_100_COL_GAP)),
+    )
+    n_cols = min(n_cols, MY_100_MAX_COLS)
+    n_rows = max(1, int(list_box.h / MY_100_MIN_ROW_H))
+    if entries:
+        n_cols = min(n_cols, max(1, (entries + n_rows - 1) // n_rows))
+        n_rows = min(n_rows, max(1, (entries + n_cols - 1) // n_cols))
+    return n_cols, n_rows
+
+
+def my_100_columns(list_box: Rect) -> tuple[Rect, ...]:
+    n_cols, _n_rows = my_100_grid(list_box)
+    return columns(list_box, n_cols, gap=MY_100_COL_GAP)
+
+
+def my_100_row_parts(row: Rect) -> tuple[Rect, Rect, Rect]:
+    """Number stub, write-in, dashed checkbox — checkbox hugs the row end."""
+    num, rest = row.split_left(MY_100_NUM_W)
+    write_w = max(rest.w - MY_100_CHECK_GAP - MY_100_CHECK, 1.0)
+    write = Rect(rest.x + MY_100_WRITE_GAP, rest.y, write_w - MY_100_WRITE_GAP, rest.h)
+    check = Rect(row.right - MY_100_CHECK, rest.y, MY_100_CHECK, rest.h)
+    return num, write, check
+
+
+def my_100_page_count(well: Rect, *, entries: int = MY_100_COUNT) -> int:
+    """How many pages the device well needs to seat ``entries``."""
+    _head, list_box = my_100_seats(well)
+    cols, row_n = my_100_grid(list_box)
+    per = max(1, cols * row_n)
+    return max(1, (max(entries, 0) + per - 1) // per)
+
+
+def my_100_page_numbers(
+    well: Rect, page: int, *, entries: int = MY_100_COUNT
+) -> tuple[int, ...]:
+    """1-based entry numbers on this 1-based page (column-major fill)."""
+    if page < 1:
+        return ()
+    _head, list_box = my_100_seats(well)
+    cols, row_n = my_100_grid(list_box)
+    per = max(1, cols * row_n)
+    start = (page - 1) * per + 1
+    stop = min(entries, page * per)
+    if start > entries or stop < start:
+        return ()
+    return tuple(range(start, stop + 1))
+
+
+def _paint_dashed_rect(plotter: Plotter, box: Rect) -> None:
+    """Small dashed checkbox — four perforated sides, not a solid tick."""
+    _paint_perforation(
+        plotter,
+        box.x,
+        box.y,
+        box.right,
+        box.y,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.right,
+        box.y,
+        box.right,
+        box.bottom,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.right,
+        box.bottom,
+        box.x,
+        box.bottom,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+    _paint_perforation(
+        plotter,
+        box.x,
+        box.bottom,
+        box.x,
+        box.y,
+        dash=MY_100_DASH,
+        gap=MY_100_DASH_GAP,
+    )
+
+
+def _paint_my_100_row(plotter: Plotter, row: Rect, number: int) -> None:
+    num, write, check = my_100_row_parts(row)
+    _ink_text(
+        plotter,
+        num,
+        f"{number}.",
+        TypeRef(step="micro"),
+        gray=MUTED,
+        align="right",
+    )
+    rule_y = write.y + write.h * 0.72
+    plotter.line(
+        write.x,
+        rule_y,
+        write.right,
+        rule_y,
+        stroke_width=RULE,
+        stroke_gray=RULE_C,
+    )
+    mark = Rect(
+        check.x,
+        rule_y - MY_100_CHECK,
+        MY_100_CHECK,
+        MY_100_CHECK,
+    )
+    _paint_dashed_rect(plotter, mark)
+
+
+def paint_my_100(
+    plotter: Plotter, box: Rect, page: My100Page, *, ramp: TypeRamp | None = None
+) -> None:
+    """Hobonichi-style My 100 — title + caption over a multi-column numbered list."""
+    _bound_ramp(plotter, ramp)
+    head, list_box = my_100_seats(box)
+    title, caption = my_100_head_seats(head)
+    _ink_text(
+        plotter,
+        title,
+        MY_100_TITLE,
+        TypeRef(step="eyebrow", emphasis="strong"),
+        gray=INK,
+        align="left",
+    )
+    line_h = min(MY_100_CAPTION_LINE_H, caption.h / max(len(MY_100_CAPTION_LINES), 1))
+    for i, line in enumerate(MY_100_CAPTION_LINES):
+        seat = Rect(caption.x, caption.y + i * line_h, caption.w, line_h)
+        _ink_text(
+            plotter,
+            seat,
+            line,
+            TypeRef(step="caption"),
+            gray=MUTED,
+            align="left",
+        )
+    n_cols, n_rows = my_100_grid(list_box, entries=len(page.numbers))
+    cells = [
+        row
+        for col in columns(list_box, n_cols, gap=MY_100_COL_GAP)
+        for row in rows(col, n_rows, gap=0)
+    ]
+    for cell, number in zip(cells, page.numbers, strict=False):
+        _paint_my_100_row(plotter, cell, number)
 
 
 PROJECT_CARD_GAP = 2.6
@@ -2369,7 +2567,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
-        case "checkoff_365":
+        case "my_100" | "checkoff_365":
             pass
         case "quarter":
             dests["Quar"] = page.dest
@@ -2437,6 +2635,8 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
 def strip_active(kind: str) -> str:
     match kind:
         case "annual":
+            return "Year"
+        case "my_100":
             return "Year"
         case "checkoff_365":
             return ""

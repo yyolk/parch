@@ -132,6 +132,7 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     outline: bool = False  # reader sidebar outline; default off
+    my_100: bool = False  # optional My 100 list; default off
     checkoff_365: bool = False  # optional year check-off sheet; default off
     bujo_index_pages: int = 2
     bujo_collections: int = 24
@@ -331,6 +332,19 @@ class Spec:
         iso = day.isocalendar()
         return _dest(t"review-{iso.year:04d}-W{iso.week:02d}")
 
+    @property
+    def my_100_dest(self) -> str:
+        """My 100 landing — page 1."""
+        return self.dest_for_my_100(1)
+
+    def dest_for_my_100(self, page: int) -> str:
+        """Page 1 is ``my-100-{year}``; later pages append ``-{page:02d}``."""
+        if page < 1:
+            raise ConfigError(f"my 100 page must be >= 1, not {page}")
+        if page == 1:
+            return _dest(t"my-100-{self.year:04d}")
+        return _dest(t"my-100-{self.year:04d}-{page:02d}")
+
     def dest_for_notes(self, day: date, index: int) -> str:
         """1-based notes well dest, e.g. ``2026-01-05-notes-1``."""
         if index < 1:
@@ -466,6 +480,7 @@ class Spec:
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
             outline=_parse_bool(data.get("outline", False), "outline"),
+            my_100=_parse_bool(data.get("my_100", False), "my_100"),
             checkoff_365=_parse_bool(data.get("checkoff_365", False), "checkoff_365"),
             bujo_index_pages=bujo_index_pages,
             bujo_collections=bujo_collections,

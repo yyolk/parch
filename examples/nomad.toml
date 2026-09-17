@@ -1,4 +1,4 @@
-# Nomad MVP — cover → annual → Q1–Q4 → each month + habits → each touching ISO week once → days + notes → review → projects index/dests → meetings → tasks.
+# Nomad MVP — cover → annual → (optional my 100) → Q1–Q4 → each month + habits → each touching ISO week once → days + notes → review → projects index/dests → meetings → tasks.
 # notes_pages = 1 keeps the year artifact smaller; 2 still works.
 year = 2026
 device = "supernote-nomad"

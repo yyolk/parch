@@ -125,6 +125,25 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
     assert spec.dest_for_notes(monday, 1) not in dests
 
 
+def test_year_planner_outlines_my_100_after_annual_when_on():
+    spec = Spec(months=(1,), notes_pages=0, outline=True, my_100=True)
+    pages = YearPlanner().pages(spec)
+    entries = outline_entries(pages)
+    dests = [dest for _title, dest in entries]
+    dest_kind = {page.dest: page.kind for page in pages}
+    assert dests[0] == spec.year_dest
+    assert dests[1] == spec.my_100_dest
+    assert dest_kind[spec.my_100_dest] == "my_100"
+    assert ("My 100", spec.my_100_dest) in entries
+    assert dests.count(spec.my_100_dest) == 1
+    later = [
+        dest
+        for dest in dests
+        if dest.startswith("my-100-") and dest != spec.my_100_dest
+    ]
+    assert later == []
+
+
 def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     spec = Spec(notes_pages=0, outline=True)
     pages = YearPlanner().pages(spec)
