@@ -40,7 +40,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
-from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
+from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
@@ -285,7 +285,9 @@ CHECKOFF_CIRCLE_SEGS = 32
 CHECKOFF_COL_PREF = 16
 CHECKOFF_COL_PENALTY = 0.35
 CHECKOFF_DIAMOND_STROKE = HAIR * 1.4
-CHECKOFF_NUMERAL = TypeRef(step="micro", emphasis="strong")
+CHECKOFF_NUMERAL_GRAY = MUTED
+CHECKOFF_NUMERAL_SCALE = 0.74
+CHECKOFF_LABEL_INSET = 0.20
 
 
 def checkoff_milestone(day: int) -> bool:
@@ -339,9 +341,20 @@ def checkoff_mark(cell: Rect) -> Rect:
     return Rect(cell.x + (cell.w - s) / 2, cell.y + (cell.h - s) / 2, s, s)
 
 
-def checkoff_label(cell: Rect, mark: Rect) -> Rect:
-    """Full seat width, mark height — 3-digit micro uses the wider pocket."""
-    return Rect(cell.x, mark.y, cell.w, mark.h)
+def checkoff_label(mark: Rect) -> Rect:
+    """Concentric inset of the mark — padding from the stroke, not the seat width."""
+    pad = min(mark.w, mark.h) * CHECKOFF_LABEL_INSET
+    return mark.inset(pad)
+
+
+def checkoff_numeral_ink(ramp: TypeRamp) -> TypeInk:
+    """Micro scaled down, medium weight. Strong flooded the mark; book stayed muddy."""
+    base = ramp.ink("micro")
+    return TypeInk(
+        family=base.family,
+        weight="medium",
+        size=Pt(float(base.size) * CHECKOFF_NUMERAL_SCALE),
+    )
 
 
 def paint_checkoff_365(
@@ -352,6 +365,7 @@ def paint_checkoff_365(
     Chrome owns the title — this painter inks the grid only.
     """
     ramp = _bound_ramp(plotter, ramp)
+    numeral = checkoff_numeral_ink(ramp)
     dests = sheet.day_dests
     for day, seat in enumerate(checkoff_seats(box, sheet.days), start=1):
         mark = checkoff_mark(seat)
@@ -361,10 +375,10 @@ def paint_checkoff_365(
             _stroke_circle(plotter, mark)
         _ink_text(
             plotter,
-            checkoff_label(seat, mark),
+            checkoff_label(mark),
             str(day),
-            CHECKOFF_NUMERAL,
-            gray=INK,
+            numeral,
+            gray=CHECKOFF_NUMERAL_GRAY,
             align="center",
         )
         if day <= len(dests) and dests[day - 1]:

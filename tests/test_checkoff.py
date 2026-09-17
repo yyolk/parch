@@ -7,17 +7,23 @@ from parch.books import YearPlanner, outline_entries
 from parch.calendar import year_day, year_days
 from parch.components import Checkoff365
 from parch.devices import NOMAD, SCRIBE
+from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.painters import (
     CHECKOFF_CIRCLE_SEGS,
     CHECKOFF_COL_PREF,
     CHECKOFF_DIAMOND_STROKE,
     CHECKOFF_GAP,
-    CHECKOFF_NUMERAL,
+    CHECKOFF_LABEL_INSET,
+    CHECKOFF_NUMERAL_GRAY,
+    CHECKOFF_NUMERAL_SCALE,
     HAIR,
+    INK,
+    MUTED,
     checkoff_columns,
     checkoff_label,
     checkoff_mark,
     checkoff_milestone,
+    checkoff_numeral_ink,
     checkoff_seats,
     paint_checkoff_365,
     strip_active,
@@ -161,6 +167,12 @@ def test_checkoff_columns_derived_from_well_not_magic_16():
     assert first_mark.w == pytest.approx(first_mark.h)
     assert first_mark.w < seats[0].w
     assert first_mark.h < seats[0].h
+    label = checkoff_label(first_mark)
+    assert label.w < first_mark.w
+    assert label.h < first_mark.h
+    assert label.w == pytest.approx(first_mark.w * (1 - 2 * CHECKOFF_LABEL_INSET))
+    assert label.x + label.w / 2 == pytest.approx(first_mark.x + first_mark.w / 2)
+    assert label.y + label.h / 2 == pytest.approx(first_mark.y + first_mark.h / 2)
 
 
 def test_checkoff_milestones_every_tenth():
@@ -187,12 +199,18 @@ def test_checkoff_paint_numbers_circles_diamonds_and_links():
     assert "Favorites" not in texts
     assert "My 100" not in texts
     assert "365 Days Check-Off Sheet" not in texts
-    assert CHECKOFF_NUMERAL.step == "micro"
-    assert CHECKOFF_NUMERAL.emphasis == "strong"
+    ink = checkoff_numeral_ink(EffectiveRamp())
+    assert ink.weight == "medium"
+    assert ink.size == pytest.approx(4.3 * CHECKOFF_NUMERAL_SCALE)
+    assert ink.size < 4.3
+    assert CHECKOFF_NUMERAL_GRAY == MUTED
+    assert CHECKOFF_NUMERAL_GRAY > INK
     text_ops = [op for op in plotter.ops if op[0] == "text"]
-    assert all(op[9] == "bold" for op in text_ops)
+    assert all(op[9] == "medium" for op in text_ops)
+    assert all(op[7] == pytest.approx(CHECKOFF_NUMERAL_GRAY) for op in text_ops)
+    assert all(op[3] == pytest.approx(float(ink.size)) for op in text_ops)
     assert all(
-        op[1] == checkoff_label(seat, checkoff_mark(seat))
+        op[1] == checkoff_label(checkoff_mark(seat))
         for op, seat in zip(text_ops, checkoff_seats(well, 365), strict=True)
     )
 
