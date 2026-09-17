@@ -10,11 +10,13 @@ from parch.devices import NOMAD, SCRIBE
 from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.painters import (
     CHECKOFF_CIRCLE_SEGS,
+    CHECKOFF_COL_PENALTY,
     CHECKOFF_COL_PREF,
     CHECKOFF_DEFAULT,
     CHECKOFF_DIAMOND_STROKE,
     CHECKOFF_GAP,
     CHECKOFF_LABEL_INSET,
+    CHECKOFF_MARK_FRAC,
     CHECKOFF_NUMERAL_GRAY,
     CHECKOFF_NUMERAL_SCALE,
     HAIR,
