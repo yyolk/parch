@@ -8,6 +8,7 @@ from parch.components import Component
 type PageKind = Literal[
     "cover",
     "annual",
+    "favorites",
     "my_100",
     "checkoff_365",
     "projects_index",

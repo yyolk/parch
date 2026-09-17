@@ -34,6 +34,7 @@ class Book(Protocol):
 _OUTLINE_RUN = frozenset(
     {
         "annual",
+        "favorites",
         "my_100",
         "checkoff_365",
         "projects_index",
