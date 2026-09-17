@@ -1,5 +1,5 @@
 # Exploratory My 100 — off in the year-planner default.
-# Walk when on: cover → annual → my 100 → Q1 → January + habits → …
+# Walk when on: cover → annual → my 100 → (optional checkoff) → Q1 → January + habits → …
 #   parch press examples/nomad-my-100.toml -o out/nomad-my-100.pdf
 year = 2026
 device = "supernote-nomad"
