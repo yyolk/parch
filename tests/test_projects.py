@@ -107,11 +107,18 @@ def test_project_card_tracks():
 
 
 def test_projects_knobs_from_spec():
-    spec = Spec(notes_pages=1, project_cards=2, project_tasks=5)
-    page = next(p for p in YearPlanner().pages(spec) if p.kind == "project")
+    spec = Spec(notes_pages=1, project_cards=2)
+    pages = YearPlanner().pages(spec)
+    page = next(p for p in pages if p.kind == "project")
     board = next(item for item in page.components if isinstance(item, ProjectsBoard))
     assert board.cards == 2
-    assert board.tasks == 5
+    assert not hasattr(board, "tasks")
+    roster = next(
+        item
+        for item in next(p for p in pages if p.kind == "projects_index").components
+        if isinstance(item, ProjectsIndex)
+    )
+    assert roster.cards == 2
     plotter = RecordingPlotter()
     paint_project(plotter, Rect(4, 20, 110, 90), board)
     assert [op[2] for op in plotter.ops if op[0] == "text"].count("P") == 2
@@ -168,6 +175,7 @@ def test_projects_index_tickets_and_proj_nav():
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
     assert roster.year == 2026
     assert roster.dest == "projects-index-2026-01"
+    assert roster.cards == 3
     assert len(roster.tickets) == 8
     assert [ticket.dest for ticket in roster.tickets] == [
         f"projects-2026-{slot:02d}" for slot in range(1, 9)
@@ -183,7 +191,6 @@ def test_projects_index_tickets_and_proj_nav():
     assert board.cards == 3
     assert board.number == 3
     assert board.index_dest == "projects-index-2026-01"
-    assert board.tasks == 4
 
 
 def test_project_ticket_seats():
@@ -266,6 +273,58 @@ def test_project_ticket_seats():
     assert nwrite.right < _npreview.x
 
 
+@pytest.mark.parametrize("cards", [2, 3, 4])
+def test_projects_index_preview_follows_cards(cards):
+    spec = Spec(notes_pages=1, project_cards=cards)
+    pages = YearPlanner().pages(spec)
+    roster = next(
+        item
+        for page in pages
+        if page.kind == "projects_index"
+        for item in page.components
+        if isinstance(item, ProjectsIndex)
+    )
+    board = next(
+        item
+        for page in pages
+        if page.kind == "project"
+        for item in page.components
+        if isinstance(item, ProjectsBoard)
+    )
+    assert roster.cards == cards
+    assert board.cards == cards
+
+    well = well_rect(NOMAD)
+    seat = project_ticket_seats(well, 8)[0]
+    _, body = project_ticket_parts(seat)
+    _, preview = project_ticket_body_seats(body)
+    frames = project_ticket_preview_cards(preview, cards)
+    assert len(frames) == cards
+    hits = project_ticket_link_hits(seat, cards)
+    assert hits == (project_ticket_parts(seat)[0], *frames)
+    assert len(hits) == 1 + cards
+
+    baseline = project_ticket_preview_cards(preview, 3)
+    assert frames[0].x == pytest.approx(baseline[0].x)
+    assert frames[-1].right == pytest.approx(baseline[-1].right)
+    for left, right in zip(frames, frames[1:], strict=False):
+        assert right.x - left.right == pytest.approx(TICKET_PREVIEW_GAP)
+        assert left.y == pytest.approx(right.y)
+        assert left.h == pytest.approx(right.h)
+        assert left.w == pytest.approx(right.w)
+
+    plotter = RecordingPlotter()
+    paint_projects_index(plotter, well, roster)
+    assert [op[2] for op in plotter.ops if op[0] == "link"] == [
+        dest
+        for slot in range(1, 9)
+        for dest in (f"projects-2026-{slot:02d}",) * (1 + cards)
+    ]
+    dest_ink = RecordingPlotter()
+    paint_project(dest_ink, well, board)
+    assert [op[2] for op in dest_ink.ops if op[0] == "text"].count("P") == cards
+
+
 def test_projects_index_paint_write_in_underlines_and_links():
     spec = Spec(notes_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "projects_index")
@@ -312,8 +371,8 @@ def test_projects_index_paint_write_in_underlines_and_links():
     for seat in seats:
         _, body = project_ticket_parts(seat)
         _, preview = project_ticket_body_seats(body)
-        expected.extend(project_ticket_preview_cards(preview))
-    assert len(expected) == 8 * 3
+        expected.extend(project_ticket_preview_cards(preview, roster.cards))
+    assert len(expected) == 8 * roster.cards
     for card in expected:
         assert any(
             box.x == pytest.approx(card.x)
@@ -326,12 +385,12 @@ def test_projects_index_paint_write_in_underlines_and_links():
     link_ops = [op for op in plotter.ops if op[0] == "link"]
     expected_hits: list[tuple[Rect, str]] = []
     for seat, ticket in zip(seats, roster.tickets, strict=True):
-        hits = project_ticket_link_hits(seat)
-        assert len(hits) == 4
+        hits = project_ticket_link_hits(seat, roster.cards)
+        assert len(hits) == 1 + roster.cards
         stub, body = project_ticket_parts(seat)
         name, preview = project_ticket_body_seats(body)
         write, strip = project_ticket_name_seats(name)
-        cards = project_ticket_preview_cards(preview)
+        cards = project_ticket_preview_cards(preview, roster.cards)
         assert hits[0] == stub
         assert hits[1:] == cards
         for hit in hits:
@@ -340,7 +399,9 @@ def test_projects_index_paint_write_in_underlines_and_links():
         expected_hits.extend((hit, ticket.dest) for hit in hits)
     assert [(op[1], op[2]) for op in link_ops] == expected_hits
     assert [dest for _, dest in expected_hits] == [
-        dest for slot in range(1, 9) for dest in (f"projects-2026-{slot:02d}",) * 4
+        dest
+        for slot in range(1, 9)
+        for dest in (f"projects-2026-{slot:02d}",) * (1 + roster.cards)
     ]
     for seat in seats:
         assert all(op[1] != seat for op in link_ops)
@@ -518,7 +579,9 @@ def test_projects_tickets_knob():
     assert "Field" not in texts
     assert "Grove" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
-        dest for slot in range(1, 7) for dest in (f"projects-2026-{slot:02d}",) * 4
+        dest
+        for slot in range(1, 7)
+        for dest in (f"projects-2026-{slot:02d}",) * (1 + roster.cards)
     ]
 
 
@@ -563,7 +626,9 @@ def test_projects_index_pages_knob():
     assert "16" in texts
     assert "01" not in texts
     assert [op[2] for op in plotter.ops if op[0] == "link"] == [
-        dest for slot in range(9, 17) for dest in (f"projects-2026-{slot:02d}",) * 4
+        dest
+        for slot in range(9, 17)
+        for dest in (f"projects-2026-{slot:02d}",) * (1 + page_two.cards)
     ]
 
     leaf = next(page for page in pages if page.dest == "projects-2026-10")

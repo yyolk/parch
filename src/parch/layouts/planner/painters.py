@@ -849,14 +849,19 @@ def project_ticket_parts(ticket: Rect) -> tuple[Rect, Rect]:
 
 
 def project_ticket_body_seats(body: Rect) -> tuple[Rect, Rect]:
-    """Write-in name | three-card preview (~0.45 of the body so boxes read)."""
+    """Write-in name | dest-card preview (~0.45 of the body so boxes read)."""
     return columns(body, 2, gap=TICKET_BODY_GAP, weights=TICKET_NAME_WEIGHTS)
 
 
-def project_ticket_preview_cards(preview: Rect) -> tuple[Rect, ...]:
-    """``paint_project`` three cards, side-by-side thumbnail — hairline open frames."""
+def project_ticket_preview_cards(preview: Rect, cards: int = 3) -> tuple[Rect, ...]:
+    """``paint_project`` dest cards, side-by-side thumbnail — hairline open frames.
+
+    ``cards`` is the dest stack count (2–4). Frames share the same preview
+    pocket width as the historical 3-square row; they shrink horizontally
+    to fit N and stay evenly spaced.
+    """
     pocket = preview.inset(TICKET_PREVIEW_INSET, TICKET_PREVIEW_INSET)
-    return columns(pocket, 3, gap=TICKET_PREVIEW_GAP)
+    return columns(pocket, cards, gap=TICKET_PREVIEW_GAP)
 
 
 def project_ticket_name_seats(name: Rect) -> tuple[Rect, Rect]:
@@ -873,28 +878,33 @@ def project_ticket_name_seats(name: Rect) -> tuple[Rect, Rect]:
     return write, strip
 
 
-def project_ticket_link_hits(ticket: Rect) -> tuple[Rect, ...]:
+def project_ticket_link_hits(ticket: Rect, cards: int = 3) -> tuple[Rect, ...]:
     """Stub column + each preview card. Write-in and symbol strip stay unlinkable."""
     stub, body = project_ticket_parts(ticket)
     _, preview = project_ticket_body_seats(body)
-    return (stub, *project_ticket_preview_cards(preview))
+    return (stub, *project_ticket_preview_cards(preview, cards))
 
 
 def paint_projects_index(
     plotter: Plotter, box: Rect, index: ProjectsIndex, *, ramp: TypeRamp | None = None
 ) -> None:
-    """``ProjectsIndex`` — stub, raised write-in, symbol strip, 3-card preview; stub + preview links."""
+    """``ProjectsIndex`` — stub, raised write-in, symbol strip, N-card preview; stub + preview links."""
     ramp = _bound_ramp(plotter, ramp)
     for seat, ticket in zip(
         project_ticket_seats(box, len(index.tickets)), index.tickets, strict=True
     ):
-        _paint_project_ticket(plotter, seat, ticket, ramp=ramp)
-        for hit in project_ticket_link_hits(seat):
+        _paint_project_ticket(plotter, seat, ticket, cards=index.cards, ramp=ramp)
+        for hit in project_ticket_link_hits(seat, index.cards):
             plotter.link(hit, ticket.dest)
 
 
 def _paint_project_ticket(
-    plotter: Plotter, box: Rect, ticket: ProjectTicket, *, ramp: TypeRamp
+    plotter: Plotter,
+    box: Rect,
+    ticket: ProjectTicket,
+    *,
+    cards: int,
+    ramp: TypeRamp,
 ) -> None:
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     stub, body = project_ticket_parts(box)
@@ -922,7 +932,7 @@ def _paint_project_ticket(
         stroke_gray=RULE_C,
     )
     _paint_clone_icon_strip(plotter, strip)
-    for card in project_ticket_preview_cards(preview):
+    for card in project_ticket_preview_cards(preview, cards):
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
     _paint_perforation(plotter, box.x + 1.4, box.bottom, box.right - 1.4, box.bottom)
 
