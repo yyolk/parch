@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import date, time
 from pathlib import Path
 
 import pytest
+from tomlrange import Bound
 
 from parch import ConfigError
 from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
@@ -247,3 +248,83 @@ def test_typography_unknown_keys_fail_loudly():
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
+
+
+def test_daily_schedule_default_and_toml_local_times(tmp_path: Path):
+    default = Spec()
+    assert isinstance(default.schedule, Bound)
+    assert default.schedule.start == time(7, 0)
+    assert default.schedule.stop == time(16, 0)
+    assert default.schedule_hours == tuple(range(7, 17))
+
+    mapped = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(7, 0), "to": time(16, 0)}}}
+    )
+    assert mapped.schedule.as_tuple() == (time(7, 0), time(16, 0))
+    assert mapped.schedule_hours == tuple(range(7, 17))
+
+    nomad = Spec.from_path(Path("examples/nomad.toml"))
+    assert nomad.schedule.start == time(7, 0)
+    assert nomad.schedule.stop == time(16, 0)
+    assert nomad.schedule_hours == tuple(range(7, 17))
+
+    inline = tmp_path / "inline.toml"
+    inline.write_text(
+        "[daily]\nschedule = { from = 07:00:00, to = 16:00:00 }\n",
+        encoding="utf-8",
+    )
+    header = tmp_path / "header.toml"
+    header.write_text(
+        "[daily.schedule]\nfrom = 09:00:00\nto = 17:00:00\n",
+        encoding="utf-8",
+    )
+    assert Spec.from_path(inline).schedule_hours == tuple(range(7, 17))
+    late = Spec.from_path(header)
+    assert late.schedule.start == time(9, 0)
+    assert late.schedule.stop == time(17, 0)
+    assert late.schedule_hours == tuple(range(9, 18))
+
+
+def test_daily_schedule_rejects_bad_tables():
+    with pytest.raises(ConfigError, match="expected a table"):
+        Spec.from_mapping({"daily": {"schedule": [7, 16]}})
+    with pytest.raises(ConfigError, match="unknown keys"):
+        Spec.from_mapping(
+            {"daily": {"schedule": {"from": time(7), "to": time(16), "step": 1}}}
+        )
+    with pytest.raises(ConfigError, match="must have keys"):
+        Spec.from_mapping({"daily": {"schedule": {"from": time(7)}}})
+
+
+def test_daily_schedule_rejects_from_after_to():
+    with pytest.raises(ConfigError, match="is after"):
+        Spec.from_mapping({"daily": {"schedule": {"from": time(16), "to": time(7)}}})
+
+
+def test_daily_schedule_rejects_non_time_values():
+    with pytest.raises(ConfigError, match="expected time, got int"):
+        Spec.from_mapping({"daily": {"schedule": {"from": 7, "to": 16}}})
+    with pytest.raises(ConfigError, match="expected time, got str"):
+        Spec.from_mapping(
+            {"daily": {"schedule": {"from": "07:00:00", "to": "16:00:00"}}}
+        )
+
+
+def test_daily_schedule_rejects_retired_int_knobs():
+    with pytest.raises(ConfigError, match="schedule_from is retired"):
+        Spec.from_mapping({"daily": {"schedule_from": 7, "schedule_to": 16}})
+    with pytest.raises(ConfigError, match="schedule_to is retired"):
+        Spec.from_mapping({"daily": {"schedule_to": 16}})
+    with pytest.raises(ConfigError, match="schedule_from is retired"):
+        Spec.from_mapping({"schedule_from": 7})
+
+
+def test_daily_schedule_hours_floor_from_ceil_to():
+    half = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(7, 30), "to": time(16, 30)}}}
+    )
+    assert half.schedule_hours == tuple(range(7, 18))
+    late = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(23, 30), "to": time(23, 59)}}}
+    )
+    assert late.schedule_hours == (23,)

@@ -2,9 +2,11 @@
 
 import tomllib
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, time
 from pathlib import Path
 from string.templatelib import Interpolation, Template
+
+from tomlrange import Bound, Domain, TomlRangeError
 
 from parch import ConfigError
 from parch.calendar import quarter_of, year_days
@@ -25,6 +27,11 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_RETIRED_SCHEDULE_KEYS = ("schedule_from", "schedule_to")
+# Civil clock bounds. tomllib already rejects invalid local times; lo/hi
+# name the day so Domain.full() is midnight–end-of-day if a press wants it.
+_SCHEDULE = Domain(time, lo=time.min, hi=time.max, name="schedule")
+_DEFAULT_SCHEDULE = _SCHEDULE.bound({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 
 type TomlTable = dict[str, object]
 
@@ -73,6 +80,39 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     if "month" in data:
         return (int(data["month"]),)
     return tuple(range(1, 13))
+
+
+def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
+    """Whole-hour labels: floor ``from``, ceil ``to`` (capped at 23)."""
+    start_hour = bound.start.hour
+    stop = bound.stop
+    if stop.minute or stop.second or stop.microsecond:
+        stop_hour = min(stop.hour + 1, 23)
+    else:
+        stop_hour = stop.hour
+    return tuple(range(start_hour, stop_hour + 1))
+
+
+def _reject_retired_schedule(table: TomlTable, *, prefix: str) -> None:
+    for key in _RETIRED_SCHEDULE_KEYS:
+        if key in table:
+            raise ConfigError(
+                f"{prefix}{key} is retired; use [daily] schedule = "
+                "{ from = 07:00:00, to = 16:00:00 }"
+            )
+
+
+def _parse_schedule(data: TomlTable, daily_table: TomlTable) -> Bound[time]:
+    """``[daily] schedule`` as tomlrange ``Bound[time]``; retired int knobs fail."""
+    _reject_retired_schedule(data, prefix="")
+    _reject_retired_schedule(daily_table, prefix="daily.")
+    raw = daily_table.get("schedule")
+    if raw is None:
+        return _DEFAULT_SCHEDULE
+    try:
+        return _SCHEDULE.bound(raw, path="daily.schedule")
+    except TomlRangeError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def _parse_bool(raw: object, key: str) -> bool:
@@ -127,8 +167,7 @@ class Spec:
     months: tuple[int, ...] = tuple(range(1, 13))
     title: str = "Year planner"
     book: str = "year-planner"
-    schedule_from: int = 7
-    schedule_to: int = 16
+    schedule: Bound[time] = _DEFAULT_SCHEDULE
     notes_pages: int = 2
     habit_columns: int = 10
     priority_rows: int = 6
@@ -165,8 +204,10 @@ class Spec:
             if month in seen:
                 raise ConfigError(f"duplicate month {month}")
             seen.add(month)
-        if not 0 <= self.schedule_from <= self.schedule_to <= 23:
-            raise ConfigError("schedule hours must be 0–23 and from ≤ to")
+        if type(self.schedule.start) is not time or type(self.schedule.stop) is not time:
+            raise ConfigError("schedule endpoints must be datetime.time")
+        if self.schedule.start > self.schedule.stop:
+            raise ConfigError("schedule from must be ≤ to")
         if self.notes_pages < 0:
             raise ConfigError("notes_pages must be >= 0")
         if not 4 <= self.habit_columns <= 16:
@@ -195,6 +236,11 @@ class Spec:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:
             raise ConfigError("bujo collections must be 0–48")
+
+    @property
+    def schedule_hours(self) -> tuple[int, ...]:
+        """Hour labels for the daily well: floor ``from``, ceil ``to``."""
+        return _hours_from_schedule(self.schedule)
 
     @property
     def weekday_start(self) -> int:
@@ -459,12 +505,7 @@ class Spec:
             months=_parse_months(data),
             title=str(data.get("title", "Year planner")),
             book=str(data.get("book", "year-planner")),
-            schedule_from=int(
-                daily_table.get("schedule_from", data.get("schedule_from", 7))
-            ),
-            schedule_to=int(
-                daily_table.get("schedule_to", data.get("schedule_to", 16))
-            ),
+            schedule=_parse_schedule(data, daily_table),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(

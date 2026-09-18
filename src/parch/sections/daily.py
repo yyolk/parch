@@ -15,7 +15,7 @@ class DailySection:
     def pages_for(self, day: date) -> list[Page]:
         spec = self.spec
         weekday = WEEKDAY_FULL[day.weekday()]
-        hours = tuple(range(spec.schedule_from, spec.schedule_to + 1))
+        hours = spec.schedule_hours
         return [
             Page(
                 dest=spec.dest_for_day(day),

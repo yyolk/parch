@@ -99,6 +99,7 @@ version = "0.3.11"
 source = { editable = "." }
 dependencies = [
     { name = "fpdf2" },
+    { name = "tomlrange" },
 ]
 
 [package.dev-dependencies]
@@ -110,7 +111,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fpdf2", specifier = "==2.8.8" }]
+requires-dist = [
+    { name = "fpdf2", specifier = "==2.8.8" },
+    { name = "tomlrange", specifier = "==0.2.2" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -236,4 +240,13 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5f/ea/7f9b938a63ece4bec677ad7f9f7fa02df3383db1949ed93a382441c09a87/ruff-0.16.7-py3-none-win32.whl", hash = "sha256:2ea3470fcebcbc5df2fb0c6f3b90333fa9084c534e0111c038fa4a6ab9f1c4b7", size = 10059082, upload-time = "2026-09-10T18:03:59.632Z" },
     { url = "https://files.pythonhosted.org/packages/39/11/480a6973a927aa653e1cead6a6416008640e03a99d05b34c0434b8c6c366/ruff-0.16.7-py3-none-win_amd64.whl", hash = "sha256:7ac26aca826e9e21d0f1cb25b54ac660760a9fdd094d3e4df9848232be98cfc6", size = 10593368, upload-time = "2026-09-10T18:04:01.999Z" },
     { url = "https://files.pythonhosted.org/packages/8b/4b/51327018d056f0dad2c2238f26d1fb0f53707a9d91b75dea6d1b3039f136/ruff-0.16.7-py3-none-win_arm64.whl", hash = "sha256:aab7f39e2c9df6c596216070f98eef1207b94f8516cca20c808826974971855b", size = 10412401, upload-time = "2026-09-10T18:04:04.098Z" },
+]
+
+[[package]]
+name = "tomlrange"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/31/5db190f07bab1efda67fccd626290bc2f9975f666277e19b5182f4d4f07e/tomlrange-0.2.2.tar.gz", hash = "sha256:d74e05f8d05ab4f2c6538537b0f40d4796221b3e78e8cf453a755391d5e69a34", size = 20685, upload-time = "2026-09-17T19:22:47.544Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/7d/715e13955385ec5a5089dac5027595836020c9580f6eee086ab63b03054f/tomlrange-0.2.2-py3-none-any.whl", hash = "sha256:48c8427dac68577fcf459a79a7619c07570683907bf8cbd0ac6690e4f6065537", size = 8567, upload-time = "2026-09-17T19:22:46.643Z" },
 ]

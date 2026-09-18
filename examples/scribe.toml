@@ -9,8 +9,8 @@ title = "Year planner"
 outline = true
 
 [daily]
-schedule_from = 7
-schedule_to = 16
+# was: schedule_from = 7 / schedule_to = 16
+schedule = { from = 07:00:00, to = 16:00:00 }
 notes_pages = 1
 priority_rows = 6
 
