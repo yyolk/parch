@@ -34,7 +34,6 @@ def test_engineering_notebook_is_cover_then_duplex_pads():
     assert cover.cta_dest == spec.dest_for_engineering_pad(1, "front")
     assert cover.display_title == "Engineering"
     assert cover.specs_lead == ""
-    assert cover.subtitle == "Engineering"
 
     plotter = RecordingPlotter()
     EngineeringNotebook().plot(spec, plotter)

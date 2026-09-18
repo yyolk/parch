@@ -18,6 +18,9 @@ def test_dest_names_from_tstrings():
     assert spec.year_day_count == 365
     assert spec.checkoff_365_dest == "checkoff-365-2026"
     assert spec.book == "year-planner"
+    assert spec.title is None
+    assert Spec.from_mapping({}).title is None
+    assert Spec.from_mapping({"title": "Year planner"}).title == "Year planner"
     assert spec.months == tuple(range(1, 13))
     assert spec.month == 1
     assert spec.presses(3)
@@ -103,6 +106,8 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"meetings": {"index_rows": 12}}).meeting_index_rows == 12
     assert Spec.from_mapping({"tasks": {"rows": 5}}).task_rows == 5
     assert Spec.from_mapping({"book": "projects-notebook"}).book == "projects-notebook"
+    assert Spec.from_mapping({"book": "projects-notebook"}).title is None
+    assert Spec.from_path(Path("examples/projects.toml")).title == "Projects"
     assert (
         Spec.from_mapping(
             {"book": "engineering-notebook", "engineering": {"sheets": 1}}
@@ -114,8 +119,10 @@ def test_habit_columns_from_toml_keys():
     assert (
         Spec.from_path(Path("examples/engineering.toml")).book == "engineering-notebook"
     )
+    assert Spec.from_path(Path("examples/engineering.toml")).title == "Engineering"
     bujo = Spec.from_path(Path("examples/nomad-bujo.toml"))
     assert bujo.book == "bullet-journal"
+    assert bujo.title == "Bullet journal"
     assert bujo.bujo_index_pages == 2
     assert bujo.bujo_collections == 24
     assert bujo.habit_columns == 8
@@ -154,6 +161,7 @@ def test_habit_columns_from_toml_keys():
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"
+    assert nomad.title == "Year planner"
     assert nomad.outline is True
     assert nomad.project_cards == 3
     assert nomad.project_tickets == 8

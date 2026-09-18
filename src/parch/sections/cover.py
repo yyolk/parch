@@ -5,6 +5,8 @@ from parch.spec import Spec
 
 
 class CoverSection:
+    """Cover — TOML title is year-planner brow, or sibling display headline when set."""
+
     def __init__(
         self,
         spec: Spec,
@@ -14,11 +16,16 @@ class CoverSection:
         specs_lead: str | None = None,
         display_title: str | None = None,
     ) -> None:
+        title = spec.title
         self.spec = spec
         self.landing_dest = landing_dest
-        self.eyebrow = eyebrow
         self.specs_lead = specs_lead
-        self.display_title = display_title
+        if display_title is not None:
+            self.display_title = title if title is not None else display_title
+            self.eyebrow = eyebrow
+        else:
+            self.display_title = None
+            self.eyebrow = title if title is not None else eyebrow
 
     def pages(self) -> list[Page]:
         spec = self.spec
@@ -36,7 +43,6 @@ class CoverSection:
                 components=(
                     CoverTitle(
                         year=spec.year,
-                        subtitle=spec.title,
                         cta_label=f"{label}  >",
                         cta_dest=landing,
                         eyebrow=self.eyebrow,
