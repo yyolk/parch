@@ -1,4 +1,4 @@
-<img src="docs/parch-mark.png" alt="parch">
+<img src="https://raw.githubusercontent.com/yyolk/parch/master/docs/parch-mark.png" alt="parch">
 
 # parch
 
