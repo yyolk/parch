@@ -67,7 +67,9 @@ def test_device_aliases():
     assert get_device("supernote-nomad") is NOMAD
     assert get_device("kindle-scribe") is SCRIBE
     assert get_device("scribe") is SCRIBE
-    with pytest.raises(ConfigError, match="known devices: supernote-nomad, kindle-scribe"):
+    with pytest.raises(
+        ConfigError, match="known devices: supernote-nomad, kindle-scribe"
+    ):
         get_device("unknown-slate")
 
 
