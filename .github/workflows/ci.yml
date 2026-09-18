@@ -24,7 +24,7 @@ jobs:
       - run: uv run ruff check src tests
       - run: uv run ruff format --check src tests
       - run: uv run pytest
-      - name: Press Nomad MVP
+      - name: Press Nomad
         run: |
           uv run parch press examples/nomad.toml -o out/nomad.pdf
           test -s out/nomad.pdf

@@ -465,7 +465,7 @@ def build_device_catalog(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch specimen",
-        description="Press key MVP pages to a static PNG catalog (fpdf2).",
+        description="Press key pages to a static PNG catalog (fpdf2).",
     )
     parser.add_argument(
         "device",
