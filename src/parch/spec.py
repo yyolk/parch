@@ -204,7 +204,10 @@ class Spec:
             if month in seen:
                 raise ConfigError(f"duplicate month {month}")
             seen.add(month)
-        if type(self.schedule.start) is not time or type(self.schedule.stop) is not time:
+        if (
+            type(self.schedule.start) is not time
+            or type(self.schedule.stop) is not time
+        ):
             raise ConfigError("schedule endpoints must be datetime.time")
         if self.schedule.start > self.schedule.stop:
             raise ConfigError("schedule from must be ≤ to")
