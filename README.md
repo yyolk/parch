@@ -1,6 +1,6 @@
-<p align="center">
-  <img src="docs/parch-mark-small-crushed.png" alt="parch">
-</p>
+
+<img src="docs/parch-mark-small-crushed.png" alt="parch">
+
 
 # parch
 
