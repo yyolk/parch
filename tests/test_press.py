@@ -33,7 +33,7 @@ def _link_count(reader: PdfReader) -> int:
 
 
 def test_press_year_pdf(tmp_path: Path):
-    out = tmp_path / "mvp.pdf"
+    out = tmp_path / "year.pdf"
     press(Spec(notes_pages=1), out)
     assert out.is_file() and out.stat().st_size > 0
 
