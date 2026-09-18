@@ -310,15 +310,6 @@ def test_daily_schedule_rejects_non_time_values():
         )
 
 
-def test_daily_schedule_rejects_retired_int_knobs():
-    with pytest.raises(ConfigError, match="schedule_from is retired"):
-        Spec.from_mapping({"daily": {"schedule_from": 7, "schedule_to": 16}})
-    with pytest.raises(ConfigError, match="schedule_to is retired"):
-        Spec.from_mapping({"daily": {"schedule_to": 16}})
-    with pytest.raises(ConfigError, match="schedule_from is retired"):
-        Spec.from_mapping({"schedule_from": 7})
-
-
 def test_daily_schedule_hours_floor_from_ceil_to():
     half = Spec.from_mapping(
         {"daily": {"schedule": {"from": time(7, 30), "to": time(16, 30)}}}

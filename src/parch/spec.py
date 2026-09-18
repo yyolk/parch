@@ -27,7 +27,6 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
-_RETIRED_SCHEDULE_KEYS = ("schedule_from", "schedule_to")
 _SCHEDULE = Domain(time, name="schedule")
 _DEFAULT_SCHEDULE = _SCHEDULE.bound({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 
@@ -91,19 +90,8 @@ def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
     return tuple(range(start_hour, stop_hour + 1))
 
 
-def _reject_retired_schedule(table: TomlTable, *, prefix: str) -> None:
-    for key in _RETIRED_SCHEDULE_KEYS:
-        if key in table:
-            raise ConfigError(
-                f"{prefix}{key} is retired; use [daily] schedule = "
-                "{ from = 07:00:00, to = 16:00:00 }"
-            )
-
-
-def _parse_schedule(data: TomlTable, daily_table: TomlTable) -> Bound[time]:
-    """``[daily] schedule`` as tomlrange ``Bound[time]``; retired int knobs fail."""
-    _reject_retired_schedule(data, prefix="")
-    _reject_retired_schedule(daily_table, prefix="daily.")
+def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
+    """``[daily] schedule`` as tomlrange ``Bound[time]``; omit keeps 07:00–16:00."""
     raw = daily_table.get("schedule")
     if raw is None:
         return _DEFAULT_SCHEDULE
@@ -499,7 +487,7 @@ class Spec:
             months=_parse_months(data),
             title=str(data.get("title", "Year planner")),
             book=str(data.get("book", "year-planner")),
-            schedule=_parse_schedule(data, daily_table),
+            schedule=_parse_schedule(daily_table),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(
