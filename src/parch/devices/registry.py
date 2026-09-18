@@ -1,4 +1,4 @@
-"""Registered MVP devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
+"""Registered devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
 
 from dataclasses import dataclass
 
@@ -101,5 +101,5 @@ def get_device(spec: str) -> Device:
     key = spec.strip().lower()
     if key not in _KNOWN:
         known = ", ".join(known_device_ids())
-        raise ConfigError(f"unknown device {spec!r}; MVP knows {known}")
+        raise ConfigError(f"unknown device {spec!r}; known devices: {known}")
     return _KNOWN[key]

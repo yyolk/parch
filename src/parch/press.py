@@ -54,7 +54,7 @@ def press(
     overlay: OverlayData | None = None,
     proof: bool | ProofProfile = False,
 ) -> Path:
-    """Build the MVP book and write ``output``.
+    """Build the book and write ``output``.
 
     Press **validates** spec TOML ⊕ proof ⊕ press overlay (pure
     ``require_overlay``, exact ``schema_version`` match) before
@@ -167,12 +167,12 @@ def main(argv: list[str] | None = None) -> int:
         "spec",
         nargs="?",
         default=None,
-        help="TOML spec path, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 MVP.",
+        help="TOML spec path, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 year planner.",
     )
     parser.add_argument("-o", "--output", help="Product PDF path.")
     parser.add_argument("-w", "--workdir", help="Also write workdir/index.pdf.")
     parser.add_argument("--year", type=int, help="Overlay planner year.")
-    parser.add_argument("--month", type=int, help="MVP month (1–12).")
+    parser.add_argument("--month", type=int, help="Planner month (1–12).")
     parser.add_argument(
         "--proof",
         action="store_true",

@@ -7,7 +7,7 @@
 [![CI](https://github.com/yyolk/parch/actions/workflows/ci.yml/badge.svg)](https://github.com/yyolk/parch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-parch generates **fixed e-ink PDF pages**. The MVP target is SuperNote Nomad only.
+parch generates **fixed e-ink PDF pages**.
 
 ## Install / Press
 
@@ -29,6 +29,7 @@ Device → Component (data only) → Section (build Page) → Layout (chrome + s
 | Device | id | size | resolution | notes |
 | --- | --- | --- | --- | --- |
 | SuperNote Nomad | `supernote-nomad` | 118.87 × 158.5 mm | 1404×1872 @ 300 PPI | top clearance 8 mm reserved; writing clearance 4 mm; `root_body` 8.5pt |
+| Kindle Scribe (1st gen) | `kindle-scribe` | 157.48 × 209.97 mm | 1860×2480 @ 300 PPI | top clearance 8 mm reserved; writing clearance 4 mm; bottom clearance 10 mm; `root_body` 8.5pt |
 
 ## Tests
 
