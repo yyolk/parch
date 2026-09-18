@@ -125,7 +125,9 @@ class Spec:
     device: str = "supernote-nomad"
     week_start: str = "monday"
     months: tuple[int, ...] = tuple(range(1, 13))
-    title: str | None = None  # cover brow (year-planner) or headline (siblings); omit keeps painted defaults
+    title: str | None = (
+        None  # cover brow (year-planner) or headline (siblings); omit keeps painted defaults
+    )
     book: str = "year-planner"
     schedule_from: int = 7
     schedule_to: int = 16
