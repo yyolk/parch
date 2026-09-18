@@ -28,9 +28,7 @@ _BOOK_CHOICES = (
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
 _RETIRED_SCHEDULE_KEYS = ("schedule_from", "schedule_to")
-# Civil clock bounds. tomllib already rejects invalid local times; lo/hi
-# name the day so Domain.full() is midnight–end-of-day if a press wants it.
-_SCHEDULE = Domain(time, lo=time.min, hi=time.max, name="schedule")
+_SCHEDULE = Domain(time, name="schedule")
 _DEFAULT_SCHEDULE = _SCHEDULE.bound({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 
 type TomlTable = dict[str, object]
@@ -204,13 +202,6 @@ class Spec:
             if month in seen:
                 raise ConfigError(f"duplicate month {month}")
             seen.add(month)
-        if (
-            type(self.schedule.start) is not time
-            or type(self.schedule.stop) is not time
-        ):
-            raise ConfigError("schedule endpoints must be datetime.time")
-        if self.schedule.start > self.schedule.stop:
-            raise ConfigError("schedule from must be ≤ to")
         if self.notes_pages < 0:
             raise ConfigError("notes_pages must be >= 0")
         if not 4 <= self.habit_columns <= 16:
