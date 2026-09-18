@@ -1,7 +1,6 @@
-<div>
-  <img src="docs/parch-mark-small-crushed.png" alt="parch">
-  <h1>parch</h1>
-</div>
+<img src="docs/parch-mark-small-crushed.png" alt="parch">
+
+# parch
 
 [![PyPI](https://img.shields.io/pypi/v/parch.svg)](https://pypi.org/project/parch/)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
