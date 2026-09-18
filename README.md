@@ -1,6 +1,4 @@
-
 <img src="docs/parch-mark-small-crushed.png" alt="parch">
-
 
 # parch
 
