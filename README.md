@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/parch-mark.png" alt="parch" width="160">
+  <img src="docs/parch-mark-small-crushed.png" alt="parch" width="160">
 </p>
 
 # parch
