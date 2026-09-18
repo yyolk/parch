@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/parch-mark.png" alt="parch" width="160">
+</p>
+
 # parch
 
 [![PyPI](https://img.shields.io/pypi/v/parch.svg)](https://pypi.org/project/parch/)
