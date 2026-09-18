@@ -1,4 +1,4 @@
-<img src="docs/parch-mark-small-crushed.png" alt="parch">
+<img src="docs/parch-mark.png" alt="parch">
 
 # parch
 
