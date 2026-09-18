@@ -125,7 +125,7 @@ class Spec:
     device: str = "supernote-nomad"
     week_start: str = "monday"
     months: tuple[int, ...] = tuple(range(1, 13))
-    title: str = "Year planner"
+    title: str | None = None  # cover brow (year-planner) or headline (siblings); omit keeps painted defaults
     book: str = "year-planner"
     schedule_from: int = 7
     schedule_to: int = 16
@@ -457,7 +457,7 @@ class Spec:
             device=str(data.get("device", "supernote-nomad")),
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
-            title=str(data.get("title", "Year planner")),
+            title=str(data["title"]) if "title" in data else None,
             book=str(data.get("book", "year-planner")),
             schedule_from=int(
                 daily_table.get("schedule_from", data.get("schedule_from", 7))

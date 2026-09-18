@@ -41,7 +41,6 @@ _JAN = Spec(
     bujo_index_pages=1,
     bujo_collections=2,
     outline=True,
-    title="Bullet journal",
 )
 
 _STRIP = ("Key", "Idx", "Fut", "Mon", "Habit", "Day", "Col")
@@ -77,7 +76,6 @@ def test_bullet_journal_is_cover_then_bujo_hubs():
     assert cover.cta_dest == _JAN.bujo_key_dest
     assert cover.display_title == "Bullet Journal"
     assert cover.specs_lead == ""
-    assert cover.subtitle == "Bullet journal"
 
     dests = {page.dest for page in pages}
     assert _JAN.year_dest not in dests

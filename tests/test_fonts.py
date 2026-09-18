@@ -113,7 +113,6 @@ def test_jost_scale_table_invariants():
 def _cover() -> CoverTitle:
     return CoverTitle(
         year=2026,
-        subtitle="",
         cta_label="",
         cta_dest="year-2026",
     )
@@ -169,7 +168,6 @@ def test_header_uses_title_and_chrome_steps():
 def test_cover_display_title_is_headline_year_is_eyebrow():
     cover = CoverTitle(
         year=2026,
-        subtitle="",
         cta_label="",
         cta_dest="projects-index-2026-01",
         display_title="Projects",
