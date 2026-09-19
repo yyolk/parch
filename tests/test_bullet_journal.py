@@ -362,12 +362,13 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
     centers = {round(box.x + box.w / 2, 4) for box in dots}
     assert len(centers) == 1
+    title_pt = float(plotter.ramp.ink("title", "strong").size)
     dot_pt = {op[3] for op in plotter.ops if op[0] == "text" and op[2] == "."}
-    mod_pt = {
-        op[3] for op in plotter.ops if op[0] == "text" and op[2] in {"x", ">", "<"}
-    }
-    assert len(dot_pt) == 1
-    assert all(d > m for d in dot_pt for m in mod_pt)
+    assert dot_pt == {title_pt}
+    x_pt = next(op[3] for op in plotter.ops if op[0] == "text" and op[2] == "x")
+    chev_pt = {op[3] for op in plotter.ops if op[0] == "text" and op[2] in {">", "<"}}
+    assert chev_pt == {title_pt}
+    assert x_pt < title_pt
     mods = {
         op[2]: op[1]
         for op in plotter.ops
