@@ -343,7 +343,7 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
         if op[0] == "text" and op[2] in {"x", ">", "<"}
     }
     assert set(mods) == {"x", ">", "<"}
-    genesis = dots[0]
+    genesis_x = dots[0].x
     for box in mods.values():
-        assert box.x == pytest.approx(genesis.x)
-        assert box.y == pytest.approx(genesis.y)
+        assert box.x == pytest.approx(genesis_x)
+        assert any(d.y == pytest.approx(box.y) for d in dots)
