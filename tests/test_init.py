@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tomlrange import Clock
 
-from parch.init import _STARTER_HEADER, main, starter_toml, write_starter
+from parch.init import main, starter_toml, write_starter
 from parch.press import main as press_main
 from parch.spec import Spec
 
@@ -54,9 +54,13 @@ def test_starter_toml_follows_replaced_spec_fields():
 
 def test_starter_toml_is_shared_serializer():
     """Init is a thin header plus ``Spec.to_toml`` — no private f-string blob."""
-    assert starter_toml() == _STARTER_HEADER + Spec().to_toml()
+    text = starter_toml()
+    assert text.startswith("# parch starter — Spec() defaults. Edit, then:\n")
+    assert "#   parch press planner.toml -o planner.pdf\n" in text
+    assert "parch init -o" not in text
+    assert Spec().to_toml() in text
     spec = replace(Spec(), year=2027, months=(1, 3))
-    assert starter_toml(spec) == _STARTER_HEADER + spec.to_toml()
+    assert spec.to_toml() in starter_toml(spec)
 
 
 def test_starter_toml_has_thin_header_and_live_keys():

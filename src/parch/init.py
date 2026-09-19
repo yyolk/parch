@@ -17,7 +17,6 @@ from parch.spec import Spec
 # Thin comment prefix only — every live key comes from ``Spec.to_toml``.
 _STARTER_HEADER = """\
 # parch starter — Spec() defaults. Edit, then:
-#   parch init -o planner.toml
 #   parch press planner.toml -o planner.pdf
 #
 """
