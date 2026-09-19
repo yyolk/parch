@@ -77,11 +77,14 @@ class Plotter(Protocol):
         align: TextAlign = "left",
         gray: float = 0.0,
         small_caps: bool = False,
+        origin: tuple[float, float] | None = None,
     ) -> None:
         """Draw a single line of text inside ``box``.
 
         Exactly one of ``ink: TypeInk`` or ``ref=`` (``TypeStep`` vocabulary).
         ``ref`` resolves through ``plotter.ramp``.
+        ``origin`` is an fpdf2 ``(x, baseline)`` that skips box seating —
+        Key compose uses it so glyph ink nests share one seat.
         """
 
     def link(self, box: Rect, dest: str) -> None:

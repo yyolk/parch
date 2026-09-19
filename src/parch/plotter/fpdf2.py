@@ -160,6 +160,7 @@ class Fpdf2Plotter(Plotter):
         align: TextAlign = "left",
         gray: float = 0.0,
         small_caps: bool = False,
+        origin: tuple[float, float] | None = None,
     ) -> None:
         if not content:
             return
@@ -179,15 +180,18 @@ class Fpdf2Plotter(Plotter):
         register_as = self._register_name(resolved.family, resolved.weight)
         self.pdf.set_font(register_as, "", size)
         self._ink(gray)
-        baseline = text_baseline(box, size)
-        tw = self.pdf.get_string_width(content)
-        match align:
-            case "center":
-                tx = box.x + (box.w - tw) / 2.0
-            case "right":
-                tx = box.x + box.w - tw
-            case _:
-                tx = box.x
+        if origin is None:
+            baseline = text_baseline(box, size)
+            tw = self.pdf.get_string_width(content)
+            match align:
+                case "center":
+                    tx = box.x + (box.w - tw) / 2.0
+                case "right":
+                    tx = box.x + box.w - tw
+                case _:
+                    tx = box.x
+        else:
+            tx, baseline = origin
         self.pdf.text(tx, baseline, content)
 
     @override

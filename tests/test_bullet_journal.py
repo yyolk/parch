@@ -26,8 +26,7 @@ from parch.components import (
 )
 from parch.devices.registry import NOMAD
 from parch.fonts.catalog import jost_catalog
-from parch.fonts.metrics import painted_nest, seat_box
-from parch.geom import Rect
+from parch.fonts.metrics import glyph_ink, origin_for_nest
 from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
@@ -294,18 +293,19 @@ def test_january_plot_paints_key_and_gutter():
 
 
 def test_key_glyph_nests_follow_ink_not_shared_baseline():
-    """Period sits low; ``>`` crotch is left of ``x``; seating lifts the bullet."""
+    """Vendored Jost Bold: period sits low; ``>`` crotch is left of ``x``."""
     path = str(jost_catalog().path("jost", "bold"))
-    box = Rect(0.0, 0.0, 10.0, 8.0)
     size = 11.0
-    _px, period_y = painted_nest(box, ".", size, path)
-    x_x, x_y = painted_nest(box, "x", size, path)
-    greater_x, _gy = painted_nest(box, ">", size, path)
-    less_x, _ly = painted_nest(box, "<", size, path)
-    assert period_y > x_y
-    assert greater_x < x_x < less_x
-    seated = seat_box(box, ".", size, path, (x_x, x_y))
-    assert seated.y < box.y
+    period = glyph_ink(path, ".", size)
+    ics = glyph_ink(path, "x", size)
+    greater = glyph_ink(path, ">", size)
+    less = glyph_ink(path, "<", size)
+    assert period.cy < ics.cy
+    assert greater.nest(">")[0] < ics.nest("x")[0] < less.nest("<")[0]
+    seat = (5.0, 4.0)
+    tx, baseline = origin_for_nest(seat, period, ".")
+    assert tx + period.cx == pytest.approx(seat[0])
+    assert baseline - period.cy == pytest.approx(seat[1])
 
 
 def test_paint_bujo_key_strikes_irrelevant_row():
@@ -337,7 +337,7 @@ def test_paint_bujo_key_strikes_irrelevant_row():
     assert width < body_mm * 0.08
     assert width > 0
     dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
-    assert any(box.y < y1 < box.y + box.h for box in dots)
+    assert any(box.y <= y1 <= box.y + box.h for box in dots)
 
 
 def test_paint_bujo_key_genesis_bullet_with_modifiers():
@@ -358,8 +358,8 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     assert "-" in texts
     assert "o" in texts
     dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
-    assert len({round(box.x, 5) for box in dots}) == 1
-    assert dots[0].y < well.y
+    centers = {round(box.x + box.w / 2, 4) for box in dots}
+    assert len(centers) == 1
     mods = {
         op[2]: op[1]
         for op in plotter.ops

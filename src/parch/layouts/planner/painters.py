@@ -43,7 +43,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
-from parch.fonts.metrics import glyph_ink, painted_nest, seat_box
+from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
@@ -83,13 +83,28 @@ def _ink_text(
     gray: float = 0.0,
     align: TextAlign = "left",
     small_caps: bool = False,
+    origin: tuple[float, float] | None = None,
 ) -> None:
     if isinstance(mark, TypeRef):
         plotter.text(
-            box, content, ref=mark, gray=gray, align=align, small_caps=small_caps
+            box,
+            content,
+            ref=mark,
+            gray=gray,
+            align=align,
+            small_caps=small_caps,
+            origin=origin,
         )
         return
-    plotter.text(box, content, ink=mark, gray=gray, align=align, small_caps=small_caps)
+    plotter.text(
+        box,
+        content,
+        ink=mark,
+        gray=gray,
+        align=align,
+        small_caps=small_caps,
+        origin=origin,
+    )
 
 
 def paint_header(
@@ -2509,22 +2524,30 @@ def _bujo_key_mark_box(band: Rect) -> Rect:
     return Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
 
 
-def _bujo_key_seat(mark_box: Rect, path: str, size: float) -> tuple[float, float]:
-    """Shared optical center: title-step ``x`` crossing after fpdf2 seating."""
-    return painted_nest(mark_box, "x", size, path)
+def _bujo_key_seat(mark_box: Rect) -> tuple[float, float]:
+    """Shared compose seat: mark-cell center. Glyph ink nests land here."""
+    return mark_box.x + mark_box.w * 0.5, mark_box.y + mark_box.h * 0.5
 
 
 def _paint_bujo_key_glyph(
     plotter: Plotter,
-    mark_box: Rect,
     char: str,
     path: str,
     size: float,
     ref: TypeRef,
     seat: tuple[float, float],
 ) -> None:
-    seated = seat_box(mark_box, char, size, path, seat)
-    _ink_text(plotter, seated, char, ref, gray=INK, align="center")
+    """Place one Key glyph by its vendored-face ink nest, not box-centered text."""
+    ink = glyph_ink(path, char, size)
+    _ink_text(
+        plotter,
+        ink_rect(seat, ink, char),
+        char,
+        ref,
+        gray=INK,
+        align="left",
+        origin=origin_for_nest(seat, ink, char),
+    )
 
 
 def _paint_bujo_key_mark(
@@ -2536,17 +2559,18 @@ def _paint_bujo_key_mark(
     ref: TypeRef,
     seat: tuple[float, float],
 ) -> None:
-    """Lone signifier, or shared • plus the task modifier on one optical seat."""
-    mark_box = _bujo_key_mark_box(band)
+    """Lone signifier, or shared • plus the task modifier on one ink seat."""
     if row.genesis:
         # Modifier first so the seated • stays visible at the crossing / crotch.
-        _paint_bujo_key_glyph(plotter, mark_box, row.mark, path, size, ref, seat)
-        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, row.mark, path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
         return
     if row.mark == ".":
-        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
         return
-    _ink_text(plotter, mark_box, row.mark, ref, gray=INK, align="center")
+    _ink_text(
+        plotter, _bujo_key_mark_box(band), row.mark, ref, gray=INK, align="center"
+    )
 
 
 def paint_bujo_key(
@@ -2561,7 +2585,7 @@ def paint_bujo_key(
         if i < len(key.symbols):
             row = key.symbols[i]
             mark_box = _bujo_key_mark_box(band)
-            seat = _bujo_key_seat(mark_box, path, size)
+            seat = _bujo_key_seat(mark_box)
             _paint_bujo_key_mark(plotter, band, row, path, size, ref, seat)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             meaning = Rect(

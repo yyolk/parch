@@ -1,13 +1,14 @@
-"""Measured TTF ink and the fpdf2 cap-height text seat.
+"""Vendored-face ink bounds (fontTools) and the fpdf2 cap-height text seat.
 
-``Fpdf2Plotter.text`` places a line by baseline, not ink center — a period
-sits on that baseline while ``x`` / ``>`` / ``<`` nest higher. Key paint
-reads those glyphs' ink boxes and shifts the draw box so nests coincide.
+Key marks read the Jost cut ``FontCatalog`` already bound on the ramp
+(``jost_catalog()`` — the same TTF ``TypeRef`` weight resolves). BoundsPen
+walks that file's outline; we do not stroke paths or fetch a remote face.
+``Fpdf2Plotter.text`` still places ordinary lines by baseline. Compose uses
+``origin_for_nest`` so a glyph's ink nest lands on a shared seat.
 """
 
 from dataclasses import dataclass
 from functools import lru_cache
-from pathlib import Path
 
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
@@ -29,17 +30,6 @@ def text_baseline(box: Rect, size_pt: float) -> float:
     """Y of ``fpdf.FPDF.text`` for one line cap-centered in ``box`` (y-down)."""
     cap = pt_mm(size_pt) * _CAP_EM
     return box.y + (box.h + cap) / 2.0 - _BASELINE_NUDGE_MM
-
-
-def text_origin_x(box: Rect, advance_mm: float, *, align: str) -> float:
-    """Left edge of the advance box — matches ``Fpdf2Plotter.text``."""
-    match align:
-        case "center":
-            return box.x + (box.w - advance_mm) / 2.0
-        case "right":
-            return box.x + box.w - advance_mm
-        case _:
-            return box.x
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,32 +87,22 @@ def glyph_ink(path: str, char: str, size_pt: float) -> GlyphInk:
     )
 
 
-def painted_nest(
-    box: Rect,
-    char: str,
-    size_pt: float,
-    path: str | Path,
-    *,
-    align: str = "center",
+def origin_for_nest(
+    seat: tuple[float, float], ink: GlyphInk, char: str
 ) -> tuple[float, float]:
-    """Optical nest of ``char`` if seated in ``box`` like ``Fpdf2Plotter.text``."""
-    ink = glyph_ink(str(path), char, size_pt)
+    """fpdf2 ``text(x, baseline)`` so ``ink.nest(char)`` lands on ``seat`` (y-down)."""
     nx, ny = ink.nest(char)
-    tx = text_origin_x(box, ink.advance, align=align)
-    baseline = text_baseline(box, size_pt)
-    return tx + nx, baseline - ny
-
-
-def seat_box(
-    box: Rect,
-    char: str,
-    size_pt: float,
-    path: str | Path,
-    seat: tuple[float, float],
-    *,
-    align: str = "center",
-) -> Rect:
-    """Shift ``box`` so ``char``'s nest lands on ``seat``."""
-    cx, cy = painted_nest(box, char, size_pt, path, align=align)
     sx, sy = seat
-    return Rect(box.x + (sx - cx), box.y + (sy - cy), box.w, box.h)
+    return sx - nx, sy + ny
+
+
+def ink_rect(seat: tuple[float, float], ink: GlyphInk, char: str) -> Rect:
+    """Page-space ink box when the nest is on ``seat`` (y-down)."""
+    nx, ny = ink.nest(char)
+    sx, sy = seat
+    return Rect(
+        sx - (nx - ink.xmin),
+        sy - (ink.ymax - ny),
+        ink.xmax - ink.xmin,
+        ink.ymax - ink.ymin,
+    )
