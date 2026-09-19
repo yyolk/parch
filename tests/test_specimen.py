@@ -1,5 +1,6 @@
 """Specimen catalog: device listing, HTML index, dest → page map."""
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -8,14 +9,22 @@ import pytest
 
 from parch import ConfigError
 from parch.press import main
+from parch.spec import Spec
 from parch.specimen import (
     CATALOG_DEVICE_IDS,
+    DEFAULT_PREVIEW_TOML,
+    ENGINEERING_STEMS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
+    PREVIEW_NEARBY,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
+    STENO_STEMS,
     catalog_dest,
     catalog_index_html,
+    lookup_preview_stems,
+    preview_keys_from_toml,
+    preview_png_hrefs,
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
@@ -23,19 +32,23 @@ from parch.specimen import (
     sample_dests,
     sample_page_numbers,
     specimen_index_html,
+    specimen_preview_matrix,
     specimen_spec,
     specimens_dest,
     steno_dests,
     steno_page_numbers,
     steno_specimen_spec,
+    toml_preview_html,
     write_catalog_index,
     write_device_index,
+    write_toml_preview,
 )
 
 
 def test_catalog_index_html_is_device_list():
     html = catalog_index_html(["supernote-nomad"])
     assert 'href="supernote-nomad/"' in html
+    assert 'href="toml-preview/"' in html
     assert "<figure>" not in html
     assert ".png" not in html
     assert "<script" not in html
@@ -55,7 +68,102 @@ def test_catalog_index_html_lists_both_devices():
     html = catalog_index_html(CATALOG_DEVICE_IDS)
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-preview/"' in html
     assert html.index("supernote-nomad") < html.index("kindle-scribe")
+    assert html.index("kindle-scribe") < html.index("toml-preview")
+
+
+def test_toml_preview_html_is_editable_toml():
+    html = toml_preview_html()
+    assert '<form id="preview" method="post" action="preview">' in html
+    assert '<textarea id="toml" name="toml">' in html
+    assert DEFAULT_PREVIEW_TOML in html
+    assert 'device = "supernote-nomad"' in html
+    assert '"kindle-scribe"' in html
+    assert "var MATRIX=" in html
+    assert "fetch('matrix.json')" in html
+    assert "../'+device+'/'+stem+'.png" in html
+    assert "e.preventDefault()" in html
+    assert 'href="../"' in html
+    assert "stand-in preview" in html
+    assert "<canvas" not in html
+
+
+def test_toml_preview_default_toml_is_pressable(tmp_path: Path):
+    path = tmp_path / "preview.toml"
+    path.write_text(DEFAULT_PREVIEW_TOML, encoding="utf-8")
+    spec = Spec.from_path(path)
+    assert spec.device == "supernote-nomad"
+    assert spec.year == 2026
+    assert spec.book == "year-planner"
+    assert spec.months == tuple(range(1, 13))
+    assert spec.schedule_hours == tuple(range(7, 17))
+
+
+def test_write_toml_preview(tmp_path: Path):
+    dest = write_toml_preview(tmp_path)
+    assert dest == tmp_path / "toml-preview" / "index.html"
+    assert dest.read_text(encoding="utf-8") == toml_preview_html()
+    matrix = tmp_path / "toml-preview" / "matrix.json"
+    assert json.loads(matrix.read_text(encoding="utf-8")) == specimen_preview_matrix()
+
+
+def test_specimen_preview_matrix_keyed_by_device():
+    matrix = specimen_preview_matrix()
+    assert list(matrix) == list(CATALOG_DEVICE_IDS)
+    for device_id in CATALOG_DEVICE_IDS:
+        assert matrix[device_id]["year-planner"] == [
+            "cover",
+            "annual",
+            "monthly-jan",
+            "weekly-w01",
+            "daily-jan1",
+        ]
+        assert matrix[device_id]["engineering-notebook"] == list(ENGINEERING_STEMS)
+        assert matrix[device_id]["projects-notebook"] == list(PROJECTS_STEMS)
+        assert matrix[device_id]["steno-pad"] == list(STENO_STEMS)
+    assert PREVIEW_NEARBY[0][0] == "year-planner"
+
+
+def test_lookup_preview_stems_canonicalizes_device():
+    assert lookup_preview_stems("nomad", "year-planner") == (
+        "cover",
+        "annual",
+        "monthly-jan",
+        "weekly-w01",
+        "daily-jan1",
+    )
+    assert lookup_preview_stems("scribe", "steno-pad") == STENO_STEMS
+    assert preview_png_hrefs("kindle-scribe", "projects-notebook") == (
+        "../kindle-scribe/projects-cover.png",
+        "../kindle-scribe/projects-index.png",
+        "../kindle-scribe/projects-project-1.png",
+    )
+
+
+def test_lookup_preview_stems_unknown_book():
+    with pytest.raises(ConfigError, match="unknown preview book"):
+        lookup_preview_stems("supernote-nomad", "bullet-journal")
+
+
+def test_preview_keys_from_toml():
+    assert preview_keys_from_toml(DEFAULT_PREVIEW_TOML) == (
+        "supernote-nomad",
+        "year-planner",
+    )
+    assert preview_keys_from_toml(
+        'device = "scribe"\nbook = "projects-notebook"\n'
+    ) == (
+        "kindle-scribe",
+        "projects-notebook",
+    )
+    assert preview_keys_from_toml("year = 2026\n\n[steno]\nsheets = 1\n") == (
+        "supernote-nomad",
+        "steno-pad",
+    )
+    assert preview_keys_from_toml(
+        'device = "nomad"\n\n[engineering]\nsheets = 2\n'
+    ) == ("supernote-nomad", "engineering-notebook")
 
 
 def test_specimen_index_html_is_png_gallery():
@@ -96,6 +204,11 @@ def test_write_indexes(tmp_path: Path):
     html = catalog.read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-preview/"' in html
+    preview = root / "toml-preview" / "index.html"
+    assert preview.is_file()
+    assert '<textarea id="toml" name="toml">' in preview.read_text(encoding="utf-8")
+    assert (root / "toml-preview" / "matrix.json").is_file()
     sha = resolve_commit_sha()
     if sha:
         assert f'href="https://github.com/yyolk/parch/commit/{sha}"' in html
@@ -367,6 +480,9 @@ def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
     html = (root / "index.html").read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-preview/"' in html
+    assert (root / "toml-preview" / "index.html").is_file()
+    assert (root / "toml-preview" / "matrix.json").is_file()
     sha = resolve_commit_sha()
     if sha:
         assert f">{sha[:7]}<" in html
@@ -383,7 +499,11 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert (dest / "index.html").is_file()
     root = catalog_dest(tmp_path) / "index.html"
     assert root.is_file()
-    assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+    root_html = root.read_text(encoding="utf-8")
+    assert 'href="supernote-nomad/"' in root_html
+    assert 'href="toml-preview/"' in root_html
+    assert (catalog_dest(tmp_path) / "toml-preview" / "index.html").is_file()
+    assert (catalog_dest(tmp_path) / "toml-preview" / "matrix.json").is_file()
     assert list(dest.glob("*.pdf")) == []
     html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'src="cover.png"' in html
@@ -422,3 +542,4 @@ def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
     assert out == tmp_path / "specimens" / "supernote-nomad"
     root = catalog_dest(tmp_path) / "index.html"
     assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+    assert 'href="toml-preview/"' in root.read_text(encoding="utf-8")

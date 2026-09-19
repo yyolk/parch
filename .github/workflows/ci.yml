@@ -54,6 +54,12 @@ jobs:
           uv run parch specimen -w out
           test -s out/specimens/index.html
           grep -q "github.com/.*/commit/" out/specimens/index.html
+          grep -q 'href="toml-preview/"' out/specimens/index.html
+          test -s out/specimens/toml-preview/index.html
+          test -s out/specimens/toml-preview/matrix.json
+          grep -q '<textarea id="toml" name="toml">' out/specimens/toml-preview/index.html
+          grep -q 'method="post"' out/specimens/toml-preview/index.html
+          grep -q 'matrix.json' out/specimens/toml-preview/index.html
           devices=$(uv run python -c 'from parch.specimen import CATALOG_DEVICE_IDS; print(" ".join(CATALOG_DEVICE_IDS))')
           for device in $devices; do
             grep -q "href=\"$device/\"" out/specimens/index.html

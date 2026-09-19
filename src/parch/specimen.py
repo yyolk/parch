@@ -8,7 +8,9 @@ The product PDF is not part of the catalog.
 """
 
 import argparse
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -79,7 +81,87 @@ def gallery_groups(
 GALLERY_GROUPS = gallery_groups()
 GALLERY_STEMS = tuple(stem for _sid, _title, stems in GALLERY_GROUPS for stem in stems)
 
+# Nearby catalog thumbs for the toml-preview spike. Same stem names on every
+# catalog device; PNGs already live at ``../<device>/<stem>.png``.
+PREVIEW_NEARBY = (
+    ("year-planner", ("cover", "annual", "monthly-jan", "weekly-w01", "daily-jan1")),
+    ("engineering-notebook", ENGINEERING_STEMS),
+    ("projects-notebook", PROJECTS_STEMS),
+    ("steno-pad", STENO_STEMS),
+)
+
+DEFAULT_PREVIEW_TOML = (
+    "year = 2026\n"
+    'device = "supernote-nomad"\n'
+    'book = "year-planner"\n'
+    "months = { from = 1, to = 12 }\n"
+    "\n[daily]\n"
+    "schedule = { from = 07:00:00, to = 16:00:00 }\n"
+)
+
+_PREVIEW_DEVICE_RE = re.compile(r'(?m)^\s*device\s*=\s*"([^"]+)"')
+_PREVIEW_BOOK_RE = re.compile(r'(?m)^\s*book\s*=\s*"([^"]+)"')
+_PREVIEW_ALIASES = {"nomad": "supernote-nomad", "scribe": "kindle-scribe"}
+
 PREVIEW_DPI = 192
+
+
+def specimen_preview_matrix(
+    device_ids: Sequence[str] | None = None,
+) -> dict[str, dict[str, list[str]]]:
+    """Device → book → nearby catalog stems. Stand-in PNG lookup, not a press."""
+    ids = tuple(device_ids or CATALOG_DEVICE_IDS)
+    return {
+        device_id: {book: list(stems) for book, stems in PREVIEW_NEARBY}
+        for device_id in ids
+    }
+
+
+def preview_keys_from_toml(text: str) -> tuple[str, str]:
+    """Spike scan: ``(device, book)`` from TOML text. Not ``tomllib``.
+
+    ``book`` wins when present. Else ``[steno]`` / ``steno_sheets`` →
+    ``steno-pad``, ``[engineering]`` / ``engineering_sheets`` →
+    ``engineering-notebook``, else ``year-planner``. Device aliases
+    (``nomad``, ``scribe``) canonicalize to catalog folder ids.
+    """
+    device_m = _PREVIEW_DEVICE_RE.search(text)
+    device = device_m.group(1) if device_m else "supernote-nomad"
+    device = _PREVIEW_ALIASES.get(device, device)
+    book_m = _PREVIEW_BOOK_RE.search(text)
+    if book_m:
+        book = book_m.group(1)
+    elif re.search(r"(?m)^\s*\[steno\]", text) or re.search(
+        r"(?m)^\s*steno_sheets\s*=\s*[1-9]", text
+    ):
+        book = "steno-pad"
+    elif re.search(r"(?m)^\s*\[engineering\]", text) or re.search(
+        r"(?m)^\s*engineering_sheets\s*=\s*[1-9]", text
+    ):
+        book = "engineering-notebook"
+    else:
+        book = "year-planner"
+    return device, book
+
+
+def lookup_preview_stems(device_id: str, book: str = "year-planner") -> tuple[str, ...]:
+    """Nearby catalog stems for *device_id* + *book*. Canonicalize aliases."""
+    canonical = get_device(device_id).id
+    row = specimen_preview_matrix().get(canonical)
+    if row is None:
+        raise ConfigError(f"unknown catalog device {canonical!r}")
+    stems = row.get(book)
+    if stems is None:
+        raise ConfigError(f"unknown preview book {book!r}")
+    return tuple(stems)
+
+
+def preview_png_hrefs(device_id: str, book: str = "year-planner") -> tuple[str, ...]:
+    """Relative hrefs from ``toml-preview/`` to existing catalog PNGs."""
+    canonical = get_device(device_id).id
+    return tuple(
+        f"../{canonical}/{stem}.png" for stem in lookup_preview_stems(canonical, book)
+    )
 
 
 def catalog_dest(workdir: str | Path) -> Path:
@@ -292,10 +374,11 @@ def specimen_index_html(
 
 
 def catalog_index_html(device_ids: Sequence[str], *, commit: str | None = None) -> str:
-    """Dumb catalog root: device list. No galleries, no paper×hand tree."""
+    """Dumb catalog root: device list + toml-preview spike. No galleries."""
     items = "\n".join(
         f'<li><a href="{device_id}/">{device_id}</a></li>' for device_id in device_ids
     )
+    items += '\n<li><a href="toml-preview/">toml preview</a></li>'
     return (
         "<!DOCTYPE html>\n"
         "<title>parch specimens</title>\n"
@@ -307,16 +390,123 @@ def catalog_index_html(device_ids: Sequence[str], *, commit: str | None = None) 
     )
 
 
+def _preview_style() -> str:
+    return (
+        _catalog_style() + "<style>"
+        "textarea{width:min(48rem,100%);min-height:16rem;font-family:monospace}"
+        "#gallery figure{display:inline-block;margin:1rem;vertical-align:top}"
+        "#gallery img{width:16rem;height:auto;vertical-align:top}"
+        "#status{margin:1rem 0}"
+        "</style>\n"
+    )
+
+
+def _preview_script() -> str:
+    matrix = json.dumps(specimen_preview_matrix(), separators=(",", ":"))
+    aliases = json.dumps(_PREVIEW_ALIASES, separators=(",", ":"))
+    return (
+        "<script>\n"
+        f"var MATRIX={matrix};\n"
+        f"var ALIAS={aliases};\n"
+        "function keys(text){\n"
+        '  var d=(text.match(/^\\s*device\\s*=\\s*"([^"]+)"/m)||[])[1]||\'supernote-nomad\';\n'
+        "  d=ALIAS[d]||d;\n"
+        '  var b=(text.match(/^\\s*book\\s*=\\s*"([^"]+)"/m)||[])[1];\n'
+        "  if(!b){\n"
+        "    if(/^\\s*\\[steno\\]/m.test(text)||/^\\s*steno_sheets\\s*=\\s*[1-9]/m.test(text)) b='steno-pad';\n"
+        "    else if(/^\\s*\\[engineering\\]/m.test(text)||/^\\s*engineering_sheets\\s*=\\s*[1-9]/m.test(text)) b='engineering-notebook';\n"
+        "    else b='year-planner';\n"
+        "  }\n"
+        "  return {device:d,book:b};\n"
+        "}\n"
+        "function stems(device,book,matrix){\n"
+        "  var row=matrix[device]||{};\n"
+        "  return row[book]||[];\n"
+        "}\n"
+        "function render(device,book,matrix){\n"
+        "  var list=stems(device,book,matrix);\n"
+        "  var g=document.getElementById('gallery');\n"
+        "  var s=document.getElementById('status');\n"
+        "  if(!matrix[device]){\n"
+        "    g.innerHTML='';\n"
+        "    s.textContent='unknown device '+device+' — catalog stems are supernote-nomad, kindle-scribe';\n"
+        "    return;\n"
+        "  }\n"
+        "  if(!list.length){\n"
+        "    g.innerHTML='';\n"
+        "    s.textContent='no catalog stems for '+book+' on '+device;\n"
+        "    return;\n"
+        "  }\n"
+        "  s.textContent='stand-in preview: '+device+' / '+book+' (matrix lookup, no press)';\n"
+        "  g.innerHTML=list.map(function(stem){\n"
+        "    var src='../'+device+'/'+stem+'.png';\n"
+        "    return '<figure><img src=\"'+src+'\" alt=\"'+stem+'\"><figcaption>'+stem+'</figcaption></figure>';\n"
+        "  }).join('');\n"
+        "}\n"
+        "function lookup(matrix){\n"
+        "  var k=keys(document.getElementById('toml').value);\n"
+        "  render(k.device,k.book,matrix||MATRIX);\n"
+        "}\n"
+        "function boot(matrix){\n"
+        "  MATRIX=matrix||MATRIX;\n"
+        "  var form=document.getElementById('preview');\n"
+        "  form.addEventListener('submit',function(e){\n"
+        "    e.preventDefault();\n"
+        "    lookup(MATRIX);\n"
+        "  });\n"
+        "  document.getElementById('toml').addEventListener('input',function(){lookup(MATRIX)});\n"
+        "  lookup(MATRIX);\n"
+        "}\n"
+        "fetch('matrix.json').then(function(r){return r.json()}).then(boot).catch(function(){boot(MATRIX)});\n"
+        "</script>\n"
+    )
+
+
+def toml_preview_html() -> str:
+    """Spike: editable Spec TOML + stand-in catalog PNGs. No press."""
+    return (
+        "<!DOCTYPE html>\n"
+        "<title>parch spec preview</title>\n"
+        + _preview_style()
+        + '<p><a href="../">specimens</a></p>\n'
+        "<h1>Spec TOML preview</h1>\n"
+        "<p>Spike: edit TOML text. Submit POSTs to <code>preview</code> (intercepted) "
+        "or runs a prebuilt specimen matrix lookup and shows nearby catalog PNGs "
+        "keyed by device. Not a live press.</p>\n"
+        '<form id="preview" method="post" action="preview">\n'
+        '<p><label for="toml">toml</label></p>\n'
+        f'<textarea id="toml" name="toml">{DEFAULT_PREVIEW_TOML}</textarea>\n'
+        '<p><button type="submit">preview</button></p>\n'
+        "</form>\n"
+        '<p id="status"></p>\n'
+        '<section id="gallery"></section>\n' + _preview_script()
+    )
+
+
+def write_toml_preview(root: Path) -> Path:
+    """Write the catalog toml-preview spike page + matrix.json."""
+    dest = root / "toml-preview"
+    dest.mkdir(parents=True, exist_ok=True)
+    (dest / "matrix.json").write_text(
+        json.dumps(specimen_preview_matrix(), indent=2) + "\n",
+        encoding="utf-8",
+    )
+    index = dest / "index.html"
+    index.write_text(toml_preview_html(), encoding="utf-8")
+    return index
+
+
 def write_catalog_index(
     root: Path, device_ids: Sequence[str], *, commit: str | None = None
 ) -> Path:
-    """Write the catalog root index.html listing *device_ids*."""
+    """Write the catalog root index.html listing *device_ids* plus toml-preview."""
     root.mkdir(parents=True, exist_ok=True)
     index = root / "index.html"
     index.write_text(
         catalog_index_html(device_ids, commit=resolve_commit_sha(commit)),
         encoding="utf-8",
     )
+    write_toml_preview(root)
     return index
 
 
