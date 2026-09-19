@@ -2539,8 +2539,9 @@ def _paint_bujo_key_mark(
     """Lone signifier, or shared • plus the task modifier on one optical seat."""
     mark_box = _bujo_key_mark_box(band)
     if row.genesis:
-        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
+        # Modifier first so the seated • stays visible at the crossing / crotch.
         _paint_bujo_key_glyph(plotter, mark_box, row.mark, path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
         return
     if row.mark == ".":
         _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
