@@ -88,6 +88,21 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_bujo_collection(24) == "bujo-col-2026-24"
 
 
+def test_spec_dest_is_cpython_314_templatelib_emblem():
+    """CPython 3.14 templatelib emblem: public Spec dests flatten t-strings.
+
+    Explorer C (test-as-spec). ``year_dest`` / ``dest_for_month`` /
+    ``dest_for_quarter`` go through private ``_dest``, which walks
+    ``string.templatelib.Template`` and ``match``es ``Interpolation``
+    (format spec vs bare value) plus string literals. ``_dest`` stays
+    private; this test does not grow the production API.
+    """
+    spec = Spec(year=7)
+    assert spec.year_dest == "year-0007"
+    assert spec.dest_for_month(3) == "month-0007-03"
+    assert spec.dest_for_quarter(2) == "quarter-0007-Q2"
+
+
 def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"habits": {"columns": 8}}).habit_columns == 8
     assert Spec.from_mapping({"habits": {"rows": 6}}).habit_columns == 6
