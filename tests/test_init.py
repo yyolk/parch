@@ -122,7 +122,8 @@ def test_cli_help_is_flags_only(capsys):
         main(["init", "--help"])
     assert exc.value.code == 0
     out = capsys.readouterr().out
-    assert "never prompts" in out
+    flat = " ".join(out.split())
+    assert "never prompts" in flat
     assert "--profile" in out
     assert "--year" in out
     assert "--device" in out
