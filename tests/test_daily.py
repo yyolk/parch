@@ -1,3 +1,5 @@
+from datetime import date, time
+
 import pytest
 
 from parch.books import YearPlanner
@@ -21,6 +23,7 @@ from parch.layouts.planner.painters import (
     paint_priorities,
 )
 from parch.plotter import RecordingPlotter
+from parch.sections.daily import DailySection
 from parch.spec import Spec
 from parch.tracks import columns
 
@@ -123,3 +126,19 @@ def test_daily_right_column_priorities_over_notes():
     assert "Priorities" in labels
     assert Spec().priority_rows == 6
     assert Spec.from_mapping({"daily": {"priority_rows": 5}}).priority_rows == 5
+
+
+def test_daily_page_hours_span_default_0700_1600():
+    spec = Spec()
+    assert spec.schedule.start == time(7, 0)
+    assert spec.schedule.stop == time(16, 0)
+    page = DailySection(spec).pages_for(date(2026, 7, 15))[0]
+    hours = next(item.hours for item in page.components if isinstance(item, Schedule))
+    assert hours == tuple(range(7, 17))
+
+    parsed = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(7, 0), "to": time(16, 0)}}}
+    )
+    page = DailySection(parsed).pages_for(date(2026, 1, 2))[0]
+    hours = next(item.hours for item in page.components if isinstance(item, Schedule))
+    assert hours == tuple(range(7, 17))

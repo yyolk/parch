@@ -2,9 +2,11 @@
 
 import tomllib
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, time
 from pathlib import Path
 from string.templatelib import Interpolation, Template
+
+from tomlrange import Bound, Clock, TomlRangeError
 
 from parch import ConfigError
 from parch.calendar import quarter_of, year_days
@@ -25,6 +27,7 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 
 type TomlTable = dict[str, object]
 
@@ -73,6 +76,37 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
     if "month" in data:
         return (int(data["month"]),)
     return tuple(range(1, 13))
+
+
+def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
+    """Whole-hour labels for the daily well: floor ``from``, ceil ``to`` (capped at 23).
+
+    Painter bands stay hourly. Bound walk / ``elapsed`` use Clock grain (default
+    one minute, or table ``step`` minutes) and are not the hour-label source.
+    """
+    start_hour = bound.start.hour
+    stop = bound.stop
+    if stop.minute or stop.second or stop.microsecond:
+        stop_hour = min(stop.hour + 1, 23)
+    else:
+        stop_hour = stop.hour
+    return tuple(range(start_hour, stop_hour + 1))
+
+
+def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
+    """``[daily] schedule`` via ``Clock.parse``; omit keeps 07:00–16:00.
+
+    Optional table ``step`` is Clock grain: a positive int (minutes) or a
+    naive local time as length-since-midnight. ``as_table`` emits the int
+    count. Overlap / merge / adjacent stay on Bound/Bounds.
+    """
+    raw = daily_table.get("schedule")
+    if raw is None:
+        return _DEFAULT_SCHEDULE
+    try:
+        return Clock.parse(raw, path="daily.schedule")
+    except TomlRangeError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def _parse_bool(raw: object, key: str) -> bool:
@@ -127,8 +161,7 @@ class Spec:
     months: tuple[int, ...] = tuple(range(1, 13))
     title: str | None = None  # year-planner brow / sibling headline; omit keeps paint
     book: str = "year-planner"
-    schedule_from: int = 7
-    schedule_to: int = 16
+    schedule: Bound[time] = _DEFAULT_SCHEDULE
     notes_pages: int = 2
     habit_columns: int = 10
     priority_rows: int = 6
@@ -165,8 +198,6 @@ class Spec:
             if month in seen:
                 raise ConfigError(f"duplicate month {month}")
             seen.add(month)
-        if not 0 <= self.schedule_from <= self.schedule_to <= 23:
-            raise ConfigError("schedule hours must be 0–23 and from ≤ to")
         if self.notes_pages < 0:
             raise ConfigError("notes_pages must be >= 0")
         if not 4 <= self.habit_columns <= 16:
@@ -195,6 +226,11 @@ class Spec:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:
             raise ConfigError("bujo collections must be 0–48")
+
+    @property
+    def schedule_hours(self) -> tuple[int, ...]:
+        """Hour labels for the daily well: floor ``from``, ceil ``to``."""
+        return _hours_from_schedule(self.schedule)
 
     @property
     def weekday_start(self) -> int:
@@ -459,12 +495,7 @@ class Spec:
             months=_parse_months(data),
             title=str(data["title"]) if "title" in data else None,
             book=str(data.get("book", "year-planner")),
-            schedule_from=int(
-                daily_table.get("schedule_from", data.get("schedule_from", 7))
-            ),
-            schedule_to=int(
-                daily_table.get("schedule_to", data.get("schedule_to", 16))
-            ),
+            schedule=_parse_schedule(daily_table),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(
