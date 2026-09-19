@@ -182,7 +182,9 @@ def _toml_atom(value: object) -> str:
         case list() as items:
             return "[" + ", ".join(_toml_atom(item) for item in items) + "]"
         case dict() as pairs:
-            inner = ", ".join(f"{key} = {_toml_atom(raw)}" for key, raw in pairs.items())
+            inner = ", ".join(
+                f"{key} = {_toml_atom(raw)}" for key, raw in pairs.items()
+            )
             return "{ " + inner + " }"
         case _:
             raise TypeError(f"unsupported TOML value: {type(value)!r}")
