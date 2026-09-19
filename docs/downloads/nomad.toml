@@ -1,0 +1,27 @@
+# Handwritten Pages sample — not shipped in the wheel.
+# pip / uv tool users: parch press nomad.toml -o nomad-2026.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = { from = 1, to = 12 }
+title = "Year planner"
+outline = true
+
+[daily]
+schedule = { from = 07:00:00, to = 16:00:00 }
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
