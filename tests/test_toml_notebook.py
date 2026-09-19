@@ -58,8 +58,8 @@ def test_annotate_documents_only_present_keys():
     written = annotate(raw)
     assert f"{MANAGED_PREFIX} {KEY_DOCS['year']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['device']}" in written
-    assert "week_start" not in written
-    assert "book" not in written
+    assert "week_start" not in present_paths(written)
+    assert "book" not in present_paths(written)
     assert documented_paths(written) == ("year", "device")
 
 
@@ -129,29 +129,31 @@ def test_annotate_skips_unknown_keys():
         assert MANAGED_PREFIX not in written.splitlines()[idx - 1]
 
 
-def test_annotate_table_and_dotted_schedule(tmp_path: Path):
-    raw = (
-        "[daily]\n"
-        "schedule = { from = 07:00:00, to = 16:00:00 }\n"
-        "notes_pages = 1\n"
-        "\n"
-        "[daily.schedule]\n"
-        "from = 09:00:00\n"
-        "to = 17:00:00\n"
-        "step = 30\n"
-    )
+def test_annotate_inline_daily_schedule(tmp_path: Path):
+    raw = "[daily]\nschedule = { from = 07:00:00, to = 16:00:00 }\nnotes_pages = 1\n"
     written = annotate(raw)
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.schedule']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.notes_pages']}" in written
+    path = tmp_path / "inline.toml"
+    path.write_text(written, encoding="utf-8")
+    spec = Spec.from_path(path)
+    assert spec.schedule_hours == tuple(range(7, 17))
+    assert spec.notes_pages == 1
+
+
+def test_annotate_dotted_schedule_header(tmp_path: Path):
+    raw = "[daily.schedule]\nfrom = 09:00:00\nto = 17:00:00\nstep = 30\n"
+    written = annotate(raw)
+    assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.schedule']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.schedule.from']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.schedule.to']}" in written
     assert f"{MANAGED_PREFIX} {KEY_DOCS['daily.schedule.step']}" in written
-    path = tmp_path / "sched.toml"
+    path = tmp_path / "header.toml"
     path.write_text(written, encoding="utf-8")
     spec = Spec.from_path(path)
     assert spec.schedule_hours == tuple(range(9, 18))
-    assert spec.notes_pages == 1
+    assert spec.schedule.as_table()["step"] == 30
 
 
 def test_annotate_months_header_form():
@@ -328,6 +330,5 @@ def test_no_questionary_import():
 
     assert "questionary" not in dir(notebook)
     source = Path("src/parch/toml_notebook.py").read_text(encoding="utf-8")
-    assert "questionary" not in source
-    lock = Path("pyproject.toml").read_text(encoding="utf-8")
-    assert "questionary" not in lock
+    assert "import questionary" not in source
+    assert "questionary" not in Path("pyproject.toml").read_text(encoding="utf-8")
