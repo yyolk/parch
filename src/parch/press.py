@@ -162,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch",
         description="Press fixed e-ink PDF pages.",
+        epilog="Also: parch schema (Spec JSON Schema), parch init (starter TOML), parch specimen, parch proof.",
     )
     parser.add_argument(
         "spec",
@@ -186,6 +187,10 @@ def main(argv: list[str] | None = None) -> int:
         from parch.specimen import main as specimen_main
 
         return specimen_main(raw[1:])
+    if raw and raw[0] in {"schema", "init"}:
+        from parch.schema import main as schema_main
+
+        return schema_main(raw)
     proof_verb = False
     if raw and raw[0] in {"press", "proof"}:
         proof_verb = raw[0] == "proof"
