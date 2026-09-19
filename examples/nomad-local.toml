@@ -1,0 +1,16 @@
+# User deltas on the sealed Nomad starter. Stock examples/nomad.toml stays untouched.
+#   parch press examples/nomad.toml --overlay examples/nomad-local.toml -o out/nomad-local.pdf
+#   parch press examples/nomad-local.toml -o out/nomad-local.pdf
+extends = "nomad.toml"
+month = 1
+title = "Local overlay"
+
+[daily]
+notes_pages = 0
+
+[typography.overlay]
+schema_version = 1
+
+[typography.overlay.chrome]
+size = 9.6
+weight = "bold"

@@ -21,7 +21,7 @@ from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
 from parch.sections.steno import StenoPadSection
-from parch.spec import Spec
+from parch.spec import Spec, compose_table, merge_tables
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
 
@@ -127,16 +127,33 @@ def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
             raise TypeError(f"proof must be bool or ProofProfile, not {type(proof)!r}")
 
 
-def _load_spec(token: str | None, *, year: int | None, month: int | None) -> Spec:
+def _load_spec(
+    token: str | None,
+    *,
+    year: int | None,
+    month: int | None,
+    overlays: list[str] | None = None,
+) -> Spec:
+    """Resolve spec token ⊕ TOML overlays ⊕ ``--year`` / ``--month``.
+
+    Overlay files deep-merge onto the token (later files win). Each overlay
+    may itself ``extends`` / ``include``. Flags apply last.
+    """
     match token:
         case None:
-            spec = Spec()
+            mapping: dict[str, object] = {}
         case device if device in _DEVICE_TOKENS:
-            spec = Spec(device=device)
+            mapping = {"device": device}
         case path_text if Path(path_text).is_file():
-            spec = Spec.from_path(Path(path_text))
+            mapping = compose_table(Path(path_text))
         case _:
             raise ConfigError(f"spec file not found: {token}")
+    for overlay in overlays or ():
+        overlay_path = Path(overlay)
+        if not overlay_path.is_file():
+            raise ConfigError(f"overlay file not found: {overlay}")
+        mapping = merge_tables(mapping, compose_table(overlay_path))
+    spec = Spec.from_mapping(mapping)
     updates: dict[str, object] = {}
     if year is not None:
         updates["year"] = year
@@ -174,6 +191,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int, help="Overlay planner year.")
     parser.add_argument("--month", type=int, help="Planner month (1–12).")
     parser.add_argument(
+        "--overlay",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="TOML overlay path (repeatable). Later files win. Deep-merge tables. "
+        "Keeps a sealed starter stock; user deltas live in the overlay. "
+        "A file may also name a base via extends / include.",
+    )
+    parser.add_argument(
         "--proof",
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
@@ -192,7 +218,12 @@ def main(argv: list[str] | None = None) -> int:
         raw = raw[1:]
     args = parser.parse_args(raw)
     try:
-        spec = _load_spec(args.spec, year=args.year, month=args.month)
+        spec = _load_spec(
+            args.spec,
+            year=args.year,
+            month=args.month,
+            overlays=args.overlay,
+        )
         outputs = _outputs(args, args.spec)
         first = press(spec, outputs[0], proof=proof_verb or args.proof)
         for extra in outputs[1:]:
