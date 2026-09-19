@@ -29,8 +29,8 @@ _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
 _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 # Calendar months: closed int domain 1–12. Not Clock (time-of-day).
-Month = Domain(int, lo=1, hi=12, name="month")
-_DEFAULT_MONTHS = tuple(Month.full())
+_MONTH = Domain(int, lo=1, hi=12, name="month")
+_DEFAULT_MONTHS = tuple(_MONTH.full())
 
 type TomlTable = dict[str, object]
 
@@ -73,9 +73,9 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
 
 
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
-    """List of ints, ``{ from, to }`` via ``Month.bound``, omit (full year), or ``month``.
+    """List of ints, ``{ from, to }`` via tomlrange, omit (full year), or ``month``.
 
-    Table form is a tomlrange Bound on the calendar-month domain (ints 1–12).
+    Table form is a Bound on the private calendar-month domain (ints 1–12).
     Expansion is ``tuple(bound)`` — Bound walk, not a hand-rolled ``range``.
     ``TomlRangeError`` becomes ``ConfigError`` here. List / ``month`` stay
     discrete tuples so non-contiguous ``[1, 3]`` still works.
@@ -88,7 +88,7 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
             return (int(data["month"]),)
         return _DEFAULT_MONTHS
     try:
-        return tuple(Month.bound(raw, path="months"))
+        return tuple(_MONTH.bound(raw, path="months"))
     except TomlRangeError as exc:
         raise ConfigError(str(exc)) from exc
 

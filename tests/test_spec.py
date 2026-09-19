@@ -6,7 +6,7 @@ from tomlrange import Bound, Clock
 
 from parch import ConfigError
 from parch.fonts import OVERLAY_SCHEMA_VERSION, TypeOverlay, TypePatch
-from parch.spec import Month, Spec
+from parch.spec import Spec
 
 
 def test_dest_names_from_tstrings():
@@ -256,9 +256,7 @@ def test_typography_unknown_keys_fail_loudly():
 def test_parse_months_list_and_tomlrange_table(tmp_path: Path):
     assert Spec.from_mapping({"months": [1, 2, 3]}).months == (1, 2, 3)
     assert Spec.from_mapping({"months": [1, 3]}).months == (1, 3)
-    assert Spec.from_mapping({"months": {"from": 1, "to": 3}}).months == tuple(
-        Month.bound({"from": 1, "to": 3})
-    )
+    assert Spec.from_mapping({"months": {"from": 1, "to": 3}}).months == (1, 2, 3)
     assert Spec.from_mapping({"months": {"from": 6, "to": 6}}).months == (6,)
     assert Spec.from_mapping({}).months == tuple(range(1, 13))
     assert Spec.from_mapping({"month": 7}).months == (7,)
