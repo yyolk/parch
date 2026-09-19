@@ -4,7 +4,7 @@ import tomllib
 from dataclasses import dataclass, field
 from datetime import date, time
 from pathlib import Path
-from string.templatelib import Interpolation, Template
+from string.templatelib import Interpolation, Template  # CPython 3.14
 
 from tomlrange import Bound, Clock, Domain, TomlRangeError
 
@@ -155,7 +155,7 @@ def _parse_bujo(data: TomlTable) -> tuple[int, int]:
 
 
 def _dest(template: Template) -> str:
-    """Flatten a dest t-string (prefix + fields + format specs)."""
+    """Flatten a dest t-string — CPython 3.14 ``Template`` walk + ``match`` on ``Interpolation``."""
     chunks: list[str] = []
     for part in template:
         match part:
@@ -269,6 +269,7 @@ class Spec:
 
     @property
     def year_dest(self) -> str:
+        """Annual landing, e.g. ``year-2026``. Named via the ``_dest`` t-string emblem."""
         return _dest(t"year-{self.year:04d}")
 
     @property
