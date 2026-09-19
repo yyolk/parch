@@ -292,10 +292,11 @@ def specimen_index_html(
 
 
 def catalog_index_html(device_ids: Sequence[str], *, commit: str | None = None) -> str:
-    """Dumb catalog root: device list. No galleries, no paper×hand tree."""
+    """Dumb catalog root: device list + toml-builder spike. No galleries."""
     items = "\n".join(
         f'<li><a href="{device_id}/">{device_id}</a></li>' for device_id in device_ids
     )
+    items += '\n<li><a href="toml-builder/">toml builder</a></li>'
     return (
         "<!DOCTYPE html>\n"
         "<title>parch specimens</title>\n"
@@ -307,16 +308,93 @@ def catalog_index_html(device_ids: Sequence[str], *, commit: str | None = None) 
     )
 
 
+def toml_builder_html() -> str:
+    """Static spike: form → downloadable Spec TOML. No PNG preview."""
+    options = "\n".join(
+        f'<option value="{device_id}">{device_id}</option>'
+        for device_id in CATALOG_DEVICE_IDS
+    )
+    return (
+        "<!DOCTYPE html>\n"
+        "<title>parch spec toml</title>\n"
+        '<p><a href="../">specimens</a></p>\n'
+        "<h1>Spec TOML</h1>\n"
+        "<p>Spike: download a Spec. No live PNG preview.</p>\n"
+        '<form id="spec">\n'
+        '<p><label>device <select name="device">\n'
+        + options
+        + "\n</select></label></p>\n"
+        '<p><label>year <input name="year" type="number" value="2026" min="2000" max="2100"></label></p>\n'
+        '<p>months <label>from <input name="months_from" type="number" value="1" min="1" max="12"></label>\n'
+        '<label>to <input name="months_to" type="number" value="12" min="1" max="12"></label></p>\n'
+        '<p>schedule <label>from <input name="schedule_from" type="time" value="07:00"></label>\n'
+        '<label>to <input name="schedule_to" type="time" value="16:00"></label></p>\n'
+        '<p><button type="submit">download toml</button></p>\n'
+        "</form>\n"
+        '<pre id="out"></pre>\n'
+        "<h2>Later: specimen PNGs</h2>\n"
+        "<p>Same fields already feed <code>Spec</code> → YearPlanner dests → catalog "
+        "stems. This page only writes TOML. A later spike can bridge:</p>\n"
+        "<ol>\n"
+        "<li>Stand-in: catalog thumbs already live at "
+        "<code>../&lt;device&gt;/&lt;stem&gt;.png</code> "
+        "(cover, annual, monthly-jan, …). Point <code>img src</code> at those for "
+        "the chosen device — no press.</li>\n"
+        "<li>Full preview: take this TOML through <code>parch press</code> / "
+        "<code>parch specimen</code> and <code>pdftoppm</code> (same dest stems as "
+        "the catalog). Swap the gallery srcs. Needs a worker or CI; not a browser "
+        "PDF rasterizer.</li>\n"
+        "</ol>\n"
+        "<script>\n"
+        "function pad(n){return String(n).padStart(2,'0')}\n"
+        "function tomlTime(v){\n"
+        "  var p=v.split(':');\n"
+        "  return pad(p[0]||'0')+':'+pad(p[1]||'0')+':'+pad(p[2]||'00');\n"
+        "}\n"
+        "function toml(){\n"
+        "  var d=document.forms.spec;\n"
+        "  return 'year = '+Number(d.year.value)+'\\n'\n"
+        "    +'device = \"'+d.device.value+'\"\\n'\n"
+        "    +'months = { from = '+Number(d.months_from.value)+', to = '+Number(d.months_to.value)+' }\\n'\n"
+        "    +'\\n[daily]\\n'\n"
+        "    +'schedule = { from = '+tomlTime(d.schedule_from.value)+', to = '+tomlTime(d.schedule_to.value)+' }\\n';\n"
+        "}\n"
+        "function show(){document.getElementById('out').textContent=toml()}\n"
+        "document.forms.spec.addEventListener('input',show);\n"
+        "document.forms.spec.addEventListener('change',show);\n"
+        "document.forms.spec.addEventListener('submit',function(e){\n"
+        "  e.preventDefault();\n"
+        "  var blob=new Blob([toml()],{type:'text/plain'});\n"
+        "  var a=document.createElement('a');\n"
+        "  a.href=URL.createObjectURL(blob);\n"
+        "  a.download=document.forms.spec.device.value+'-'+document.forms.spec.year.value+'.toml';\n"
+        "  a.click();\n"
+        "  URL.revokeObjectURL(a.href);\n"
+        "});\n"
+        "show();\n"
+        "</script>\n"
+    )
+
+
+def write_toml_builder(root: Path) -> Path:
+    """Write the catalog toml-builder spike page."""
+    dest = root / "toml-builder" / "index.html"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(toml_builder_html(), encoding="utf-8")
+    return dest
+
+
 def write_catalog_index(
     root: Path, device_ids: Sequence[str], *, commit: str | None = None
 ) -> Path:
-    """Write the catalog root index.html listing *device_ids*."""
+    """Write the catalog root index.html listing *device_ids* plus toml-builder."""
     root.mkdir(parents=True, exist_ok=True)
     index = root / "index.html"
     index.write_text(
         catalog_index_html(device_ids, commit=resolve_commit_sha(commit)),
         encoding="utf-8",
     )
+    write_toml_builder(root)
     return index
 
 

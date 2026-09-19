@@ -8,6 +8,7 @@ import pytest
 
 from parch import ConfigError
 from parch.press import main
+from parch.spec import Spec
 from parch.specimen import (
     CATALOG_DEVICE_IDS,
     GALLERY_GROUPS,
@@ -28,14 +29,17 @@ from parch.specimen import (
     steno_dests,
     steno_page_numbers,
     steno_specimen_spec,
+    toml_builder_html,
     write_catalog_index,
     write_device_index,
+    write_toml_builder,
 )
 
 
 def test_catalog_index_html_is_device_list():
     html = catalog_index_html(["supernote-nomad"])
     assert 'href="supernote-nomad/"' in html
+    assert 'href="toml-builder/"' in html
     assert "<figure>" not in html
     assert ".png" not in html
     assert "<script" not in html
@@ -55,7 +59,53 @@ def test_catalog_index_html_lists_both_devices():
     html = catalog_index_html(CATALOG_DEVICE_IDS)
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-builder/"' in html
     assert html.index("supernote-nomad") < html.index("kindle-scribe")
+    assert html.index("kindle-scribe") < html.index("toml-builder")
+
+
+def test_toml_builder_html_is_spec_form():
+    html = toml_builder_html()
+    assert '<form id="spec">' in html
+    assert 'name="device"' in html
+    assert 'name="year"' in html
+    assert 'name="months_from"' in html
+    assert 'name="months_to"' in html
+    assert 'name="schedule_from"' in html
+    assert 'name="schedule_to"' in html
+    assert 'value="supernote-nomad"' in html
+    assert 'value="kindle-scribe"' in html
+    assert "months = { from =" in html
+    assert "schedule = { from =" in html
+    assert "Later: specimen PNGs" in html
+    assert "../&lt;device&gt;/&lt;stem&gt;.png" in html
+    assert "parch specimen" in html
+    assert "pdftoppm" in html
+    assert 'href="../"' in html
+    assert "<canvas" not in html
+
+
+def test_toml_builder_default_toml_is_pressable(tmp_path: Path):
+    path = tmp_path / "builder.toml"
+    path.write_text(
+        "year = 2026\n"
+        'device = "supernote-nomad"\n'
+        "months = { from = 1, to = 12 }\n"
+        "\n[daily]\n"
+        "schedule = { from = 07:00:00, to = 16:00:00 }\n",
+        encoding="utf-8",
+    )
+    spec = Spec.from_path(path)
+    assert spec.device == "supernote-nomad"
+    assert spec.year == 2026
+    assert spec.months == tuple(range(1, 13))
+    assert spec.schedule_hours == tuple(range(7, 17))
+
+
+def test_write_toml_builder(tmp_path: Path):
+    dest = write_toml_builder(tmp_path)
+    assert dest == tmp_path / "toml-builder" / "index.html"
+    assert dest.read_text(encoding="utf-8") == toml_builder_html()
 
 
 def test_specimen_index_html_is_png_gallery():
@@ -96,6 +146,10 @@ def test_write_indexes(tmp_path: Path):
     html = catalog.read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-builder/"' in html
+    builder = root / "toml-builder" / "index.html"
+    assert builder.is_file()
+    assert '<form id="spec">' in builder.read_text(encoding="utf-8")
     sha = resolve_commit_sha()
     if sha:
         assert f'href="https://github.com/yyolk/parch/commit/{sha}"' in html
@@ -367,6 +421,8 @@ def test_build_catalog_lists_both_devices(tmp_path: Path, monkeypatch):
     html = (root / "index.html").read_text(encoding="utf-8")
     assert 'href="supernote-nomad/"' in html
     assert 'href="kindle-scribe/"' in html
+    assert 'href="toml-builder/"' in html
+    assert (root / "toml-builder" / "index.html").is_file()
     sha = resolve_commit_sha()
     if sha:
         assert f">{sha[:7]}<" in html
@@ -383,7 +439,10 @@ def test_write_specimens_png_catalog(tmp_path: Path):
     assert (dest / "index.html").is_file()
     root = catalog_dest(tmp_path) / "index.html"
     assert root.is_file()
-    assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+    root_html = root.read_text(encoding="utf-8")
+    assert 'href="supernote-nomad/"' in root_html
+    assert 'href="toml-builder/"' in root_html
+    assert (catalog_dest(tmp_path) / "toml-builder" / "index.html").is_file()
     assert list(dest.glob("*.pdf")) == []
     html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'src="cover.png"' in html
@@ -422,3 +481,4 @@ def test_build_device_catalog_uses_canonical_id(tmp_path: Path, monkeypatch):
     assert out == tmp_path / "specimens" / "supernote-nomad"
     root = catalog_dest(tmp_path) / "index.html"
     assert 'href="supernote-nomad/"' in root.read_text(encoding="utf-8")
+    assert 'href="toml-builder/"' in root.read_text(encoding="utf-8")
