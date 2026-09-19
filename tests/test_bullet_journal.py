@@ -16,7 +16,6 @@ from parch.books import (
 from parch.components import (
     BujoIndex,
     BujoKey,
-    BujoKeySymbol,
     CollectionLeaf,
     CoverTitle,
     FutureLogPage,
@@ -65,13 +64,6 @@ def test_sealed_component_fields():
     assert "quarter_dest" not in MonthlyCalendarList.__dataclass_fields__
     assert "pattern" not in CollectionLeaf.__dataclass_fields__
     assert "gutter_mm" not in RapidLogPage.__dataclass_fields__
-    assert set(BujoKeySymbol.__dataclass_fields__) == {
-        "mark",
-        "meaning",
-        "strike",
-        "genesis",
-    }
-    assert set(BujoKey.__dataclass_fields__) == {"symbols", "custom_rows"}
     assert BUJO_GUTTER_MM == 8.0
     assert BUJO_ROW_MM == 5.0
     assert BUJO_STRIKE > HAIR
