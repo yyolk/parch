@@ -301,11 +301,11 @@ def test_key_glyph_nests_follow_ink_not_shared_baseline():
     greater = glyph_ink(path, ">", size)
     less = glyph_ink(path, "<", size)
     assert period.cy < ics.cy
-    assert less.nest("<")[0] < ics.nest("x")[0] < greater.nest(">")[0]
-    assert greater.nest(">")[0] == pytest.approx(greater.xmax)
-    assert less.nest("<")[0] == pytest.approx(less.xmin)
+    assert less.nest[0] < ics.nest[0] < greater.nest[0]
+    assert greater.nest[0] == pytest.approx(greater.xmax)
+    assert less.nest[0] == pytest.approx(less.xmin)
     seat = (5.0, 4.0)
-    tx, baseline = origin_for_nest(seat, period, ".")
+    tx, baseline = origin_for_nest(seat, period)
     assert tx + period.cx == pytest.approx(seat[0])
     assert baseline - period.cy == pytest.approx(seat[1])
 

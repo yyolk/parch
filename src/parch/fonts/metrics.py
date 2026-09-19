@@ -77,8 +77,9 @@ class GlyphInk:
     def cy(self) -> float:
         return (self.ymin + self.ymax) / 2.0
 
-    def nest(self, char: str) -> tuple[float, float]:
-        """Bullet seat: chevron tip, else ink center."""
+    @property
+    def nest(self) -> tuple[float, float]:
+        """Bullet seat: chevron tip, else ink center. Baked at ``glyph_ink``."""
         return self.nest_x, self.nest_y
 
 
@@ -116,18 +117,16 @@ def glyph_ink(path: str, char: str, size_pt: float) -> GlyphInk:
     )
 
 
-def origin_for_nest(
-    seat: tuple[float, float], ink: GlyphInk, char: str
-) -> tuple[float, float]:
-    """fpdf2 ``text(x, baseline)`` so ``ink.nest(char)`` lands on ``seat`` (y-down)."""
-    nx, ny = ink.nest(char)
+def origin_for_nest(seat: tuple[float, float], ink: GlyphInk) -> tuple[float, float]:
+    """fpdf2 ``text(x, baseline)`` so ``ink.nest`` lands on ``seat`` (y-down)."""
+    nx, ny = ink.nest
     sx, sy = seat
     return sx - nx, sy + ny
 
 
-def ink_rect(seat: tuple[float, float], ink: GlyphInk, char: str) -> Rect:
+def ink_rect(seat: tuple[float, float], ink: GlyphInk) -> Rect:
     """Page-space ink box when the nest is on ``seat`` (y-down)."""
-    nx, ny = ink.nest(char)
+    nx, ny = ink.nest
     sx, sy = seat
     return Rect(
         sx - (nx - ink.xmin),

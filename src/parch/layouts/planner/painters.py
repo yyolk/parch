@@ -2549,12 +2549,12 @@ def _paint_bujo_key_glyph(
     ink = glyph_ink(path, char, size)
     _ink_text(
         plotter,
-        ink_rect(seat, ink, char),
+        ink_rect(seat, ink),
         char,
         mark,
         gray=INK,
         align="left",
-        origin=origin_for_nest(seat, ink, char),
+        origin=origin_for_nest(seat, ink),
     )
 
 
