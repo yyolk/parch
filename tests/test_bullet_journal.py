@@ -31,6 +31,7 @@ from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
     INK,
+    MUTED,
     paint_bujo_key,
     strip_active,
     strip_items,
@@ -367,6 +368,10 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
         op[3] for op in plotter.ops if op[0] == "text" and op[2] in {".", "x", ">", "<"}
     }
     assert mark_pt == {title_pt}
+    assert {op[7] for op in plotter.ops if op[0] == "text" and op[2] == "."} == {INK}
+    assert {
+        op[7] for op in plotter.ops if op[0] == "text" and op[2] in {"x", ">", "<"}
+    } == {MUTED}
     mods = {
         op[2]: op[1]
         for op in plotter.ops

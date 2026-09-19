@@ -2485,6 +2485,8 @@ _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
 _BUJO_STRIKE_EM = 0.045
+# Genesis x/>/< — secondary ink (MUTED), not hairline SOFT. The • stays INK.
+_BUJO_MOD_GRAY = MUTED
 _PT_MM = 25.4 / 72.0
 
 
@@ -2536,6 +2538,8 @@ def _paint_bujo_key_glyph(
     size: float,
     mark: TypeInk | TypeRef,
     seat: tuple[float, float],
+    *,
+    gray: float = INK,
 ) -> None:
     """Place one Key glyph by its vendored-face ink nest, not box-centered text."""
     ink = glyph_ink(path, char, size)
@@ -2544,7 +2548,7 @@ def _paint_bujo_key_glyph(
         ink_rect(seat, ink),
         char,
         mark,
-        gray=INK,
+        gray=gray,
         align="left",
         origin=origin_for_nest(seat, ink),
     )
@@ -2562,7 +2566,9 @@ def _paint_bujo_key_mark(
     """Lone signifier, or shared • plus the task modifier on one ink seat."""
     if row.genesis:
         # Modifier first so the seated • stays visible at the tip / crossing.
-        _paint_bujo_key_glyph(plotter, row.mark, path, size, ref, seat)
+        _paint_bujo_key_glyph(
+            plotter, row.mark, path, size, ref, seat, gray=_BUJO_MOD_GRAY
+        )
         _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
         return
     if row.mark == ".":
