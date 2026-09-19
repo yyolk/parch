@@ -127,10 +127,27 @@ def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
             raise TypeError(f"proof must be bool or ProofProfile, not {type(proof)!r}")
 
 
+def _stdin_is_tty() -> bool:
+    isatty = getattr(sys.stdin, "isatty", None)
+    return bool(isatty()) if callable(isatty) else False
+
+
+def _read_stdin() -> str:
+    buf = getattr(sys.stdin, "buffer", None)
+    if buf is not None:
+        return buf.read().decode("utf-8")
+    return sys.stdin.read()
+
+
 def _load_spec(token: str | None, *, year: int | None, month: int | None) -> Spec:
     match token:
-        case None:
+        case None if _stdin_is_tty():
             spec = Spec()
+        case None:
+            raw = _read_stdin()
+            spec = Spec.from_text(raw, source="-") if raw.strip() else Spec()
+        case "-":
+            spec = Spec.from_text(_read_stdin(), source="-")
         case device if device in _DEVICE_TOKENS:
             spec = Spec(device=device)
         case path_text if Path(path_text).is_file():
@@ -153,7 +170,11 @@ def _outputs(args: argparse.Namespace, spec_token: str | None) -> list[Path]:
         paths.append(Path(args.output))
     if paths:
         return paths
-    if spec_token and spec_token not in _DEVICE_TOKENS and Path(spec_token).is_file():
+    if (
+        spec_token
+        and spec_token not in {"-", *_DEVICE_TOKENS}
+        and Path(spec_token).is_file()
+    ):
         return [Path(spec_token).with_suffix(".pdf")]
     return [Path("parch.pdf")]
 
@@ -167,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         "spec",
         nargs="?",
         default=None,
-        help="TOML spec path, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 year planner.",
+        help="TOML spec path, '-' for stdin, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 year planner (or piped TOML).",
     )
     parser.add_argument("-o", "--output", help="Product PDF path.")
     parser.add_argument("-w", "--workdir", help="Also write workdir/index.pdf.")

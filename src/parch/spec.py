@@ -546,12 +546,16 @@ class Spec:
         )
 
     @classmethod
-    def from_path(cls, path: Path) -> Spec:
-        raw = path.read_text(encoding="utf-8")
+    def from_text(cls, raw: str, *, source: str = "-") -> Spec:
+        """Parse a TOML document. ``source`` is only for ConfigError paths."""
         try:
             data = tomllib.loads(raw)
         except tomllib.TOMLDecodeError as exc:
-            raise ConfigError(f"invalid TOML {path}: {exc}") from exc
+            raise ConfigError(f"invalid TOML {source}: {exc}") from exc
         if not isinstance(data, dict):
-            raise ConfigError(f"{path} must be a TOML table")
+            raise ConfigError(f"{source} must be a TOML table")
         return cls.from_mapping(data)
+
+    @classmethod
+    def from_path(cls, path: Path) -> Spec:
+        return cls.from_text(path.read_text(encoding="utf-8"), source=str(path))
