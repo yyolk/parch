@@ -123,14 +123,14 @@ def _compose_bases(data: TomlTable, origin: Path) -> list[Path]:
     return []
 
 
-def compose_table(path: Path, *, _stack: tuple[Path, ...] = ()) -> TomlTable:
+def compose_table(path: Path | str, *, _stack: tuple[Path, ...] = ()) -> TomlTable:
     """Load TOML, resolve ``extends`` / ``include``, return a merged table.
 
     Bases apply first (include list left-to-right), then this file's keys
     win. Relative paths resolve against the file that named them. Cycles
     and missing files raise ``ConfigError``.
     """
-    path = path.resolve()
+    path = Path(path).resolve()
     if path in _stack:
         chain = " → ".join(str(part) for part in (*_stack, path))
         raise ConfigError(f"TOML include cycle: {chain}")
@@ -660,6 +660,6 @@ class Spec:
         )
 
     @classmethod
-    def from_path(cls, path: Path) -> Spec:
+    def from_path(cls, path: Path | str) -> Spec:
         """Load ``path``, resolving ``extends`` / ``include`` before parse."""
         return cls.from_mapping(compose_table(path))

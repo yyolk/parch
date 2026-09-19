@@ -65,7 +65,7 @@ def test_compose_identity_on_stock_nomad():
     direct = compose_table(_NOMAD)
     assert "extends" not in direct
     assert "include" not in direct
-    stock = Spec.from_path(_NOMAD)
+    stock = Spec.from_path(str(_NOMAD))
     assert stock.year == 2026
     assert stock.months == tuple(range(1, 13))
     assert stock.notes_pages == 1
