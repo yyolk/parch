@@ -14,3 +14,7 @@ class Error(Exception):
 
 class ConfigError(Error):
     """Invalid or incomplete press spec."""
+
+
+class FetchError(Error):
+    """Could not download a remote starter TOML."""
