@@ -43,7 +43,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
-from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest
+from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest, pt_mm
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
@@ -2488,20 +2488,18 @@ _BUJO_STRIKE_EM = 0.045
 # Genesis • only — same glyph size; PAPER ring via offset copies (not a scaled fill).
 # Draw order punches white only where the ring crosses INK x/>/<; no blend mode.
 # ~0.29 mm at title-strong 11 pt ≈ 3.4 px on Nomad 300 ppi.
-_BUJO_HALO_GRAY = PAPER
 _BUJO_HALO_EM = 0.075
 _BUJO_HALO_RAYS = 12
-_PT_MM = 25.4 / 72.0
 
 
 def _bujo_strike_width(ramp: TypeRamp) -> float:
     """Body-relative cancel bar, lighter than inked glyph stems."""
-    return float(ramp.ink("body").size) * _PT_MM * _BUJO_STRIKE_EM
+    return pt_mm(float(ramp.ink("body").size)) * _BUJO_STRIKE_EM
 
 
 def _bujo_halo_offset(size_pt: float) -> float:
     """Title-strong-relative ring width; the • cut itself stays unscaled."""
-    return float(size_pt) * _PT_MM * _BUJO_HALO_EM
+    return pt_mm(float(size_pt)) * _BUJO_HALO_EM
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2582,7 +2580,7 @@ def _paint_bujo_key_haloed_period(
             size,
             ref,
             (sx + ring * math.cos(ang), sy + ring * math.sin(ang)),
-            gray=_BUJO_HALO_GRAY,
+            gray=PAPER,
         )
     _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
 

@@ -102,7 +102,7 @@ def glyph_ink(path: str, char: str, size_pt: float) -> GlyphInk:
         raise ValueError(f"no ink for {char!r} in {path}")
     scale = pt_mm(size_pt) / font["head"].unitsPerEm
     x0, y0, x1, y1 = pen.bounds
-    tip = _chevron_tip(_outline_points(glyph), char)
+    tip = _chevron_tip(_outline_points(glyph), char) if char in "><" else None
     if tip is None:
         nest_x, nest_y = (x0 + x1) / 2.0 * scale, (y0 + y1) / 2.0 * scale
     else:
