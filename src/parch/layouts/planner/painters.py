@@ -43,6 +43,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
+from parch.fonts.metrics import glyph_ink, painted_nest, seat_box
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
@@ -2497,15 +2498,54 @@ def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
             )
 
 
-def _paint_bujo_key_mark(plotter: Plotter, band: Rect, row: BujoKeySymbol) -> None:
-    """Lone signifier, or shared • plus the task modifier in the same cell."""
-    mark_box = Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
-    ink = TypeRef(step="title", emphasis="strong")
+def _bujo_key_face(plotter: Plotter) -> tuple[str, float, TypeRef]:
+    """Title-strong cut and size the Key marks actually paint with."""
+    ink = plotter.ramp.ink("title", "strong")
+    path = str(plotter.ramp.catalog.path(ink.family, ink.weight))
+    return path, float(ink.size), TypeRef(step="title", emphasis="strong")
+
+
+def _bujo_key_mark_box(band: Rect) -> Rect:
+    return Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
+
+
+def _bujo_key_seat(mark_box: Rect, path: str, size: float) -> tuple[float, float]:
+    """Shared optical center: title-step ``x`` crossing after fpdf2 seating."""
+    return painted_nest(mark_box, "x", size, path)
+
+
+def _paint_bujo_key_glyph(
+    plotter: Plotter,
+    mark_box: Rect,
+    char: str,
+    path: str,
+    size: float,
+    ref: TypeRef,
+    seat: tuple[float, float],
+) -> None:
+    seated = seat_box(mark_box, char, size, path, seat)
+    _ink_text(plotter, seated, char, ref, gray=INK, align="center")
+
+
+def _paint_bujo_key_mark(
+    plotter: Plotter,
+    band: Rect,
+    row: BujoKeySymbol,
+    path: str,
+    size: float,
+    ref: TypeRef,
+    seat: tuple[float, float],
+) -> None:
+    """Lone signifier, or shared • plus the task modifier on one optical seat."""
+    mark_box = _bujo_key_mark_box(band)
     if row.genesis:
-        _ink_text(plotter, mark_box, ".", ink, gray=INK, align="center")
-        _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
+        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, mark_box, row.mark, path, size, ref, seat)
         return
-    _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
+    if row.mark == ".":
+        _paint_bujo_key_glyph(plotter, mark_box, ".", path, size, ref, seat)
+        return
+    _ink_text(plotter, mark_box, row.mark, ref, gray=INK, align="center")
 
 
 def paint_bujo_key(
@@ -2515,10 +2555,13 @@ def paint_bujo_key(
     ramp = _bound_ramp(plotter, ramp)
     n = max(1, len(key.symbols) + max(0, key.custom_rows))
     symbol_w = _BUJO_SYMBOL_W
+    path, size, ref = _bujo_key_face(plotter)
     for i, band in enumerate(rows(box, n)):
         if i < len(key.symbols):
             row = key.symbols[i]
-            _paint_bujo_key_mark(plotter, band, row)
+            mark_box = _bujo_key_mark_box(band)
+            seat = _bujo_key_seat(mark_box, path, size)
+            _paint_bujo_key_mark(plotter, band, row, path, size, ref, seat)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             meaning = Rect(
                 meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h
@@ -2532,13 +2575,13 @@ def paint_bujo_key(
                 align="left",
             )
             if row.strike:
-                y = band.y + band.h * 0.5
-                mark_cx = band.x + symbol_w * 0.5
+                period = glyph_ink(path, ".", size)
+                x1 = seat[0] - (period.cx - period.xmin)
                 plotter.line(
-                    mark_cx - 1.2,
-                    y,
+                    x1,
+                    seat[1],
                     meaning.right,
-                    y,
+                    seat[1],
                     stroke_width=_bujo_strike_width(ramp),
                     stroke_gray=INK,
                 )
