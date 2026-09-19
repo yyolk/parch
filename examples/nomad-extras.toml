@@ -3,7 +3,7 @@
 year = 2026
 device = "supernote-nomad"
 week_start = "monday"
-months = [1]
+month = 1
 title = "Year planner"
 favorites = true
 my_100 = true
