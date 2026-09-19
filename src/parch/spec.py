@@ -6,7 +6,7 @@ from datetime import date, time
 from pathlib import Path
 from string.templatelib import Interpolation, Template
 
-from tomlrange import Bound, Clock, TomlRangeError
+from tomlrange import Bound, Clock, Domain, TomlRangeError
 
 from parch import ConfigError
 from parch.calendar import quarter_of, year_days
@@ -28,6 +28,9 @@ _BOOK_CHOICES = (
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
 _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
+# Calendar months: closed int domain 1–12. Not Clock (time-of-day).
+Month = Domain(int, lo=1, hi=12, name="month")
+_DEFAULT_MONTHS = tuple(Month.full())
 
 type TomlTable = dict[str, object]
 
@@ -70,12 +73,24 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
 
 
 def _parse_months(data: TomlTable) -> tuple[int, ...]:
+    """List of ints, ``{ from, to }`` via ``Month.bound``, omit (full year), or ``month``.
+
+    Table form is a tomlrange Bound on the calendar-month domain (ints 1–12).
+    Expansion is ``tuple(bound)`` — Bound walk, not a hand-rolled ``range``.
+    ``TomlRangeError`` becomes ``ConfigError`` here. List / ``month`` stay
+    discrete tuples so non-contiguous ``[1, 3]`` still works.
+    """
     raw = data.get("months")
-    if isinstance(raw, list) and raw:
+    if isinstance(raw, list):
         return tuple(int(month) for month in raw)
-    if "month" in data:
-        return (int(data["month"]),)
-    return tuple(range(1, 13))
+    if raw is None:
+        if "month" in data:
+            return (int(data["month"]),)
+        return _DEFAULT_MONTHS
+    try:
+        return tuple(Month.bound(raw, path="months"))
+    except TomlRangeError as exc:
+        raise ConfigError(str(exc)) from exc
 
 
 def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
@@ -158,7 +173,7 @@ class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
     week_start: str = "monday"
-    months: tuple[int, ...] = tuple(range(1, 13))
+    months: tuple[int, ...] = _DEFAULT_MONTHS
     title: str | None = None  # year-planner brow / sibling headline; omit keeps paint
     book: str = "year-planner"
     schedule: Bound[time] = _DEFAULT_SCHEDULE
