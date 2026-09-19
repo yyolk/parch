@@ -2466,20 +2466,10 @@ BUJO_DOT = 0.32
 BUJO_DOT_PITCH = 5.0
 BUJO_MIGRATE_LABEL_H = 3.4
 BUJO_STRIKE = 0.85
-_PT_MM = 25.4 / 72.0
-# Generous Jost lowercase advance so the bar clears the last glyph, plus a tail.
-_BUJO_STRIKE_ADVANCE = 0.55
-_BUJO_STRIKE_TAIL = 4.0
 _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Modifier sits on/right of the shared • so the genesis dot stays visible.
 BUJO_GENESIS_SHIFT = 1.4
-
-
-def _bujo_strike_span(meaning: str, ramp: TypeRamp) -> float:
-    """Body-width estimate plus a short tail past the last glyph."""
-    em = float(ramp.ink("body").size) * _PT_MM
-    return len(meaning) * em * _BUJO_STRIKE_ADVANCE + _BUJO_STRIKE_TAIL
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2528,9 +2518,12 @@ def paint_bujo_key(
             row = key.symbols[i]
             _paint_bujo_key_mark(plotter, band, row)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
+            meaning = Rect(
+                meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h
+            )
             _ink_text(
                 plotter,
-                Rect(meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h),
+                meaning,
                 row.meaning,
                 TypeRef(step="body"),
                 gray=INK,
@@ -2541,7 +2534,7 @@ def paint_bujo_key(
                 plotter.line(
                     band.x + symbol_w * 0.30,
                     y,
-                    meaning_x + _bujo_strike_span(row.meaning, ramp),
+                    meaning.right,
                     y,
                     stroke_width=BUJO_STRIKE,
                     stroke_gray=INK,
