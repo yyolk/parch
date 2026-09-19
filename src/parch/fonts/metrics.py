@@ -34,13 +34,12 @@ def text_baseline(box: Rect, size_pt: float) -> float:
 
 @dataclass(frozen=True, slots=True)
 class GlyphInk:
-    """Ink bbox and advance in mm. ``y`` is font-space (+up from baseline)."""
+    """Ink bbox in mm. ``y`` is font-space (+up from baseline)."""
 
     xmin: float
     ymin: float
     xmax: float
     ymax: float
-    advance: float
 
     @property
     def cx(self) -> float:
@@ -83,7 +82,6 @@ def glyph_ink(path: str, char: str, size_pt: float) -> GlyphInk:
         ymin=y0 * scale,
         xmax=x1 * scale,
         ymax=y1 * scale,
-        advance=glyph.width * scale,
     )
 
 
