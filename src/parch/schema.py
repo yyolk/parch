@@ -464,7 +464,7 @@ def spec_schema() -> Schema:
 
 def dump_schema(*, indent: int = 2) -> str:
     """Pretty-printed JSON Schema with a trailing newline."""
-    return json.dumps(spec_schema(), indent=indent) + "\n"
+    return json.dumps(spec_schema(), indent=indent, ensure_ascii=False) + "\n"
 
 
 def write_schema(path: Path) -> Path:
