@@ -28,6 +28,21 @@ jobs:
         run: |
           uv run parch press examples/nomad.toml -o out/nomad.pdf
           test -s out/nomad.pdf
+      - name: Pack examples zip
+        run: |
+          uv run python -m parch.services.examples_zip -o parch-examples.zip
+          test -s parch-examples.zip
+          uv run python -c '
+          import zipfile
+          names = zipfile.ZipFile("parch-examples.zip").namelist()
+          assert "examples/nomad.toml" in names, names
+          assert "examples/scribe.toml" in names, names
+          '
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: parch-examples.zip
+          path: parch-examples.zip
+          if-no-files-found: error
 
   # Nomad + Scribe catalog. PR events stay test-only. workflow_dispatch uploads
   # one dry-run artifact; push to the default branch deploys Pages. No product-PDF upload.
