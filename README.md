@@ -18,10 +18,11 @@ Needs Python 3.14+.
 ```shell
 uv tool install parch          # or: pip install parch
 parch press -o nomad-2026.pdf  # default: Nomad 2026 year planner
+parch init --from-release      # starter TOML from this version's Release zip
 parch specimen -w out
 ```
 
-No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. Sample TOMLs live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel) — pass your own, or clone.
+No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. Sample TOMLs live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel) — `parch init --from-release` downloads `parch-examples.zip` for the installed tag, or pass your own / clone. Offline fails loudly.
 
 ### From a checkout
 

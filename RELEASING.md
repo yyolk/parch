@@ -4,11 +4,11 @@ Happy path:
 
 1. **Actions → Bump version** — pick a `uv version --bump` (default `patch`; also `minor` / `major` / `rc` / `beta` / `alpha` / `stable` / `post` / `dev`) and **publish** (default) vs draft. One bump per dispatch.
 2. Merge the `bump/v…` PR when CI is green.
-3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`). A final or `.postN` cut also dispatches PyPI and **Release PDFs** (`release_tag`). A draft does not dispatch those; publishing the draft in the UI still fires `on: release` (Publish; **Release PDFs** only when the Release is not a pre-release).
+3. **Cut release** creates the GitHub Release (draft or published) immediately — it does not wait for post-merge Pages CI. It sets GitHub **Set as a pre-release** from `packaging.version.Version.is_prerelease` (`.devN` / `a` / `b` / `rc` yes; `.postN` no). It uses `GITHUB_TOKEN`, which does not fire `on: release` workflows, so a **published** cut then `workflow_dispatch`es **Publish**. A pre-release gets TestPyPI only (`release_tag`) plus **Release examples**. A final or `.postN` cut also dispatches PyPI, **Release PDFs** (`release_tag`), and **Release examples**. A draft does not dispatch those; publishing the draft in the UI still fires `on: release` (Publish; **Release PDFs** only when the Release is not a pre-release; **Release examples** on every published Release).
 
 A published GitHub Release is the ship step. Tag `vX.Y.Z` must match `[project].version` in `pyproject.toml` (no `v` in the file). Hatchling embeds that file version on the tagged commit; **Publish** fails the build if the tag and file differ.
 
-Every published Release goes to [TestPyPI](https://test.pypi.org/project/parch/). A stable Release (pre-release unchecked) also waits on the `pypi` environment, then uploads to [PyPI](https://pypi.org/project/parch/). The wheel and sdist attach to that Release. Draft Releases do not start **Publish** or **Release PDFs** until someone publishes the draft in the UI. A published pre-release does not start **Release PDFs**.
+Every published Release goes to [TestPyPI](https://test.pypi.org/project/parch/). A stable Release (pre-release unchecked) also waits on the `pypi` environment, then uploads to [PyPI](https://pypi.org/project/parch/). The wheel, sdist, and `parch-examples.zip` attach to that Release. Draft Releases do not start **Publish**, **Release PDFs**, or **Release examples** until someone publishes the draft in the UI. A published pre-release does not start **Release PDFs**; it still attaches `parch-examples.zip`.
 
 Do not `git push origin vX.Y.Z` to ship. Never retag.
 
@@ -21,6 +21,12 @@ A published Release with pre-release unchecked also runs **Release PDFs**, which
 The matrix is `{device}` shards from `parch.services.release_pdfs` (`PRESSABLE_DEVICE_IDS` — not `known_device_ids()`). Each shard presses the TOML mapped for that device (`supernote-nomad` → `examples/nomad.toml`, `kindle-scribe` → `examples/scribe.toml`).
 
 To time a run without a new tag: **Actions → Release PDFs → Run workflow**. Leave `release_tag` empty (press + job artifacts only, no `gh release upload`). The PDF filename then uses `[project].version` from the checkout. `max-parallel` defaults to the shard count; set `max_parallel` to override. Set `release_tag` (e.g. `v0.2.7`) to attach to an existing Release; the filename version is that tag with `v` stripped, not the checkout's pyproject version.
+
+## Examples zip
+
+CI packs `examples/*.toml` into `parch-examples.zip` and uploads it as a job artifact. A published Release (including pre-releases) also attaches that zip via **Release examples**. The filename is unversioned; the Release tag is the version. `parch init --from-release` downloads that asset for the installed package version (`v` + `__version__`) and writes a chosen starter (default `nomad` → `nomad.toml`). Offline / HTTP / missing asset / unknown starter fail loudly.
+
+**Cut release** `workflow_dispatch`es **Release examples** (`release_tag`) for both pre-release and final cuts. A draft does not dispatch; publishing the draft in the UI still fires `on: release`. To time a run without a new tag: **Actions → Release examples**. Leave `release_tag` empty (zip + job artifact only). Set `release_tag` to attach to an existing Release.
 
 ## Version bumps
 
@@ -44,7 +50,7 @@ The Release tag is `v` plus `uv version --short` after the bump.
 
 ## Pre-release
 
-Same loop as stable. **Bump version** accepts the full `uv version --bump` set (`patch`, `minor`, `major`, `rc`, `beta`, `alpha`, `stable`, `post`, `dev`) — one bump per dispatch. **Cut release** sets GitHub **Set as a pre-release** when `packaging.version.Version(ver).is_prerelease` is true (`a` / `b` / `rc` / `.devN`; `.postN` is not). A published pre-release dispatches TestPyPI only. Final and `.postN` cuts dispatch TestPyPI + PyPI + Release PDFs.
+Same loop as stable. **Bump version** accepts the full `uv version --bump` set (`patch`, `minor`, `major`, `rc`, `beta`, `alpha`, `stable`, `post`, `dev`) — one bump per dispatch. **Cut release** sets GitHub **Set as a pre-release** when `packaging.version.Version(ver).is_prerelease` is true (`a` / `b` / `rc` / `.devN`; `.postN` is not). A published pre-release dispatches TestPyPI + Release examples. Final and `.postN` cuts dispatch TestPyPI + PyPI + Release PDFs + Release examples.
 
 From `0.1.1`:
 
@@ -66,6 +72,6 @@ uv version --bump stable --no-sync
 
 1. **Actions → Bump version** (`rc` / `alpha` / `beta`, or merge a manual two-bump PR).
 2. Merge the bump PR (`0.1.2rc1`) to `master`.
-3. **Cut release** creates `v0.1.2rc1` with **Set as a pre-release**. Publish mode uploads to TestPyPI only.
+3. **Cut release** creates `v0.1.2rc1` with **Set as a pre-release**. Publish mode uploads to TestPyPI and attaches `parch-examples.zip`.
 
 Stable later is another bump PR (`uv version --bump stable`, or **Bump version → stable**) and a new Release `v0.1.2` (pre-release unchecked). Do not reuse `0.1.2rc1`. Do not un-tick pre-release on the same tag. Do not publish `0.1.2` to TestPyPI as a pre-release and then the same `0.1.2` to PyPI.

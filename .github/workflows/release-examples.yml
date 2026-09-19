@@ -1,0 +1,58 @@
+name: Release examples
+run-name: Release examples ${{ inputs.release_tag || github.ref_name }}
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing Release tag to attach parch-examples.zip (empty = zip only, job artifact)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: false
+      - run: uv sync --group dev
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="${{ inputs.release_tag }}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Pack examples zip
+        run: |
+          uv run python -m parch.services.examples_zip -o parch-examples.zip
+          test -s parch-examples.zip
+      - name: Attach to Release
+        if: github.event_name == 'release' || inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${{ steps.meta.outputs.tag }}" parch-examples.zip --clobber
+      - name: Upload job artifact
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: parch-examples.zip
+          path: parch-examples.zip
+          if-no-files-found: error
+      - name: Drop local zip
+        if: always()
+        run: rm -f parch-examples.zip
