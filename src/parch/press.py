@@ -162,6 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch",
         description="Press fixed e-ink PDF pages.",
+        epilog="Other verbs: press, proof, specimen, init, doctor, explain.",
     )
     parser.add_argument(
         "spec",
@@ -178,14 +179,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
-    # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
-    # the historical on-screen path; it selects ProofProfile. `parch specimen`
-    # writes a static PNG catalog (not a product PDF).
+    # Accept a leading verb. `parch proof` is the historical on-screen path;
+    # it selects ProofProfile. `parch specimen` writes a static PNG catalog.
+    # `init` / `doctor` / `explain` grow a progressive TOML notebook.
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "specimen":
         from parch.specimen import main as specimen_main
 
         return specimen_main(raw[1:])
+    if raw and raw[0] in {"init", "doctor", "explain"}:
+        from parch.toml_notebook import notebook_verb
+
+        return notebook_verb(raw[0], raw[1:])
     proof_verb = False
     if raw and raw[0] in {"press", "proof"}:
         proof_verb = raw[0] == "proof"
