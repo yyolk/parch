@@ -126,7 +126,7 @@ def test_january_key_symbols_include_irrelevant():
         (">", "migrated", False, True),
         ("<", "scheduled", False, True),
         (".", "irrelevant", True, False),
-        ("-", "note", False, False),
+        ("\u2013", "note", False, False),
         ("o", "event", False, False),
         ("*", "priority", False, False),
         ("!", "inspiration", False, False),
@@ -357,7 +357,7 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     assert "x" in texts
     assert ">" in texts
     assert "<" in texts
-    assert "-" in texts
+    assert "\u2013" in texts
     assert "o" in texts
     ink_dots = [
         op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == INK
