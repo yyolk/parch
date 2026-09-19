@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.recordingPen import RecordingPen
 from fontTools.ttLib import TTFont
 
 from parch.geom import Rect
@@ -32,6 +33,31 @@ def text_baseline(box: Rect, size_pt: float) -> float:
     return box.y + (box.h + cap) / 2.0 - _BASELINE_NUDGE_MM
 
 
+def _outline_points(glyph: object) -> tuple[tuple[float, float], ...]:
+    pen = RecordingPen()
+    glyph.draw(pen)
+    points: list[tuple[float, float]] = []
+    for _op, args in pen.value:
+        for item in args:
+            if isinstance(item, tuple) and len(item) == 2:
+                points.append((float(item[0]), float(item[1])))
+    return tuple(points)
+
+
+def _chevron_tip(
+    points: tuple[tuple[float, float], ...], char: str
+) -> tuple[float, float] | None:
+    """Vertex of ``>`` / ``<``: the stroke pair at xmax / xmin."""
+    if not points or char not in "><":
+        return None
+    xs = [x for x, _y in points]
+    edge = max(xs) if char == ">" else min(xs)
+    ys = [y for x, y in points if abs(x - edge) <= 1.0]
+    if not ys:
+        return None
+    return edge, (min(ys) + max(ys)) / 2.0
+
+
 @dataclass(frozen=True, slots=True)
 class GlyphInk:
     """Ink bbox in mm. ``y`` is font-space (+up from baseline)."""
@@ -40,6 +66,8 @@ class GlyphInk:
     ymin: float
     xmax: float
     ymax: float
+    nest_x: float
+    nest_y: float
 
     @property
     def cx(self) -> float:
@@ -50,12 +78,8 @@ class GlyphInk:
         return (self.ymin + self.ymax) / 2.0
 
     def nest(self, char: str) -> tuple[float, float]:
-        """Bullet seat on this glyph: crotch of ``<>``, else ink center."""
-        if char == ">":
-            return self.xmin, self.cy
-        if char == "<":
-            return self.xmax, self.cy
-        return self.cx, self.cy
+        """Bullet seat: chevron tip, else ink center."""
+        return self.nest_x, self.nest_y
 
 
 @lru_cache(maxsize=8)
@@ -77,11 +101,18 @@ def glyph_ink(path: str, char: str, size_pt: float) -> GlyphInk:
         raise ValueError(f"no ink for {char!r} in {path}")
     scale = pt_mm(size_pt) / font["head"].unitsPerEm
     x0, y0, x1, y1 = pen.bounds
+    tip = _chevron_tip(_outline_points(glyph), char)
+    if tip is None:
+        nest_x, nest_y = (x0 + x1) / 2.0 * scale, (y0 + y1) / 2.0 * scale
+    else:
+        nest_x, nest_y = tip[0] * scale, tip[1] * scale
     return GlyphInk(
         xmin=x0 * scale,
         ymin=y0 * scale,
         xmax=x1 * scale,
         ymax=y1 * scale,
+        nest_x=nest_x,
+        nest_y=nest_y,
     )
 
 

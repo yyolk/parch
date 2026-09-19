@@ -2485,6 +2485,8 @@ _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
 _BUJO_STRIKE_EM = 0.045
+# Title-strong scale for the task • only — large enough to peek under Jost Bold ``x``.
+_BUJO_DOT_SCALE = 1.9
 _PT_MM = 25.4 / 72.0
 
 
@@ -2513,11 +2515,17 @@ def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
             )
 
 
-def _bujo_key_face(plotter: Plotter) -> tuple[str, float, TypeRef]:
-    """Title-strong cut and size the Key marks actually paint with."""
+def _bujo_key_face(plotter: Plotter) -> tuple[str, float, TypeRef, TypeInk]:
+    """Title-strong cut, plus the larger task-dot ink on that same cut."""
     ink = plotter.ramp.ink("title", "strong")
     path = str(plotter.ramp.catalog.path(ink.family, ink.weight))
-    return path, float(ink.size), TypeRef(step="title", emphasis="strong")
+    title_pt = float(ink.size)
+    dot = TypeInk(
+        family=ink.family,
+        weight=ink.weight,
+        size=Pt(title_pt * _BUJO_DOT_SCALE),
+    )
+    return path, title_pt, TypeRef(step="title", emphasis="strong"), dot
 
 
 def _bujo_key_mark_box(band: Rect) -> Rect:
@@ -2534,7 +2542,7 @@ def _paint_bujo_key_glyph(
     char: str,
     path: str,
     size: float,
-    ref: TypeRef,
+    mark: TypeInk | TypeRef,
     seat: tuple[float, float],
 ) -> None:
     """Place one Key glyph by its vendored-face ink nest, not box-centered text."""
@@ -2543,7 +2551,7 @@ def _paint_bujo_key_glyph(
         plotter,
         ink_rect(seat, ink, char),
         char,
-        ref,
+        mark,
         gray=INK,
         align="left",
         origin=origin_for_nest(seat, ink, char),
@@ -2557,16 +2565,18 @@ def _paint_bujo_key_mark(
     path: str,
     size: float,
     ref: TypeRef,
+    dot: TypeInk,
     seat: tuple[float, float],
 ) -> None:
     """Lone signifier, or shared • plus the task modifier on one ink seat."""
+    dot_pt = float(dot.size)
     if row.genesis:
-        # Modifier first so the seated • stays visible at the crossing / crotch.
+        # Modifier first so the seated • stays visible at the tip / crossing.
         _paint_bujo_key_glyph(plotter, row.mark, path, size, ref, seat)
-        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, ".", path, dot_pt, dot, seat)
         return
     if row.mark == ".":
-        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+        _paint_bujo_key_glyph(plotter, ".", path, dot_pt, dot, seat)
         return
     _ink_text(
         plotter, _bujo_key_mark_box(band), row.mark, ref, gray=INK, align="center"
@@ -2580,13 +2590,13 @@ def paint_bujo_key(
     ramp = _bound_ramp(plotter, ramp)
     n = max(1, len(key.symbols) + max(0, key.custom_rows))
     symbol_w = _BUJO_SYMBOL_W
-    path, size, ref = _bujo_key_face(plotter)
+    path, size, ref, dot = _bujo_key_face(plotter)
     for i, band in enumerate(rows(box, n)):
         if i < len(key.symbols):
             row = key.symbols[i]
             mark_box = _bujo_key_mark_box(band)
             seat = _bujo_key_seat(mark_box)
-            _paint_bujo_key_mark(plotter, band, row, path, size, ref, seat)
+            _paint_bujo_key_mark(plotter, band, row, path, size, ref, dot, seat)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             meaning = Rect(
                 meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h
@@ -2600,7 +2610,7 @@ def paint_bujo_key(
                 align="left",
             )
             if row.strike:
-                period = glyph_ink(path, ".", size)
+                period = glyph_ink(path, ".", float(dot.size))
                 x1 = seat[0] - (period.cx - period.xmin)
                 plotter.line(
                     x1,

@@ -293,7 +293,7 @@ def test_january_plot_paints_key_and_gutter():
 
 
 def test_key_glyph_nests_follow_ink_not_shared_baseline():
-    """Vendored Jost Bold: period sits low; ``>`` crotch is left of ``x``."""
+    """Vendored Jost Bold: period sits low; chevron nest is the tip, not the mouth."""
     path = str(jost_catalog().path("jost", "bold"))
     size = 11.0
     period = glyph_ink(path, ".", size)
@@ -301,7 +301,9 @@ def test_key_glyph_nests_follow_ink_not_shared_baseline():
     greater = glyph_ink(path, ">", size)
     less = glyph_ink(path, "<", size)
     assert period.cy < ics.cy
-    assert greater.nest(">")[0] < ics.nest("x")[0] < less.nest("<")[0]
+    assert less.nest("<")[0] < ics.nest("x")[0] < greater.nest(">")[0]
+    assert greater.nest(">")[0] == pytest.approx(greater.xmax)
+    assert less.nest("<")[0] == pytest.approx(less.xmin)
     seat = (5.0, 4.0)
     tx, baseline = origin_for_nest(seat, period, ".")
     assert tx + period.cx == pytest.approx(seat[0])
@@ -360,11 +362,18 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
     centers = {round(box.x + box.w / 2, 4) for box in dots}
     assert len(centers) == 1
+    dot_pt = {op[3] for op in plotter.ops if op[0] == "text" and op[2] == "."}
+    mod_pt = {
+        op[3] for op in plotter.ops if op[0] == "text" and op[2] in {"x", ">", "<"}
+    }
+    assert len(dot_pt) == 1
+    assert all(d > m for d in dot_pt for m in mod_pt)
     mods = {
         op[2]: op[1]
         for op in plotter.ops
         if op[0] == "text" and op[2] in {"x", ">", "<"}
     }
     assert set(mods) == {"x", ">", "<"}
-    assert mods[">"].x > mods["x"].x
-    assert mods["<"].x < mods["x"].x
+    # Tip nest: ``>`` extends left of the seat, ``<`` extends right.
+    assert mods[">"].x < mods["x"].x
+    assert mods["<"].x > mods["x"].x
