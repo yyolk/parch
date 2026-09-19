@@ -4,7 +4,7 @@ import pytest
 from pypdf import PdfReader
 
 from parch.fonts import PROOF_PROFILE, TypePatch
-from parch.press import _load_spec, main, press
+from parch.press import _implicit_defaults, _load_spec, init_main, main, press
 from parch.spec import Spec
 
 MM_PER_INCH = 25.4
@@ -219,3 +219,150 @@ def test_press_scribe_page_geometry(tmp_path: Path):
     page = PdfReader(out).pages[0]
     assert float(page.mediabox.width) == pytest.approx(_pt(157.48), abs=0.6)
     assert float(page.mediabox.height) == pytest.approx(_pt(209.97), abs=0.6)
+
+
+def _fake_press(seen: dict[str, object]):
+    def fake_press(spec, output, **kwargs):
+        seen["spec"] = spec
+        seen["proof"] = kwargs.get("proof", False)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"%PDF-1.4\n")
+        return output
+
+    return fake_press
+
+
+def test_cli_press_implicit_defaults_writes_sibling_toml(
+    monkeypatch, tmp_path: Path, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("parch.press.press", _fake_press({}))
+    out = tmp_path / "out.pdf"
+    sibling = tmp_path / "out.toml"
+    assert main(["press", "-o", str(out)]) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert printed == [str(out), str(sibling)]
+    assert sibling.is_file()
+    loaded = Spec.from_path(sibling)
+    assert loaded == Spec()
+    assert "Effective press spec" in sibling.read_text(encoding="utf-8")
+
+
+def test_cli_press_implicit_defaults_does_not_overwrite_sibling(
+    monkeypatch, tmp_path: Path, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("parch.press.press", _fake_press({}))
+    out = tmp_path / "out.pdf"
+    sibling = tmp_path / "out.toml"
+    sibling.write_text("# keep me\n", encoding="utf-8")
+    assert main(["press", "-o", str(out)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out)]
+    assert sibling.read_text(encoding="utf-8") == "# keep me\n"
+
+
+def test_cli_press_write_config_overwrites_sibling(monkeypatch, tmp_path: Path, capsys):
+    monkeypatch.chdir(tmp_path)
+    seen: dict[str, object] = {}
+    monkeypatch.setattr("parch.press.press", _fake_press(seen))
+    out = tmp_path / "out.pdf"
+    sibling = tmp_path / "out.toml"
+    sibling.write_text("# stale\n", encoding="utf-8")
+    assert main(["press", "--year", "2027", "-o", str(out), "--write-config"]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out), str(sibling)]
+    loaded = Spec.from_path(sibling)
+    assert loaded.year == 2027
+    assert seen["spec"].year == 2027  # type: ignore[union-attr]
+
+
+def test_cli_press_write_config_explicit_path(monkeypatch, tmp_path: Path, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("parch.press.press", _fake_press({}))
+    out = tmp_path / "out.pdf"
+    dest = tmp_path / "nested" / "job.toml"
+    assert main(["press", "scribe", "-o", str(out), "--write-config", str(dest)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out), str(dest)]
+    assert Spec.from_path(dest).device == "scribe"
+    assert not (tmp_path / "out.toml").exists()
+
+
+def test_cli_press_device_token_does_not_auto_write(
+    monkeypatch, tmp_path: Path, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("parch.press.press", _fake_press({}))
+    out = tmp_path / "nomad.pdf"
+    assert main(["press", "supernote-nomad", "-o", str(out)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out)]
+    assert not (tmp_path / "nomad.toml").exists()
+
+
+def test_cli_press_explicit_toml_does_not_auto_write(
+    monkeypatch, tmp_path: Path, capsys
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("parch.press.press", _fake_press({}))
+    spec = tmp_path / "job.toml"
+    spec.write_text("year = 2026\nmonth = 1\n", encoding="utf-8")
+    out = tmp_path / "job.pdf"
+    assert main(["press", str(spec), "-o", str(out)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out)]
+
+
+def test_cli_press_uses_cwd_parch_toml(monkeypatch, tmp_path: Path, capsys):
+    monkeypatch.chdir(tmp_path)
+    seen: dict[str, object] = {}
+    monkeypatch.setattr("parch.press.press", _fake_press(seen))
+    (tmp_path / "parch.toml").write_text(
+        'year = 2028\ndevice = "kindle-scribe"\nmonth = 3\n',
+        encoding="utf-8",
+    )
+    out = tmp_path / "out.pdf"
+    assert main(["press", "-o", str(out)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(out)]
+    spec = seen["spec"]
+    assert spec.year == 2028  # type: ignore[union-attr]
+    assert spec.device == "kindle-scribe"  # type: ignore[union-attr]
+    assert spec.months == (3,)  # type: ignore[union-attr]
+    assert not (tmp_path / "out.toml").exists()
+    assert not _implicit_defaults(None)
+
+
+def test_cli_init_writes_default_toml(tmp_path: Path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert main(["init"]) == 0
+    dest = tmp_path / "parch.toml"
+    assert capsys.readouterr().out.splitlines() == ["parch.toml"]
+    assert Spec.from_path(dest) == Spec()
+
+
+def test_cli_init_refuses_existing(tmp_path: Path, capsys, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    dest = tmp_path / "parch.toml"
+    dest.write_text("year = 2026\n", encoding="utf-8")
+    assert main(["init"]) == 2
+    err = capsys.readouterr().err
+    assert err == "parch: parch.toml exists; edit it or pass a new path\n"
+    assert dest.read_text(encoding="utf-8") == "year = 2026\n"
+
+
+def test_cli_init_explicit_path(tmp_path: Path, capsys):
+    dest = tmp_path / "nested" / "starter.toml"
+    assert init_main([str(dest)]) == 0
+    assert capsys.readouterr().out.splitlines() == [str(dest)]
+    assert Spec.from_path(dest) == Spec()
+
+
+def test_cli_help_mentions_write_config_and_init(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "--write-config" in out
+    assert "init" in out
+    with pytest.raises(SystemExit) as help_exc:
+        main(["init", "--help"])
+    assert help_exc.value.code == 0
+    init_out = capsys.readouterr().out
+    assert "Does not press" in init_out
+    assert "parch.toml" in init_out

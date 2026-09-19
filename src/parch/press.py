@@ -24,6 +24,7 @@ from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
+_CWD_TOML = Path("parch.toml")
 
 
 def merge_press_overlay(
@@ -127,10 +128,15 @@ def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:
             raise TypeError(f"proof must be bool or ProofProfile, not {type(proof)!r}")
 
 
+def _implicit_defaults(token: str | None) -> bool:
+    """True when press will use Spec() — no token, no ./parch.toml."""
+    return token is None and not _CWD_TOML.is_file()
+
+
 def _load_spec(token: str | None, *, year: int | None, month: int | None) -> Spec:
     match token:
         case None:
-            spec = Spec()
+            spec = Spec.from_path(_CWD_TOML) if _CWD_TOML.is_file() else Spec()
         case device if device in _DEVICE_TOKENS:
             spec = Spec(device=device)
         case path_text if Path(path_text).is_file():
@@ -143,6 +149,57 @@ def _load_spec(token: str | None, *, year: int | None, month: int | None) -> Spe
     if month is not None:
         updates["months"] = (month,)
     return replace(spec, **updates) if updates else spec
+
+
+def _write_config(path: Path, spec: Spec) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(spec.to_toml(), encoding="utf-8")
+    return path
+
+
+def _config_dest(
+    write_config: str | None,
+    *,
+    implicit: bool,
+    output: str | None,
+    outputs: list[Path],
+) -> Path | None:
+    """Dest for an effective-spec dump, or None.
+
+    ``--write-config`` with no PATH writes beside the product PDF (``-o``
+    if given, else the first output). A bare implicit press does the same
+    when that sibling is missing — discoverable Spec defaults, no prompt.
+    """
+    peer = (
+        Path(output).with_suffix(".toml") if output else outputs[0].with_suffix(".toml")
+    )
+    if write_config is not None:
+        return Path(write_config) if write_config else peer
+    if implicit and not peer.exists():
+        return peer
+    return None
+
+
+def init_main(argv: list[str] | None = None) -> int:
+    """Write a default press TOML. Does not press."""
+    parser = argparse.ArgumentParser(
+        prog="parch init",
+        description="Write a default press TOML (Spec defaults). Does not press.",
+    )
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default="parch.toml",
+        help="Dest TOML (default: parch.toml in the current directory).",
+    )
+    args = parser.parse_args([] if argv is None else argv)
+    path = Path(args.path)
+    if path.exists():
+        print(f"parch: {path} exists; edit it or pass a new path", file=sys.stderr)
+        return 2
+    _write_config(path, Spec())
+    print(path)
+    return 0
 
 
 def _outputs(args: argparse.Namespace, spec_token: str | None) -> list[Path]:
@@ -161,13 +218,16 @@ def _outputs(args: argparse.Namespace, spec_token: str | None) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="parch",
-        description="Press fixed e-ink PDF pages.",
+        description="Press fixed e-ink PDF pages. Verbs: press, proof, specimen, init.",
     )
     parser.add_argument(
         "spec",
         nargs="?",
         default=None,
-        help="TOML spec path, or device id (supernote-nomad, kindle-scribe). Default: Nomad 2026 year planner.",
+        help=(
+            "TOML spec path, or device id (supernote-nomad, kindle-scribe). "
+            "Default: ./parch.toml or Nomad 2026 year planner."
+        ),
     )
     parser.add_argument("-o", "--output", help="Product PDF path.")
     parser.add_argument("-w", "--workdir", help="Also write workdir/index.pdf.")
@@ -178,29 +238,52 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Apply ProofProfile overlay (slightly larger chrome/title for on-screen review).",
     )
-    # Accept a leading `press`, `proof`, or `specimen` verb. `parch proof` is
-    # the historical on-screen path; it selects ProofProfile. `parch specimen`
-    # writes a static PNG catalog (not a product PDF).
+    parser.add_argument(
+        "--write-config",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="PATH",
+        help="Write the effective press spec as TOML (omit PATH to write beside the PDF).",
+    )
+    # Accept a leading `press`, `proof`, `specimen`, or `init` verb. `parch proof`
+    # is the historical on-screen path; it selects ProofProfile. `parch specimen`
+    # writes a static PNG catalog (not a product PDF). `parch init` writes a
+    # default TOML without pressing.
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "specimen":
         from parch.specimen import main as specimen_main
 
         return specimen_main(raw[1:])
+    if raw and raw[0] == "init":
+        return init_main(raw[1:])
     proof_verb = False
     if raw and raw[0] in {"press", "proof"}:
         proof_verb = raw[0] == "proof"
         raw = raw[1:]
     args = parser.parse_args(raw)
+    written_config: Path | None = None
     try:
+        implicit = _implicit_defaults(args.spec)
         spec = _load_spec(args.spec, year=args.year, month=args.month)
         outputs = _outputs(args, args.spec)
         first = press(spec, outputs[0], proof=proof_verb or args.proof)
         for extra in outputs[1:]:
             extra.parent.mkdir(parents=True, exist_ok=True)
             extra.write_bytes(first.read_bytes())
+        dest = _config_dest(
+            args.write_config,
+            implicit=implicit,
+            output=args.output,
+            outputs=outputs,
+        )
+        if dest is not None:
+            written_config = _write_config(dest, spec)
     except ConfigError as exc:
         print(f"parch: {exc}", file=sys.stderr)
         return 2
     for path in outputs:
         print(path)
+    if written_config is not None:
+        print(written_config)
     return 0
