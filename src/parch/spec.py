@@ -98,9 +98,6 @@ def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
 
     Optional table ``step`` is a positive int (Clock grain minutes). Overlap /
     merge / adjacent stay on Bound/Bounds — parch does not re-detect them.
-
-    TODO: time-shaped ``step = 00:30:00`` only when tomlrange accepts it.
-    Do not invent a parch-only time-step parser.
     """
     raw = daily_table.get("schedule")
     if raw is None:
