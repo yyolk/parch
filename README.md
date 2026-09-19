@@ -21,7 +21,14 @@ parch press -o nomad-2026.pdf  # default: Nomad 2026 year planner
 parch specimen -w out
 ```
 
-No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. Sample TOMLs live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel) — pass your own, or clone.
+No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. Sample TOMLs live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel) — pass your own, clone, or pipe:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/yyolk/parch/master/examples/nomad.toml \
+  | parch press - -o nomad-2026.pdf
+```
+
+`parch press -` reads Spec TOML from stdin (heredoc works too). A pipe with no spec token is the same as `-`.
 
 ### From a checkout
 

@@ -93,6 +93,13 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_mapping({"habits": {"rows": 6}}).habit_columns == 6
     assert Spec.from_mapping({"habit_rows": 7}).habit_columns == 7
     assert Spec.from_path(Path("examples/nomad.toml")).habit_columns == 10
+    assert Spec.from_text(Path("examples/nomad.toml").read_text(encoding="utf-8")) == (
+        Spec.from_path(Path("examples/nomad.toml"))
+    )
+    with pytest.raises(ConfigError, match=r"invalid TOML -:"):
+        Spec.from_text("year =")
+    with pytest.raises(ConfigError, match=r"invalid TOML job.toml:"):
+        Spec.from_text("year =", source="job.toml")
     assert Spec.from_mapping({"projects": {"cards": 2}}).project_cards == 2
     leftover = Spec.from_mapping({"projects": {"cards": 2, "tasks": 5}})
     assert leftover.project_cards == 2
