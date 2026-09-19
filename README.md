@@ -11,7 +11,19 @@ parch generates **fixed e-ink PDF pages**.
 
 ## Install / Press
 
-Needs [uv](https://docs.astral.sh/uv/) and Python 3.14+.
+Needs Python 3.14+.
+
+### From PyPI
+
+```shell
+uv tool install parch          # or: pip install parch
+parch press -o nomad-2026.pdf  # default: Nomad 2026 year planner
+parch specimen -w out
+```
+
+No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. Sample TOMLs live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel) — pass your own, or clone.
+
+### From a checkout
 
 ```shell
 uv sync --group dev
