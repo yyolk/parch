@@ -29,7 +29,7 @@ _KEY_SYMBOLS = (
     BujoKeySymbol(">", "migrated", genesis=True),
     BujoKeySymbol("<", "scheduled", genesis=True),
     BujoKeySymbol(".", "irrelevant", strike=True),
-    BujoKeySymbol("-", "note"),
+    BujoKeySymbol("\u2013", "note"),  # en dash — wider than hyphen-minus
     BujoKeySymbol("o", "event"),
     BujoKeySymbol("*", "priority"),
     BujoKeySymbol("!", "inspiration"),
