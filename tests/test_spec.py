@@ -280,6 +280,33 @@ def test_parse_months_list_and_tomlrange_table(tmp_path: Path):
         Spec.from_mapping({"months": {"from": 1, "to": 13}})
 
 
+def test_parse_months_multi_span_tomlrange_bounds(tmp_path: Path):
+    spans = [{"from": 1, "to": 4}, {"from": 8, "to": 12}]
+    expected = (1, 2, 3, 4, 8, 9, 10, 11, 12)
+    assert Spec.from_mapping({"months": spans}).months == expected
+
+    inline = tmp_path / "inline.toml"
+    inline.write_text(
+        "months = [{ from = 1, to = 4 }, { from = 8, to = 12 }]\n",
+        encoding="utf-8",
+    )
+    aot = tmp_path / "aot.toml"
+    aot.write_text(
+        "[[months]]\nfrom = 1\nto = 4\n\n[[months]]\nfrom = 8\nto = 12\n",
+        encoding="utf-8",
+    )
+    assert Spec.from_path(inline).months == expected
+    assert Spec.from_path(aot).months == expected
+
+    # Bounds default overlap="reject": shared endpoint is overlap, not merge.
+    with pytest.raises(ConfigError, match="overlaps"):
+        Spec.from_mapping({"months": [{"from": 1, "to": 4}, {"from": 4, "to": 6}]})
+    # Adjacent integers are not overlap; walk still yields the closed union.
+    assert Spec.from_mapping(
+        {"months": [{"from": 1, "to": 4}, {"from": 5, "to": 6}]}
+    ).months == (1, 2, 3, 4, 5, 6)
+
+
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")

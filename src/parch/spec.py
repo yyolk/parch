@@ -72,22 +72,32 @@ def _habit_columns(data: TomlTable, habits_table: TomlTable) -> int:
     return 10
 
 
-def _parse_months(data: TomlTable) -> tuple[int, ...]:
-    """List of ints, ``{ from, to }`` via tomlrange, omit (full year), or ``month``.
+def _months_bound_tables(raw: list[object]) -> bool:
+    """True when a ``months`` list is tomlrange tables, not discrete ints."""
+    return any(isinstance(item, dict) for item in raw)
 
-    Table form is a Bound on the private calendar-month domain (ints 1–12).
-    Expansion is ``tuple(bound)`` — Bound walk, not a hand-rolled ``range``.
-    ``TomlRangeError`` becomes ``ConfigError`` here. List / ``month`` stay
-    discrete tuples so non-contiguous ``[1, 3]`` still works.
+
+def _parse_months(data: TomlTable) -> tuple[int, ...]:
+    """List of ints, one or many ``{ from, to }`` via tomlrange, omit, or ``month``.
+
+    Single table is a Bound on the private calendar-month domain (ints 1–12).
+    Array of tables — inline ``[{ from, to }, …]`` or ``[[months]]`` after
+    tomllib — is Bounds. Expansion is library walk, not a hand-rolled union.
+    Discrete int lists stay tuples so non-contiguous ``[1, 3]`` still works.
+    Overlap policy is Bounds default (``overlap="reject"``). Adjacent spans
+    stay separate; iteration yields each month once in first-seen order.
+    ``TomlRangeError`` becomes ``ConfigError`` here.
     """
     raw = data.get("months")
-    if isinstance(raw, list):
-        return tuple(int(month) for month in raw)
     if raw is None:
         if "month" in data:
             return (int(data["month"]),)
         return _DEFAULT_MONTHS
+    if isinstance(raw, list) and not _months_bound_tables(raw):
+        return tuple(int(month) for month in raw)
     try:
+        if isinstance(raw, list):
+            return tuple(_MONTH.bounds(raw, path="months"))
         return tuple(_MONTH.bound(raw, path="months"))
     except TomlRangeError as exc:
         raise ConfigError(str(exc)) from exc
