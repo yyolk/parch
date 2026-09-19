@@ -31,7 +31,7 @@ from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
     INK,
-    MUTED,
+    PAPER,
     paint_bujo_key,
     strip_active,
     strip_items,
@@ -363,7 +363,7 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
         op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == INK
     ]
     halo_dots = [
-        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == MUTED
+        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == PAPER
     ]
     assert len(ink_dots) == 5
     assert halo_dots
