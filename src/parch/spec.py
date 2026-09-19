@@ -11,7 +11,7 @@ from tomlrange import Bound, Clock, Domain, TomlRangeError
 from parch import ConfigError
 from parch.calendar import quarter_of, year_days
 from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
-from parch.fonts.ramp import TypeOverlay, require_overlay
+from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _BOOKS = frozenset(
@@ -152,6 +152,88 @@ def _parse_bujo(data: TomlTable) -> tuple[int, int]:
         key = sorted(unknown)[0]
         raise ConfigError(f"unknown bujo key {key!r}")
     return int(raw.get("index_pages", 2)), int(raw.get("collections", 24))
+
+
+def _toml_str(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _toml_bool(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def _toml_time(value: time) -> str:
+    return format(value, "%H:%M:%S")
+
+
+def _toml_number(value: float) -> str:
+    return str(int(value)) if value == int(value) else str(value)
+
+
+def _months_payload(months: tuple[int, ...]) -> dict[str, int] | list[int]:
+    """Contiguous window → ``{ from, to }``; otherwise a discrete int list."""
+    lo, hi = months[0], months[-1]
+    if months == tuple(range(lo, hi + 1)):
+        return {"from": lo, "to": hi}
+    return list(months)
+
+
+def _months_toml(months: tuple[int, ...]) -> str:
+    payload = _months_payload(months)
+    if isinstance(payload, dict):
+        return f"{{ from = {payload['from']}, to = {payload['to']} }}"
+    return "[" + ", ".join(str(month) for month in payload) + "]"
+
+
+def _schedule_toml(bound: Bound[time]) -> str:
+    table = bound.as_table()
+    parts = [
+        f"from = {_toml_time(table['from'])}",
+        f"to = {_toml_time(table['to'])}",
+    ]
+    step = table.get("step")
+    if step is not None:
+        parts.append(f"step = {step}")
+    return "{ " + ", ".join(parts) + " }"
+
+
+def _overlay_mapping(overlay: TypeOverlay) -> TomlTable | None:
+    patches = {
+        step: patch for step in TYPE_STEPS if (patch := overlay.patch(step)) is not None
+    }
+    if not patches:
+        return None
+    table: TomlTable = {"schema_version": overlay.schema_version}
+    for step, patch in patches.items():
+        entry: TomlTable = {}
+        if patch.size is not None:
+            entry["size"] = float(patch.size)
+        if patch.weight is not None:
+            entry["weight"] = patch.weight
+        table[step] = entry
+    return table
+
+
+def _overlay_toml(overlay: TypeOverlay) -> list[str]:
+    table = _overlay_mapping(overlay)
+    if table is None:
+        return []
+    lines = [
+        "[typography.overlay]",
+        f"schema_version = {table['schema_version']}",
+        "",
+    ]
+    for step in TYPE_STEPS:
+        raw = table.get(step)
+        if not isinstance(raw, dict):
+            continue
+        lines.append(f"[typography.overlay.{step}]")
+        if "size" in raw:
+            lines.append(f"size = {_toml_number(float(raw['size']))}")
+        if "weight" in raw:
+            lines.append(f"weight = {_toml_str(str(raw['weight']))}")
+        lines.append("")
+    return lines
 
 
 def _dest(template: Template) -> str:
@@ -555,3 +637,100 @@ class Spec:
         if not isinstance(data, dict):
             raise ConfigError(f"{path} must be a TOML table")
         return cls.from_mapping(data)
+
+    def to_mapping(self) -> TomlTable:
+        """Canonical TOML-shaped table of the effective spec.
+
+        Inverse of ``from_mapping`` for the closed tables (not the leftover
+        aliases ``from_mapping`` still accepts). ``title`` is omitted when
+        unset. ``[typography]`` is omitted when the overlay has no patches.
+        """
+        data: TomlTable = {
+            "year": self.year,
+            "device": self.device,
+            "week_start": self.week_start,
+            "months": _months_payload(self.months),
+            "book": self.book,
+            "outline": self.outline,
+            "favorites": self.favorites_pages == 1,
+            "my_100": self.my_100,
+            "checkoff_365": self.checkoff_365,
+            "daily": {
+                "schedule": dict(self.schedule.as_table()),
+                "notes_pages": self.notes_pages,
+                "priority_rows": self.priority_rows,
+            },
+            "habits": {"columns": self.habit_columns},
+            "projects": {
+                "cards": self.project_cards,
+                "tickets": self.project_tickets,
+                "index_pages": self.project_index_pages,
+            },
+            "meetings": {"index_rows": self.meeting_index_rows},
+            "tasks": {"rows": self.task_rows},
+            "engineering": {"sheets": self.engineering_sheets},
+            "steno": {"sheets": self.steno_sheets},
+            "bujo": {
+                "index_pages": self.bujo_index_pages,
+                "collections": self.bujo_collections,
+            },
+        }
+        if self.title is not None:
+            data["title"] = self.title
+        overlay = _overlay_mapping(self.type_overlay)
+        if overlay is not None:
+            data["typography"] = {"overlay": overlay}
+        return data
+
+    def to_toml(self) -> str:
+        """Emit TOML that ``from_path`` / ``from_mapping`` can load back."""
+        lines = [
+            f"year = {self.year}",
+            f"device = {_toml_str(self.device)}",
+            f"week_start = {_toml_str(self.week_start)}",
+            f"months = {_months_toml(self.months)}",
+        ]
+        if self.title is not None:
+            lines.append(f"title = {_toml_str(self.title)}")
+        lines.extend(
+            [
+                f"book = {_toml_str(self.book)}",
+                f"outline = {_toml_bool(self.outline)}",
+                f"favorites = {_toml_bool(self.favorites_pages == 1)}",
+                f"my_100 = {_toml_bool(self.my_100)}",
+                f"checkoff_365 = {_toml_bool(self.checkoff_365)}",
+                "",
+                "[daily]",
+                f"schedule = {_schedule_toml(self.schedule)}",
+                f"notes_pages = {self.notes_pages}",
+                f"priority_rows = {self.priority_rows}",
+                "",
+                "[habits]",
+                f"columns = {self.habit_columns}",
+                "",
+                "[projects]",
+                f"cards = {self.project_cards}",
+                f"tickets = {self.project_tickets}",
+                f"index_pages = {self.project_index_pages}",
+                "",
+                "[meetings]",
+                f"index_rows = {self.meeting_index_rows}",
+                "",
+                "[tasks]",
+                f"rows = {self.task_rows}",
+                "",
+                "[engineering]",
+                f"sheets = {self.engineering_sheets}",
+                "",
+                "[steno]",
+                f"sheets = {self.steno_sheets}",
+                "",
+                "[bujo]",
+                f"index_pages = {self.bujo_index_pages}",
+                f"collections = {self.bujo_collections}",
+                "",
+            ]
+        )
+        lines.extend(_overlay_toml(self.type_overlay))
+        text = "\n".join(lines)
+        return text if text.endswith("\n") else text + "\n"
