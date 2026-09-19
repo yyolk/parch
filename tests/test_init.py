@@ -1,11 +1,11 @@
 import tomllib
-from dataclasses import replace
+from dataclasses import fields, replace
 from datetime import time
 from pathlib import Path
 
 from tomlrange import Clock
 
-from parch.init import main, starter_toml, write_starter
+from parch.init import _COMMENTS, _PATH_FIELD, main, starter_toml, write_starter
 from parch.press import main as press_main
 from parch.spec import Spec
 
@@ -86,6 +86,20 @@ def test_starter_module_avoids_questionary():
     source = Path("src/parch/init.py").read_text(encoding="utf-8")
     assert "import questionary" not in source
     assert "from questionary" not in source
+
+
+def test_starter_walk_covers_spec_fields():
+    assert set(_PATH_FIELD.values()) == {item.name for item in fields(Spec)}
+    assert isinstance(_COMMENTS, dict)
+    assert all(isinstance(key, str) and isinstance(text, str) for key, text in _COMMENTS.items())
+
+
+def test_starter_is_walk_not_template():
+    source = Path("src/parch/init.py").read_text(encoding="utf-8")
+    assert 'return f"""' not in source
+    assert "tomlkit" not in source
+    assert "importlib.resources" not in source
+    assert "files(" not in source
 
 
 def test_cli_init_stdout(capsys):

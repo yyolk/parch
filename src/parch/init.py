@@ -2,18 +2,89 @@
 
 ``parch init`` is the no-checkout, no-prompt path: values come from
 ``Spec()`` / ``from_mapping`` defaults, not from examples/ or questionary.
+
+The starter is a walk of sealed ``from_mapping`` paths aligned with
+``dataclasses.fields(Spec)``. Comments live in ``_COMMENTS`` (path → prose).
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import fields
 from datetime import time
 from pathlib import Path
 
 from parch import ConfigError
 from parch.devices import known_device_ids
+from parch.fonts import TypeOverlay
 from parch.spec import _BOOK_CHOICES, _WEEK_STARTS, Spec
+
+# Sealed from_mapping paths in emit order, each aligned with one Spec field.
+_PATH_FIELD: dict[str, str] = {
+    "year": "year",
+    "device": "device",
+    "week_start": "week_start",
+    "months": "months",
+    "title": "title",
+    "book": "book",
+    "outline": "outline",
+    "favorites": "favorites_pages",
+    "my_100": "my_100",
+    "checkoff_365": "checkoff_365",
+    "daily.schedule": "schedule",
+    "daily.notes_pages": "notes_pages",
+    "daily.priority_rows": "priority_rows",
+    "habits.columns": "habit_columns",
+    "projects.cards": "project_cards",
+    "projects.tickets": "project_tickets",
+    "projects.index_pages": "project_index_pages",
+    "meetings.index_rows": "meeting_index_rows",
+    "tasks.rows": "task_rows",
+    "engineering.sheets": "engineering_sheets",
+    "steno.sheets": "steno_sheets",
+    "bujo.index_pages": "bujo_index_pages",
+    "bujo.collections": "bujo_collections",
+    "typography.overlay.schema_version": "type_overlay",
+}
+
+# Root extras stay adjacent (no blank between) when they are commented out.
+_ROOT_GROUP = frozenset({"favorites", "my_100", "checkoff_365"})
+
+# Path / section → comment. Values are never stored here — only prose.
+_COMMENTS: dict[str, str] = {
+    "": (
+        "parch starter — Spec() defaults. Edit, then:\n"
+        "  parch init -o planner.toml\n"
+        "  parch press planner.toml -o planner.pdf\n"
+        "No checkout. No prompts. Sample jobs also live in examples/ (clone only)."
+    ),
+    "year": (
+        "Calendar year pressed into dest names "
+        "(year-{year:04d}, month-{year:04d}-01, …)."
+    ),
+    "device": (
+        f"Device id: {', '.join(known_device_ids())} (aliases: nomad, scribe)."
+    ),
+    "week_start": f"Week grid start: {' or '.join(_WEEK_STARTS)}.",
+    "months": (
+        "Closed month table (ints 1–12). Omit for the full year.\n"
+        "List form [1, 3] keeps gaps. month = 7 is a single month."
+    ),
+    "title": "year-planner brow / sibling headline. Omit keeps paint.",
+    "book": _BOOK_CHOICES,
+    "outline": "Reader sidebar outline (bookmarks). Cover is skipped.",
+    "favorites": "Optional extras (default off).",
+    "daily.schedule": (
+        "Hourly well: floor from, ceil to. Optional step is Clock grain (minutes).\n"
+        "daily.schedule is a tomlrange Clock bound, not a pair of ints."
+    ),
+    "engineering": (
+        "Sibling pads / books — omit keeps year-planner press.\n"
+        "engineering-notebook requires engineering.sheets >= 1."
+    ),
+    "typography.overlay": "Closed TypeSteps only. Omit keeps the empty overlay.",
+}
 
 
 def _toml_bool(value: bool) -> str:
@@ -54,13 +125,111 @@ def _months_toml(months: tuple[int, ...]) -> str:
     return "[" + ", ".join(str(month) for month in months) + "]"
 
 
-def _schedule_toml(spec: Spec) -> str:
+def _schedule_toml(schedule: object) -> str:
     """Preferred ``[daily] schedule`` spelling from ``Bound.as_table``."""
-    raw = spec.schedule.as_table()
+    raw = schedule.as_table()  # Bound[time]
     pairs: dict[str, object] = {"from": raw["from"], "to": raw["to"]}
     if "step" in raw:
         pairs["step"] = raw["step"]
     return _toml_inline(pairs)
+
+
+def _extract(path: str, raw: object) -> object:
+    """Live Spec field → TOML-facing value for ``path``."""
+    match path:
+        case "favorites":
+            return bool(raw)
+        case "typography.overlay.schema_version":
+            return raw.schema_version
+        case _:
+            return raw
+
+
+def _live(spec: Spec) -> dict[str, object]:
+    """Walk ``Spec`` fields and key the values by sealed from_mapping path."""
+    field_to_path = {name: path for path, name in _PATH_FIELD.items()}
+    missing = [item.name for item in fields(Spec) if item.name not in field_to_path]
+    if missing:
+        raise RuntimeError(f"starter walk is missing Spec fields: {', '.join(missing)}")
+    extra = sorted(set(field_to_path) - {item.name for item in fields(Spec)})
+    if extra:
+        raise RuntimeError(f"starter walk has unknown Spec fields: {', '.join(extra)}")
+    values: dict[str, object] = {}
+    for item in fields(Spec):
+        path = field_to_path[item.name]
+        values[path] = _extract(path, getattr(spec, item.name))
+    return values
+
+
+def _omitted(path: str, spec: Spec) -> bool:
+    """Optional extras stay commented so default starters still equal ``Spec()``."""
+    match path:
+        case "title":
+            return spec.title is None
+        case "favorites":
+            return spec.favorites_pages == 0
+        case "my_100":
+            return not spec.my_100
+        case "checkoff_365":
+            return not spec.checkoff_365
+        case "engineering.sheets":
+            return spec.engineering_sheets == 0
+        case "steno.sheets":
+            return spec.steno_sheets == 0
+        case "bujo.index_pages" | "bujo.collections":
+            return spec.book != "bullet-journal"
+        case "typography.overlay.schema_version":
+            return spec.type_overlay == TypeOverlay()
+        case _:
+            return False
+
+
+def _section_omitted(section: str, spec: Spec) -> bool:
+    if not section:
+        return False
+    return all(
+        _omitted(path, spec)
+        for path in _PATH_FIELD
+        if path == section or path.startswith(f"{section}.")
+    )
+
+
+def _format_comment(text: str, year: int) -> str:
+    if "{year" in text:
+        return text.format(year=year)
+    return text
+
+
+def _comment_lines(lines: list[str], text: str, year: int) -> None:
+    for line in _format_comment(text, year).splitlines():
+        lines.append("#" if line == "" else f"# {line}")
+
+
+def _render(path: str, raw: object) -> str:
+    match path:
+        case "months":
+            return _months_toml(raw)  # type: ignore[arg-type]
+        case "daily.schedule":
+            return _schedule_toml(raw)
+    match raw:
+        case bool() as flag:
+            return _toml_bool(flag)
+        case time() as clock:
+            return _toml_time(clock)
+        case str() as text:
+            return _toml_str(text)
+        case int() as number:
+            return str(number)
+        case _:
+            raise TypeError(f"unsupported starter value for {path!r}: {type(raw)!r}")
+
+
+def _next_path(path: str) -> str | None:
+    paths = tuple(_PATH_FIELD)
+    index = paths.index(path)
+    if index + 1 >= len(paths):
+        return None
+    return paths[index + 1]
 
 
 def starter_toml(spec: Spec | None = None) -> str:
@@ -70,78 +239,36 @@ def starter_toml(spec: Spec | None = None) -> str:
     so ``tomllib.loads`` + ``Spec.from_mapping`` equals ``Spec()``.
     """
     spec = Spec() if spec is None else spec
-    devices = ", ".join(known_device_ids())
-    weeks = " or ".join(_WEEK_STARTS)
-    return f"""\
-# parch starter — Spec() defaults. Edit, then:
-#   parch init -o planner.toml
-#   parch press planner.toml -o planner.pdf
-# No checkout. No prompts. Sample jobs also live in examples/ (clone only).
-
-# Calendar year pressed into dest names (year-{spec.year:04d}, month-{spec.year:04d}-01, …).
-year = {spec.year}
-
-# Device id: {devices} (aliases: nomad, scribe).
-device = {_toml_str(spec.device)}
-
-# Week grid start: {weeks}.
-week_start = {_toml_str(spec.week_start)}
-
-# Closed month table (ints 1–12). Omit for the full year.
-# List form [1, 3] keeps gaps. month = 7 is a single month.
-months = {_months_toml(spec.months)}
-
-# year-planner brow / sibling headline. Omit keeps paint.
-# title = "Year planner"
-
-# {_BOOK_CHOICES}
-book = {_toml_str(spec.book)}
-
-# Reader sidebar outline (bookmarks). Cover is skipped.
-outline = {_toml_bool(spec.outline)}
-
-# Optional extras (default off).
-# favorites = true
-# my_100 = true
-# checkoff_365 = true
-
-[daily]
-# Hourly well: floor from, ceil to. Optional step is Clock grain (minutes).
-# daily.schedule is a tomlrange Clock bound, not a pair of ints.
-schedule = {_schedule_toml(spec)}
-notes_pages = {spec.notes_pages}
-priority_rows = {spec.priority_rows}
-
-[habits]
-columns = {spec.habit_columns}
-
-[projects]
-cards = {spec.project_cards}
-tickets = {spec.project_tickets}
-index_pages = {spec.project_index_pages}
-
-[meetings]
-index_rows = {spec.meeting_index_rows}
-
-[tasks]
-rows = {spec.task_rows}
-
-# Sibling pads / books — omit keeps year-planner press.
-# engineering-notebook requires engineering.sheets >= 1.
-# [engineering]
-# sheets = {spec.engineering_sheets}
-#
-# [steno]
-# sheets = {spec.steno_sheets}
-#
-# [bujo]
-# index_pages = {spec.bujo_index_pages}
-# collections = {spec.bujo_collections}
-
-# [typography.overlay]
-# schema_version = 1
-# Closed TypeSteps only. Omit keeps the empty overlay.
-"""
+    live = _live(spec)
+    lines: list[str] = []
+    _comment_lines(lines, _COMMENTS[""], spec.year)
+    lines.append("")
+    current = ""
+    for path in _PATH_FIELD:
+        section, _, key = path.rpartition(".")
+        if section != current:
+            if lines[-1] != "":
+                lines.append("")
+            if section:
+                if text := _COMMENTS.get(section):
+                    _comment_lines(lines, text, spec.year)
+                header = f"[{section}]"
+                lines.append(f"# {header}" if _section_omitted(section, spec) else header)
+            current = section
+        if text := _COMMENTS.get(path):
+            _comment_lines(lines, text, spec.year)
+        if path == "title" and spec.title is None:
+            lines.append("")
+            continue
+        prefix = "# " if _omitted(path, spec) else ""
+        lines.append(f"{prefix}{key} = {_render(path, live[path])}")
+        if not section:
+            nxt = _next_path(path)
+            if path not in _ROOT_GROUP or nxt not in _ROOT_GROUP:
+                lines.append("")
+    while lines and lines[-1] == "":
+        lines.pop()
+    return "\n".join(lines) + "\n"
 
 
 def write_starter(path: Path, *, force: bool = False, spec: Spec | None = None) -> Path:
