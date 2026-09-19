@@ -31,7 +31,7 @@ from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
     INK,
-    MUTED,
+    PAPER,
     paint_bujo_key,
     strip_active,
     strip_items,
@@ -354,24 +354,29 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     plotter = RecordingPlotter()
     paint_bujo_key(plotter, well, key)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert texts.count(".") == 5
     assert "x" in texts
     assert ">" in texts
     assert "<" in texts
     assert "-" in texts
     assert "o" in texts
-    dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
-    centers = {round(box.x + box.w / 2, 4) for box in dots}
+    ink_dots = [
+        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == INK
+    ]
+    halo_dots = [
+        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == PAPER
+    ]
+    assert len(ink_dots) == 5
+    assert halo_dots
+    centers = {round(op[1].x + op[1].w / 2, 4) for op in ink_dots}
     assert len(centers) == 1
     title_pt = float(plotter.ramp.ink("title", "strong").size)
     mark_pt = {
         op[3] for op in plotter.ops if op[0] == "text" and op[2] in {".", "x", ">", "<"}
     }
     assert mark_pt == {title_pt}
-    assert {op[7] for op in plotter.ops if op[0] == "text" and op[2] == "."} == {INK}
     assert {
         op[7] for op in plotter.ops if op[0] == "text" and op[2] in {"x", ">", "<"}
-    } == {MUTED}
+    } == {INK}
     mods = {
         op[2]: op[1]
         for op in plotter.ops
@@ -381,3 +386,12 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     # Tip nest: ``>`` extends left of the seat, ``<`` extends right.
     assert mods[">"].x < mods["x"].x
     assert mods["<"].x > mods["x"].x
+    # Halo only on genesis rows (under x/>/<), never task or irrelevant.
+    ink_boxes = sorted((op[1] for op in ink_dots), key=lambda box: box.y)
+    task_box, *_, irrelevant_box = ink_boxes
+    mod_mids = [box.y + box.h / 2 for box in mods.values()]
+    for halo in halo_dots:
+        mid = halo[1].y + halo[1].h / 2
+        assert any(abs(mid - my) < 1.2 for my in mod_mids)
+        assert abs(halo[1].y - task_box.y) > 1.0
+        assert abs(halo[1].y - irrelevant_box.y) > 1.0

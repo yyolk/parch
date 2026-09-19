@@ -2485,14 +2485,22 @@ _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
 _BUJO_STRIKE_EM = 0.045
-# Genesis x/>/< — secondary ink (MUTED), not hairline SOFT. The • stays INK.
-_BUJO_MOD_GRAY = MUTED
+# Genesis • only — same glyph size; PAPER knockout ring via offset copies (not a scaled fill).
+# ~0.29 mm at title-strong 11 pt ≈ 3.4 px on Nomad 300 ppi: thin, still reads through INK x/>/<.
+_BUJO_HALO_GRAY = PAPER
+_BUJO_HALO_EM = 0.075
+_BUJO_HALO_RAYS = 12
 _PT_MM = 25.4 / 72.0
 
 
 def _bujo_strike_width(ramp: TypeRamp) -> float:
     """Body-relative cancel bar, lighter than inked glyph stems."""
     return float(ramp.ink("body").size) * _PT_MM * _BUJO_STRIKE_EM
+
+
+def _bujo_halo_offset(size_pt: float) -> float:
+    """Title-strong-relative ring width; the • cut itself stays unscaled."""
+    return float(size_pt) * _PT_MM * _BUJO_HALO_EM
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2554,6 +2562,30 @@ def _paint_bujo_key_glyph(
     )
 
 
+def _paint_bujo_key_haloed_period(
+    plotter: Plotter,
+    path: str,
+    size: float,
+    ref: TypeRef,
+    seat: tuple[float, float],
+) -> None:
+    """Genesis •: PAPER ring (offset copies), then the unscaled INK fill."""
+    ring = _bujo_halo_offset(size)
+    sx, sy = seat
+    for i in range(_BUJO_HALO_RAYS):
+        ang = 2.0 * math.pi * i / _BUJO_HALO_RAYS
+        _paint_bujo_key_glyph(
+            plotter,
+            ".",
+            path,
+            size,
+            ref,
+            (sx + ring * math.cos(ang), sy + ring * math.sin(ang)),
+            gray=_BUJO_HALO_GRAY,
+        )
+    _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+
+
 def _paint_bujo_key_mark(
     plotter: Plotter,
     band: Rect,
@@ -2565,11 +2597,9 @@ def _paint_bujo_key_mark(
 ) -> None:
     """Lone signifier, or shared • plus the task modifier on one ink seat."""
     if row.genesis:
-        # Modifier first so the seated • stays visible at the tip / crossing.
-        _paint_bujo_key_glyph(
-            plotter, row.mark, path, size, ref, seat, gray=_BUJO_MOD_GRAY
-        )
-        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+        # Modifier first; haloed • on top so the knockout ring separates black-on-black.
+        _paint_bujo_key_glyph(plotter, row.mark, path, size, ref, seat)
+        _paint_bujo_key_haloed_period(plotter, path, size, ref, seat)
         return
     if row.mark == ".":
         _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
