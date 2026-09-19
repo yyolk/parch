@@ -51,7 +51,9 @@ def test_cli_init_nomad_to_cwd(tmp_path: Path, monkeypatch, capsys):
 
 def test_cli_init_year_and_device_flags(tmp_path: Path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    assert main(["init", "--profile", "bujo", "--year", "2027", "--device", "scribe"]) == 0
+    assert (
+        main(["init", "--profile", "bujo", "--year", "2027", "--device", "scribe"]) == 0
+    )
     dest = tmp_path / "bujo.toml"
     assert Path(capsys.readouterr().out.strip()) == dest
     text = dest.read_text(encoding="utf-8")

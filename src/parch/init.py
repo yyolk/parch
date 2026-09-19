@@ -42,7 +42,9 @@ def overlay_profile(
 ) -> str:
     """Surgically overlay ``year`` / ``device``; comments and neighbors stay put."""
     if year is not None:
-        if not (isinstance(year, int) and not isinstance(year, bool) and 1 <= year <= 9999):
+        if not (
+            isinstance(year, int) and not isinstance(year, bool) and 1 <= year <= 9999
+        ):
             raise ConfigError("year must be between 1 and 9999")
         if not _YEAR_ASSIGN.search(text):
             raise ConfigError("profile has no year assignment to overlay")
