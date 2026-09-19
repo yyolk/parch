@@ -3,6 +3,7 @@ out/
 artifacts/
 .tools/
 docs/samples/
+site/
 __pycache__/
 *.pyc
 .pytest_cache

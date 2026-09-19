@@ -1,0 +1,19 @@
+# Exploratory H — MkDocs over Sphinx (YAGNI).
+# Markdown cookbook + extra_javascript for a later specimen bridge.
+# Sphinx would be the autodoc/RST stack; this site is not an API reference.
+#
+# Today CI deploys out/specimens as the Pages root
+# (https://yyolk.github.io/parch/). If this tree becomes the root,
+# copy the catalog to site/specimens/ after `mkdocs build` and leave
+# this extra_javascript hook pointed at that prefix.
+site_name: parch
+site_url: https://yyolk.github.io/parch/
+repo_url: https://github.com/yyolk/parch
+docs_dir: docs
+site_dir: site
+nav:
+  - Home: index.md
+  - Pip users: pip-users.md
+  - Cookbook: cookbook.md
+extra_javascript:
+  - javascripts/specimen-bridge.js
