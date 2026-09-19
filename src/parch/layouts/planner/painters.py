@@ -2485,9 +2485,9 @@ _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
 _BUJO_STRIKE_EM = 0.045
-# Genesis • only — same glyph size; PAPER knockout ring via offset copies (not a scaled fill).
-# ~0.29 mm at title-strong 11 pt ≈ 3.4 px on Nomad 300 ppi: thin, still reads through INK x/>/<.
-_BUJO_HALO_GRAY = PAPER
+# Genesis • only — same glyph size; MUTED ring via offset copies (not a scaled fill).
+# ~0.29 mm at title-strong 11 pt ≈ 3.4 px on Nomad 300 ppi: thin, reads against INK x/>/<.
+_BUJO_HALO_GRAY = MUTED
 _BUJO_HALO_EM = 0.075
 _BUJO_HALO_RAYS = 12
 _PT_MM = 25.4 / 72.0
@@ -2569,7 +2569,7 @@ def _paint_bujo_key_haloed_period(
     ref: TypeRef,
     seat: tuple[float, float],
 ) -> None:
-    """Genesis •: PAPER ring (offset copies), then the unscaled INK fill."""
+    """Genesis •: MUTED ring (offset copies), then the unscaled INK fill."""
     ring = _bujo_halo_offset(size)
     sx, sy = seat
     for i in range(_BUJO_HALO_RAYS):
