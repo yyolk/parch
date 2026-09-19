@@ -332,10 +332,13 @@ def test_cli_press_dash_invalid_toml(monkeypatch, tmp_path: Path, capsys):
     assert not (tmp_path / "bad.pdf").exists()
 
 
-def test_cli_press_empty_dash_is_invalid(monkeypatch, tmp_path: Path, capsys):
+def test_cli_press_empty_dash_is_default_spec(monkeypatch, tmp_path: Path):
+    seen: dict[str, object] = {}
+    monkeypatch.setattr("parch.press.press", _fake_press(seen))
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-    assert main(["press", "-", "-o", str(tmp_path / "empty.pdf")]) == 2
-    assert "invalid TOML -" in capsys.readouterr().err
+    out = tmp_path / "empty.pdf"
+    assert main(["press", "-", "-o", str(out)]) == 0
+    assert seen["spec"] == Spec()
 
 
 def test_cli_proof_dash_selects_proof_profile(monkeypatch, tmp_path: Path):
