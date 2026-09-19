@@ -8,7 +8,7 @@
 year = 2026
 device = "supernote-nomad"
 week_start = "monday"
-months = { from = 1, to = 12 }
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 title = "Year planner"
 
 [daily]
