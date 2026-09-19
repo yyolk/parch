@@ -2502,9 +2502,7 @@ def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
             )
 
 
-def _paint_bujo_key_mark(
-    plotter: Plotter, band: Rect, row: BujoKeySymbol
-) -> None:
+def _paint_bujo_key_mark(plotter: Plotter, band: Rect, row: BujoKeySymbol) -> None:
     """Lone signifier, or shared • plus the task modifier in the same cell."""
     mark_box = Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
     ink = TypeRef(step="title", emphasis="strong")
