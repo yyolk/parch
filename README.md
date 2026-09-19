@@ -11,7 +11,7 @@ parch generates **fixed e-ink PDF pages**.
 
 ## Install / Press
 
-Needs Python 3.14+.
+Needs Python 3.14+. Dest t-strings: [Python 3.14 dests](docs/python314.md).
 
 ### From PyPI
 
