@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "fpdf2==2.8.8",
-    "tomlrange==0.2.2",
+    "tomlrange==0.3.0",
 ]
 
 [project.urls]

@@ -113,7 +113,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fpdf2", specifier = "==2.8.8" },
-    { name = "tomlrange", specifier = "==0.2.2" },
+    { name = "tomlrange", specifier = "==0.3.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -244,9 +244,9 @@ wheels = [
 
 [[package]]
 name = "tomlrange"
-version = "0.2.2"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ac/31/5db190f07bab1efda67fccd626290bc2f9975f666277e19b5182f4d4f07e/tomlrange-0.2.2.tar.gz", hash = "sha256:d74e05f8d05ab4f2c6538537b0f40d4796221b3e78e8cf453a755391d5e69a34", size = 20685, upload-time = "2026-09-17T19:22:47.544Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/07/ca894845e6de4ce743d0fbc2c71965fbccf7c141e5cc517ba1244251b87a/tomlrange-0.3.0.tar.gz", hash = "sha256:5f4f243d5150f4e235726b292c3dfc48e3443bba3f5bcd7cafe09a593bb1461a", size = 27836, upload-time = "2026-09-19T00:02:04.142Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/7d/715e13955385ec5a5089dac5027595836020c9580f6eee086ab63b03054f/tomlrange-0.2.2-py3-none-any.whl", hash = "sha256:48c8427dac68577fcf459a79a7619c07570683907bf8cbd0ac6690e4f6065537", size = 8567, upload-time = "2026-09-17T19:22:46.643Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/9b/814244254540d6971800454a2d46b40e179eecff3507a1be2d1ab55ac84e/tomlrange-0.3.0-py3-none-any.whl", hash = "sha256:cb1d6ac9eacb4ec7358f2e18f4b986e50f40d88d07fe190948708582aeb361be", size = 13545, upload-time = "2026-09-19T00:02:03.304Z" },
 ]

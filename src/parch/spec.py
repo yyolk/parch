@@ -6,7 +6,7 @@ from datetime import date, time
 from pathlib import Path
 from string.templatelib import Interpolation, Template
 
-from tomlrange import Bound, Domain, TomlRangeError
+from tomlrange import Bound, Clock, TomlRangeError
 
 from parch import ConfigError
 from parch.calendar import quarter_of, year_days
@@ -27,8 +27,7 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
-_SCHEDULE = Domain(time, name="schedule")
-_DEFAULT_SCHEDULE = _SCHEDULE.bound({"from": time(7, 0, 0), "to": time(16, 0, 0)})
+_DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 
 type TomlTable = dict[str, object]
 
@@ -80,7 +79,11 @@ def _parse_months(data: TomlTable) -> tuple[int, ...]:
 
 
 def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
-    """Whole-hour labels: floor ``from``, ceil ``to`` (capped at 23)."""
+    """Whole-hour labels for the daily well: floor ``from``, ceil ``to`` (capped at 23).
+
+    Painter bands stay hourly. Bound walk / ``elapsed`` use Clock grain (default
+    one minute, or table ``step`` minutes) and are not the hour-label source.
+    """
     start_hour = bound.start.hour
     stop = bound.stop
     if stop.minute or stop.second or stop.microsecond:
@@ -91,12 +94,19 @@ def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
 
 
 def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
-    """``[daily] schedule`` as tomlrange ``Bound[time]``; omit keeps 07:00–16:00."""
+    """``[daily] schedule`` via ``Clock.parse``; omit keeps 07:00–16:00.
+
+    Optional table ``step`` is a positive int (Clock grain minutes). Overlap /
+    merge / adjacent stay on Bound/Bounds — parch does not re-detect them.
+
+    TODO: time-shaped ``step = 00:30:00`` only when tomlrange accepts it.
+    Do not invent a parch-only time-step parser.
+    """
     raw = daily_table.get("schedule")
     if raw is None:
         return _DEFAULT_SCHEDULE
     try:
-        return _SCHEDULE.bound(raw, path="daily.schedule")
+        return Clock.parse(raw, path="daily.schedule")
     except TomlRangeError as exc:
         raise ConfigError(str(exc)) from exc
 
