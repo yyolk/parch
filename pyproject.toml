@@ -37,6 +37,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/parch"]
 
+# Wheel snapshot of repo examples/. examples/ stays the source of truth.
+[tool.hatch.build.targets.wheel.force-include]
+"examples/nomad.toml" = "parch/starters/nomad.toml"
+"examples/scribe.toml" = "parch/starters/scribe.toml"
+
 [tool.uv]
 package = true
 
