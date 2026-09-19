@@ -63,9 +63,7 @@ _COMMENTS: dict[str, str] = {
         "Calendar year pressed into dest names "
         "(year-{year:04d}, month-{year:04d}-01, …)."
     ),
-    "device": (
-        f"Device id: {', '.join(known_device_ids())} (aliases: nomad, scribe)."
-    ),
+    "device": (f"Device id: {', '.join(known_device_ids())} (aliases: nomad, scribe)."),
     "week_start": f"Week grid start: {' or '.join(_WEEK_STARTS)}.",
     "months": (
         "Closed month table (ints 1–12). Omit for the full year.\n"
@@ -253,7 +251,9 @@ def starter_toml(spec: Spec | None = None) -> str:
                 if text := _COMMENTS.get(section):
                     _comment_lines(lines, text, spec.year)
                 header = f"[{section}]"
-                lines.append(f"# {header}" if _section_omitted(section, spec) else header)
+                lines.append(
+                    f"# {header}" if _section_omitted(section, spec) else header
+                )
             current = section
         if text := _COMMENTS.get(path):
             _comment_lines(lines, text, spec.year)

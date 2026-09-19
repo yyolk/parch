@@ -91,7 +91,10 @@ def test_starter_module_avoids_questionary():
 def test_starter_walk_covers_spec_fields():
     assert set(_PATH_FIELD.values()) == {item.name for item in fields(Spec)}
     assert isinstance(_COMMENTS, dict)
-    assert all(isinstance(key, str) and isinstance(text, str) for key, text in _COMMENTS.items())
+    assert all(
+        isinstance(key, str) and isinstance(text, str)
+        for key, text in _COMMENTS.items()
+    )
 
 
 def test_starter_is_walk_not_template():
