@@ -54,6 +54,9 @@ jobs:
           uv run parch specimen -w out
           test -s out/specimens/index.html
           grep -q "github.com/.*/commit/" out/specimens/index.html
+          grep -q 'href="toml-builder/"' out/specimens/index.html
+          test -s out/specimens/toml-builder/index.html
+          grep -q '<form id="spec">' out/specimens/toml-builder/index.html
           devices=$(uv run python -c 'from parch.specimen import CATALOG_DEVICE_IDS; print(" ".join(CATALOG_DEVICE_IDS))')
           for device in $devices; do
             grep -q "href=\"$device/\"" out/specimens/index.html
