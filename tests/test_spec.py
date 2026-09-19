@@ -292,7 +292,11 @@ def test_daily_schedule_rejects_bad_tables():
         Spec.from_mapping({"daily": {"schedule": [7, 16]}})
     with pytest.raises(ConfigError, match="unknown keys"):
         Spec.from_mapping(
-            {"daily": {"schedule": {"from": time(7), "to": time(16), "until": time(17)}}}
+            {
+                "daily": {
+                    "schedule": {"from": time(7), "to": time(16), "until": time(17)}
+                }
+            }
         )
     with pytest.raises(ConfigError, match="must have keys"):
         Spec.from_mapping({"daily": {"schedule": {"from": time(7)}}})
