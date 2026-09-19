@@ -8,10 +8,20 @@ FUTURE_LOG_MONTHS_PER_PAGE = 3
 
 
 @dataclass(frozen=True, slots=True)
+class BujoKeySymbol:
+    """One printed key row; ``genesis`` keeps the task bullet with the modifier."""
+
+    mark: str
+    meaning: str
+    strike: bool = False
+    genesis: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class BujoKey:
     """Printed legend plus blank custom-signifier rows."""
 
-    symbols: tuple[tuple[str, str], ...]
+    symbols: tuple[BujoKeySymbol, ...]
     custom_rows: int = 4
 
 
