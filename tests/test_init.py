@@ -212,17 +212,45 @@ def test_jinja_template_mentions_every_starter(starter: str):
     assert f"starter == '{starter}'" in text
 
 
-def test_apply_template_live_copier(tmp_path: Path):
+def test_copier_choices_are_label_to_value():
+    text = (Path(__file__).resolve().parents[1] / "copier.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "Nomad year planner: nomad" in text
+    assert "SuperNote Nomad: supernote-nomad" in text
+
+
+@pytest.mark.parametrize(
+    ("starter", "book", "device"),
+    [
+        ("nomad", "year-planner", "supernote-nomad"),
+        ("scribe", "year-planner", "kindle-scribe"),
+        ("extras", "year-planner", "supernote-nomad"),
+        ("bujo", "bullet-journal", "supernote-nomad"),
+        ("projects", "projects-notebook", "supernote-nomad"),
+        ("engineering", "engineering-notebook", "supernote-nomad"),
+        ("steno", "year-planner", "supernote-nomad"),
+    ],
+)
+def test_apply_template_live_copier(
+    tmp_path: Path, starter: str, book: str, device: str
+):
     pytest.importorskip("copier")
     root = checkout_root()
     assert root is not None
-    dest = tmp_path / "live"
-    apply_template(str(root), dest)
+    dest = tmp_path / starter
+    apply_template(str(root), dest, data={"starter": starter})
     spec_path = dest / "parch.toml"
     assert spec_path.is_file()
     from parch.spec import Spec
 
     spec = Spec.from_path(spec_path)
     assert spec.year == 2026
-    assert spec.device == "supernote-nomad"
-    assert spec.book == "year-planner"
+    assert spec.device == device
+    assert spec.book == book
+    if starter == "steno":
+        assert spec.steno_sheets == 1
+    if starter == "extras":
+        assert spec.favorites_pages == 1
+        assert spec.my_100 is True
+        assert spec.checkoff_365 is True

@@ -10,14 +10,15 @@ _message_after_copy: |
 starter:
   type: str
   help: Which starter TOML to emit
+  # Copier dict form is {label: value}.
   choices:
-    nomad: Nomad year planner
-    scribe: Kindle Scribe year planner
-    extras: Nomad + optional extras
-    bujo: Bullet journal
-    projects: Projects notebook
-    engineering: Engineering notebook
-    steno: Gregg steno pad
+    Nomad year planner: nomad
+    Kindle Scribe year planner: scribe
+    Nomad + optional extras: extras
+    Bullet journal: bujo
+    Projects notebook: projects
+    Engineering notebook: engineering
+    Gregg steno pad: steno
   default: nomad
 
 year:
@@ -29,6 +30,6 @@ device:
   type: str
   help: Slate id
   choices:
-    supernote-nomad: SuperNote Nomad
-    kindle-scribe: Kindle Scribe
+    SuperNote Nomad: supernote-nomad
+    Kindle Scribe: kindle-scribe
   default: "{% if starter == 'scribe' %}kindle-scribe{% else %}supernote-nomad{% endif %}"

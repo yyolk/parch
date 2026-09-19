@@ -92,7 +92,8 @@ copier copy gh:yyolk/parch dest
 | `steno` | `examples/steno-pad.toml` |
 
 Year / device are copier answers (`year`, `device`). Defaults match the
-twin. This is a snapshot for the spike, not a live include of `examples/`.
+twin. Copier dict choices are `{label: value}` (`Nomad year planner: nomad`).
+This is a snapshot for the spike, not a live include of `examples/`.
 
 ## Out of scope
 
