@@ -253,6 +253,33 @@ def test_typography_unknown_keys_fail_loudly():
         Spec.from_mapping({"typography": "loud"})
 
 
+def test_parse_months_list_and_tomlrange_table(tmp_path: Path):
+    assert Spec.from_mapping({"months": [1, 2, 3]}).months == (1, 2, 3)
+    assert Spec.from_mapping({"months": [1, 3]}).months == (1, 3)
+    assert Spec.from_mapping({"months": {"from": 1, "to": 3}}).months == (1, 2, 3)
+    assert Spec.from_mapping({"months": {"from": 6, "to": 6}}).months == (6,)
+    assert Spec.from_mapping({}).months == tuple(range(1, 13))
+    assert Spec.from_mapping({"month": 7}).months == (7,)
+    assert Spec.from_path(Path("examples/nomad.toml")).months == tuple(range(1, 13))
+    assert Spec.from_path(Path("examples/nomad-extras.toml")).months == (1,)
+
+    inline = tmp_path / "inline.toml"
+    inline.write_text("months = { from = 4, to = 6 }\n", encoding="utf-8")
+    header = tmp_path / "header.toml"
+    header.write_text("[months]\nfrom = 1\nto = 12\n", encoding="utf-8")
+    assert Spec.from_path(inline).months == (4, 5, 6)
+    assert Spec.from_path(header).months == tuple(range(1, 13))
+
+    with pytest.raises(ConfigError, match="months must not be empty"):
+        Spec.from_mapping({"months": []})
+    with pytest.raises(ConfigError, match="expected a table"):
+        Spec.from_mapping({"months": "1..12"})
+    with pytest.raises(ConfigError, match="is after"):
+        Spec.from_mapping({"months": {"from": 4, "to": 2}})
+    with pytest.raises(ConfigError, match="above month"):
+        Spec.from_mapping({"months": {"from": 1, "to": 13}})
+
+
 def test_value_bags_are_slotted():
     spec = Spec()
     assert not hasattr(spec, "__dict__")
