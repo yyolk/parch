@@ -16,6 +16,7 @@ from parch.books import (
 from parch.components import (
     BujoIndex,
     BujoKey,
+    BujoKeySymbol,
     CollectionLeaf,
     CoverTitle,
     FutureLogPage,
@@ -24,11 +25,18 @@ from parch.components import (
     MonthlyTaskWell,
     RapidLogPage,
 )
+from parch.devices.registry import NOMAD
+from parch.geom import Rect
 from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
+    BUJO_STRIKE,
+    HAIR,
+    INK,
+    paint_bujo_key,
     strip_active,
     strip_items,
+    well_rect,
 )
 from parch.plotter import RecordingPlotter
 from parch.press import press
@@ -56,8 +64,11 @@ def test_sealed_component_fields():
     assert "quarter_dest" not in MonthlyCalendarList.__dataclass_fields__
     assert "pattern" not in CollectionLeaf.__dataclass_fields__
     assert "gutter_mm" not in RapidLogPage.__dataclass_fields__
+    assert set(BujoKeySymbol.__dataclass_fields__) == {"mark", "meaning", "strike"}
+    assert set(BujoKey.__dataclass_fields__) == {"symbols", "custom_rows"}
     assert BUJO_GUTTER_MM == 8.0
     assert BUJO_ROW_MM == 5.0
+    assert BUJO_STRIKE > HAIR
 
 
 def test_bullet_journal_is_cover_then_bujo_hubs():
@@ -105,6 +116,23 @@ def test_january_nav_is_seven_short_chips():
         chips = [label for label, _dest in strip_items(page)]
         assert chips == list(_STRIP)
         assert {item.label for item in page.nav} == set(_STRIP)
+
+
+def test_january_key_symbols_include_irrelevant():
+    pages = BulletJournal().pages(_JAN)
+    key = next(page for page in pages if page.kind == "bujo_key").components[0]
+    assert isinstance(key, BujoKey)
+    assert [(row.mark, row.meaning, row.strike) for row in key.symbols] == [
+        (".", "task", False),
+        ("x", "complete", False),
+        (">", "migrated", False),
+        ("<", "scheduled", False),
+        (".", "irrelevant", True),
+        ("-", "note", False),
+        ("o", "event", False),
+        ("*", "priority", False),
+        ("!", "inspiration", False),
+    ]
 
 
 def test_january_components_and_strip_active():
@@ -250,6 +278,7 @@ def test_january_plot_paints_key_and_gutter():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert "Key" in texts
     assert "task" in texts
+    assert "irrelevant" in texts
     assert "Future log" in texts
     assert "January 2026" in texts
     assert "Habits · January 2026" in texts
@@ -264,3 +293,34 @@ def test_january_plot_paints_key_and_gutter():
     assert _JAN.bujo_key_dest in links
     assert _JAN.dest_for_month(1) in links
     assert "2026-01-01" in links
+
+
+def test_paint_bujo_key_strikes_irrelevant_row():
+    key = next(
+        page.components[0]
+        for page in BulletJournal().pages(_JAN)
+        if page.kind == "bujo_key"
+    )
+    assert isinstance(key, BujoKey)
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_bujo_key(plotter, well, key)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert "irrelevant" in texts
+    strikes = [
+        op
+        for op in plotter.ops
+        if op[0] == "line"
+        and op[5] == pytest.approx(BUJO_STRIKE)
+        and op[6] == pytest.approx(INK)
+    ]
+    assert len(strikes) == 1
+    _kind, x1, y1, x2, y2, _width, _gray = strikes[0]
+    n = len(key.symbols) + key.custom_rows
+    band_h = well.h / n
+    band = Rect(well.x, well.y + 4 * band_h, well.w, band_h)
+    assert y1 == pytest.approx(y2)
+    assert y1 == pytest.approx(band.y + band.h * 0.5)
+    assert x1 == pytest.approx(band.x + 10.0 * 0.30)
+    assert x2 > band.x + 12.0
+    assert x2 > x1

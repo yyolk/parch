@@ -8,10 +8,19 @@ FUTURE_LOG_MONTHS_PER_PAGE = 3
 
 
 @dataclass(frozen=True, slots=True)
+class BujoKeySymbol:
+    """One printed key row; ``strike`` cancels mark and meaning."""
+
+    mark: str
+    meaning: str
+    strike: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class BujoKey:
     """Printed legend plus blank custom-signifier rows."""
 
-    symbols: tuple[tuple[str, str], ...]
+    symbols: tuple[BujoKeySymbol, ...]
     custom_rows: int = 4
 
 

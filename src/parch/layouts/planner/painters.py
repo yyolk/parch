@@ -2464,6 +2464,19 @@ BUJO_ROW_MM = 5.0
 BUJO_DOT = 0.32
 BUJO_DOT_PITCH = 5.0
 BUJO_MIGRATE_LABEL_H = 3.4
+BUJO_STRIKE = 0.85
+_PT_MM = 25.4 / 72.0
+# Generous Jost lowercase advance so the bar clears the last glyph, plus a tail.
+_BUJO_STRIKE_ADVANCE = 0.55
+_BUJO_STRIKE_TAIL = 4.0
+_BUJO_SYMBOL_W = 10.0
+_BUJO_MEANING_GAP = 2.0
+
+
+def _bujo_strike_span(meaning: str, ramp: TypeRamp) -> float:
+    """Body-width estimate plus a short tail past the last glyph."""
+    em = float(ramp.ink("body").size) * _PT_MM
+    return len(meaning) * em * _BUJO_STRIKE_ADVANCE + _BUJO_STRIKE_TAIL
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2492,26 +2505,37 @@ def paint_bujo_key(
     """Printed signifiers plus blank custom rows."""
     ramp = _bound_ramp(plotter, ramp)
     n = max(1, len(key.symbols) + max(0, key.custom_rows))
-    symbol_w = 10.0
+    symbol_w = _BUJO_SYMBOL_W
     for i, band in enumerate(rows(box, n)):
         if i < len(key.symbols):
-            mark, meaning = key.symbols[i]
+            row = key.symbols[i]
             _ink_text(
                 plotter,
                 Rect(band.x, band.y, symbol_w, band.h),
-                mark,
+                row.mark,
                 TypeRef(step="title", emphasis="strong"),
                 gray=INK,
                 align="center",
             )
+            meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             _ink_text(
                 plotter,
-                Rect(band.x + symbol_w + 2.0, band.y, band.w - symbol_w - 2.0, band.h),
-                meaning,
+                Rect(meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h),
+                row.meaning,
                 TypeRef(step="body"),
                 gray=INK,
                 align="left",
             )
+            if row.strike:
+                y = band.y + band.h * 0.5
+                plotter.line(
+                    band.x + symbol_w * 0.30,
+                    y,
+                    meaning_x + _bujo_strike_span(row.meaning, ramp),
+                    y,
+                    stroke_width=BUJO_STRIKE,
+                    stroke_gray=INK,
+                )
         plotter.line(
             box.x,
             band.bottom,

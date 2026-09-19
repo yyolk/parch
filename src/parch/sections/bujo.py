@@ -8,6 +8,7 @@ from parch.components import (
     BujoIndex,
     BujoIndexRow,
     BujoKey,
+    BujoKeySymbol,
     CalendarDayRow,
     CollectionLeaf,
     FutureLogBand,
@@ -23,14 +24,15 @@ from parch.sections.page import Page
 from parch.spec import Spec
 
 _KEY_SYMBOLS = (
-    (".", "task"),
-    ("x", "complete"),
-    (">", "migrated"),
-    ("<", "scheduled"),
-    ("o", "event"),
-    ("-", "note"),
-    ("*", "priority"),
-    ("!", "inspiration"),
+    BujoKeySymbol(".", "task"),
+    BujoKeySymbol("x", "complete"),
+    BujoKeySymbol(">", "migrated"),
+    BujoKeySymbol("<", "scheduled"),
+    BujoKeySymbol(".", "irrelevant", strike=True),
+    BujoKeySymbol("-", "note"),
+    BujoKeySymbol("o", "event"),
+    BujoKeySymbol("*", "priority"),
+    BujoKeySymbol("!", "inspiration"),
 )
 
 
