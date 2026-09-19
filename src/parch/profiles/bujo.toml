@@ -1,0 +1,17 @@
+# Bullet journal — cover → key → index → future log → monthly cal+tasks[+habits] → dated rapid-log → collections.
+# Draft book. Not a year-planner flag.
+#   parch press examples/nomad-bujo.toml -o out/nomad-bujo-2026.pdf
+book = "bullet-journal"
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+title = "Bullet journal"
+outline = true
+
+[bujo]
+index_pages = 2
+collections = 24
+
+[habits]
+columns = 8
