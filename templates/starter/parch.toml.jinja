@@ -1,0 +1,133 @@
+{% if starter == 'nomad' -%}
+# Nomad year planner walk — cover → annual → (optional extras: favorites, my 100, checkoff) → Q1–Q4 → each month + habits → each touching ISO week once → days + notes → review → projects index/dests → meetings → tasks.
+# Optional extras stay off here; see the extras starter.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
+year = {{ year }}
+device = "{{ device }}"
+week_start = "monday"
+months = { from = 1, to = 12 }
+title = "Year planner"
+# Reader sidebar outline (bookmarks). Cover is skipped.
+outline = true
+
+[daily]
+schedule = { from = 07:00:00, to = 16:00:00 }
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
+{% elif starter == 'scribe' -%}
+# Kindle Scribe (1st gen) — cover → annual → Q1–Q4 → each month + habits → each touching ISO week once → days + notes → review → projects index/dests → meetings → tasks.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
+year = {{ year }}
+device = "{{ device }}"
+week_start = "monday"
+months = { from = 1, to = 12 }
+title = "Year planner"
+# Reader sidebar outline (bookmarks). Cover is skipped.
+outline = true
+
+[daily]
+schedule = { from = 07:00:00, to = 16:00:00 }
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
+{% elif starter == 'extras' -%}
+# Optional extras — Favorites, My 100, 365 Check-Off. Default is off.
+#   parch press parch.toml -o out/nomad-extras.pdf
+year = {{ year }}
+device = "{{ device }}"
+week_start = "monday"
+month = 1
+title = "Year planner"
+favorites = true
+my_100 = true
+checkoff_365 = true
+
+[daily]
+notes_pages = 0
+{% elif starter == 'bujo' -%}
+# Bullet journal — cover → key → index → future log → monthly cal+tasks[+habits] → dated rapid-log → collections.
+# Draft book. Not a year-planner flag.
+#   parch press parch.toml -o out/nomad-bujo-{{ year }}.pdf
+book = "bullet-journal"
+year = {{ year }}
+device = "{{ device }}"
+week_start = "monday"
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+title = "Bullet journal"
+outline = true
+
+[bujo]
+index_pages = 2
+collections = 24
+
+[habits]
+columns = 8
+{% elif starter == 'projects' -%}
+# Projects notebook — cover → projects index/dests (sibling book).
+#   parch press parch.toml -o out/projects.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "projects-notebook"
+year = {{ year }}
+device = "{{ device }}"
+title = "Projects"
+
+[projects]
+cards = 3
+tickets = 8
+index_pages = 1
+{% elif starter == 'engineering' -%}
+# Engineering notebook — cover → duplex eng-pad fronts/backs (sibling book).
+#   parch press parch.toml -o out/engineering.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "engineering-notebook"
+year = {{ year }}
+device = "{{ device }}"
+title = "Engineering"
+# Reader sidebar outline (bookmarks). Cover is skipped. Default is false.
+outline = true
+
+[engineering]
+sheets = 12
+{% elif starter == 'steno' -%}
+# Single-face Gregg stenographer pad.
+# Lined ⅓″ + one center rule. No header, holes, or duplex back.
+# No steno-notebook book yet — ``steno_sheets > 0`` presses this
+# section only:
+#   parch press parch.toml -o out/steno-pad.pdf
+device = "{{ device }}"
+title = "Steno pad"
+
+[steno]
+sheets = 1
+{% else -%}
+# Unknown starter {{ starter }} — year planner fallback.
+year = {{ year }}
+device = "{{ device }}"
+{% endif -%}

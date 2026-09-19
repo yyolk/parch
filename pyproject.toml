@@ -22,6 +22,10 @@ dependencies = [
     "tomlrange==0.3.1",
 ]
 
+[project.optional-dependencies]
+# Exploratory L: parch init --template. Not a hard runtime dep.
+template = ["copier>=9.6"]
+
 [project.urls]
 Homepage = "https://github.com/yyolk/parch"
 Repository = "https://github.com/yyolk/parch"
