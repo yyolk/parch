@@ -168,6 +168,48 @@ def _dest(template: Template) -> str:
     return "".join(chunks)
 
 
+def _toml_atom(value: object) -> str:
+    """Smallest TOML atom: bool, time, str, int, list, or inline table."""
+    match value:
+        case bool() as flag:
+            return "true" if flag else "false"
+        case time() as clock:
+            return f"{clock.hour:02d}:{clock.minute:02d}:{clock.second:02d}"
+        case str() as text:
+            return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+        case int() as number:
+            return str(number)
+        case list() as items:
+            return "[" + ", ".join(_toml_atom(item) for item in items) + "]"
+        case dict() as pairs:
+            inner = ", ".join(f"{key} = {_toml_atom(raw)}" for key, raw in pairs.items())
+            return "{ " + inner + " }"
+        case _:
+            raise TypeError(f"unsupported TOML value: {type(value)!r}")
+
+
+def _toml_section(name: str, fields: dict[str, object]) -> str:
+    lines = [f"[{name}]"]
+    lines.extend(f"{key} = {_toml_atom(value)}" for key, value in fields.items())
+    return "\n".join(lines)
+
+
+def _months_value(months: tuple[int, ...]) -> dict[str, int] | list[int]:
+    """Closed ``{ from, to }`` when contiguous; otherwise a list."""
+    if months and months == tuple(range(months[0], months[-1] + 1)):
+        return {"from": months[0], "to": months[-1]}
+    return list(months)
+
+
+def _schedule_value(bound: Bound[time]) -> dict[str, object]:
+    """Preferred ``[daily] schedule`` spelling from ``Bound.as_table``."""
+    raw = bound.as_table()
+    pairs: dict[str, object] = {"from": raw["from"], "to": raw["to"]}
+    if "step" in raw:
+        pairs["step"] = raw["step"]
+    return pairs
+
+
 @dataclass(frozen=True, slots=True)
 class Spec:
     year: int = 2026
@@ -479,6 +521,46 @@ class Spec:
         if not 1 <= sheet <= self.steno_sheets:
             raise ConfigError(f"steno sheet out of range: {sheet}")
         return _dest(t"steno-{self.year:04d}-{sheet:02d}")
+
+    def to_toml(self) -> str:
+        """Emit this spec as plain TOML (no comments). Live field values only."""
+        root = "\n".join(
+            (
+                f"year = {_toml_atom(self.year)}",
+                f"device = {_toml_atom(self.device)}",
+                f"week_start = {_toml_atom(self.week_start)}",
+                f"months = {_toml_atom(_months_value(self.months))}",
+                f"book = {_toml_atom(self.book)}",
+                f"outline = {_toml_atom(self.outline)}",
+            )
+        )
+        return (
+            "\n\n".join(
+                (
+                    root,
+                    _toml_section(
+                        "daily",
+                        {
+                            "schedule": _schedule_value(self.schedule),
+                            "notes_pages": self.notes_pages,
+                            "priority_rows": self.priority_rows,
+                        },
+                    ),
+                    _toml_section("habits", {"columns": self.habit_columns}),
+                    _toml_section(
+                        "projects",
+                        {
+                            "cards": self.project_cards,
+                            "tickets": self.project_tickets,
+                            "index_pages": self.project_index_pages,
+                        },
+                    ),
+                    _toml_section("meetings", {"index_rows": self.meeting_index_rows}),
+                    _toml_section("tasks", {"rows": self.task_rows}),
+                )
+            )
+            + "\n"
+        )
 
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:

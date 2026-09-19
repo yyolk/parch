@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     # Accept a leading `press`, `proof`, `specimen`, or `init` verb.
     # `parch proof` is the historical on-screen path; it selects ProofProfile.
     # `parch specimen` writes a static PNG catalog (not a product PDF).
-    # `parch init` writes a commented starter TOML of Spec defaults.
+    # `parch init` writes Spec defaults as plain TOML.
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "init":
         from parch.init import main as init_main

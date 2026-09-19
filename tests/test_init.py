@@ -52,17 +52,20 @@ def test_starter_toml_follows_replaced_spec_fields():
     assert loaded.schedule.as_tuple() == (time(9, 0), time(17, 0))
 
 
-def test_starter_toml_has_section_comments():
+def test_starter_toml_is_bare_spec_dump():
     text = starter_toml()
-    assert text.lstrip().startswith("#")
+    assert text == Spec().to_toml()
+    assert "#" not in text
+    assert not text.lstrip().startswith("#")
     for needle in (
         "year",
         "device",
         "week_start",
         "months",
-        "daily.schedule",
         "book",
         "outline",
+        "[daily]",
+        "schedule",
     ):
         assert needle in text
     spec = Spec()
@@ -82,17 +85,19 @@ def test_starter_toml_emits_list_for_gapped_months():
     assert Spec.from_mapping(tomllib.loads(text)).months == (1, 3)
 
 
-def test_starter_module_avoids_questionary():
+def test_starter_module_avoids_questionary_and_comment_fstring():
     source = Path("src/parch/init.py").read_text(encoding="utf-8")
     assert "import questionary" not in source
     assert "from questionary" not in source
+    assert 'f"""' not in source
+    assert "f'''" not in source
 
 
 def test_cli_init_stdout(capsys):
     assert main([]) == 0
     out = capsys.readouterr().out
     assert Spec.from_mapping(tomllib.loads(out)) == Spec()
-    assert out.lstrip().startswith("#")
+    assert "#" not in out
 
 
 def test_cli_init_writes_file(tmp_path: Path, capsys):

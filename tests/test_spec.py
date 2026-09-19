@@ -1,3 +1,4 @@
+import tomllib
 from datetime import date, time, timedelta
 from pathlib import Path
 
@@ -335,6 +336,22 @@ def test_daily_schedule_rejects_bad_tables():
         )
     with pytest.raises(ConfigError, match="must have keys"):
         Spec.from_mapping({"daily": {"schedule": {"from": time(7)}}})
+
+
+def test_to_toml_round_trips_live_values():
+    text = Spec().to_toml()
+    assert "#" not in text
+    assert Spec.from_mapping(tomllib.loads(text)) == Spec()
+    spec = Spec(
+        months=(1, 3),
+        schedule=Clock.parse({"from": time(9, 0), "to": time(17, 0), "step": 30}),
+    )
+    dumped = spec.to_toml()
+    assert "months = [1, 3]" in dumped
+    assert "step = 30" in dumped
+    loaded = Spec.from_mapping(tomllib.loads(dumped))
+    assert loaded.months == (1, 3)
+    assert loaded.schedule.as_table()["step"] == 30
 
 
 def test_daily_schedule_int_step_is_clock_grain_minutes():
