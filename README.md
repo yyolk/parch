@@ -11,7 +11,12 @@ parch generates **fixed e-ink PDF pages**.
 
 ## Install / Press
 
-Needs Python 3.14+.
+Needs Python 3.14+. Spec dest t-strings flatten through `_dest` — the in-tree 3.14 emblem (`string.templatelib.Template` + `match` on `Interpolation`):
+
+```python
+# src/parch/spec.py
+def _dest(template: Template) -> str: ...
+```
 
 ### From PyPI
 
