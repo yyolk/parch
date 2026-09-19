@@ -25,10 +25,13 @@ from parch.components import (
     RapidLogPage,
 )
 from parch.devices.registry import NOMAD
+from parch.fonts.catalog import jost_catalog
+from parch.fonts.metrics import glyph_ink, origin_for_nest
 from parch.layouts.planner.painters import (
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
     INK,
+    PAPER,
     paint_bujo_key,
     strip_active,
     strip_items,
@@ -290,6 +293,24 @@ def test_january_plot_paints_key_and_gutter():
     assert "2026-01-01" in links
 
 
+def test_key_glyph_nests_follow_ink_not_shared_baseline():
+    """Vendored Jost Bold: period sits low; chevron nest is the tip, not the mouth."""
+    path = str(jost_catalog().path("jost", "bold"))
+    size = 11.0
+    period = glyph_ink(path, ".", size)
+    ics = glyph_ink(path, "x", size)
+    greater = glyph_ink(path, ">", size)
+    less = glyph_ink(path, "<", size)
+    assert period.cy < ics.cy
+    assert less.nest[0] < ics.nest[0] < greater.nest[0]
+    assert greater.nest[0] == pytest.approx(greater.xmax)
+    assert less.nest[0] == pytest.approx(less.xmin)
+    seat = (5.0, 4.0)
+    tx, baseline = origin_for_nest(seat, period)
+    assert tx + period.cx == pytest.approx(seat[0])
+    assert baseline - period.cy == pytest.approx(seat[1])
+
+
 def test_paint_bujo_key_strikes_irrelevant_row():
     key = next(
         page.components[0]
@@ -313,9 +334,13 @@ def test_paint_bujo_key_strikes_irrelevant_row():
     _kind, x1, y1, x2, y2, width, _gray = strikes[0]
     assert y1 == pytest.approx(y2)
     assert x2 > x1
+    assert well.x <= x1 < well.x + 12.0
+    assert x2 == pytest.approx(well.right)
     body_mm = float(plotter.ramp.ink("body").size) * 25.4 / 72.0
     assert width < body_mm * 0.08
     assert width > 0
+    dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
+    assert any(box.y <= y1 <= box.y + box.h for box in dots)
 
 
 def test_paint_bujo_key_genesis_bullet_with_modifiers():
@@ -329,21 +354,44 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
     plotter = RecordingPlotter()
     paint_bujo_key(plotter, well, key)
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
-    assert texts.count(".") == 5
     assert "x" in texts
     assert ">" in texts
     assert "<" in texts
     assert "-" in texts
     assert "o" in texts
-    dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
-    assert len({box.x for box in dots}) == 1
+    ink_dots = [
+        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == INK
+    ]
+    halo_dots = [
+        op for op in plotter.ops if op[0] == "text" and op[2] == "." and op[7] == PAPER
+    ]
+    assert len(ink_dots) == 5
+    assert halo_dots
+    centers = {round(op[1].x + op[1].w / 2, 4) for op in ink_dots}
+    assert len(centers) == 1
+    title_pt = float(plotter.ramp.ink("title", "strong").size)
+    mark_pt = {
+        op[3] for op in plotter.ops if op[0] == "text" and op[2] in {".", "x", ">", "<"}
+    }
+    assert mark_pt == {title_pt}
+    assert {
+        op[7] for op in plotter.ops if op[0] == "text" and op[2] in {"x", ">", "<"}
+    } == {INK}
     mods = {
         op[2]: op[1]
         for op in plotter.ops
         if op[0] == "text" and op[2] in {"x", ">", "<"}
     }
     assert set(mods) == {"x", ">", "<"}
-    genesis_x = dots[0].x
-    for box in mods.values():
-        assert box.x == pytest.approx(genesis_x)
-        assert any(d.y == pytest.approx(box.y) for d in dots)
+    # Tip nest: ``>`` extends left of the seat, ``<`` extends right.
+    assert mods[">"].x < mods["x"].x
+    assert mods["<"].x > mods["x"].x
+    # Halo only on genesis rows (under x/>/<), never task or irrelevant.
+    ink_boxes = sorted((op[1] for op in ink_dots), key=lambda box: box.y)
+    task_box, *_, irrelevant_box = ink_boxes
+    mod_mids = [box.y + box.h / 2 for box in mods.values()]
+    for halo in halo_dots:
+        mid = halo[1].y + halo[1].h / 2
+        assert any(abs(mid - my) < 1.2 for my in mod_mids)
+        assert abs(halo[1].y - task_box.y) > 1.0
+        assert abs(halo[1].y - irrelevant_box.y) > 1.0

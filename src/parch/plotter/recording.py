@@ -68,6 +68,7 @@ class RecordingPlotter(Plotter):
         align: TextAlign = "left",
         gray: float = 0.0,
         small_caps: bool = False,
+        origin: tuple[float, float] | None = None,
     ) -> None:
         resolved = resolve_text_ink(self.ramp, ink=ink, ref=ref)
         self.ops.append(

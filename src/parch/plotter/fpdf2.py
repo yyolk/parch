@@ -7,16 +7,14 @@ from fpdf import FPDF
 
 from parch.devices.registry import Device
 from parch.fonts.catalog import FontCatalog, TypeFamily, TypeWeight
+from parch.fonts.metrics import pt_mm as _pt_mm
+from parch.fonts.metrics import text_baseline
 from parch.fonts.ramp import EffectiveRamp, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign, resolve_text_ink
 
 SMCP_SCALE = 0.76
 SMCP_TRACK_EM = 0.14
-
-
-def _pt_mm(pt: float) -> float:
-    return pt * 25.4 / 72.0
 
 
 def _level(gray: float) -> int:
@@ -81,8 +79,7 @@ class Fpdf2Plotter(Plotter):
     ) -> None:
         register_as = self._register_name(family, weight)
         tw = self._smcp_width(content, size, register_as)
-        cap = _pt_mm(size * SMCP_SCALE) * 0.72
-        baseline = box.y + (box.h + cap) / 2.0 - 0.12
+        baseline = text_baseline(box, size * SMCP_SCALE)
         match align:
             case "center":
                 tx = box.x + (box.w - tw) / 2.0
@@ -163,6 +160,7 @@ class Fpdf2Plotter(Plotter):
         align: TextAlign = "left",
         gray: float = 0.0,
         small_caps: bool = False,
+        origin: tuple[float, float] | None = None,
     ) -> None:
         if not content:
             return
@@ -182,16 +180,18 @@ class Fpdf2Plotter(Plotter):
         register_as = self._register_name(resolved.family, resolved.weight)
         self.pdf.set_font(register_as, "", size)
         self._ink(gray)
-        cap = _pt_mm(size) * 0.72
-        baseline = box.y + (box.h + cap) / 2.0 - 0.12
-        tw = self.pdf.get_string_width(content)
-        match align:
-            case "center":
-                tx = box.x + (box.w - tw) / 2.0
-            case "right":
-                tx = box.x + box.w - tw
-            case _:
-                tx = box.x
+        if origin is None:
+            baseline = text_baseline(box, size)
+            tw = self.pdf.get_string_width(content)
+            match align:
+                case "center":
+                    tx = box.x + (box.w - tw) / 2.0
+                case "right":
+                    tx = box.x + box.w - tw
+                case _:
+                    tx = box.x
+        else:
+            tx, baseline = origin
         self.pdf.text(tx, baseline, content)
 
     @override

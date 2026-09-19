@@ -43,6 +43,7 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
+from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest, pt_mm
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.plotter.protocol import Plotter, TextAlign
@@ -82,13 +83,28 @@ def _ink_text(
     gray: float = 0.0,
     align: TextAlign = "left",
     small_caps: bool = False,
+    origin: tuple[float, float] | None = None,
 ) -> None:
     if isinstance(mark, TypeRef):
         plotter.text(
-            box, content, ref=mark, gray=gray, align=align, small_caps=small_caps
+            box,
+            content,
+            ref=mark,
+            gray=gray,
+            align=align,
+            small_caps=small_caps,
+            origin=origin,
         )
         return
-    plotter.text(box, content, ink=mark, gray=gray, align=align, small_caps=small_caps)
+    plotter.text(
+        box,
+        content,
+        ink=mark,
+        gray=gray,
+        align=align,
+        small_caps=small_caps,
+        origin=origin,
+    )
 
 
 def paint_header(
@@ -2469,12 +2485,21 @@ _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
 # Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
 _BUJO_STRIKE_EM = 0.045
-_PT_MM = 25.4 / 72.0
+# Genesis • only — same glyph size; PAPER ring via offset copies (not a scaled fill).
+# Draw order punches white only where the ring crosses INK x/>/<; no blend mode.
+# ~0.29 mm at title-strong 11 pt ≈ 3.4 px on Nomad 300 ppi.
+_BUJO_HALO_EM = 0.075
+_BUJO_HALO_RAYS = 12
 
 
 def _bujo_strike_width(ramp: TypeRamp) -> float:
     """Body-relative cancel bar, lighter than inked glyph stems."""
-    return float(ramp.ink("body").size) * _PT_MM * _BUJO_STRIKE_EM
+    return pt_mm(float(ramp.ink("body").size)) * _BUJO_STRIKE_EM
+
+
+def _bujo_halo_offset(size_pt: float) -> float:
+    """Title-strong-relative ring width; the • cut itself stays unscaled."""
+    return pt_mm(float(size_pt)) * _BUJO_HALO_EM
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2497,15 +2522,90 @@ def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
             )
 
 
-def _paint_bujo_key_mark(plotter: Plotter, band: Rect, row: BujoKeySymbol) -> None:
-    """Lone signifier, or shared • plus the task modifier in the same cell."""
-    mark_box = Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
-    ink = TypeRef(step="title", emphasis="strong")
+def _bujo_key_face(plotter: Plotter) -> tuple[str, float, TypeRef]:
+    """Title-strong cut the Key marks paint with."""
+    ink = plotter.ramp.ink("title", "strong")
+    path = str(plotter.ramp.catalog.path(ink.family, ink.weight))
+    return path, float(ink.size), TypeRef(step="title", emphasis="strong")
+
+
+def _bujo_key_mark_box(band: Rect) -> Rect:
+    return Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
+
+
+def _bujo_key_seat(mark_box: Rect) -> tuple[float, float]:
+    """Shared compose seat: mark-cell center. Glyph ink nests land here."""
+    return mark_box.x + mark_box.w * 0.5, mark_box.y + mark_box.h * 0.5
+
+
+def _paint_bujo_key_glyph(
+    plotter: Plotter,
+    char: str,
+    path: str,
+    size: float,
+    mark: TypeInk | TypeRef,
+    seat: tuple[float, float],
+    *,
+    gray: float = INK,
+) -> None:
+    """Place one Key glyph by its vendored-face ink nest, not box-centered text."""
+    ink = glyph_ink(path, char, size)
+    _ink_text(
+        plotter,
+        ink_rect(seat, ink),
+        char,
+        mark,
+        gray=gray,
+        align="left",
+        origin=origin_for_nest(seat, ink),
+    )
+
+
+def _paint_bujo_key_haloed_period(
+    plotter: Plotter,
+    path: str,
+    size: float,
+    ref: TypeRef,
+    seat: tuple[float, float],
+) -> None:
+    """Genesis •: PAPER ring (offset copies), then the unscaled INK fill."""
+    ring = _bujo_halo_offset(size)
+    sx, sy = seat
+    for i in range(_BUJO_HALO_RAYS):
+        ang = 2.0 * math.pi * i / _BUJO_HALO_RAYS
+        _paint_bujo_key_glyph(
+            plotter,
+            ".",
+            path,
+            size,
+            ref,
+            (sx + ring * math.cos(ang), sy + ring * math.sin(ang)),
+            gray=PAPER,
+        )
+    _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+
+
+def _paint_bujo_key_mark(
+    plotter: Plotter,
+    band: Rect,
+    row: BujoKeySymbol,
+    path: str,
+    size: float,
+    ref: TypeRef,
+    seat: tuple[float, float],
+) -> None:
+    """Lone signifier, or shared • plus the task modifier on one ink seat."""
     if row.genesis:
-        _ink_text(plotter, mark_box, ".", ink, gray=INK, align="center")
-        _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
+        # Modifier first; haloed • on top so the knockout ring separates black-on-black.
+        _paint_bujo_key_glyph(plotter, row.mark, path, size, ref, seat)
+        _paint_bujo_key_haloed_period(plotter, path, size, ref, seat)
         return
-    _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
+    if row.mark == ".":
+        _paint_bujo_key_glyph(plotter, ".", path, size, ref, seat)
+        return
+    _ink_text(
+        plotter, _bujo_key_mark_box(band), row.mark, ref, gray=INK, align="center"
+    )
 
 
 def paint_bujo_key(
@@ -2515,10 +2615,13 @@ def paint_bujo_key(
     ramp = _bound_ramp(plotter, ramp)
     n = max(1, len(key.symbols) + max(0, key.custom_rows))
     symbol_w = _BUJO_SYMBOL_W
+    path, size, ref = _bujo_key_face(plotter)
     for i, band in enumerate(rows(box, n)):
         if i < len(key.symbols):
             row = key.symbols[i]
-            _paint_bujo_key_mark(plotter, band, row)
+            mark_box = _bujo_key_mark_box(band)
+            seat = _bujo_key_seat(mark_box)
+            _paint_bujo_key_mark(plotter, band, row, path, size, ref, seat)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             meaning = Rect(
                 meaning_x, band.y, band.w - symbol_w - _BUJO_MEANING_GAP, band.h
@@ -2532,13 +2635,13 @@ def paint_bujo_key(
                 align="left",
             )
             if row.strike:
-                y = band.y + band.h * 0.5
-                mark_cx = band.x + symbol_w * 0.5
+                period = glyph_ink(path, ".", size)
+                x1 = seat[0] - (period.cx - period.xmin)
                 plotter.line(
-                    mark_cx - 1.2,
-                    y,
+                    x1,
+                    seat[1],
                     meaning.right,
-                    y,
+                    seat[1],
                     stroke_width=_bujo_strike_width(ramp),
                     stroke_gray=INK,
                 )
