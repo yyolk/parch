@@ -14,3 +14,7 @@ class Error(Exception):
 
 class ConfigError(Error):
     """Invalid or incomplete press spec."""
+
+
+class TemplateError(Error):
+    """External template tool is missing or failed."""

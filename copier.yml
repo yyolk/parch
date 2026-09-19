@@ -1,0 +1,34 @@
+# Exploratory L: this repo is a copier src. Render templates/starter only.
+# Interactive use: copier copy gh:yyolk/parch dest
+# Wrapper: parch init --template  (optional extra: pip install 'parch[template]')
+_subdirectory: templates/starter
+_min_copier_version: "9.6.0"
+_message_after_copy: |
+  Wrote parch.toml. Press it with:
+    parch press parch.toml -o out.pdf
+
+starter:
+  type: str
+  help: Which starter TOML to emit
+  choices:
+    nomad: Nomad year planner
+    scribe: Kindle Scribe year planner
+    extras: Nomad + optional extras
+    bujo: Bullet journal
+    projects: Projects notebook
+    engineering: Engineering notebook
+    steno: Gregg steno pad
+  default: nomad
+
+year:
+  type: int
+  help: Calendar year
+  default: 2026
+
+device:
+  type: str
+  help: Slate id
+  choices:
+    supernote-nomad: SuperNote Nomad
+    kindle-scribe: Kindle Scribe
+  default: "{% if starter == 'scribe' %}kindle-scribe{% else %}supernote-nomad{% endif %}"
