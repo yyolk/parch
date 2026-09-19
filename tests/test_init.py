@@ -52,19 +52,20 @@ def test_starter_toml_follows_replaced_spec_fields():
     assert loaded.schedule.as_tuple() == (time(9, 0), time(17, 0))
 
 
-def test_starter_toml_has_section_comments():
+def test_starter_toml_is_shared_serializer():
+    """Init is a thin header plus ``Spec.to_toml`` — no private f-string blob."""
     text = starter_toml()
-    assert text.lstrip().startswith("#")
-    for needle in (
-        "year",
-        "device",
-        "week_start",
-        "months",
-        "daily.schedule",
-        "book",
-        "outline",
-    ):
-        assert needle in text
+    assert text.startswith("# parch starter — Spec() defaults. Edit, then:\n")
+    assert "#   parch press planner.toml -o planner.pdf\n" in text
+    assert "parch init -o" not in text
+    assert Spec().to_toml() in text
+    spec = replace(Spec(), year=2027, months=(1, 3))
+    assert spec.to_toml() in starter_toml(spec)
+
+
+def test_starter_toml_has_thin_header_and_live_keys():
+    text = starter_toml()
+    assert text.startswith("# parch starter")
     spec = Spec()
     assert f"year = {spec.year}" in text
     assert f'device = "{spec.device}"' in text
@@ -74,6 +75,10 @@ def test_starter_toml_has_section_comments():
         f"schedule = {{ from = {table['from'].strftime('%H:%M:%S')}, "
         f"to = {table['to'].strftime('%H:%M:%S')} }}"
     ) in text
+    # Shared dump spells optional extras as live keys at Spec() defaults.
+    assert "favorites = false" in text
+    assert "[engineering]" in text
+    assert "[bujo]" in text
 
 
 def test_starter_toml_emits_list_for_gapped_months():
@@ -86,6 +91,13 @@ def test_starter_module_avoids_questionary():
     source = Path("src/parch/init.py").read_text(encoding="utf-8")
     assert "import questionary" not in source
     assert "from questionary" not in source
+
+
+def test_starter_module_does_not_reimplement_toml():
+    source = Path("src/parch/init.py").read_text(encoding="utf-8")
+    assert "def _toml_str" not in source
+    assert "def _months_toml" not in source
+    assert "spec.to_toml()" in source
 
 
 def test_cli_init_stdout(capsys):

@@ -17,12 +17,12 @@ Needs Python 3.14+.
 
 ```shell
 uv tool install parch          # or: pip install parch
-parch init -o planner.toml     # Spec defaults as commented TOML (no checkout)
+parch init -o planner.toml     # Spec defaults as TOML (no checkout)
 parch press planner.toml -o nomad-2026.pdf
 parch specimen -w out
 ```
 
-No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. `parch init` emits a commented starter of Spec defaults; sample jobs also live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel).
+No checkout needed. One-shot: `uvx parch press -o nomad-2026.pdf`. `parch init` emits Spec defaults via `Spec.to_toml`; sample jobs also live in [`examples/`](https://github.com/yyolk/parch/tree/master/examples) (not in the wheel).
 
 ### From a checkout
 

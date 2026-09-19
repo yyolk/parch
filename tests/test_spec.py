@@ -1,3 +1,4 @@
+import tomllib
 from datetime import date, time, timedelta
 from pathlib import Path
 
@@ -395,6 +396,46 @@ def test_daily_schedule_rejects_non_time_values():
         Spec.from_mapping(
             {"daily": {"schedule": {"from": "07:00:00", "to": "16:00:00"}}}
         )
+
+
+def test_to_toml_roundtrips_default_spec():
+    spec = Spec()
+    assert Spec.from_mapping(spec.to_mapping()) == spec
+    dumped = tomllib.loads(spec.to_toml())
+    assert Spec.from_mapping(dumped) == spec
+    assert dumped["months"] == {"from": 1, "to": 12}
+    assert "title" not in dumped
+    assert "typography" not in dumped
+    assert dumped["daily"]["schedule"] == {"from": time(7, 0), "to": time(16, 0)}
+
+
+def test_to_toml_roundtrips_examples():
+    for path in sorted(Path("examples").glob("*.toml")):
+        spec = Spec.from_path(path)
+        assert Spec.from_mapping(tomllib.loads(spec.to_toml())) == spec
+        assert Spec.from_mapping(spec.to_mapping()) == spec
+
+
+def test_to_toml_roundtrips_overlay_and_sparse_months():
+    spec = Spec.from_path(Path("examples/nomad-typo-overlay.toml"))
+    assert spec.months == tuple(range(1, 13))
+    dumped = tomllib.loads(spec.to_toml())
+    assert dumped["typography"]["overlay"]["chrome"]["size"] == 9.6
+    assert Spec.from_mapping(dumped) == spec
+
+    sparse = Spec(months=(1, 3, 5), title='Say "hi"')
+    loaded = Spec.from_mapping(tomllib.loads(sparse.to_toml()))
+    assert loaded == sparse
+    assert tomllib.loads(sparse.to_toml())["months"] == [1, 3, 5]
+
+
+def test_to_toml_includes_schedule_step():
+    spec = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(7), "to": time(16), "step": 30}}}
+    )
+    dumped = tomllib.loads(spec.to_toml())
+    assert dumped["daily"]["schedule"]["step"] == 30
+    assert Spec.from_mapping(dumped) == spec
 
 
 def test_daily_schedule_hours_floor_from_ceil_to():
