@@ -28,6 +28,7 @@ from parch.components import (
 from parch.devices.registry import NOMAD
 from parch.geom import Rect
 from parch.layouts.planner.painters import (
+    BUJO_GENESIS_SHIFT,
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
     BUJO_STRIKE,
@@ -64,11 +65,17 @@ def test_sealed_component_fields():
     assert "quarter_dest" not in MonthlyCalendarList.__dataclass_fields__
     assert "pattern" not in CollectionLeaf.__dataclass_fields__
     assert "gutter_mm" not in RapidLogPage.__dataclass_fields__
-    assert set(BujoKeySymbol.__dataclass_fields__) == {"mark", "meaning", "strike"}
+    assert set(BujoKeySymbol.__dataclass_fields__) == {
+        "mark",
+        "meaning",
+        "strike",
+        "genesis",
+    }
     assert set(BujoKey.__dataclass_fields__) == {"symbols", "custom_rows"}
     assert BUJO_GUTTER_MM == 8.0
     assert BUJO_ROW_MM == 5.0
     assert BUJO_STRIKE > HAIR
+    assert BUJO_GENESIS_SHIFT > 0
 
 
 def test_bullet_journal_is_cover_then_bujo_hubs():
@@ -122,16 +129,18 @@ def test_january_key_symbols_include_irrelevant():
     pages = BulletJournal().pages(_JAN)
     key = next(page for page in pages if page.kind == "bujo_key").components[0]
     assert isinstance(key, BujoKey)
-    assert [(row.mark, row.meaning, row.strike) for row in key.symbols] == [
-        (".", "task", False),
-        ("x", "complete", False),
-        (">", "migrated", False),
-        ("<", "scheduled", False),
-        (".", "irrelevant", True),
-        ("-", "note", False),
-        ("o", "event", False),
-        ("*", "priority", False),
-        ("!", "inspiration", False),
+    assert [
+        (row.mark, row.meaning, row.strike, row.genesis) for row in key.symbols
+    ] == [
+        (".", "task", False, False),
+        ("x", "complete", False, True),
+        (">", "migrated", False, True),
+        ("<", "scheduled", False, True),
+        (".", "irrelevant", True, False),
+        ("-", "note", False, False),
+        ("o", "event", False, False),
+        ("*", "priority", False, False),
+        ("!", "inspiration", False, False),
     ]
 
 
@@ -324,3 +333,33 @@ def test_paint_bujo_key_strikes_irrelevant_row():
     assert x1 == pytest.approx(band.x + 10.0 * 0.30)
     assert x2 > band.x + 12.0
     assert x2 > x1
+
+
+def test_paint_bujo_key_genesis_bullet_with_modifiers():
+    key = next(
+        page.components[0]
+        for page in BulletJournal().pages(_JAN)
+        if page.kind == "bujo_key"
+    )
+    assert isinstance(key, BujoKey)
+    well = well_rect(NOMAD)
+    plotter = RecordingPlotter()
+    paint_bujo_key(plotter, well, key)
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count(".") == 5
+    assert "x" in texts
+    assert ">" in texts
+    assert "<" in texts
+    assert "-" in texts
+    assert "o" in texts
+    dots = [op[1] for op in plotter.ops if op[0] == "text" and op[2] == "."]
+    assert len({box.x for box in dots}) == 1
+    mods = {
+        op[2]: op[1]
+        for op in plotter.ops
+        if op[0] == "text" and op[2] in {"x", ">", "<"}
+    }
+    assert set(mods) == {"x", ">", "<"}
+    genesis_x = dots[0].x
+    for box in mods.values():
+        assert box.x == pytest.approx(genesis_x + BUJO_GENESIS_SHIFT)

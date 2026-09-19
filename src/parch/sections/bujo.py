@@ -25,9 +25,9 @@ from parch.spec import Spec
 
 _KEY_SYMBOLS = (
     BujoKeySymbol(".", "task"),
-    BujoKeySymbol("x", "complete"),
-    BujoKeySymbol(">", "migrated"),
-    BujoKeySymbol("<", "scheduled"),
+    BujoKeySymbol("x", "complete", genesis=True),
+    BujoKeySymbol(">", "migrated", genesis=True),
+    BujoKeySymbol("<", "scheduled", genesis=True),
     BujoKeySymbol(".", "irrelevant", strike=True),
     BujoKeySymbol("-", "note"),
     BujoKeySymbol("o", "event"),

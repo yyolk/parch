@@ -10,6 +10,7 @@ from parch.components import (
     AnnualMonth,
     BujoIndex,
     BujoKey,
+    BujoKeySymbol,
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
@@ -2471,6 +2472,8 @@ _BUJO_STRIKE_ADVANCE = 0.55
 _BUJO_STRIKE_TAIL = 4.0
 _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
+# Modifier sits on/right of the shared • so the genesis dot stays visible.
+BUJO_GENESIS_SHIFT = 1.4
 
 
 def _bujo_strike_span(meaning: str, ramp: TypeRamp) -> float:
@@ -2499,6 +2502,22 @@ def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
             )
 
 
+def _paint_bujo_key_mark(
+    plotter: Plotter, band: Rect, row: BujoKeySymbol
+) -> None:
+    """Lone signifier, or shared • plus the task modifier in the same cell."""
+    mark_box = Rect(band.x, band.y, _BUJO_SYMBOL_W, band.h)
+    ink = TypeRef(step="title", emphasis="strong")
+    if row.genesis:
+        _ink_text(plotter, mark_box, ".", ink, gray=INK, align="center")
+        shifted = Rect(
+            mark_box.x + BUJO_GENESIS_SHIFT, mark_box.y, mark_box.w, mark_box.h
+        )
+        _ink_text(plotter, shifted, row.mark, ink, gray=INK, align="center")
+        return
+    _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
+
+
 def paint_bujo_key(
     plotter: Plotter, box: Rect, key: BujoKey, *, ramp: TypeRamp | None = None
 ) -> None:
@@ -2509,14 +2528,7 @@ def paint_bujo_key(
     for i, band in enumerate(rows(box, n)):
         if i < len(key.symbols):
             row = key.symbols[i]
-            _ink_text(
-                plotter,
-                Rect(band.x, band.y, symbol_w, band.h),
-                row.mark,
-                TypeRef(step="title", emphasis="strong"),
-                gray=INK,
-                align="center",
-            )
+            _paint_bujo_key_mark(plotter, band, row)
             meaning_x = band.x + symbol_w + _BUJO_MEANING_GAP
             _ink_text(
                 plotter,
