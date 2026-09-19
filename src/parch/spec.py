@@ -31,8 +31,118 @@ _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 # Calendar months: closed int domain 1–12. Not Clock (time-of-day).
 _MONTH = Domain(int, lo=1, hi=12, name="month")
 _DEFAULT_MONTHS = tuple(_MONTH.full())
+# Composition keys — resolved by compose_table, never Spec fields.
+_COMPOSE_KEYS = frozenset({"extends", "include"})
+_MAX_COMPOSE_DEPTH = 16
+# Overlaying one side of a pair drops the inherited other so a one-month
+# (or favorites-bool) delta can sit on a sealed full-year starter.
+_EXCLUSIVE_PAIRS = (("month", "months"), ("favorites", "favorites_pages"))
 
 type TomlTable = dict[str, object]
+
+
+def _copy_toml(value: object) -> object:
+    if isinstance(value, dict):
+        return {key: _copy_toml(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_copy_toml(item) for item in value]
+    return value
+
+
+def merge_tables(base: TomlTable, overlay: TomlTable) -> TomlTable:
+    """Deep-merge TOML tables. Overlay keys win. Nested tables merge; lists replace.
+
+    ``extends`` / ``include`` are composition keys and are dropped.
+    Overlay ``month`` drops inherited ``months`` (and the reverse) so a
+    one-month delta can sit on a full-year starter. Same for
+    ``favorites`` / ``favorites_pages``.
+    """
+    out: TomlTable = {
+        key: _copy_toml(value)
+        for key, value in base.items()
+        if key not in _COMPOSE_KEYS
+    }
+    for key, value in overlay.items():
+        if key in _COMPOSE_KEYS:
+            continue
+        existing = out.get(key)
+        if isinstance(existing, dict) and isinstance(value, dict):
+            out[key] = merge_tables(existing, value)
+        else:
+            out[key] = _copy_toml(value)
+    for left, right in _EXCLUSIVE_PAIRS:
+        if left in overlay and right not in overlay:
+            out.pop(right, None)
+        if right in overlay and left not in overlay:
+            out.pop(left, None)
+    return out
+
+
+def _read_toml(path: Path) -> TomlTable:
+    raw = path.read_text(encoding="utf-8")
+    try:
+        data = tomllib.loads(raw)
+    except tomllib.TOMLDecodeError as exc:
+        raise ConfigError(f"invalid TOML {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ConfigError(f"{path} must be a TOML table")
+    return data
+
+
+def _resolve_include(origin: Path, item: object) -> Path:
+    if not isinstance(item, str) or not item:
+        raise ConfigError(f"{origin}: include/extends path must be a non-empty string")
+    path = Path(item)
+    if not path.is_absolute():
+        path = origin.parent / path
+    path = path.resolve()
+    if not path.is_file():
+        raise ConfigError(f"include not found: {item} (from {origin})")
+    return path
+
+
+def _compose_bases(data: TomlTable, origin: Path) -> list[Path]:
+    has_extends = "extends" in data
+    has_include = "include" in data
+    if has_extends and has_include:
+        raise ConfigError(f"{origin}: use extends or include, not both")
+    if has_extends:
+        raw = data["extends"]
+        if isinstance(raw, list):
+            raise ConfigError(f"{origin}: extends must be a single path string")
+        return [_resolve_include(origin, raw)]
+    if has_include:
+        raw = data["include"]
+        if isinstance(raw, str):
+            return [_resolve_include(origin, raw)]
+        if isinstance(raw, list):
+            if not raw:
+                raise ConfigError(f"{origin}: include must not be empty")
+            return [_resolve_include(origin, item) for item in raw]
+        raise ConfigError(f"{origin}: include must be a path string or array of paths")
+    return []
+
+
+def compose_table(path: Path, *, _stack: tuple[Path, ...] = ()) -> TomlTable:
+    """Load TOML, resolve ``extends`` / ``include``, return a merged table.
+
+    Bases apply first (include list left-to-right), then this file's keys
+    win. Relative paths resolve against the file that named them. Cycles
+    and missing files raise ``ConfigError``.
+    """
+    path = path.resolve()
+    if path in _stack:
+        chain = " → ".join(str(part) for part in (*_stack, path))
+        raise ConfigError(f"TOML include cycle: {chain}")
+    if len(_stack) >= _MAX_COMPOSE_DEPTH:
+        raise ConfigError(f"TOML include nested more than {_MAX_COMPOSE_DEPTH} files")
+    if not path.is_file():
+        raise ConfigError(f"spec file not found: {path}")
+    data = _read_toml(path)
+    merged: TomlTable = {}
+    for base in _compose_bases(data, path):
+        merged = merge_tables(merged, compose_table(base, _stack=(*_stack, path)))
+    return merge_tables(merged, data)
 
 
 def _parse_typography(data: TomlTable) -> TypeOverlay:
@@ -482,6 +592,10 @@ class Spec:
 
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
+        leftover = _COMPOSE_KEYS & data.keys()
+        if leftover:
+            key = sorted(leftover)[0]
+            raise ConfigError(f"{key} is only valid in a TOML file")
         daily = data.get("daily")
         daily_notes = data.get("daily_notes")
         daily_table = daily if isinstance(daily, dict) else {}
@@ -547,11 +661,5 @@ class Spec:
 
     @classmethod
     def from_path(cls, path: Path) -> Spec:
-        raw = path.read_text(encoding="utf-8")
-        try:
-            data = tomllib.loads(raw)
-        except tomllib.TOMLDecodeError as exc:
-            raise ConfigError(f"invalid TOML {path}: {exc}") from exc
-        if not isinstance(data, dict):
-            raise ConfigError(f"{path} must be a TOML table")
-        return cls.from_mapping(data)
+        """Load ``path``, resolving ``extends`` / ``include`` before parse."""
+        return cls.from_mapping(compose_table(path))
