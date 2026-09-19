@@ -83,7 +83,9 @@ def test_annotate_keeps_user_comments_and_values():
     assert "year = 2027  # leap?" in written
     assert 'device = "kindle-scribe"' in written
     assert "months = { from = 4, to = 6 }" in written
-    assert written.index("# my planner") < written.index(f"{MANAGED_PREFIX} {KEY_DOCS['year']}")
+    assert written.index("# my planner") < written.index(
+        f"{MANAGED_PREFIX} {KEY_DOCS['year']}"
+    )
     assert written.index(f"{MANAGED_PREFIX} {KEY_DOCS['year']}") < written.index(
         "year = 2027"
     )
@@ -211,7 +213,9 @@ def test_cli_init_writes_tiny_file(tmp_path: Path, capsys):
     out = tmp_path / "job.toml"
     assert main(["init", "-o", str(out)]) == 0
     assert capsys.readouterr().out.strip() == str(out)
-    assert out.read_text(encoding="utf-8") == 'year = 2026\ndevice = "supernote-nomad"\n'
+    assert (
+        out.read_text(encoding="utf-8") == 'year = 2026\ndevice = "supernote-nomad"\n'
+    )
 
 
 def test_cli_init_annotate_and_book(tmp_path: Path):
