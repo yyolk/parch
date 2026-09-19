@@ -312,20 +312,25 @@ def test_daily_schedule_int_step_is_clock_grain_minutes():
     assert spec.schedule_hours == tuple(range(7, 17))
 
 
-def test_daily_schedule_rejects_time_shaped_step():
-    # tomlrange 0.3.0 is int-only; parch must not invent a time-step parser.
-    with pytest.raises(ConfigError, match="expected int, got time"):
-        Spec.from_mapping(
-            {
-                "daily": {
-                    "schedule": {
-                        "from": time(7),
-                        "to": time(16),
-                        "step": time(0, 30),
-                    }
-                }
-            }
-        )
+def test_daily_schedule_time_shaped_step_is_clock_grain(tmp_path: Path):
+    mapped = Spec.from_mapping(
+        {"daily": {"schedule": {"from": time(7), "to": time(16), "step": time(0, 30)}}}
+    )
+    assert mapped.schedule.domain is Clock.domain
+    assert mapped.schedule.as_tuple() == (time(7, 0), time(16, 0))
+    assert mapped.schedule.step == timedelta(minutes=30)
+    assert mapped.schedule.as_table()["step"] == 30
+    assert mapped.schedule_hours == tuple(range(7, 17))
+
+    path = tmp_path / "half.toml"
+    path.write_text(
+        "[daily]\nschedule = { from = 07:00:00, to = 16:00:00, step = 00:30:00 }\n",
+        encoding="utf-8",
+    )
+    parsed = Spec.from_path(path)
+    assert parsed.schedule.step == timedelta(minutes=30)
+    assert parsed.schedule.as_table()["step"] == 30
+    assert parsed.schedule_hours == tuple(range(7, 17))
 
 
 def test_daily_schedule_ignores_leftover_int_keys():

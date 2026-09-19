@@ -96,8 +96,9 @@ def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
 def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
     """``[daily] schedule`` via ``Clock.parse``; omit keeps 07:00–16:00.
 
-    Optional table ``step`` is a positive int (Clock grain minutes). Overlap /
-    merge / adjacent stay on Bound/Bounds — parch does not re-detect them.
+    Optional table ``step`` is Clock grain: a positive int (minutes) or a
+    naive local time as length-since-midnight. ``as_table`` emits the int
+    count. Overlap / merge / adjacent stay on Bound/Bounds.
     """
     raw = daily_table.get("schedule")
     if raw is None:
