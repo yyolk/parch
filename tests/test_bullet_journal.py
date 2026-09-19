@@ -26,11 +26,8 @@ from parch.components import (
 )
 from parch.devices.registry import NOMAD
 from parch.layouts.planner.painters import (
-    BUJO_GENESIS_SHIFT,
     BUJO_GUTTER_MM,
     BUJO_ROW_MM,
-    BUJO_STRIKE,
-    HAIR,
     INK,
     paint_bujo_key,
     strip_active,
@@ -65,8 +62,6 @@ def test_sealed_component_fields():
     assert "gutter_mm" not in RapidLogPage.__dataclass_fields__
     assert BUJO_GUTTER_MM == 8.0
     assert BUJO_ROW_MM == 5.0
-    assert BUJO_STRIKE > HAIR
-    assert BUJO_GENESIS_SHIFT > 0
 
 
 def test_bullet_journal_is_cover_then_bujo_hubs():
@@ -311,13 +306,16 @@ def test_paint_bujo_key_strikes_irrelevant_row():
         op
         for op in plotter.ops
         if op[0] == "line"
-        and op[5] == pytest.approx(BUJO_STRIKE)
         and op[6] == pytest.approx(INK)
+        and op[2] == pytest.approx(op[4])
     ]
     assert len(strikes) == 1
-    _kind, x1, y1, x2, y2, _width, _gray = strikes[0]
+    _kind, x1, y1, x2, y2, width, _gray = strikes[0]
     assert y1 == pytest.approx(y2)
     assert x2 > x1
+    body_mm = float(plotter.ramp.ink("body").size) * 25.4 / 72.0
+    assert width < body_mm * 0.08
+    assert width > 0
 
 
 def test_paint_bujo_key_genesis_bullet_with_modifiers():
@@ -345,6 +343,7 @@ def test_paint_bujo_key_genesis_bullet_with_modifiers():
         if op[0] == "text" and op[2] in {"x", ">", "<"}
     }
     assert set(mods) == {"x", ">", "<"}
-    genesis_x = dots[0].x
+    genesis = dots[0]
     for box in mods.values():
-        assert box.x == pytest.approx(genesis_x + BUJO_GENESIS_SHIFT)
+        assert box.x == pytest.approx(genesis.x)
+        assert box.y == pytest.approx(genesis.y)

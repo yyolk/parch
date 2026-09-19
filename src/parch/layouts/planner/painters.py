@@ -2465,11 +2465,16 @@ BUJO_ROW_MM = 5.0
 BUJO_DOT = 0.32
 BUJO_DOT_PITCH = 5.0
 BUJO_MIGRATE_LABEL_H = 3.4
-BUJO_STRIKE = 0.85
 _BUJO_SYMBOL_W = 10.0
 _BUJO_MEANING_GAP = 2.0
-# Modifier sits on/right of the shared • so the genesis dot stays visible.
-BUJO_GENESIS_SHIFT = 1.4
+# Fraction of body em — under Jost Book stem (~0.085em) so the bar is lighter than glyphs.
+_BUJO_STRIKE_EM = 0.045
+_PT_MM = 25.4 / 72.0
+
+
+def _bujo_strike_width(ramp: TypeRamp) -> float:
+    """Body-relative cancel bar, lighter than inked glyph stems."""
+    return float(ramp.ink("body").size) * _PT_MM * _BUJO_STRIKE_EM
 
 
 def _paint_bujo_dots(plotter: Plotter, box: Rect) -> None:
@@ -2498,10 +2503,7 @@ def _paint_bujo_key_mark(plotter: Plotter, band: Rect, row: BujoKeySymbol) -> No
     ink = TypeRef(step="title", emphasis="strong")
     if row.genesis:
         _ink_text(plotter, mark_box, ".", ink, gray=INK, align="center")
-        shifted = Rect(
-            mark_box.x + BUJO_GENESIS_SHIFT, mark_box.y, mark_box.w, mark_box.h
-        )
-        _ink_text(plotter, shifted, row.mark, ink, gray=INK, align="center")
+        _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
         return
     _ink_text(plotter, mark_box, row.mark, ink, gray=INK, align="center")
 
@@ -2531,12 +2533,13 @@ def paint_bujo_key(
             )
             if row.strike:
                 y = band.y + band.h * 0.5
+                mark_cx = band.x + symbol_w * 0.5
                 plotter.line(
-                    band.x + symbol_w * 0.30,
+                    mark_cx - 1.2,
                     y,
                     meaning.right,
                     y,
-                    stroke_width=BUJO_STRIKE,
+                    stroke_width=_bujo_strike_width(ramp),
                     stroke_gray=INK,
                 )
         plotter.line(
