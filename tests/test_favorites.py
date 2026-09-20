@@ -49,9 +49,10 @@ def test_favorites_after_annual_when_enabled():
     assert page.title == "Favorites"
     sheet = next(item for item in page.components if isinstance(item, FavoritesPage))
     assert sheet.year == 2026
-    assert strip_active(page.kind) == "Year"
+    assert strip_active(page.kind) == "Fav"
     labels = [label for label, _ in strip_items(page)]
     assert "Favorites" not in labels
+    assert ("Fav", spec.favorites_dest) in strip_items(page)
     assert labels == [
         "Year",
         "Quar",
@@ -61,13 +62,14 @@ def test_favorites_after_annual_when_enabled():
         "Rev",
         "Day",
         "Notes",
+        "Fav",
         "Proj",
         "Meet",
         "Task",
     ]
 
 
-def test_favorites_then_my_100_then_checkoff_when_all_on():
+def test_checkoff_then_favorites_then_my_100_when_all_on():
     spec = Spec(
         favorites_pages=1,
         my_100=True,
@@ -82,10 +84,10 @@ def test_favorites_then_my_100_then_checkoff_when_all_on():
     checkoff = dests.index(spec.checkoff_365_dest)
     quarter = dests.index(spec.dest_for_quarter(1))
     assert dests[:2] == ["cover", spec.year_dest]
-    assert annual < fav < landing < checkoff < quarter
-    assert dests[annual + 1] == spec.favorites_dest
+    assert annual < checkoff < fav < landing < quarter
+    assert dests[annual + 1] == spec.checkoff_365_dest
     last_my = max(i for i, dest in enumerate(dests) if dest.startswith("my-100-"))
-    assert last_my + 1 == checkoff
+    assert last_my + 1 == quarter
 
 
 def test_favorites_seats_grid():
@@ -196,7 +198,7 @@ def test_favorites_paint_cards_slash_and_icons():
     assert len(rules) > 20
 
 
-def test_favorites_chrome_year_and_no_fav_tab():
+def test_favorites_chrome_year_and_fav_chip():
     spec = Spec(notes_pages=1, favorites_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "favorites")
     plotter = RecordingPlotter()
@@ -215,12 +217,12 @@ def test_favorites_chrome_year_and_no_fav_tab():
         "Rev",
         "Day",
         "Notes",
+        "Fav",
         "Proj",
         "Meet",
         "Task",
     ):
         assert label in texts
-    assert "Fav" not in texts
     assert page.dest == spec.favorites_dest
 
 

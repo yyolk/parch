@@ -1,4 +1,4 @@
-"""Planner strip dests. Layout remaps these into Year · Quar · Mon · Habit · Week · Rev · Day · Notes · Proj · Meet · Task.
+"""Planner strip dests. Layout remaps these into Year · 365 · Quar · Mon · Habit · Week · Rev · Day · Notes · Fav · 100 · Proj · Meet · Task.
 
 YEAR dest: annual page → self; elsewhere → spec.year_dest.
 
@@ -48,6 +48,18 @@ DAY / NOTES dests (no generation-time “today”):
 - week → first pressed day in that week (a day that has a daily)
 - month / quarter → 1st of the landing month
 - year → 1st of the first pressed month
+
+FAV dest (strip label **Fav**; when ``spec.favorites_pages > 0``):
+- favorites page → self
+- everywhere else → ``spec.favorites_dest``
+
+100 dest (strip label **100**; when ``spec.my_100``):
+- my_100 pages → landing page 1 (``spec.my_100_dest``)
+- everywhere else → ``spec.my_100_dest``
+
+365 dest (strip label **365**; when ``spec.checkoff_365``):
+- checkoff page → self
+- everywhere else → ``spec.checkoff_365_dest``
 """
 
 from datetime import date
@@ -81,15 +93,25 @@ def planner_nav(
     habit_month = month if month is not None else landing.month
     items = [
         NavItem("Year", spec.year_dest),
-        NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
-        NavItem("Mon", mon),
-        NavItem("Habit", spec.dest_for_habits(habit_month)),
-        NavItem("Week", week_dest),
-        NavItem("Rev", rev_dest or spec.review_index_dest),
-        NavItem("Day", spec.dest_for_day(landing)),
     ]
+    if spec.checkoff_365:
+        items.append(NavItem("365", spec.checkoff_365_dest))
+    items.extend(
+        [
+            NavItem("Quar", spec.dest_for_quarter_of(landing.month)),
+            NavItem("Mon", mon),
+            NavItem("Habit", spec.dest_for_habits(habit_month)),
+            NavItem("Week", week_dest),
+            NavItem("Rev", rev_dest or spec.review_index_dest),
+            NavItem("Day", spec.dest_for_day(landing)),
+        ]
+    )
     if spec.notes_pages > 0:
         items.append(NavItem("Notes", spec.dest_for_notes(landing, 1)))
+    if spec.favorites_pages > 0:
+        items.append(NavItem("Fav", spec.favorites_dest))
+    if spec.my_100:
+        items.append(NavItem("100", spec.my_100_dest))
     items.extend(
         [
             NavItem("Proj", proj_dest or spec.projects_index_dest),

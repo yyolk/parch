@@ -228,18 +228,18 @@ def test_sample_dests_and_pages_for_january():
     assert set(sample_page_numbers(spec)) == set(SAMPLE_STEMS)
     assert numbers["cover"] == 1
     assert numbers["annual"] == 2
-    assert numbers["favorites"] == 3
-    assert numbers["my-100"] == 4
-    assert numbers["checkoff-365"] == 7
+    assert numbers["checkoff-365"] == 3
+    assert numbers["favorites"] == 4
+    assert numbers["my-100"] == 5
     assert numbers["quarterly-q1"] == 8
     assert numbers["monthly-jan"] == 9
     assert numbers["habits-jan"] == 10
     assert (
         numbers["cover"]
         < numbers["annual"]
+        < numbers["checkoff-365"]
         < numbers["favorites"]
         < numbers["my-100"]
-        < numbers["checkoff-365"]
         < numbers["quarterly-q1"]
         < numbers["monthly-jan"]
         < numbers["habits-jan"]
