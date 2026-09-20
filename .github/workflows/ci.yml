@@ -68,6 +68,9 @@ jobs:
             test -s out/specimens/$device/bujo-future.png
             test -s out/specimens/$device/steno.png
             test -s out/specimens/$device/engineering-cover.png
+            test -s out/specimens/$device/favorites.png
+            test -s out/specimens/$device/my-100.png
+            test -s out/specimens/$device/checkoff-365.png
             grep -q 'src="cover.png"' out/specimens/$device/index.html
             grep -q 'src="projects-cover.png"' out/specimens/$device/index.html
             grep -q 'src="projects-project-1.png"' out/specimens/$device/index.html
@@ -75,15 +78,21 @@ jobs:
             grep -q 'src="bujo-key.png"' out/specimens/$device/index.html
             grep -q 'src="bujo-future.png"' out/specimens/$device/index.html
             grep -q 'src="steno.png"' out/specimens/$device/index.html
+            grep -q 'src="favorites.png"' out/specimens/$device/index.html
+            grep -q 'src="my-100.png"' out/specimens/$device/index.html
+            grep -q 'src="checkoff-365.png"' out/specimens/$device/index.html
             grep -q '<input type="checkbox" id="cover">' out/specimens/$device/index.html
             grep -q 'input:checked+label img' out/specimens/$device/index.html
             grep -q 'id="year-planner"' out/specimens/$device/index.html
+            grep -q 'id="optional-extras"' out/specimens/$device/index.html
             grep -q 'id="engineering-notebook"' out/specimens/$device/index.html
             grep -q 'id="projects-notebook"' out/specimens/$device/index.html
             grep -q 'id="bullet-journal"' out/specimens/$device/index.html
             grep -q 'id="steno-pad"' out/specimens/$device/index.html
             grep -q 'href="#year-planner"' out/specimens/$device/index.html
+            grep -q 'href="#optional-extras"' out/specimens/$device/index.html
             grep -q 'href="#bullet-journal"' out/specimens/$device/index.html
+            grep -q '<h2>Optional extras</h2>' out/specimens/$device/index.html
             grep -q '<h2>Projects notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Bullet Journal</h2>' out/specimens/$device/index.html
             grep -q "github.com/.*/commit/" out/specimens/$device/index.html
