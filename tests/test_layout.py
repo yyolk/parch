@@ -1,11 +1,12 @@
 import pytest
 
-from parch.books import YearPlanner
+from parch.books import YearPlanner, plot_pages
 from parch.devices import NAV_H, NOMAD, SCRIBE
 from parch.fonts.ramp import EffectiveRamp
 from parch.layouts.planner.layout import PlannerLayout, well_rect
 from parch.layouts.planner.painters import HEADER_H, INK, paint_header
 from parch.plotter import RecordingPlotter
+from parch.sections.annual import AnnualSection
 from parch.sections.cover import CoverSection
 from parch.spec import Spec
 
@@ -99,6 +100,33 @@ def test_scribe_header_sits_below_tap_floor():
         if op[0] in {"text", "link"}:
             assert op[1].y == pytest.approx(SCRIBE.content_top)
             assert op[1].y >= TOP_CLEARANCE - 0.01
+
+
+def test_plot_pages_honors_spec_top_clearance():
+    """Year-planner paint path applies Spec.top_clearance to the slate."""
+    spec = Spec(device="kindle-scribe", top_clearance=0.0, months=(1,), notes_pages=0)
+    plotter = RecordingPlotter()
+    plot_pages(
+        AnnualSection(spec).pages,
+        plotter,
+        ramp=EffectiveRamp(),
+        device=spec.device,
+        top_clearance=spec.top_clearance,
+    )
+    fills = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and op[1].y == pytest.approx(0.0)
+        and op[1].w == pytest.approx(SCRIBE.page_width)
+        and op[5] == pytest.approx(INK)
+    ]
+    assert fills
+    assert all(op[1].h == pytest.approx(HEADER_H) for op in fills)
+    for op in plotter.ops:
+        if op[0] in {"text", "link"}:
+            assert op[1].y >= -0.01
 
 
 def test_cover_has_no_top_fill():

@@ -53,6 +53,15 @@ def test_zero_top_clearance_is_content_top_zero():
     assert bare.content_top == 0.0
 
 
+def test_get_device_top_clearance_override():
+    """Omit keeps the registered Device; ``0`` returns a copy with no top band."""
+    assert get_device("kindle-scribe") is SCRIBE
+    bare = get_device("kindle-scribe", top_clearance=0.0)
+    assert bare is not SCRIBE
+    assert bare.top_clearance == 0.0
+    assert bare.content_top == 0.0
+
+
 def test_bottom_clearance_seats_content_frame():
     assert NOMAD.bottom_clearance == 0.0
     assert SCRIBE.bottom_clearance == 10.0

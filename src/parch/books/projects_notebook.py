@@ -40,4 +40,5 @@ class ProjectsNotebook:
             ramp=self.ramp,
             device=spec.device,
             outline=spec.outline,
+            top_clearance=spec.top_clearance,
         )

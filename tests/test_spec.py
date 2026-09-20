@@ -173,6 +173,24 @@ def test_habit_columns_from_toml_keys():
     assert nomad.meeting_count == 16
     assert nomad.task_rows == 6
     assert nomad.type_overlay == TypeOverlay()
+    assert Spec().top_clearance is None
+    assert nomad.top_clearance is None
+    scribe = Spec.from_path(Path("examples/scribe.toml"))
+    assert scribe.device == "kindle-scribe"
+    assert scribe.top_clearance == 0.0
+
+
+def test_top_clearance_toml_override():
+    assert Spec.from_mapping({}).top_clearance is None
+    assert Spec.from_mapping({"top_clearance": 0}).top_clearance == 0.0
+    assert Spec.from_mapping({"top_clearance": 8}).top_clearance == 8.0
+    assert Spec.from_mapping({"top_clearance": 0.0}).top_clearance == 0.0
+    with pytest.raises(ConfigError, match="top_clearance must be >= 0"):
+        Spec(top_clearance=-1)
+    with pytest.raises(ConfigError, match="top_clearance must be a number"):
+        Spec.from_mapping({"top_clearance": False})
+    with pytest.raises(ConfigError, match="top_clearance must be a number"):
+        Spec.from_mapping({"top_clearance": "0"})
 
 
 def test_typography_overlay_from_toml():
@@ -405,6 +423,7 @@ def test_to_toml_roundtrips_default_spec():
     assert Spec.from_mapping(dumped) == spec
     assert dumped["months"] == {"from": 1, "to": 12}
     assert "title" not in dumped
+    assert "top_clearance" not in dumped
     assert "typography" not in dumped
     assert dumped["daily"]["schedule"] == {"from": time(7, 0), "to": time(16, 0)}
 
@@ -427,6 +446,12 @@ def test_to_toml_roundtrips_overlay_and_sparse_months():
     loaded = Spec.from_mapping(tomllib.loads(sparse.to_toml()))
     assert loaded == sparse
     assert tomllib.loads(sparse.to_toml())["months"] == [1, 3, 5]
+
+    zeroed = Spec(device="kindle-scribe", top_clearance=0.0)
+    dumped_zero = tomllib.loads(zeroed.to_toml())
+    assert dumped_zero["top_clearance"] == 0
+    assert Spec.from_mapping(dumped_zero) == zeroed
+    assert Spec.from_mapping(zeroed.to_mapping()) == zeroed
 
 
 def test_to_toml_includes_schedule_step():

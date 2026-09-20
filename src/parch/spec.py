@@ -131,6 +131,19 @@ def _parse_bool(raw: object, key: str) -> bool:
     return raw
 
 
+def _parse_top_clearance(data: TomlTable) -> float | None:
+    """Optional reserved-band override in mm. Omit keeps the Device default.
+
+    ``0`` means no top band. Bools fail — TOML ``true`` is not ``1``.
+    """
+    if "top_clearance" not in data:
+        return None
+    raw = data["top_clearance"]
+    if isinstance(raw, bool) or not isinstance(raw, int | float):
+        raise ConfigError("top_clearance must be a number")
+    return float(raw)
+
+
 def _parse_favorites_pages(data: TomlTable) -> int:
     """``favorites_pages`` count, or ``favorites`` bool. Default 0 (off)."""
     if "favorites_pages" in data:
@@ -254,6 +267,7 @@ def _dest(template: Template) -> str:
 class Spec:
     year: int = 2026
     device: str = "supernote-nomad"
+    top_clearance: float | None = None  # mm override; None keeps Device default
     week_start: str = "monday"
     months: tuple[int, ...] = _DEFAULT_MONTHS
     title: str | None = None  # year-planner brow / sibling headline; omit keeps paint
@@ -284,6 +298,8 @@ class Spec:
             )
         if self.book not in _BOOKS:
             raise ConfigError(f"book must be {_BOOK_CHOICES}, not {self.book!r}")
+        if self.top_clearance is not None and self.top_clearance < 0:
+            raise ConfigError("top_clearance must be >= 0")
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if not self.months:
@@ -588,6 +604,7 @@ class Spec:
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
+            top_clearance=_parse_top_clearance(data),
             week_start=str(data.get("week_start", "monday")).lower(),
             months=_parse_months(data),
             title=str(data["title"]) if "title" in data else None,
@@ -677,6 +694,8 @@ class Spec:
         }
         if self.title is not None:
             data["title"] = self.title
+        if self.top_clearance is not None:
+            data["top_clearance"] = self.top_clearance
         overlay = _overlay_mapping(self.type_overlay)
         if overlay is not None:
             data["typography"] = {"overlay": overlay}
@@ -690,6 +709,8 @@ class Spec:
             f"week_start = {_toml_str(self.week_start)}",
             f"months = {_months_toml(self.months)}",
         ]
+        if self.top_clearance is not None:
+            lines.append(f"top_clearance = {_toml_number(self.top_clearance)}")
         if self.title is not None:
             lines.append(f"title = {_toml_str(self.title)}")
         lines.extend(
