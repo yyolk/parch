@@ -11,6 +11,7 @@ from parch.press import main
 from parch.specimen import (
     BUJO_STEMS,
     CATALOG_DEVICE_IDS,
+    EXTRAS_STEMS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
     PROJECTS_STEMS,
@@ -55,6 +56,17 @@ def test_gallery_stems_follow_groups():
     )
 
 
+def test_gallery_groups_split_optional_extras():
+    groups = {section_id: (title, stems) for section_id, title, stems in GALLERY_GROUPS}
+    assert groups["year-planner"][0] == "Year planner"
+    assert groups["optional-extras"] == ("Optional extras", EXTRAS_STEMS)
+    year_stems = groups["year-planner"][1]
+    assert year_stems == SAMPLE_STEMS
+    for stem in EXTRAS_STEMS:
+        assert stem not in year_stems
+        assert stem in GALLERY_STEMS
+
+
 def test_catalog_index_html_lists_both_devices():
     html = catalog_index_html(CATALOG_DEVICE_IDS)
     assert 'href="supernote-nomad/"' in html
@@ -86,9 +98,23 @@ def test_specimen_index_html_section_anchors():
         assert f"<h2>{title}</h2>" in html
         assert f'<a href="#{section_id}">{title}</a>' in html
     assert html.index('href="#year-planner"') < html.index('id="year-planner"')
-    assert html.index('id="year-planner"') < html.index('id="engineering-notebook"')
+    assert html.index('id="year-planner"') < html.index('id="optional-extras"')
+    assert html.index('id="optional-extras"') < html.index('id="engineering-notebook"')
     assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
     assert html.index('id="bullet-journal"') < html.index('id="steno-pad"')
+    year_html = html[
+        html.index('id="year-planner"') : html.index('id="optional-extras"')
+    ]
+    extras_html = html[
+        html.index('id="optional-extras"') : html.index('id="engineering-notebook"')
+    ]
+    for stem in EXTRAS_STEMS:
+        assert f'src="{stem}.png"' not in year_html
+        assert f'src="{stem}.png"' in extras_html
+        assert f"<figcaption>{stem}</figcaption>" in extras_html
+    assert 'src="cover.png"' in year_html
+    assert 'src="annual.png"' in year_html
+    assert extras_html.count("<figure>") == len(EXTRAS_STEMS)
 
 
 def test_write_indexes(tmp_path: Path):
@@ -182,6 +208,7 @@ def test_sample_dests_and_pages_for_january():
     assert dests["favorites"] == "favorites-2026"
     assert dests["my-100"] == "my-100-2026"
     assert dests["checkoff-365"] == "checkoff-365-2026"
+    assert set(EXTRAS_STEMS) <= set(dests)
     assert dests["projects"] == "projects-index-2026-01"
     assert dests["project-1"] == "projects-2026-01"
     assert dests["meetings"] == "meetings-index-2026"
@@ -196,8 +223,9 @@ def test_sample_dests_and_pages_for_january():
     assert dests["weekly-w01"] == "week-2026-W01"
     assert dests["daily-jan1"] == "2026-01-01"
     assert dests["notes-jan1"] == "2026-01-01-notes-1"
-    numbers = sample_page_numbers(spec)
-    assert set(numbers) == set(SAMPLE_STEMS)
+    numbers = sample_page_numbers(spec, (*SAMPLE_STEMS, *EXTRAS_STEMS))
+    assert set(numbers) == set(SAMPLE_STEMS) | set(EXTRAS_STEMS)
+    assert set(sample_page_numbers(spec)) == set(SAMPLE_STEMS)
     assert numbers["cover"] == 1
     assert numbers["annual"] == 2
     assert numbers["favorites"] == 3
@@ -228,7 +256,7 @@ def test_sample_dests_and_pages_for_january():
         < numbers["tasks-w01"]
     )
     assert all(page >= 1 for page in numbers.values())
-    assert len(set(numbers.values())) == len(SAMPLE_STEMS)
+    assert len(set(numbers.values())) == len(SAMPLE_STEMS) + len(EXTRAS_STEMS)
 
 
 def test_projects_dests_and_pages():

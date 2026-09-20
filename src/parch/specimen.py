@@ -30,9 +30,6 @@ from parch.spec import Spec
 SAMPLE_STEMS = (
     "cover",
     "annual",
-    "favorites",
-    "my-100",
-    "checkoff-365",
     "quarterly-q1",
     "monthly-jan",
     "weekly-w01",
@@ -48,6 +45,10 @@ SAMPLE_STEMS = (
     "meetings",
     "meeting-1",
 )
+
+# Optional extras — Favorites, My 100, 365 Check-Off (nomad-extras.toml).
+# Same year-planner press as SAMPLE_STEMS; own gallery heading.
+EXTRAS_STEMS = ("favorites", "my-100", "checkoff-365")
 
 # Engineering notebook — cover + duplex faces, not YearPlanner dests.
 ENGINEERING_STEMS = ("engineering-cover", "engineering-front", "engineering-back")
@@ -72,8 +73,11 @@ def gallery_groups(
     stems: Sequence[str] = SAMPLE_STEMS,
 ) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
     """Section id, heading, and stems for one device gallery."""
+    extras = frozenset(EXTRAS_STEMS)
+    year = tuple(stem for stem in stems if stem not in extras)
     return (
-        ("year-planner", "Year planner", tuple(stems)),
+        ("year-planner", "Year planner", year),
+        ("optional-extras", "Optional extras", EXTRAS_STEMS),
         ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
         ("bullet-journal", "Bullet Journal", BUJO_STEMS),
@@ -428,13 +432,14 @@ def write_specimens(
     """Press slim planner, notebooks, bullet journal, and steno pad; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
-    numbers = sample_page_numbers(spec, stems)
+    press_stems = (*stems, *(stem for stem in EXTRAS_STEMS if stem not in stems))
+    numbers = sample_page_numbers(spec, press_stems)
     from parch.press import press
 
     with tempfile.TemporaryDirectory() as tmp:
         pdf = Path(tmp) / "specimen.pdf"
         press(spec, pdf, proof=True)
-        _render_stems(pdf, dest, numbers, stems)
+        _render_stems(pdf, dest, numbers, press_stems)
         notebook = Path(tmp) / "engineering-notebook.pdf"
         press(
             replace(
