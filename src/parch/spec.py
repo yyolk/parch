@@ -337,7 +337,9 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
-    pads: tuple[str, ...] = _PAD_ORDER_DEFAULT  # order only; omit = engineering then steno
+    pads: tuple[str, ...] = (
+        _PAD_ORDER_DEFAULT  # order only; omit = engineering then steno
+    )
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
