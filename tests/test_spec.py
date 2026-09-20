@@ -472,3 +472,50 @@ def test_daily_schedule_hours_floor_from_ceil_to():
         {"daily": {"schedule": {"from": time(23, 30), "to": time(23, 59)}}}
     )
     assert late.schedule_hours == (23,)
+
+
+def test_daily_work_hours_optional_clock_bound(tmp_path: Path):
+    assert Spec().work_hours is None
+    assert Spec.from_mapping({}).work_hours is None
+    assert Spec.from_path(Path("examples/nomad.toml")).work_hours is None
+    assert "work_hours" not in tomllib.loads(Spec().to_toml())["daily"]
+    assert "work_hours" not in Spec().to_mapping()["daily"]
+
+    mapped = Spec.from_mapping(
+        {"daily": {"work_hours": {"from": time(9, 0), "to": time(17, 0)}}}
+    )
+    assert mapped.work_hours is not None
+    assert mapped.work_hours.domain is Clock.domain
+    assert mapped.work_hours.as_tuple() == (time(9, 0), time(17, 0))
+    dumped = tomllib.loads(mapped.to_toml())
+    assert dumped["daily"]["work_hours"] == {"from": time(9, 0), "to": time(17, 0)}
+    assert Spec.from_mapping(dumped) == mapped
+    assert Spec.from_mapping(mapped.to_mapping()) == mapped
+
+    path = tmp_path / "work.toml"
+    path.write_text(
+        "[daily]\nwork_hours = { from = 09:30:00, to = 11:30:00 }\n",
+        encoding="utf-8",
+    )
+    parsed = Spec.from_path(path)
+    assert parsed.work_hours is not None
+    assert parsed.work_hours.as_tuple() == (time(9, 30), time(11, 30))
+
+
+def test_daily_work_hours_rejects_bad_tables():
+    with pytest.raises(ConfigError, match="expected a table"):
+        Spec.from_mapping({"daily": {"work_hours": [9, 17]}})
+    with pytest.raises(ConfigError, match="unknown keys"):
+        Spec.from_mapping(
+            {
+                "daily": {
+                    "work_hours": {"from": time(9), "to": time(17), "until": time(18)}
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="must have keys"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": time(9)}}})
+    with pytest.raises(ConfigError, match="is after"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": time(17), "to": time(9)}}})
+    with pytest.raises(ConfigError, match="expected time, got int"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": 9, "to": 17}}})
