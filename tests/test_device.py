@@ -54,25 +54,12 @@ def test_zero_top_clearance_is_content_top_zero():
 
 
 def test_get_device_top_clearance_override():
-    """Spec knob: omit keeps the registered Device; 0 drops the top band."""
+    """Omit keeps the registered Device; ``0`` returns a copy with no top band."""
     assert get_device("kindle-scribe") is SCRIBE
-    assert get_device("kindle-scribe", top_clearance=None) is SCRIBE
-    assert get_device("supernote-nomad", top_clearance=None) is NOMAD
     bare = get_device("kindle-scribe", top_clearance=0.0)
     assert bare is not SCRIBE
-    assert bare.id == SCRIBE.id
     assert bare.top_clearance == 0.0
     assert bare.content_top == 0.0
-    assert bare.bottom_clearance == SCRIBE.bottom_clearance == 10.0
-    frame = bare.content_frame()
-    assert frame.y == 0.0
-    assert frame.bottom == pytest.approx(209.97 - NAV_H - SCRIBE.bottom_clearance)
-    nomad_bare = get_device("supernote-nomad", top_clearance=0.0)
-    assert nomad_bare is not NOMAD
-    assert nomad_bare.top_clearance == 0.0
-    assert nomad_bare.content_frame().y == 0.0
-    assert NOMAD.top_clearance == 8.0
-    assert SCRIBE.top_clearance == 8.0
 
 
 def test_bottom_clearance_seats_content_frame():

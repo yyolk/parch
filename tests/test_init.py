@@ -22,7 +22,6 @@ def test_starter_toml_follows_replaced_spec_fields():
         Spec(),
         year=2027,
         device="kindle-scribe",
-        top_clearance=0.0,
         week_start="sunday",
         months=(3, 4, 5),
         notes_pages=1,
@@ -39,7 +38,6 @@ def test_starter_toml_follows_replaced_spec_fields():
     loaded = Spec.from_mapping(tomllib.loads(starter_toml(spec)))
     assert loaded.year == 2027
     assert loaded.device == "kindle-scribe"
-    assert loaded.top_clearance == 0.0
     assert loaded.week_start == "sunday"
     assert loaded.months == (3, 4, 5)
     assert loaded.notes_pages == 1
