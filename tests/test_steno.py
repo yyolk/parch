@@ -64,8 +64,10 @@ def test_spec_steno_dests_and_toml():
         Spec().dest_for_steno_pad(1)
     with pytest.raises(ConfigError, match="steno sheet out of range"):
         spec.dest_for_steno_pad(2)
-    with pytest.raises(ConfigError, match="cannot both be set"):
-        Spec(steno_sheets=1, engineering_sheets=1)
+    both = Spec(steno_sheets=1, engineering_sheets=1)
+    assert both.steno_sheets == 1
+    assert both.engineering_sheets == 1
+    assert both.pads == ("engineering", "steno")
 
 
 def test_ruling_is_gregg_pitch_with_equal_columns():

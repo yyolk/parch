@@ -70,6 +70,7 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
+    assert spec.pads == ("engineering", "steno")
     assert spec.outline is False
     assert spec.my_100 is False
     assert spec.my_100_dest == "my-100-2026"
@@ -156,6 +157,10 @@ def test_habit_columns_from_toml_keys():
         Spec().dest_for_my_100(0)
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
     assert Spec.from_path(Path("examples/steno-pad.toml")).steno_sheets == 1
+    assert Spec.from_mapping({"pads": ["steno", "engineering"]}).pads == (
+        "steno",
+        "engineering",
+    )
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
     with pytest.raises(ConfigError, match="engineering-notebook requires"):
@@ -422,6 +427,7 @@ def test_to_toml_roundtrips_default_spec():
     dumped = tomllib.loads(spec.to_toml())
     assert Spec.from_mapping(dumped) == spec
     assert dumped["months"] == {"from": 1, "to": 12}
+    assert dumped["pads"] == ["engineering", "steno"]
     assert "title" not in dumped
     assert "top_clearance" not in dumped
     assert "typography" not in dumped

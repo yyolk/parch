@@ -27,6 +27,8 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_PAD_ORDER_DEFAULT = ("engineering", "steno")
+_PAD_KINDS = frozenset(_PAD_ORDER_DEFAULT)
 _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 # Calendar months: closed int domain 1–12. Not Clock (time-of-day).
 _MONTH = Domain(int, lo=1, hi=12, name="month")
@@ -168,6 +170,42 @@ def _parse_favorites_pages(data: TomlTable) -> int:
     return 0
 
 
+def _normalize_pads(pads: tuple[str, ...]) -> tuple[str, ...]:
+    """Closed order list — unique known kinds; missing kinds append in default order."""
+    if not pads:
+        raise ConfigError("pads must not be empty")
+    seen: list[str] = []
+    for kind in pads:
+        if kind not in _PAD_KINDS:
+            raise ConfigError(f"pad kind must be engineering or steno, not {kind!r}")
+        if kind in seen:
+            raise ConfigError(f"duplicate pad kind {kind}")
+        seen.append(kind)
+    for kind in _PAD_ORDER_DEFAULT:
+        if kind not in seen:
+            seen.append(kind)
+    return tuple(seen)
+
+
+def _parse_pads(data: TomlTable) -> tuple[str, ...]:
+    """``pads = ["engineering", "steno"]``. Omit keeps engineering then steno."""
+    if "pads" not in data:
+        return _PAD_ORDER_DEFAULT
+    raw = data["pads"]
+    if not isinstance(raw, list):
+        raise ConfigError("pads must be a list of pad kinds")
+    kinds: list[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            raise ConfigError("pads entries must be strings")
+        kinds.append(item)
+    return _normalize_pads(tuple(kinds))
+
+
+def _pads_toml(pads: tuple[str, ...]) -> str:
+    return "[" + ", ".join(_toml_str(kind) for kind in pads) + "]"
+
+
 def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     """``[bujo]`` index_pages + collections. Unknown keys fail loudly."""
     raw = data.get("bujo")
@@ -299,6 +337,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    pads: tuple[str, ...] = _PAD_ORDER_DEFAULT  # order only; omit = engineering then steno
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -349,8 +388,7 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
-        if self.steno_sheets and self.engineering_sheets:
-            raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
+        object.__setattr__(self, "pads", _normalize_pads(tuple(self.pads)))
         if not 1 <= self.bujo_index_pages <= 6:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:
@@ -652,6 +690,7 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            pads=_parse_pads(data),
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -707,6 +746,7 @@ class Spec:
             },
             "meetings": {"index_rows": self.meeting_index_rows},
             "tasks": {"rows": self.task_rows},
+            "pads": list(self.pads),
             "engineering": {"sheets": self.engineering_sheets},
             "steno": {"sheets": self.steno_sheets},
             "bujo": {
@@ -767,6 +807,8 @@ class Spec:
                 "",
                 "[tasks]",
                 f"rows = {self.task_rows}",
+                "",
+                f"pads = {_pads_toml(self.pads)}",
                 "",
                 "[engineering]",
                 f"sheets = {self.engineering_sheets}",
