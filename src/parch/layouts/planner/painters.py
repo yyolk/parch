@@ -2,9 +2,7 @@
 
 import math
 from dataclasses import dataclass
-from datetime import date, time, timedelta
-
-from tomlrange import Bound, Clock
+from datetime import date, timedelta
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
@@ -48,6 +46,7 @@ from parch.devices.registry import NAV_H, Device
 from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest, pt_mm
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
+from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
 from parch.tracks import columns, rows
@@ -2400,16 +2399,6 @@ def paint_week(
         )
 
 
-def _painted_hour_bound(hour: int) -> Bound[time]:
-    """Closed Clock Bound for the well row labeled ``hour`` (HH:00–HH:59)."""
-    return Clock.parse({"from": time(hour, 0), "to": time(hour, 59)})
-
-
-def _shade_painted_hour(hour: int, work: Bound[time] | None) -> bool:
-    """True when ``work`` overlaps the painted hour band. Omit work → no shade."""
-    return work is not None and _painted_hour_bound(hour).overlaps(work)
-
-
 def paint_schedule(
     plotter: Plotter, box: Rect, schedule: Schedule, *, ramp: TypeRamp | None = None
 ) -> None:
@@ -2430,7 +2419,7 @@ def paint_schedule(
     hours = schedule.hours or (8,)
     hour_ink = TypeRef(step="chrome")
     for band, hour in zip(rows(body, len(hours)), hours, strict=True):
-        if _shade_painted_hour(hour, schedule.work_hours):
+        if shade_painted_hour(hour, schedule.work_hours):
             _wash(plotter, band, WASH)
         slot = Rect(band.x, band.y, 10.0, band.h)
         _ink_text(plotter, slot, f"{hour:2d}", hour_ink, gray=MUTED, align="left")
