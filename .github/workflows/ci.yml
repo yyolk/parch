@@ -62,20 +62,30 @@ jobs:
             test -s out/specimens/$device/projects-cover.png
             test -s out/specimens/$device/projects-index.png
             test -s out/specimens/$device/projects-project-1.png
+            test -s out/specimens/$device/bujo-cover.png
+            test -s out/specimens/$device/bujo-key.png
+            test -s out/specimens/$device/bujo-index.png
+            test -s out/specimens/$device/bujo-future.png
             test -s out/specimens/$device/steno.png
             test -s out/specimens/$device/engineering-cover.png
             grep -q 'src="cover.png"' out/specimens/$device/index.html
             grep -q 'src="projects-cover.png"' out/specimens/$device/index.html
             grep -q 'src="projects-project-1.png"' out/specimens/$device/index.html
+            grep -q 'src="bujo-cover.png"' out/specimens/$device/index.html
+            grep -q 'src="bujo-key.png"' out/specimens/$device/index.html
+            grep -q 'src="bujo-future.png"' out/specimens/$device/index.html
             grep -q 'src="steno.png"' out/specimens/$device/index.html
             grep -q '<input type="checkbox" id="cover">' out/specimens/$device/index.html
             grep -q 'input:checked+label img' out/specimens/$device/index.html
             grep -q 'id="year-planner"' out/specimens/$device/index.html
             grep -q 'id="engineering-notebook"' out/specimens/$device/index.html
             grep -q 'id="projects-notebook"' out/specimens/$device/index.html
+            grep -q 'id="bullet-journal"' out/specimens/$device/index.html
             grep -q 'id="steno-pad"' out/specimens/$device/index.html
             grep -q 'href="#year-planner"' out/specimens/$device/index.html
+            grep -q 'href="#bullet-journal"' out/specimens/$device/index.html
             grep -q '<h2>Projects notebook</h2>' out/specimens/$device/index.html
+            grep -q '<h2>Bullet Journal</h2>' out/specimens/$device/index.html
             grep -q "github.com/.*/commit/" out/specimens/$device/index.html
             ! grep -q '<script' out/specimens/$device/index.html
             ! grep -q 'href="cover.png"' out/specimens/$device/index.html

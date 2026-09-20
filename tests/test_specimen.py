@@ -9,11 +9,15 @@ import pytest
 from parch import ConfigError
 from parch.press import main
 from parch.specimen import (
+    BUJO_STEMS,
     CATALOG_DEVICE_IDS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
+    bujo_dests,
+    bujo_page_numbers,
+    bujo_specimen_spec,
     catalog_dest,
     catalog_index_html,
     projects_dests,
@@ -83,7 +87,8 @@ def test_specimen_index_html_section_anchors():
         assert f'<a href="#{section_id}">{title}</a>' in html
     assert html.index('href="#year-planner"') < html.index('id="year-planner"')
     assert html.index('id="year-planner"') < html.index('id="engineering-notebook"')
-    assert html.index('id="projects-notebook"') < html.index('id="steno-pad"')
+    assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
+    assert html.index('id="bullet-journal"') < html.index('id="steno-pad"')
 
 
 def test_write_indexes(tmp_path: Path):
@@ -252,6 +257,26 @@ def test_steno_dests_and_pages():
     assert numbers == {"steno": 1}
 
 
+def test_bujo_dests_and_pages():
+    spec = bujo_specimen_spec("kindle-scribe")
+    assert spec.book == "bullet-journal"
+    assert spec.device == "kindle-scribe"
+    assert spec.months == (1,)
+    assert spec.bujo_index_pages == 1
+    assert spec.bujo_collections == 1
+    dests = bujo_dests(spec)
+    assert dests["bujo-cover"] == spec.cover_dest == "cover"
+    assert dests["bujo-key"] == spec.bujo_key_dest == "bujo-key-2026"
+    assert dests["bujo-index"] == spec.bujo_index_dest == "bujo-index-2026-01"
+    assert dests["bujo-future"] == spec.bujo_future_dest == "bujo-future-2026-01"
+    numbers = bujo_page_numbers(spec)
+    assert set(numbers) == set(BUJO_STEMS)
+    assert numbers["bujo-cover"] == 1
+    assert numbers["bujo-key"] == 2
+    assert numbers["bujo-index"] == 3
+    assert numbers["bujo-future"] == 4
+
+
 def test_specimen_cli_help(capsys):
     with pytest.raises(SystemExit) as exc:
         main(["specimen", "--help"])
@@ -334,6 +359,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.book == "year-planner" for spec in presses)
     assert any(spec.book == "engineering-notebook" for spec in presses)
     assert any(spec.book == "projects-notebook" for spec in presses)
+    assert any(spec.book == "bullet-journal" for spec in presses)
     assert any(spec.steno_sheets == 1 for spec in presses)
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:
