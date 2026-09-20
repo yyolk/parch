@@ -15,6 +15,11 @@ def test_spec_from_mapping_accepts_both_pad_tables():
     assert spec.engineering_sheets == 1
     assert spec.steno_sheets == 2
     assert spec.book == "year-planner"
+    example = Spec.from_path(Path("examples/pads.toml"))
+    assert example.engineering_sheets == 1
+    assert example.steno_sheets == 1
+    assert example.book == "year-planner"
+    assert "year =" not in Path("examples/pads.toml").read_text()
 
 
 def test_engineering_notebook_rejects_steno_sheets():
