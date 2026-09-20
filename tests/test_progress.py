@@ -124,6 +124,21 @@ def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     ]
 
 
+def test_stitched_pads_tick_each_exclusive_run(tmp_path: Path, monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(engineering_sheets=1, steno_sheets=1)
+    press(spec, tmp_path / "pads.pdf")
+    assert ticks == [
+        (1, 2, "engineering_front"),
+        (2, 2, "engineering_back"),
+        (1, 1, "steno"),
+    ]
+
+
 def test_projects_notebook_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(

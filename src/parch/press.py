@@ -2,8 +2,12 @@
 
 import argparse
 import sys
+import tempfile
+from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
+
+from pypdf import PdfWriter
 
 from parch import ConfigError
 from parch.books import Book, book_for, plot_pages
@@ -78,13 +82,22 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet) via ``plot_pages``.
-    A year-planner spec with ``engineering_sheets > 0`` still presses
-    the duplex pad section alone. ``book = "engineering-notebook"``
-    presses cover + pad faces through ``Book``. Year-planner specs
-    keep both sheet counts at 0.
+    When both pad sheet counts are set, press each pad kind to a
+    temporary PDF (the other count zeroed and ``book`` forced to
+    year-planner so the exclusive pad hijacks still apply) and stitch
+    the bytes with pypdf. No shared Page walk and no combined
+    ``plot_pages`` list. An injected ``plotter`` is unused on that
+    path — stitch needs real PDF files.
+
+    When only ``spec.steno_sheets > 0``, press the single-face Gregg
+    pad section (no steno-notebook book yet) via ``plot_pages``.
+    A year-planner spec with only ``engineering_sheets > 0`` still
+    presses the duplex pad section alone. ``book = "engineering-notebook"``
+    presses cover + pad faces through ``Book`` when steno is 0.
+    Year-planner specs keep both sheet counts at 0.
     """
+    if spec.engineering_sheets > 0 and spec.steno_sheets > 0:
+        return _press_stitched_pads(spec, output, overlay=overlay, proof=proof)
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
         overlay=merge_press_overlay(spec, overlay, proof),
@@ -115,6 +128,52 @@ def press(
         book.plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def _press_stitched_pads(
+    spec: Spec,
+    output: Path,
+    *,
+    overlay: OverlayData | None,
+    proof: bool | ProofProfile,
+) -> Path:
+    """Press each pad kind exclusively, then concatenate the PDFs.
+
+    Engineering first (duplex faces), then steno. Each recursive
+    ``press`` sees only one sheet count and ``book = "year-planner"``
+    so the existing pad hijacks apply (and engineering-notebook's
+    ``engineering_sheets >= 1`` rule does not block the steno half).
+    Dest names do not collide across kinds; page numbers in the
+    second file shift by the first file's length.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        engineering = tmp / "engineering.pdf"
+        steno = tmp / "steno.pdf"
+        press(
+            replace(spec, steno_sheets=0, book="year-planner"),
+            engineering,
+            overlay=overlay,
+            proof=proof,
+        )
+        press(
+            replace(spec, engineering_sheets=0, book="year-planner"),
+            steno,
+            overlay=overlay,
+            proof=proof,
+        )
+        _stitch_pdfs((engineering, steno), output)
+    return output
+
+
+def _stitch_pdfs(parts: Sequence[Path], output: Path) -> None:
+    """Concatenate ``parts`` in order. pypdf remaps dests/outlines per file."""
+    writer = PdfWriter()
+    for part in parts:
+        writer.append(part)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    writer.write(output)
+    writer.close()
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:

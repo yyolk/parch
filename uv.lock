@@ -99,6 +99,7 @@ version = "0.4.3"
 source = { editable = "." }
 dependencies = [
     { name = "fpdf2" },
+    { name = "pypdf" },
     { name = "tomlrange" },
 ]
 
@@ -113,6 +114,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fpdf2", specifier = "==2.8.8" },
+    { name = "pypdf", specifier = ">=6.16.2" },
     { name = "tomlrange", specifier = "==0.3.1" },
 ]
 

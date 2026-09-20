@@ -1,0 +1,11 @@
+# Exploratory P9: stitch engineering + steno pad PDFs.
+# Each pad kind presses as its own temporary PDF, then pypdf concatenates.
+#   parch press examples/pads.toml -o out/pads.pdf
+device = "supernote-nomad"
+title = "Pads"
+
+[engineering]
+sheets = 1
+
+[steno]
+sheets = 1
