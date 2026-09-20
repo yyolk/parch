@@ -49,9 +49,10 @@ def test_favorites_after_annual_when_enabled():
     assert page.title == "Favorites"
     sheet = next(item for item in page.components if isinstance(item, FavoritesPage))
     assert sheet.year == 2026
-    assert strip_active(page.kind) == "Year"
+    assert strip_active(page.kind) == "Fav"
     labels = [label for label, _ in strip_items(page)]
     assert "Favorites" not in labels
+    assert ("Fav", spec.favorites_dest) in strip_items(page)
     assert labels == [
         "Year",
         "Quar",
@@ -61,6 +62,7 @@ def test_favorites_after_annual_when_enabled():
         "Rev",
         "Day",
         "Notes",
+        "Fav",
         "Proj",
         "Meet",
         "Task",
@@ -196,7 +198,7 @@ def test_favorites_paint_cards_slash_and_icons():
     assert len(rules) > 20
 
 
-def test_favorites_chrome_year_and_no_fav_tab():
+def test_favorites_chrome_year_and_fav_chip():
     spec = Spec(notes_pages=1, favorites_pages=1)
     page = next(p for p in YearPlanner().pages(spec) if p.kind == "favorites")
     plotter = RecordingPlotter()
@@ -215,12 +217,12 @@ def test_favorites_chrome_year_and_no_fav_tab():
         "Rev",
         "Day",
         "Notes",
+        "Fav",
         "Proj",
         "Meet",
         "Task",
     ):
         assert label in texts
-    assert "Fav" not in texts
     assert page.dest == spec.favorites_dest
 
 

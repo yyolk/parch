@@ -8,7 +8,7 @@ from parch.spec import Spec
 
 
 class Checkoff365Section:
-    """One page when ``spec.checkoff_365``. Dest ``checkoff-365-{year}``. No strip chip."""
+    """One page when ``spec.checkoff_365``. Dest ``checkoff-365-{year}``. Strip chip **365** when on."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

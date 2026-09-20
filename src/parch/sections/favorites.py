@@ -6,7 +6,7 @@ from parch.spec import Spec
 
 
 class FavoritesSection:
-    """Optional year-scoped rankings page. After annual; default empty (no strip chip)."""
+    """Optional year-scoped rankings page. After annual; strip chip **Fav** when on."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

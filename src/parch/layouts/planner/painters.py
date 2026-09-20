@@ -576,7 +576,8 @@ def paint_my_100(
         _paint_my_100_row(plotter, cell, number)
 
 
-# Optional Favorites well — 2×3 ranking cards. Sealed; not a strip chip.
+# Optional Favorites well — 2×3 ranking cards. Sealed.
+# Strip chip **Fav** when ``spec.favorites_pages > 0``.
 # No page-local title/caption band — well height goes to the cards.
 FAVORITES_COLS = 2
 FAVORITES_GRID_ROWS = 3
@@ -2894,13 +2895,23 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Week"] = item.dest
         elif "-notes-" in item.dest:
             dests["Notes"] = item.dest
+        elif item.dest.startswith("favorites-"):
+            dests["Fav"] = item.dest
+        elif item.dest.startswith("my-100-"):
+            dests["100"] = item.dest
+        elif item.dest.startswith("checkoff-365-"):
+            dests["365"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
     match page.kind:
         case "annual":
             dests["Year"] = page.dest
-        case "favorites" | "my_100" | "checkoff_365":
+        case "favorites":
+            dests["Fav"] = page.dest
+        case "my_100":
             pass
+        case "checkoff_365":
+            dests["365"] = page.dest
         case "quarter":
             dests["Quar"] = page.dest
         case "month":
@@ -2956,6 +2967,9 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         "Rev",
         "Day",
         "Notes",
+        "Fav",
+        "100",
+        "365",
         "Col",
         "Proj",
         "Meet",
@@ -2968,10 +2982,12 @@ def strip_active(kind: str) -> str:
     match kind:
         case "annual":
             return "Year"
-        case "favorites" | "my_100":
-            return "Year"
+        case "favorites":
+            return "Fav"
+        case "my_100":
+            return "100"
         case "checkoff_365":
-            return ""
+            return "365"
         case "quarter":
             return "Quar"
         case "month":
