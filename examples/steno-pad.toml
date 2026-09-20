@@ -1,7 +1,6 @@
 # Single-face Gregg stenographer pad.
 # Lined ⅓″ + one center rule. No header, holes, or duplex back.
-# No steno-notebook book yet — ``steno_sheets > 0`` presses this
-# section only:
+# No steno-notebook book — Pad protocol presses this section:
 #   parch press examples/steno-pad.toml -o out/steno-pad.pdf
 device = "supernote-nomad"
 title = "Steno pad"

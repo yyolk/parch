@@ -281,8 +281,8 @@ class Spec:
     project_index_pages: int = 1
     meeting_index_rows: int = 16
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
-    engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
-    steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    engineering_sheets: int = 0  # duplex fronts+backs; pad-only on year-planner
+    steno_sheets: int = 0  # single-face Gregg pages; pad-only (no steno-notebook)
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -333,8 +333,6 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
-        if self.steno_sheets and self.engineering_sheets:
-            raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
         if not 1 <= self.bujo_index_pages <= 6:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:

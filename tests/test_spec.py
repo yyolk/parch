@@ -156,6 +156,10 @@ def test_habit_columns_from_toml_keys():
         Spec().dest_for_my_100(0)
     assert Spec.from_mapping({"steno": {"sheets": 2}}).steno_sheets == 2
     assert Spec.from_path(Path("examples/steno-pad.toml")).steno_sheets == 1
+    mixed = Spec.from_path(Path("examples/pad.toml"))
+    assert mixed.engineering_sheets == 1
+    assert mixed.steno_sheets == 1
+    assert mixed.book == "year-planner"
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
     with pytest.raises(ConfigError, match="engineering-notebook requires"):

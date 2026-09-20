@@ -1,0 +1,12 @@
+# Pad protocol — engineering fronts/backs then Gregg sheets. No cover.
+# Both sheet counts in one press (exploratory P1).
+#   parch press examples/pad.toml -o out/pad.pdf
+# Swap device = "kindle-scribe" for the other slate.
+device = "supernote-nomad"
+title = "Pad"
+
+[engineering]
+sheets = 1
+
+[steno]
+sheets = 1

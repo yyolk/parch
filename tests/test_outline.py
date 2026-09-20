@@ -14,6 +14,7 @@ from parch.books import (
 )
 from parch.calendar import MONTH_NAMES
 from parch.fonts.ramp import EffectiveRamp
+from parch.pads import compose
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.sections.engineering import EngineeringPadSection
@@ -193,6 +194,17 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     assert spec.dest_for_week(monday) not in dests
     assert spec.dest_for_day(monday) not in dests
     assert spec.dest_for_notes(monday, 1) not in dests
+
+
+def test_composed_pad_outline_empty_when_enabled():
+    spec = Spec(engineering_sheets=1, steno_sheets=1, outline=True)
+    plotter = RecordingPlotter()
+    compose(spec, ramp=EffectiveRamp()).plot(spec, plotter)
+    assert plotter.outlines() == []
+    dests = plotter.dests()
+    assert spec.dest_for_engineering_pad(1, "front") in dests
+    assert spec.dest_for_steno_pad(1) in dests
+    assert spec.cover_dest not in dests
 
 
 def test_pad_only_plot_pages_outline_empty_for_eng_kinds():

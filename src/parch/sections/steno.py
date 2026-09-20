@@ -6,7 +6,7 @@ from parch.spec import Spec
 
 
 class StenoPadSection:
-    """Emit single-face pad pages. No steno-notebook book yet — press plots this section alone."""
+    """Emit single-face pad pages. Reused by Pad protocol. No steno-notebook book."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
