@@ -75,6 +75,7 @@ def test_starter_toml_has_thin_header_and_live_keys():
         f"schedule = {{ from = {table['from'].strftime('%H:%M:%S')}, "
         f"to = {table['to'].strftime('%H:%M:%S')} }}"
     ) in text
+    assert "work_hours" not in text
     # Shared dump spells optional extras as live keys at Spec() defaults.
     assert "favorites = false" in text
     assert "[engineering]" in text

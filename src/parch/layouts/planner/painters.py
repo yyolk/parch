@@ -46,6 +46,7 @@ from parch.devices.registry import NAV_H, Device
 from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest, pt_mm
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
+from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
 from parch.tracks import columns, rows
@@ -2418,6 +2419,8 @@ def paint_schedule(
     hours = schedule.hours or (8,)
     hour_ink = TypeRef(step="chrome")
     for band, hour in zip(rows(body, len(hours)), hours, strict=True):
+        if shade_painted_hour(hour, schedule.work_hours):
+            _wash(plotter, band, WASH)
         slot = Rect(band.x, band.y, 10.0, band.h)
         _ink_text(plotter, slot, f"{hour:2d}", hour_ink, gray=MUTED, align="left")
         plotter.line(

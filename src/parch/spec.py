@@ -124,6 +124,21 @@ def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
         raise ConfigError(str(exc)) from exc
 
 
+def _parse_work_hours(daily_table: TomlTable) -> Bound[time] | None:
+    """Optional ``[daily] work_hours`` via ``Clock.parse``; omit means no shade.
+
+    Same Clock table as ``schedule`` (``from`` / ``to``, optional ``step``).
+    Shade is ``hour_shade`` Bound overlap, not a Spec-side hour cache.
+    """
+    raw = daily_table.get("work_hours")
+    if raw is None:
+        return None
+    try:
+        return Clock.parse(raw, path="daily.work_hours")
+    except TomlRangeError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def _parse_bool(raw: object, key: str) -> bool:
     """Closed boolean TOML field — strings and ints fail loudly."""
     if not isinstance(raw, bool):
@@ -273,6 +288,7 @@ class Spec:
     title: str | None = None  # year-planner brow / sibling headline; omit keeps paint
     book: str = "year-planner"
     schedule: Bound[time] = _DEFAULT_SCHEDULE
+    work_hours: Bound[time] | None = None  # optional Clock Bound; omit → no daily shade
     notes_pages: int = 2
     habit_columns: int = 10
     priority_rows: int = 6
@@ -610,6 +626,7 @@ class Spec:
             title=str(data["title"]) if "title" in data else None,
             book=str(data.get("book", "year-planner")),
             schedule=_parse_schedule(daily_table),
+            work_hours=_parse_work_hours(daily_table),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(
@@ -676,7 +693,12 @@ class Spec:
                 "schedule": dict(self.schedule.as_table()),
                 "notes_pages": self.notes_pages,
                 "priority_rows": self.priority_rows,
-            },
+            }
+            | (
+                {"work_hours": dict(self.work_hours.as_table())}
+                if self.work_hours is not None
+                else {}
+            ),
             "habits": {"columns": self.habit_columns},
             "projects": {
                 "cards": self.project_cards,
@@ -723,6 +745,12 @@ class Spec:
                 "",
                 "[daily]",
                 f"schedule = {_schedule_toml(self.schedule)}",
+            ]
+        )
+        if self.work_hours is not None:
+            lines.append(f"work_hours = {_schedule_toml(self.work_hours)}")
+        lines.extend(
+            [
                 f"notes_pages = {self.notes_pages}",
                 f"priority_rows = {self.priority_rows}",
                 "",
