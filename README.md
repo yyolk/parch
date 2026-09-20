@@ -42,7 +42,9 @@ Device → Component (data only) → Section (build Page) → Layout (chrome + s
 | Device | id | size | resolution | notes |
 | --- | --- | --- | --- | --- |
 | SuperNote Nomad | `supernote-nomad` | 118.87 × 158.5 mm | 1404×1872 @ 300 PPI | top clearance 8 mm reserved; writing clearance 4 mm; `root_body` 8.5pt |
-| Kindle Scribe (1st gen) | `kindle-scribe` | 157.48 × 209.97 mm | 1860×2480 @ 300 PPI | top clearance 8 mm reserved; writing clearance 4 mm; bottom clearance 10 mm; `root_body` 8.5pt |
+| Kindle Scribe (1st gen) | `kindle-scribe` | 157.48 × 209.97 mm | 1860×2480 @ 300 PPI | top clearance 8 mm reserved (example opts out: `top_clearance = 0`); writing clearance 4 mm; bottom clearance 10 mm; `root_body` 8.5pt |
+
+Any device can set `top_clearance = 0` to drop the reserved top band. Omit the key to keep the Device default. Bottom clearance is separate.
 
 ## Tests
 

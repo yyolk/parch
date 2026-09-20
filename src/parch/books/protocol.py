@@ -85,6 +85,7 @@ def plot_pages(
     ramp: TypeRamp,
     device: str,
     outline: bool = False,
+    top_clearance: float | None = None,
 ) -> None:
     """Reserve dests, then begin/add/paint. Progress ticks match the books.
 
@@ -96,7 +97,7 @@ def plot_pages(
     empty outline.
     """
     ledger = list(pages())
-    slate = get_device(device)
+    slate = get_device(device, top_clearance=top_clearance)
     layout = PlannerLayout(ramp=ramp)
     n = len(ledger)
     for page in ledger:

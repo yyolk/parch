@@ -85,7 +85,7 @@ def press(
     presses cover + pad faces through ``Book``. Year-planner specs
     keep both sheet counts at 0.
     """
-    device = get_device(spec.device)
+    device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
         overlay=merge_press_overlay(spec, overlay, proof),
         root_body=device.root_body,
@@ -99,6 +99,7 @@ def press(
             ramp=resolved,
             device=spec.device,
             outline=spec.outline,
+            top_clearance=spec.top_clearance,
         )
     elif spec.book == "year-planner" and spec.engineering_sheets > 0:
         plot_pages(
@@ -107,6 +108,7 @@ def press(
             ramp=resolved,
             device=spec.device,
             outline=spec.outline,
+            top_clearance=spec.top_clearance,
         )
     else:
         book: Book = book_for(spec.book)(ramp=resolved)

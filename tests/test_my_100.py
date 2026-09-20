@@ -1,4 +1,5 @@
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from parch.books import YearPlanner
 from parch.books.protocol import plot_pages
 from parch.components import My100Page
-from parch.devices.registry import NOMAD, SCRIBE
+from parch.devices.registry import NOMAD, SCRIBE, get_device
 from parch.fonts.ramp import EffectiveRamp
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
@@ -260,6 +261,18 @@ def test_my_100_scribe_uses_same_two_col_packer():
     assert _numbers(pages) == list(range(1, MY_100_COUNT + 1))
     if scribe_pages > 1:
         assert pages[1].dest == scribe.dest_for_my_100(2)
+
+
+def test_my_100_honors_spec_top_clearance():
+    reserved = Spec(device="kindle-scribe", my_100=True, months=(1,), notes_pages=0)
+    open_top = replace(reserved, top_clearance=0.0)
+    reserved_n = len(My100Section(reserved).pages())
+    open_n = len(My100Section(open_top).pages())
+    assert (
+        well_rect(get_device("kindle-scribe", top_clearance=0)).h > well_rect(SCRIBE).h
+    )
+    assert open_n <= reserved_n
+    assert _numbers(My100Section(open_top).pages()) == list(range(1, MY_100_COUNT + 1))
 
 
 def test_my_100_paginated_dests_and_chip():

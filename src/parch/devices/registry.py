@@ -1,6 +1,6 @@
 """Registered devices — SuperNote Nomad and Kindle Scribe (1st gen)."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from parch import ConfigError
 from parch.fonts.ramp import ROOT_BODY, Pt
@@ -13,7 +13,8 @@ NAV_H = 8.0
 class Device:
     """Physical page. ``top_clearance`` is reserved; it is not a writing well.
 
-    ``top_clearance == 0`` means no top band.
+    ``top_clearance == 0`` means no top band. Spec may override this per press
+    (``top_clearance = 0``) without forking the registered Device.
     """
 
     id: str
@@ -69,6 +70,8 @@ NOMAD = Device(
 # 1860×2480 @ 300 PPI → 157.48×209.97 mm. Writing clearance 4 mm.
 # Top 8 mm is a measured chrome inset (not a physical Kindle toolbar):
 # Send-to-Kindle taps are solid from ~8 mm; paint_header chip/meta sit below that floor.
+# Header hits are few (chip/meta only). Spec ``top_clearance = 0`` drops the band —
+# older presses without it often worked. Bottom 10 mm is separate.
 # Same ROOT_BODY as Nomad — type calibration knob is later, not this PR.
 SCRIBE = Device(
     id="kindle-scribe",
@@ -97,9 +100,16 @@ def known_device_ids() -> tuple[str, ...]:
     return (NOMAD.id, SCRIBE.id)
 
 
-def get_device(spec: str) -> Device:
+def get_device(spec: str, *, top_clearance: float | None = None) -> Device:
+    """Registered Device. ``top_clearance`` overrides the reserved top band.
+
+    Omit (or ``None``) keeps the device default. ``0`` means no top band.
+    """
     key = spec.strip().lower()
     if key not in _KNOWN:
         known = ", ".join(known_device_ids())
         raise ConfigError(f"unknown device {spec!r}; known devices: {known}")
-    return _KNOWN[key]
+    device = _KNOWN[key]
+    if top_clearance is None:
+        return device
+    return replace(device, top_clearance=top_clearance)

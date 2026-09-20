@@ -2,6 +2,9 @@
 # notes_pages = 1 keeps the year artifact smaller; 2 still works.
 year = 2026
 device = "kindle-scribe"
+# Device default is 8 mm (measured Send-to-Kindle tap floor). Header chip/meta
+# hits are few; older presses without the band often worked. 0 drops it.
+top_clearance = 0
 week_start = "monday"
 months = { from = 1, to = 12 }
 title = "Year planner"

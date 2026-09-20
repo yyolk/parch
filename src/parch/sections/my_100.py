@@ -27,7 +27,7 @@ class My100Section:
             well_rect,
         )
 
-        well = well_rect(get_device(spec.device))
+        well = well_rect(get_device(spec.device, top_clearance=spec.top_clearance))
         pages_n = my_100_page_count(well)
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         nav = planner_nav(spec, week_dest=spec.dest_for_week(first[0]))
