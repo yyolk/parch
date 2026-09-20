@@ -15,9 +15,7 @@ def _named_dests(reader: PdfReader) -> set[str]:
 
 
 def test_spec_from_mapping_accepts_both_pad_tables():
-    spec = Spec.from_mapping(
-        {"engineering": {"sheets": 1}, "steno": {"sheets": 2}}
-    )
+    spec = Spec.from_mapping({"engineering": {"sheets": 1}, "steno": {"sheets": 2}})
     assert spec.engineering_sheets == 1
     assert spec.steno_sheets == 2
     assert spec.book == "year-planner"
