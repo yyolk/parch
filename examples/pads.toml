@@ -1,0 +1,12 @@
+# Combined pad book — engineering duplex + steno Gregg, no cover.
+# Sheet counts stay on Spec. Press skips section short-circuits for this book.
+#   parch press examples/pads.toml -o out/pads.pdf
+book = "pad"
+device = "supernote-nomad"
+title = "Pads"
+
+[engineering]
+sheets = 1
+
+[steno]
+sheets = 1
