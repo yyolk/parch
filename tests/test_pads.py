@@ -27,7 +27,7 @@ def test_omit_pads_is_engineering_then_steno():
     assert example.pads == ("engineering", "steno")
     assert example.engineering_sheets == 1
     assert example.steno_sheets == 1
-    assert "pads =" not in Path("examples/pads.toml").read_text()
+    assert "pads" not in tomllib.loads(Path("examples/pads.toml").read_text())
 
 
 def test_pads_list_is_order_only():
