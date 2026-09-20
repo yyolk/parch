@@ -2418,6 +2418,9 @@ def paint_schedule(
     hours = schedule.hours or (8,)
     hour_ink = TypeRef(step="chrome")
     for band, hour in zip(rows(body, len(hours)), hours, strict=True):
+        if hour in schedule.shaded_hours:
+            # Existing chrome wash (236/255) — light enough for e-ink writing.
+            _wash(plotter, band, WASH)
         slot = Rect(band.x, band.y, 10.0, band.h)
         _ink_text(plotter, slot, f"{hour:2d}", hour_ink, gray=MUTED, align="left")
         plotter.line(

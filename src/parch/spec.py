@@ -108,6 +108,20 @@ def _hours_from_schedule(bound: Bound[time]) -> tuple[int, ...]:
     return tuple(range(start_hour, stop_hour + 1))
 
 
+def _hours_intersecting_work(
+    hours: tuple[int, ...], bound: Bound[time]
+) -> frozenset[int]:
+    """Painted hour labels that contain at least one Clock tick of ``bound``.
+
+    Shade is Bound walk (Clock grain / optional table ``step``), then hour-of
+    tick ∩ the painted well. Inclusive endpoints: ``09:00``–``17:00`` marks
+    hours 9…17 when those labels exist. The hour *before* ``from`` is not
+    marked (``08:00``–``09:00`` sharing ``09:00`` is not a work tick at hour 8).
+    """
+    marked = {tick.hour for tick in bound}
+    return frozenset(hour for hour in hours if hour in marked)
+
+
 def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
     """``[daily] schedule`` via ``Clock.parse``; omit keeps 07:00–16:00.
 
@@ -120,6 +134,21 @@ def _parse_schedule(daily_table: TomlTable) -> Bound[time]:
         return _DEFAULT_SCHEDULE
     try:
         return Clock.parse(raw, path="daily.schedule")
+    except TomlRangeError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
+def _parse_work_hours(daily_table: TomlTable) -> Bound[time] | None:
+    """``[daily] work_hours`` via ``Clock.parse``; omit means no shade.
+
+    Same closed-table Clock spelling as ``schedule``. Optional table ``step``
+    is Clock grain (walk for shade). Overnight wrap stays out of scope.
+    """
+    raw = daily_table.get("work_hours")
+    if raw is None:
+        return None
+    try:
+        return Clock.parse(raw, path="daily.work_hours")
     except TomlRangeError as exc:
         raise ConfigError(str(exc)) from exc
 
@@ -273,6 +302,7 @@ class Spec:
     title: str | None = None  # year-planner brow / sibling headline; omit keeps paint
     book: str = "year-planner"
     schedule: Bound[time] = _DEFAULT_SCHEDULE
+    work_hours: Bound[time] | None = None  # omit: no daily work-hours shade
     notes_pages: int = 2
     habit_columns: int = 10
     priority_rows: int = 6
@@ -344,6 +374,13 @@ class Spec:
     def schedule_hours(self) -> tuple[int, ...]:
         """Hour labels for the daily well: floor ``from``, ceil ``to``."""
         return _hours_from_schedule(self.schedule)
+
+    @property
+    def work_hours_shaded(self) -> frozenset[int]:
+        """Schedule-well hour labels that intersect ``work_hours``, or empty."""
+        if self.work_hours is None:
+            return frozenset()
+        return _hours_intersecting_work(self.schedule_hours, self.work_hours)
 
     @property
     def weekday_start(self) -> int:
@@ -610,6 +647,7 @@ class Spec:
             title=str(data["title"]) if "title" in data else None,
             book=str(data.get("book", "year-planner")),
             schedule=_parse_schedule(daily_table),
+            work_hours=_parse_work_hours(daily_table),
             notes_pages=int(notes_pages),
             habit_columns=_habit_columns(data, habits_table),
             priority_rows=int(
@@ -674,6 +712,11 @@ class Spec:
             "checkoff_365": self.checkoff_365,
             "daily": {
                 "schedule": dict(self.schedule.as_table()),
+                **(
+                    {"work_hours": dict(self.work_hours.as_table())}
+                    if self.work_hours is not None
+                    else {}
+                ),
                 "notes_pages": self.notes_pages,
                 "priority_rows": self.priority_rows,
             },
@@ -723,6 +766,12 @@ class Spec:
                 "",
                 "[daily]",
                 f"schedule = {_schedule_toml(self.schedule)}",
+            ]
+        )
+        if self.work_hours is not None:
+            lines.append(f"work_hours = {_schedule_toml(self.work_hours)}")
+        lines.extend(
+            [
                 f"notes_pages = {self.notes_pages}",
                 f"priority_rows = {self.priority_rows}",
                 "",

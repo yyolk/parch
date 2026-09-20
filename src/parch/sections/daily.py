@@ -25,7 +25,11 @@ class DailySection:
                     spec, week_dest=spec.dest_for_week(day), day=day, month=day.month
                 ),
                 components=(
-                    Schedule(label="Schedule", hours=hours),
+                    Schedule(
+                        label="Schedule",
+                        hours=hours,
+                        shaded_hours=spec.work_hours_shaded,
+                    ),
                     Notes(label="Notes"),
                     Priorities(label="Priorities", rows=spec.priority_rows),
                     build_month_mini(spec, day),

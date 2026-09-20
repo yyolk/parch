@@ -7,3 +7,4 @@ from dataclasses import dataclass
 class Schedule:
     label: str
     hours: tuple[int, ...]
+    shaded_hours: frozenset[int] = frozenset()

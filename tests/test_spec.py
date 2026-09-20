@@ -426,6 +426,9 @@ def test_to_toml_roundtrips_default_spec():
     assert "top_clearance" not in dumped
     assert "typography" not in dumped
     assert dumped["daily"]["schedule"] == {"from": time(7, 0), "to": time(16, 0)}
+    assert "work_hours" not in dumped["daily"]
+    assert spec.work_hours is None
+    assert spec.work_hours_shaded == frozenset()
 
 
 def test_to_toml_roundtrips_examples():
@@ -472,3 +475,75 @@ def test_daily_schedule_hours_floor_from_ceil_to():
         {"daily": {"schedule": {"from": time(23, 30), "to": time(23, 59)}}}
     )
     assert late.schedule_hours == (23,)
+
+
+def test_daily_work_hours_omit_parse_and_reject(tmp_path: Path):
+    default = Spec()
+    assert default.work_hours is None
+    assert default.work_hours_shaded == frozenset()
+    assert Spec.from_mapping({}).work_hours is None
+    assert Spec.from_mapping({"daily": {}}).work_hours is None
+    assert Spec.from_path(Path("examples/nomad.toml")).work_hours is None
+
+    mapped = Spec.from_mapping(
+        {"daily": {"work_hours": {"from": time(9, 0), "to": time(17, 0)}}}
+    )
+    assert isinstance(mapped.work_hours, Bound)
+    assert mapped.work_hours.domain is Clock.domain
+    assert mapped.work_hours.as_tuple() == (time(9, 0), time(17, 0))
+    # Default well is 7…16; 09:00–17:00 ticks mark 9…16 (17 is outside the well).
+    assert mapped.work_hours_shaded == frozenset(range(9, 17))
+
+    inline = tmp_path / "inline.toml"
+    inline.write_text(
+        "[daily]\nwork_hours = { from = 09:00:00, to = 17:00:00 }\n",
+        encoding="utf-8",
+    )
+    header = tmp_path / "header.toml"
+    header.write_text(
+        "[daily.work_hours]\nfrom = 09:30:00\nto = 10:15:00\n",
+        encoding="utf-8",
+    )
+    assert Spec.from_path(inline).work_hours_shaded == frozenset(range(9, 17))
+    half = Spec.from_path(header)
+    assert half.work_hours is not None
+    assert half.work_hours.start == time(9, 30)
+    assert half.work_hours.stop == time(10, 15)
+    # Bound walk: ticks at 09:30…10:15 mark hours 9 and 10.
+    assert half.work_hours_shaded == frozenset({9, 10})
+
+    outside = Spec.from_mapping(
+        {"daily": {"work_hours": {"from": time(20, 0), "to": time(22, 0)}}}
+    )
+    assert outside.work_hours_shaded == frozenset()
+
+    with pytest.raises(ConfigError, match="expected a table"):
+        Spec.from_mapping({"daily": {"work_hours": [9, 17]}})
+    with pytest.raises(ConfigError, match="unknown keys"):
+        Spec.from_mapping(
+            {
+                "daily": {
+                    "work_hours": {"from": time(9), "to": time(17), "until": time(18)}
+                }
+            }
+        )
+    with pytest.raises(ConfigError, match="must have keys"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": time(9)}}})
+    with pytest.raises(ConfigError, match="is after"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": time(17), "to": time(9)}}})
+    with pytest.raises(ConfigError, match="expected time, got int"):
+        Spec.from_mapping({"daily": {"work_hours": {"from": 9, "to": 17}}})
+
+
+def test_to_toml_roundtrips_work_hours():
+    spec = Spec.from_mapping(
+        {"daily": {"work_hours": {"from": time(9), "to": time(17), "step": 30}}}
+    )
+    dumped = tomllib.loads(spec.to_toml())
+    assert dumped["daily"]["work_hours"] == {
+        "from": time(9, 0),
+        "to": time(17, 0),
+        "step": 30,
+    }
+    assert Spec.from_mapping(dumped) == spec
+    assert Spec.from_mapping(spec.to_mapping()) == spec

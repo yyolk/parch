@@ -18,9 +18,11 @@ from parch.layouts.planner.layout import (
 )
 from parch.layouts.planner.painters import (
     TICK,
+    WASH,
     _paint_mini_month,
     checklist_content_height,
     paint_priorities,
+    paint_schedule,
 )
 from parch.plotter import RecordingPlotter
 from parch.sections.daily import DailySection
@@ -142,3 +144,46 @@ def test_daily_page_hours_span_default_0700_1600():
     page = DailySection(parsed).pages_for(date(2026, 1, 2))[0]
     hours = next(item.hours for item in page.components if isinstance(item, Schedule))
     assert hours == tuple(range(7, 17))
+    schedule = next(item for item in page.components if isinstance(item, Schedule))
+    assert schedule.shaded_hours == frozenset()
+
+
+def _schedule_washes(plotter: RecordingPlotter) -> list:
+    return [
+        op
+        for op in plotter.ops
+        if op[0] == "rect" and op[3] and not op[2] and op[5] == pytest.approx(WASH)
+    ]
+
+
+def test_daily_omits_work_hours_shade_when_unset():
+    page = DailySection(Spec()).pages_for(date(2026, 7, 15))[0]
+    schedule = next(item for item in page.components if isinstance(item, Schedule))
+    assert schedule.shaded_hours == frozenset()
+    ink = RecordingPlotter()
+    paint_schedule(ink, Rect(4, 20, 36, 90), schedule)
+    assert _schedule_washes(ink) == []
+
+
+def test_daily_paints_work_hours_shade_inside_well():
+    spec = Spec.from_mapping(
+        {
+            "daily": {
+                "schedule": {"from": time(7, 0), "to": time(16, 0)},
+                "work_hours": {"from": time(9, 0), "to": time(17, 0)},
+            }
+        }
+    )
+    page = DailySection(spec).pages_for(date(2026, 7, 15))[0]
+    schedule = next(item for item in page.components if isinstance(item, Schedule))
+    assert schedule.hours == tuple(range(7, 17))
+    assert schedule.shaded_hours == frozenset(range(9, 17))
+
+    ink = RecordingPlotter()
+    paint_schedule(ink, Rect(4, 20, 36, 90), schedule)
+    washes = _schedule_washes(ink)
+    assert len(washes) == 8
+    labels = [op[2] for op in ink.ops if op[0] == "text"]
+    assert "Schedule" in labels
+    assert " 9" in labels
+    assert "16" in labels
