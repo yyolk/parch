@@ -318,6 +318,8 @@ class Spec:
             raise ConfigError("top_clearance must be >= 0")
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
+        if self.book == "engineering-notebook" and self.steno_sheets:
+            raise ConfigError("engineering-notebook cannot set steno_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -349,8 +351,6 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
-        if self.steno_sheets and self.engineering_sheets:
-            raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
         if not 1 <= self.bujo_index_pages <= 6:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:

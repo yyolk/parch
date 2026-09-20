@@ -78,12 +78,13 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet) via ``plot_pages``.
-    A year-planner spec with ``engineering_sheets > 0`` still presses
-    the duplex pad section alone. ``book = "engineering-notebook"``
-    presses cover + pad faces through ``Book``. Year-planner specs
-    keep both sheet counts at 0.
+    When both sheet counts are set, press concatenates the duplex
+    engineering faces then the Gregg pages and walks them with one
+    ``plot_pages`` — no cover, no new Book. Single-count specs keep
+    the existing hijacks: steno-only, or year-planner engineering
+    pad-only. ``book = "engineering-notebook"`` still presses cover +
+    pad faces through ``Book``; combining it with ``steno_sheets``
+    raises ``ConfigError``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -92,7 +93,19 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    if spec.engineering_sheets > 0 and spec.steno_sheets > 0:
+        plot_pages(
+            lambda: [
+                *EngineeringPadSection(spec).pages(),
+                *StenoPadSection(spec).pages(),
+            ],
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.steno_sheets > 0:
         plot_pages(
             StenoPadSection(spec).pages,
             plotter,
