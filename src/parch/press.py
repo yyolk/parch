@@ -20,8 +20,14 @@ from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
-from parch.spec import Spec
+from parch.spec import PadRow, Spec
+
+_PAD_SECTIONS = {
+    "engineering": EngineeringPadSection,
+    "steno": StenoPadSection,
+}
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
 
@@ -78,12 +84,13 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet) via ``plot_pages``.
-    A year-planner spec with ``engineering_sheets > 0`` still presses
-    the duplex pad section alone. ``book = "engineering-notebook"``
-    presses cover + pad faces through ``Book``. Year-planner specs
-    keep both sheet counts at 0.
+    When ``spec.pad_rows()`` is non-empty, press those pad kinds in
+    table order via ``plot_pages`` (no cover, no notebook book).
+    Leftover ``steno_sheets`` / year-planner ``engineering_sheets``
+    synthesize a one-row walk so single-kind pad TOMLs stay the same.
+    ``book = "engineering-notebook"`` still presses cover + pad faces
+    through ``Book``. Year-planner specs keep both leftover counts at 0
+    and ``pads`` empty.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -92,18 +99,10 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    rows = spec.pad_rows()
+    if rows:
         plot_pages(
-            StenoPadSection(spec).pages,
-            plotter,
-            ramp=resolved,
-            device=spec.device,
-            outline=spec.outline,
-            top_clearance=spec.top_clearance,
-        )
-    elif spec.book == "year-planner" and spec.engineering_sheets > 0:
-        plot_pages(
-            EngineeringPadSection(spec).pages,
+            lambda: pages_from_pad_rows(spec, rows),
             plotter,
             ramp=resolved,
             device=spec.device,
@@ -115,6 +114,19 @@ def press(
         book.plot(spec, plotter)
     plotter.finish(output)
     return output
+
+
+def pages_from_pad_rows(spec: Spec, rows: tuple[PadRow, ...]) -> list[Page]:
+    """Walk an ordered pads table. Dest sheet numbers stay unique per kind."""
+    next_sheet = {"engineering": 1, "steno": 1}
+    pages: list[Page] = []
+    for row in rows:
+        start = next_sheet[row.kind]
+        pages.extend(
+            _PAD_SECTIONS[row.kind](spec, start=start, count=row.sheets).pages()
+        )
+        next_sheet[row.kind] = start + row.sheets
+    return pages
 
 
 def _proof_overlay(proof: bool | ProofProfile) -> TypeOverlay | None:

@@ -70,6 +70,8 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_notes(date(2026, 1, 15), 1) == "2026-01-15-notes-1"
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
+    assert spec.pads == ()
+    assert spec.pad_rows() == ()
     assert spec.outline is False
     assert spec.my_100 is False
     assert spec.my_100_dest == "my-100-2026"

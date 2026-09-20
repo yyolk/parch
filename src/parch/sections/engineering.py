@@ -8,13 +8,15 @@ from parch.spec import Spec
 class EngineeringPadSection:
     """Emit duplex pad faces. Reused by ``EngineeringNotebook`` and pad-only press."""
 
-    def __init__(self, spec: Spec) -> None:
+    def __init__(self, spec: Spec, *, start: int = 1, count: int | None = None) -> None:
         self.spec = spec
+        self.start = start
+        self.count = spec.engineering_sheets if count is None else count
 
     def pages(self) -> list[Page]:
         spec = self.spec
         built: list[Page] = []
-        for sheet in range(1, spec.engineering_sheets + 1):
+        for sheet in range(self.start, self.start + self.count):
             sheets = spec.engineering_sheets
             pad_front = EngineeringPad(face="front", sheet=sheet, sheets=sheets)
             pad_back = EngineeringPad(face="back", sheet=sheet, sheets=sheets)

@@ -27,6 +27,8 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_PAD_KEYS = frozenset({"kind", "sheets"})
+_PAD_KINDS = frozenset({"engineering", "steno"})
 _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 # Calendar months: closed int domain 1–12. Not Clock (time-of-day).
 _MONTH = Domain(int, lo=1, hi=12, name="month")
@@ -153,6 +155,59 @@ def _parse_favorites_pages(data: TomlTable) -> int:
     return 0
 
 
+@dataclass(frozen=True, slots=True)
+class PadRow:
+    """One ordered pads-table row — kind + sheet count. Press walks the tuple."""
+
+    kind: str
+    sheets: int
+
+
+def _parse_pad_sheets(raw: object, key: str) -> int:
+    """Closed int sheet count — bools fail (TOML ``true`` is not ``1``)."""
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ConfigError(f"{key} must be an integer")
+    return raw
+
+
+def _parse_pads(data: TomlTable) -> tuple[PadRow, ...]:
+    """``[[pads]]`` / ``pads = [{ kind, sheets }, …]``. Omit keeps leftover ints."""
+    raw = data.get("pads")
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise ConfigError("pads must be an array of tables")
+    rows: list[PadRow] = []
+    for index, item in enumerate(raw, start=1):
+        path = f"pads[{index}]"
+        if not isinstance(item, dict):
+            raise ConfigError(f"{path} must be a table")
+        unknown = set(item) - _PAD_KEYS
+        if unknown:
+            key = sorted(unknown)[0]
+            raise ConfigError(f"unknown pads key {key!r}")
+        if "kind" not in item:
+            raise ConfigError(f"{path} needs kind")
+        if "sheets" not in item:
+            raise ConfigError(f"{path} needs sheets")
+        kind = item["kind"]
+        if not isinstance(kind, str) or kind not in _PAD_KINDS:
+            raise ConfigError(f"{path} kind must be engineering or steno, not {kind!r}")
+        sheets = _parse_pad_sheets(item["sheets"], f"{path}.sheets")
+        rows.append(PadRow(kind=kind, sheets=sheets))
+    return tuple(rows)
+
+
+def _pads_have_leftover_sheet_keys(data: TomlTable) -> bool:
+    """Leftover ``[engineering]`` / ``[steno]`` (or int aliases) next to ``pads``."""
+    if "engineering_sheets" in data or "steno_sheets" in data:
+        return True
+    for key in ("engineering", "steno"):
+        if key in data:
+            return True
+    return False
+
+
 def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     """``[bujo]`` index_pages + collections. Unknown keys fail loudly."""
     raw = data.get("bujo")
@@ -227,6 +282,24 @@ def _overlay_mapping(overlay: TypeOverlay) -> TomlTable | None:
     return table
 
 
+def _pads_mapping(pads: tuple[PadRow, ...]) -> list[TomlTable]:
+    return [{"kind": row.kind, "sheets": row.sheets} for row in pads]
+
+
+def _pads_toml(pads: tuple[PadRow, ...]) -> list[str]:
+    lines: list[str] = []
+    for row in pads:
+        lines.extend(
+            [
+                "[[pads]]",
+                f"kind = {_toml_str(row.kind)}",
+                f"sheets = {row.sheets}",
+                "",
+            ]
+        )
+    return lines
+
+
 def _overlay_toml(overlay: TypeOverlay) -> list[str]:
     table = _overlay_mapping(overlay)
     if table is None:
@@ -283,6 +356,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    pads: tuple[PadRow, ...] = ()  # ordered [[pads]] walk; empty keeps leftover ints
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -300,6 +374,8 @@ class Spec:
             raise ConfigError(f"book must be {_BOOK_CHOICES}, not {self.book!r}")
         if self.top_clearance is not None and self.top_clearance < 0:
             raise ConfigError("top_clearance must be >= 0")
+        if self.pads and self.book != "year-planner":
+            raise ConfigError('pads requires book = "year-planner" (pad-only press)')
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if not self.months:
@@ -333,12 +409,50 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
-        if self.steno_sheets and self.engineering_sheets:
+        if self.pads:
+            self._sync_pads()
+        elif self.steno_sheets and self.engineering_sheets:
             raise ConfigError("steno_sheets and engineering_sheets cannot both be set")
         if not 1 <= self.bujo_index_pages <= 6:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:
             raise ConfigError("bujo collections must be 0–48")
+
+    def _sync_pads(self) -> None:
+        """Derive leftover sheet ints from ``pads``; dests stay unique per kind."""
+        engineering = 0
+        steno = 0
+        for index, row in enumerate(self.pads, start=1):
+            if row.kind not in _PAD_KINDS:
+                raise ConfigError(
+                    f"pads[{index}] kind must be engineering or steno, not {row.kind!r}"
+                )
+            if not 1 <= row.sheets <= 100:
+                raise ConfigError(f"pads[{index}].sheets must be 1–100")
+            if row.kind == "engineering":
+                engineering += row.sheets
+            else:
+                steno += row.sheets
+        if not 0 <= engineering <= 100:
+            raise ConfigError("engineering_sheets must be 0–100")
+        if not 0 <= steno <= 100:
+            raise ConfigError("steno_sheets must be 0–100")
+        if self.engineering_sheets not in (0, engineering):
+            raise ConfigError("engineering_sheets does not match pads")
+        if self.steno_sheets not in (0, steno):
+            raise ConfigError("steno_sheets does not match pads")
+        object.__setattr__(self, "engineering_sheets", engineering)
+        object.__setattr__(self, "steno_sheets", steno)
+
+    def pad_rows(self) -> tuple[PadRow, ...]:
+        """Ordered pad walk. ``pads`` wins; leftover ints synthesize one row."""
+        if self.pads:
+            return self.pads
+        if self.steno_sheets:
+            return (PadRow("steno", self.steno_sheets),)
+        if self.book == "year-planner" and self.engineering_sheets:
+            return (PadRow("engineering", self.engineering_sheets),)
+        return ()
 
     @property
     def schedule_hours(self) -> tuple[int, ...]:
@@ -600,6 +714,11 @@ class Spec:
         engineering_table = engineering if isinstance(engineering, dict) else {}
         steno = data.get("steno")
         steno_table = steno if isinstance(steno, dict) else {}
+        pads = _parse_pads(data)
+        if pads and _pads_have_leftover_sheet_keys(data):
+            raise ConfigError(
+                "pads cannot be combined with leftover engineering or steno tables"
+            )
         bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
@@ -633,8 +752,13 @@ class Spec:
             task_rows=int(tasks_table.get("rows", data.get("task_rows", 6))),
             engineering_sheets=int(
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
-            ),
-            steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            )
+            if not pads
+            else 0,
+            steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0)))
+            if not pads
+            else 0,
+            pads=pads,
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -685,13 +809,16 @@ class Spec:
             },
             "meetings": {"index_rows": self.meeting_index_rows},
             "tasks": {"rows": self.task_rows},
-            "engineering": {"sheets": self.engineering_sheets},
-            "steno": {"sheets": self.steno_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
             },
         }
+        if self.pads:
+            data["pads"] = _pads_mapping(self.pads)
+        else:
+            data["engineering"] = {"sheets": self.engineering_sheets}
+            data["steno"] = {"sheets": self.steno_sheets}
         if self.title is not None:
             data["title"] = self.title
         if self.top_clearance is not None:
@@ -740,12 +867,23 @@ class Spec:
                 "[tasks]",
                 f"rows = {self.task_rows}",
                 "",
-                "[engineering]",
-                f"sheets = {self.engineering_sheets}",
-                "",
-                "[steno]",
-                f"sheets = {self.steno_sheets}",
-                "",
+            ]
+        )
+        if self.pads:
+            lines.extend(_pads_toml(self.pads))
+        else:
+            lines.extend(
+                [
+                    "[engineering]",
+                    f"sheets = {self.engineering_sheets}",
+                    "",
+                    "[steno]",
+                    f"sheets = {self.steno_sheets}",
+                    "",
+                ]
+            )
+        lines.extend(
+            [
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",
                 f"collections = {self.bujo_collections}",
