@@ -19,6 +19,7 @@ from datetime import date
 from pathlib import Path
 
 from parch import ConfigError
+from parch.books.bullet_journal import BulletJournal
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
@@ -54,6 +55,9 @@ ENGINEERING_STEMS = ("engineering-cover", "engineering-front", "engineering-back
 # Projects notebook — cover + index + one project (sibling book dests).
 PROJECTS_STEMS = ("projects-cover", "projects-index", "projects-project-1")
 
+# Bullet journal — cover + key + index + future log (sibling dests; not the full walk).
+BUJO_STEMS = ("bujo-cover", "bujo-key", "bujo-index", "bujo-future")
+
 # Pad-only Gregg sheet (steno_sheets=1).
 STENO_STEMS = ("steno",)
 
@@ -72,6 +76,7 @@ def gallery_groups(
         ("year-planner", "Year planner", tuple(stems)),
         ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
+        ("bullet-journal", "Bullet Journal", BUJO_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
     )
 
@@ -122,6 +127,17 @@ def steno_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     )
 
 
+def bujo_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Slim January bullet-journal press: one index page, one collection."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="bullet-journal",
+        title="Bullet Journal",
+        bujo_index_pages=1,
+        bujo_collections=1,
+    )
+
+
 def sample_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each catalog stem on *spec*."""
     jan1 = date(spec.year, 1, 1)
@@ -162,6 +178,16 @@ def steno_dests(spec: Spec) -> dict[str, str]:
     return {"steno": spec.dest_for_steno_pad(1)}
 
 
+def bujo_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each bullet-journal catalog stem."""
+    return {
+        "bujo-cover": spec.cover_dest,
+        "bujo-key": spec.bujo_key_dest,
+        "bujo-index": spec.bujo_index_dest,
+        "bujo-future": spec.bujo_future_dest,
+    }
+
+
 def _page_numbers(
     pages: Sequence[Page], dests: dict[str, str], stems: Sequence[str]
 ) -> dict[str, int]:
@@ -196,6 +222,11 @@ def steno_page_numbers(
 ) -> dict[str, int]:
     """1-based page numbers from the pad-only steno walk."""
     return _page_numbers(StenoPadSection(spec).pages(), steno_dests(spec), stems)
+
+
+def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str, int]:
+    """1-based page numbers from the bullet-journal walk."""
+    return _page_numbers(BulletJournal().pages(spec), bujo_dests(spec), stems)
 
 
 def resolve_commit_sha(explicit: str | None = None) -> str | None:
@@ -394,7 +425,7 @@ def write_specimens(
     year: int = 2026,
     commit: str | None = None,
 ) -> Path:
-    """Press slim planner, notebooks, and steno pad; write PNGs + index."""
+    """Press slim planner, notebooks, bullet journal, and steno pad; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     numbers = sample_page_numbers(spec, stems)
@@ -427,6 +458,10 @@ def write_specimens(
             projects_page_numbers(projects_spec),
             PROJECTS_STEMS,
         )
+        bujo_spec = bujo_specimen_spec(device_id, year=year)
+        bujo_pdf = Path(tmp) / "bullet-journal.pdf"
+        press(bujo_spec, bujo_pdf, proof=True)
+        _render_stems(bujo_pdf, dest, bujo_page_numbers(bujo_spec), BUJO_STEMS)
         steno_spec = steno_specimen_spec(device_id, year=year)
         steno_pdf = Path(tmp) / "steno-pad.pdf"
         press(steno_spec, steno_pdf, proof=True)
