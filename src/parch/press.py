@@ -83,7 +83,8 @@ def press(
     ``plot_pages`` — no cover, no new Book. Single-count specs keep
     the existing hijacks: steno-only, or year-planner engineering
     pad-only. ``book = "engineering-notebook"`` still presses cover +
-    pad faces through ``Book`` when steno is 0.
+    pad faces through ``Book``; combining it with ``steno_sheets``
+    raises ``ConfigError``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(

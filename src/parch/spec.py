@@ -302,6 +302,8 @@ class Spec:
             raise ConfigError("top_clearance must be >= 0")
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
+        if self.book == "engineering-notebook" and self.steno_sheets:
+            raise ConfigError("engineering-notebook cannot set steno_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
