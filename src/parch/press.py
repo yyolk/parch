@@ -19,8 +19,7 @@ from parch.fonts import (
 from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
-from parch.sections.engineering import EngineeringPadSection
-from parch.sections.steno import StenoPadSection
+from parch.sections.pads import PadBundleSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
@@ -78,12 +77,11 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet) via ``plot_pages``.
-    A year-planner spec with ``engineering_sheets > 0`` still presses
-    the duplex pad section alone. ``book = "engineering-notebook"``
-    presses cover + pad faces through ``Book``. Year-planner specs
-    keep both sheet counts at 0.
+    When either pad sheet count is > 0, press ``PadBundleSection``
+    (engineering faces then steno pages; empty children contribute
+    nothing). No cover. ``book = "engineering-notebook"`` still
+    presses cover + pad faces through ``Book`` unless ``steno_sheets``
+    is also set. Year-planner specs keep both sheet counts at 0.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -92,18 +90,12 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    pad_only = spec.steno_sheets > 0 or (
+        spec.book == "year-planner" and spec.engineering_sheets > 0
+    )
+    if pad_only:
         plot_pages(
-            StenoPadSection(spec).pages,
-            plotter,
-            ramp=resolved,
-            device=spec.device,
-            outline=spec.outline,
-            top_clearance=spec.top_clearance,
-        )
-    elif spec.book == "year-planner" and spec.engineering_sheets > 0:
-        plot_pages(
-            EngineeringPadSection(spec).pages,
+            PadBundleSection(spec).pages,
             plotter,
             ramp=resolved,
             device=spec.device,
