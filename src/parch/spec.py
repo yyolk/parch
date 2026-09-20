@@ -128,7 +128,7 @@ def _parse_work_hours(daily_table: TomlTable) -> Bound[time] | None:
     """Optional ``[daily] work_hours`` via ``Clock.parse``; omit means no shade.
 
     Same Clock table as ``schedule`` (``from`` / ``to``, optional ``step``).
-    Shade is per painted hour band (``hour_shade``), not this Bound's walk.
+    Shade is per painted hour band in the painter, not this Bound's walk.
     """
     raw = daily_table.get("work_hours")
     if raw is None:
