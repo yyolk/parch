@@ -96,7 +96,7 @@ def test_my_100_inserts_after_annual_before_quarters():
     assert _numbers(my_pages) == list(range(1, MY_100_COUNT + 1))
 
 
-def test_my_100_then_checkoff_when_both_on():
+def test_checkoff_then_my_100_when_both_on():
     spec = Spec(my_100=True, checkoff_365=True, months=(1,), notes_pages=0)
     dests = [page.dest for page in YearPlanner().pages(spec)]
     annual = dests.index(spec.year_dest)
@@ -104,10 +104,10 @@ def test_my_100_then_checkoff_when_both_on():
     checkoff = dests.index(spec.checkoff_365_dest)
     quarter = dests.index(spec.dest_for_quarter(1))
     assert dests[:2] == ["cover", spec.year_dest]
-    assert annual < landing < checkoff < quarter
-    assert dests[annual + 1] == spec.my_100_dest
+    assert annual < checkoff < landing < quarter
+    assert dests[annual + 1] == spec.checkoff_365_dest
     last_my = max(i for i, dest in enumerate(dests) if dest.startswith("my-100-"))
-    assert last_my + 1 == checkoff
+    assert last_my + 1 == quarter
 
 
 def test_my_100_page_and_strip():

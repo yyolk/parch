@@ -36,7 +36,7 @@ def test_strip_unchanged_when_extras_off():
     assert "365" not in chips
 
 
-def test_extras_chips_after_notes_before_proj():
+def test_extras_chips_365_after_year_fav_100_after_notes():
     spec = Spec(
         notes_pages=1,
         favorites_pages=1,
@@ -47,6 +47,7 @@ def test_extras_chips_after_notes_before_proj():
     year = next(page for page in YearPlanner().pages(spec) if page.kind == "annual")
     assert strip_items(year) == (
         ("Year", "year-2026"),
+        ("365", spec.checkoff_365_dest),
         ("Quar", "quarter-2026-Q1"),
         ("Mon", "month-2026-01"),
         ("Habit", "month-2026-01-habits"),
@@ -56,7 +57,6 @@ def test_extras_chips_after_notes_before_proj():
         ("Notes", "2026-01-01-notes-1"),
         ("Fav", spec.favorites_dest),
         ("100", spec.my_100_dest),
-        ("365", spec.checkoff_365_dest),
         ("Proj", "projects-index-2026-01"),
         ("Meet", "meetings-index-2026"),
         ("Task", "tasks-index-2026-Q1"),
@@ -74,6 +74,7 @@ def test_extras_chips_without_notes():
     year = next(page for page in YearPlanner().pages(spec) if page.kind == "annual")
     assert _labels(year) == [
         "Year",
+        "365",
         "Quar",
         "Mon",
         "Habit",
@@ -82,7 +83,6 @@ def test_extras_chips_without_notes():
         "Day",
         "Fav",
         "100",
-        "365",
         "Proj",
         "Meet",
         "Task",
@@ -131,6 +131,7 @@ def test_each_extra_is_independent():
     ]
     assert _labels(checkoff_year) == [
         "Year",
+        "365",
         "Quar",
         "Mon",
         "Habit",
@@ -138,7 +139,6 @@ def test_each_extra_is_independent():
         "Rev",
         "Day",
         "Notes",
-        "365",
         "Proj",
         "Meet",
         "Task",

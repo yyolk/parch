@@ -1,4 +1,4 @@
-"""Optional 365 Days Check-Off Sheet — after annual, before quarters in YearPlanner."""
+"""Optional 365 Days Check-Off Sheet — after annual, before favorites / my 100 / quarters."""
 
 from parch.calendar import month_touching_weeks, year_day
 from parch.components import Checkoff365

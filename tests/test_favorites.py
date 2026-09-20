@@ -69,7 +69,7 @@ def test_favorites_after_annual_when_enabled():
     ]
 
 
-def test_favorites_then_my_100_then_checkoff_when_all_on():
+def test_checkoff_then_favorites_then_my_100_when_all_on():
     spec = Spec(
         favorites_pages=1,
         my_100=True,
@@ -84,10 +84,10 @@ def test_favorites_then_my_100_then_checkoff_when_all_on():
     checkoff = dests.index(spec.checkoff_365_dest)
     quarter = dests.index(spec.dest_for_quarter(1))
     assert dests[:2] == ["cover", spec.year_dest]
-    assert annual < fav < landing < checkoff < quarter
-    assert dests[annual + 1] == spec.favorites_dest
+    assert annual < checkoff < fav < landing < quarter
+    assert dests[annual + 1] == spec.checkoff_365_dest
     last_my = max(i for i, dest in enumerate(dests) if dest.startswith("my-100-"))
-    assert last_my + 1 == checkoff
+    assert last_my + 1 == quarter
 
 
 def test_favorites_seats_grid():

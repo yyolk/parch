@@ -105,6 +105,7 @@ def test_year_planner_inserts_checkoff_after_annual_when_enabled():
     assert ("365", spec.checkoff_365_dest) in strip_items(page)
     assert labels == [
         "Year",
+        "365",
         "Quar",
         "Mon",
         "Habit",
@@ -112,7 +113,6 @@ def test_year_planner_inserts_checkoff_after_annual_when_enabled():
         "Rev",
         "Day",
         "Notes",
-        "365",
         "Proj",
         "Meet",
         "Task",
