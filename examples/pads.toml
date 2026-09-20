@@ -1,0 +1,11 @@
+# No-cover pad compose — engineering duplex then Gregg steno.
+# Press walks a sealed (predicate, section_factory) emit table.
+#   parch press examples/pads.toml -o out/pads.pdf
+device = "supernote-nomad"
+title = "Pads"
+
+[engineering]
+sheets = 1
+
+[steno]
+sheets = 1

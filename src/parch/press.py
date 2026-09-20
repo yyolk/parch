@@ -2,8 +2,10 @@
 
 import argparse
 import sys
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import NamedTuple
 
 from parch import ConfigError
 from parch.books import Book, book_for, plot_pages
@@ -20,10 +22,49 @@ from parch.fonts.ramp import OverlayData
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
 _DEVICE_TOKENS = {"supernote-nomad", "nomad", "kindle-scribe", "scribe"}
+
+
+class _EmitRow(NamedTuple):
+    """One sealed emit-table row: when the predicate holds, factory builds."""
+
+    predicate: Callable[[Spec], bool]
+    section_factory: Callable[[Spec], EngineeringPadSection | StenoPadSection]
+
+
+def _has_engineering_sheets(spec: Spec) -> bool:
+    return spec.engineering_sheets > 0
+
+
+def _has_steno_sheets(spec: Spec) -> bool:
+    return spec.steno_sheets > 0
+
+
+# Sealed order: engineering duplex faces, then Gregg pages. Both rows can fire.
+_PAD_EMIT: tuple[_EmitRow, ...] = (
+    _EmitRow(_has_engineering_sheets, EngineeringPadSection),
+    _EmitRow(_has_steno_sheets, StenoPadSection),
+)
+
+
+def _emit_pad_pages(spec: Spec) -> list[Page]:
+    """Walk ``_PAD_EMIT`` so every matching sheet count appends its section."""
+    pages: list[Page] = []
+    for predicate, section_factory in _PAD_EMIT:
+        if predicate(spec):
+            pages.extend(section_factory(spec).pages())
+    return pages
+
+
+def _walk_pad_emit(spec: Spec) -> bool:
+    """Pad-only path: any steno count, or year-planner engineering sheets."""
+    return spec.steno_sheets > 0 or (
+        spec.book == "year-planner" and spec.engineering_sheets > 0
+    )
 
 
 def merge_press_overlay(
@@ -78,12 +119,12 @@ def press(
     Painters never read the overlay. They pass ``TypeRef`` / ink on the
     closed TypeStep ladder. ``family`` stays on ``TypeInk``.
 
-    When ``spec.steno_sheets > 0``, press the single-face Gregg pad
-    section only (no steno-notebook book yet) via ``plot_pages``.
-    A year-planner spec with ``engineering_sheets > 0`` still presses
-    the duplex pad section alone. ``book = "engineering-notebook"``
-    presses cover + pad faces through ``Book``. Year-planner specs
-    keep both sheet counts at 0.
+    Pad-only press walks a sealed emit table of
+    ``(predicate, section_factory)`` rows so both sheet counts can
+    fire: engineering duplex faces, then Gregg pages. No cover.
+    ``book = "engineering-notebook"`` still presses cover + pad
+    faces through ``Book`` when steno is 0. Year-planner specs
+    with both counts at 0 stay on the year book.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -92,18 +133,9 @@ def press(
     )
     if plotter is None:
         plotter = Fpdf2Plotter(device, catalog=resolved.catalog, ramp=resolved)
-    if spec.steno_sheets > 0:
+    if _walk_pad_emit(spec):
         plot_pages(
-            StenoPadSection(spec).pages,
-            plotter,
-            ramp=resolved,
-            device=spec.device,
-            outline=spec.outline,
-            top_clearance=spec.top_clearance,
-        )
-    elif spec.book == "year-planner" and spec.engineering_sheets > 0:
-        plot_pages(
-            EngineeringPadSection(spec).pages,
+            lambda: _emit_pad_pages(spec),
             plotter,
             ramp=resolved,
             device=spec.device,
