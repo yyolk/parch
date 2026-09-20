@@ -1,4 +1,4 @@
-"""Optional 365 Days Check-Off Sheet — after annual, before favorites / my 100 / quarters."""
+"""Optional 365 Days Check-Off Sheet — after annual, before quarters in YearPlanner."""
 
 from parch.calendar import month_touching_weeks, year_day
 from parch.components import Checkoff365
@@ -8,7 +8,7 @@ from parch.spec import Spec
 
 
 class Checkoff365Section:
-    """One page when ``spec.checkoff_365``. Dest ``checkoff-365-{year}``. Strip chip **365** when on."""
+    """One page when ``spec.checkoff_365``. Dest ``checkoff-365-{year}``."""
 
     def __init__(self, spec: Spec) -> None:
         self.spec = spec

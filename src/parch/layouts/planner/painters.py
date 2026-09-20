@@ -577,7 +577,6 @@ def paint_my_100(
 
 
 # Optional Favorites well — 2×3 ranking cards. Sealed.
-# Strip chip **Fav** when ``spec.favorites_pages > 0``.
 # No page-local title/caption band — well height goes to the cards.
 FAVORITES_COLS = 2
 FAVORITES_GRID_ROWS = 3

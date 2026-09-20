@@ -9,8 +9,8 @@ from parch.spec import Spec
 class My100Section:
     """``paint_my_100`` numbered write-in list.
 
-    YearPlanner inserts these after annual / checkoff / favorites and
-    before quarters when ``Spec.my_100`` is on. Off (the default) emits nothing.
+    YearPlanner inserts these after annual and before quarters when
+    ``Spec.my_100`` is on. Off (the default) emits nothing.
     """
 
     def __init__(self, spec: Spec) -> None:
