@@ -115,6 +115,15 @@ def test_cli_init_writes_file(tmp_path: Path, capsys):
     assert Spec.from_path(dest) == Spec()
 
 
+def test_cli_init_creates_missing_parent_dir(tmp_path: Path, capsys):
+    dest = tmp_path / "dir-that-doesnt-exist" / "init.toml"
+    assert not dest.parent.exists()
+    assert main(["-o", str(dest)]) == 0
+    assert capsys.readouterr().out.strip() == str(dest)
+    assert dest.is_file()
+    assert Spec.from_path(dest) == Spec()
+
+
 def test_cli_init_refuses_existing_file(tmp_path: Path, capsys):
     dest = tmp_path / "planner.toml"
     dest.write_text("year = 1999\n", encoding="utf-8")
