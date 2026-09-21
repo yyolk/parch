@@ -57,7 +57,6 @@ uv run ruff check src tests && uv run ruff format --check src tests
 
 Codespaces / Dev Containers use `ghcr.io/yyolk/parch-devcontainer` (venv at `/home/vscode/.venv`). After the first image publish, set that GHCR package to **Public**.
 
-
 ## Releasing
 
 Ship steps live in [Releasing](RELEASING.md).
