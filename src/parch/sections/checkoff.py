@@ -3,7 +3,7 @@
 from parch.calendar import month_touching_weeks, year_day
 from parch.components import Checkoff365
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Checkoff365Page, Page
 from parch.spec import Spec
 
 
@@ -24,9 +24,8 @@ class Checkoff365Section:
             for day in (year_day(spec.year, number) for number in range(1, days + 1))
         )
         return [
-            Page(
+            Checkoff365Page(
                 dest=spec.checkoff_365_dest,
-                kind="checkoff_365",
                 title="365 Days Check-Off Sheet",
                 nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
                 components=(Checkoff365(year=spec.year, days=days, day_dests=dests),),

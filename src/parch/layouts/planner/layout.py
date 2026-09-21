@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -82,7 +84,40 @@ from parch.layouts.planner.painters import (
     well_rect,
 )
 from parch.plotter.protocol import Plotter
-from parch.sections.page import Page
+from parch.sections.page import (
+    AnnualPage,
+    BujoIndexPage,
+    BujoKeyPage,
+    Checkoff365Page,
+    CollectionPage,
+    CoverPage,
+    DailyNotesPage,
+    DailyPage,
+    DotgridPage,
+    EngineeringBackPage,
+    EngineeringFrontPage,
+    FavoritesHubPage,
+    FutureLogHubPage,
+    HabitsPage,
+    HeaderPage,
+    MeetingPage,
+    MeetingsIndexPage,
+    MonthlyLogPage,
+    MonthlyTasksPage,
+    MonthPage,
+    My100HubPage,
+    Page,
+    ProjectPage,
+    ProjectsIndexPage,
+    QuarterPage,
+    RapidLogHubPage,
+    ReviewIndexPage,
+    ReviewPage,
+    StenoPadPage,
+    TaskPage,
+    TasksIndexPage,
+    WeeklyPage,
+)
 
 __all__ = [
     "COL_GAP",
@@ -112,20 +147,46 @@ class PlannerLayout:
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp
-        match page.kind:
-            case "cover":
+        match page:
+            case CoverPage():
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case "engineering_front" | "engineering_back":
+            case EngineeringFrontPage() | EngineeringBackPage():
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
-            case "steno":
+            case StenoPadPage():
                 paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
-            case "dotgrid":
+            case DotgridPage():
                 paint_dotgrid_page(
                     plotter, device, _one(page, DotGridPad), ramp=self.ramp
                 )
-            case _:
+            case (
+                AnnualPage()
+                | FavoritesHubPage()
+                | My100HubPage()
+                | Checkoff365Page()
+                | ProjectsIndexPage()
+                | ProjectPage()
+                | MeetingsIndexPage()
+                | MeetingPage()
+                | TasksIndexPage()
+                | TaskPage()
+                | ReviewIndexPage()
+                | ReviewPage()
+                | QuarterPage()
+                | MonthPage()
+                | HabitsPage()
+                | WeeklyPage()
+                | DailyPage()
+                | DailyNotesPage()
+                | BujoKeyPage()
+                | BujoIndexPage()
+                | FutureLogHubPage()
+                | MonthlyLogPage()
+                | MonthlyTasksPage()
+                | RapidLogHubPage()
+                | CollectionPage()
+            ):
                 paint_header(
                     plotter,
                     device,
@@ -145,45 +206,47 @@ class PlannerLayout:
                 )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
+            case _ as unreachable:
+                assert_never(unreachable)
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+    def _paint_well(self, page: HeaderPage, plotter: Plotter, well: Rect) -> None:
         ramp = self.ramp
-        match page.kind:
-            case "annual":
+        match page:
+            case AnnualPage():
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
-            case "favorites":
+            case FavoritesHubPage():
                 paint_favorites(plotter, well, _one(page, FavoritesPage), ramp=ramp)
-            case "my_100":
+            case My100HubPage():
                 paint_my_100(plotter, well, _one(page, My100Page), ramp=ramp)
-            case "checkoff_365":
+            case Checkoff365Page():
                 paint_checkoff_365(plotter, well, _one(page, Checkoff365), ramp=ramp)
-            case "projects_index":
+            case ProjectsIndexPage():
                 paint_projects_index(
                     plotter, well, _one(page, ProjectsIndex), ramp=ramp
                 )
-            case "project":
+            case ProjectPage():
                 paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
-            case "meetings_index":
+            case MeetingsIndexPage():
                 paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=ramp)
-            case "meeting":
+            case MeetingPage():
                 paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=ramp)
-            case "tasks_index":
+            case TasksIndexPage():
                 paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=ramp)
-            case "task":
+            case TaskPage():
                 paint_task(plotter, well, _one(page, TasksWeekPage), ramp=ramp)
-            case "review_index":
+            case ReviewIndexPage():
                 paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=ramp)
-            case "review":
+            case ReviewPage():
                 paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=ramp)
-            case "quarter":
+            case QuarterPage():
                 paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
-            case "month":
+            case MonthPage():
                 paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
-            case "habits":
+            case HabitsPage():
                 paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=ramp)
-            case "weekly":
+            case WeeklyPage():
                 paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
-            case "daily":
+            case DailyPage():
                 paint_daily(
                     plotter,
                     well,
@@ -193,149 +256,216 @@ class PlannerLayout:
                     _one(page, Notes),
                     ramp=ramp,
                 )
-            case "daily_notes":
+            case DailyNotesPage():
                 paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
-            case "bujo_key":
+            case BujoKeyPage():
                 paint_bujo_key(plotter, well, _one(page, BujoKey), ramp=ramp)
-            case "bujo_index":
+            case BujoIndexPage():
                 paint_bujo_index(plotter, well, _one(page, BujoIndex), ramp=ramp)
-            case "future_log":
+            case FutureLogHubPage():
                 paint_future_log(plotter, well, _one(page, FutureLogPage), ramp=ramp)
-            case "monthly_log":
+            case MonthlyLogPage():
                 paint_monthly_calendar_list(
                     plotter, well, _one(page, MonthlyCalendarList), ramp=ramp
                 )
-            case "monthly_tasks":
+            case MonthlyTasksPage():
                 paint_monthly_task_well(
                     plotter, well, _one(page, MonthlyTaskWell), ramp=ramp
                 )
-            case "rapid_log":
+            case RapidLogHubPage():
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
-            case "collection":
+            case CollectionPage():
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
-            case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
-def _header_meta(page: Page) -> str:
-    match page.kind:
-        case "annual":
+def _header_meta(page: HeaderPage) -> str:
+    match page:
+        case AnnualPage():
             return "Q1–Q4"
-        case "favorites":
+        case FavoritesHubPage():
             return str(_one(page, FavoritesPage).year)
-        case "my_100":
+        case My100HubPage():
             return str(_one(page, My100Page).year)
-        case "checkoff_365":
+        case Checkoff365Page():
             return str(_one(page, Checkoff365).year)
-        case "projects_index":
+        case ProjectsIndexPage():
             return str(_one(page, ProjectsIndex).year)
-        case "project":
+        case ProjectPage():
             return str(_one(page, ProjectsBoard).year)
-        case "meetings_index":
+        case MeetingsIndexPage():
             return str(_one(page, MeetingIndex).year)
-        case "meeting":
+        case MeetingPage():
             return str(_one(page, MeetingAgenda).year)
-        case "tasks_index":
+        case TasksIndexPage():
             return f"Q{_one(page, TasksIndex).quarter}"
-        case "task":
+        case TaskPage():
             return str(_one(page, TasksWeekPage).year)
-        case "review_index":
+        case ReviewIndexPage():
             return str(_one(page, ReviewIndex).year)
-        case "review":
+        case ReviewPage():
             return str(_one(page, ReviewWeekPage).year)
-        case "quarter":
+        case QuarterPage():
             return ""
-        case "month":
+        case MonthPage():
             month = _one(page, MonthGrid).month
             return f"Q{quarter_of(month)}"
-        case "habits":
+        case HabitsPage():
             grid = _one(page, HabitGrid)
             return f"Q{quarter_of(grid.month)}" if grid.quarter_dest else ""
-        case "bujo_key":
+        case BujoKeyPage():
             return page.dest.rsplit("-", 1)[-1]
-        case "bujo_index":
+        case BujoIndexPage():
             index = _one(page, BujoIndex)
             return f"{index.page}/{index.pages}"
-        case "future_log":
+        case FutureLogHubPage():
             future = _one(page, FutureLogPage)
             return f"{future.page}/{future.pages}"
-        case "monthly_log":
+        case MonthlyLogPage():
             return "Tasks"
-        case "monthly_tasks":
+        case MonthlyTasksPage():
             return _one(page, MonthlyTaskWell).month_name[:3]
-        case "rapid_log":
+        case RapidLogHubPage():
             return page.dest[:4]
-        case "collection":
+        case CollectionPage():
             return str(_one(page, CollectionLeaf).year)
-        case "weekly":
+        case WeeklyPage():
             week = _one(page, WeekStrip)
             return short_date_range(week.monday, week.sunday)
-        case "daily":
+        case DailyPage():
             return page.dest[:4]
-        case "daily_notes":
+        case DailyNotesPage():
             label = _one(page, Notes).label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
-        case _:
-            return ""
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
-def _header_meta_dest(page: Page) -> str | None:
-    match page.kind:
-        case "annual":
+def _header_meta_dest(page: HeaderPage) -> str | None:
+    match page:
+        case AnnualPage():
             return _one(page, AnnualGrid).quarter_dest
-        case "month":
+        case MonthPage():
             return _one(page, MonthGrid).quarter_dest
-        case "habits":
+        case HabitsPage():
             return _one(page, HabitGrid).quarter_dest
-        case "monthly_log":
+        case MonthlyLogPage():
             return _one(page, MonthlyCalendarList).tasks_dest
-        case "monthly_tasks":
+        case MonthlyTasksPage():
             return _one(page, MonthlyTaskWell).calendar_dest
-        case _:
+        case (
+            FavoritesHubPage()
+            | My100HubPage()
+            | Checkoff365Page()
+            | ProjectsIndexPage()
+            | ProjectPage()
+            | MeetingsIndexPage()
+            | MeetingPage()
+            | TasksIndexPage()
+            | TaskPage()
+            | ReviewIndexPage()
+            | ReviewPage()
+            | QuarterPage()
+            | WeeklyPage()
+            | DailyPage()
+            | DailyNotesPage()
+            | BujoKeyPage()
+            | BujoIndexPage()
+            | FutureLogHubPage()
+            | RapidLogHubPage()
+            | CollectionPage()
+        ):
             return None
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
-def _header_chip(page: Page) -> str:
-    match page.kind:
-        case "my_100":
+def _header_chip(page: HeaderPage) -> str:
+    match page:
+        case My100HubPage():
             leaf = _one(page, My100Page)
             return f"{leaf.page:02d}" if leaf.pages > 1 else ""
-        case "project":
+        case ProjectPage():
             number = _one(page, ProjectsBoard).number
             return f"{number:02d}" if number else ""
-        case "meeting":
+        case MeetingPage():
             number = _one(page, MeetingAgenda).number
             return f"{number:02d}" if number else ""
-        case "task":
+        case TaskPage():
             week = _one(page, TasksWeekPage)
             return f"W{week.iso_week:02d}"
-        case "review":
+        case ReviewPage():
             week = _one(page, ReviewWeekPage)
             return f"W{week.iso_week:02d}"
-        case "collection":
+        case CollectionPage():
             number = _one(page, CollectionLeaf).number
             return f"{number:02d}"
-        case _:
+        case (
+            AnnualPage()
+            | FavoritesHubPage()
+            | Checkoff365Page()
+            | ProjectsIndexPage()
+            | MeetingsIndexPage()
+            | TasksIndexPage()
+            | ReviewIndexPage()
+            | QuarterPage()
+            | MonthPage()
+            | HabitsPage()
+            | WeeklyPage()
+            | DailyPage()
+            | DailyNotesPage()
+            | BujoKeyPage()
+            | BujoIndexPage()
+            | FutureLogHubPage()
+            | MonthlyLogPage()
+            | MonthlyTasksPage()
+            | RapidLogHubPage()
+        ):
             return ""
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
-def _header_chip_dest(page: Page) -> str | None:
-    match page.kind:
-        case "my_100":
+def _header_chip_dest(page: HeaderPage) -> str | None:
+    match page:
+        case My100HubPage():
             leaf = _one(page, My100Page)
             return leaf.index_dest if leaf.pages > 1 else None
-        case "project":
+        case ProjectPage():
             return _one(page, ProjectsBoard).index_dest or None
-        case "meeting":
+        case MeetingPage():
             return _one(page, MeetingAgenda).index_dest or None
-        case "task":
+        case TaskPage():
             return _one(page, TasksWeekPage).index_dest or None
-        case "review":
+        case ReviewPage():
             return _one(page, ReviewWeekPage).index_dest or None
-        case "collection":
+        case CollectionPage():
             return _one(page, CollectionLeaf).index_dest or None
-        case _:
+        case (
+            AnnualPage()
+            | FavoritesHubPage()
+            | Checkoff365Page()
+            | ProjectsIndexPage()
+            | MeetingsIndexPage()
+            | TasksIndexPage()
+            | ReviewIndexPage()
+            | QuarterPage()
+            | MonthPage()
+            | HabitsPage()
+            | WeeklyPage()
+            | DailyPage()
+            | DailyNotesPage()
+            | BujoKeyPage()
+            | BujoIndexPage()
+            | FutureLogHubPage()
+            | MonthlyLogPage()
+            | MonthlyTasksPage()
+            | RapidLogHubPage()
+        ):
             return None
+        case _ as unreachable:
+            assert_never(unreachable)
 
 
 def _one[T](page: Page, typ: type[T]) -> T:

@@ -1,7 +1,7 @@
 """Edge-to-edge clone-dot pages. No cover. Press plots this ledger when count > 0."""
 
 from parch.components.dotgrid import DotGridPad
-from parch.sections.page import Page
+from parch.sections.page import DotgridPage, Page
 from parch.spec import Spec
 
 
@@ -14,9 +14,8 @@ def dotgrid_pages(spec: Spec) -> list[Page]:
     built: list[Page] = []
     for sheet in range(1, spec.dotgrid_sheets + 1):
         built.append(
-            Page(
+            DotgridPage(
                 dest=spec.dest_for_dotgrid_pad(sheet),
-                kind="dotgrid",
                 title="Dot grid",
                 nav=(),
                 components=(DotGridPad(sheet=sheet, sheets=spec.dotgrid_sheets),),

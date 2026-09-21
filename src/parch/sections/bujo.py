@@ -20,7 +20,17 @@ from parch.components import (
 )
 from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
 from parch.sections.nav import bujo_nav
-from parch.sections.page import Page
+from parch.sections.page import (
+    BujoIndexPage,
+    BujoKeyPage,
+    CollectionPage,
+    FutureLogHubPage,
+    HabitsPage,
+    MonthlyLogPage,
+    MonthlyTasksPage,
+    Page,
+    RapidLogHubPage,
+)
 from parch.spec import Spec
 
 _KEY_SYMBOLS = (
@@ -56,9 +66,8 @@ class BujoKeySection:
     def pages(self) -> list[Page]:
         spec = self.spec
         return [
-            Page(
+            BujoKeyPage(
                 dest=spec.bujo_key_dest,
-                kind="bujo_key",
                 title="Key",
                 nav=bujo_nav(spec),
                 components=(BujoKey(symbols=_KEY_SYMBOLS),),
@@ -80,9 +89,8 @@ class BujoIndexSection:
             start = (page_i - 1) * per
             dest = spec.dest_for_bujo_index(page_i)
             built.append(
-                Page(
+                BujoIndexPage(
                     dest=dest,
-                    kind="bujo_index",
                     title="Index",
                     nav=bujo_nav(spec, index_dest=dest),
                     components=(
@@ -111,9 +119,8 @@ class FutureLogSection:
             chunk = spec.months[start : start + FUTURE_LOG_MONTHS_PER_PAGE]
             dest = spec.dest_for_bujo_future(page_i)
             built.append(
-                Page(
+                FutureLogHubPage(
                     dest=dest,
-                    kind="future_log",
                     title="Future log",
                     nav=bujo_nav(spec, future_dest=dest),
                     components=(
@@ -153,9 +160,8 @@ class MonthlyLogSection:
         name = month_name(month)
         nav = bujo_nav(spec, month=month)
         return [
-            Page(
+            MonthlyLogPage(
                 dest=spec.dest_for_month(month),
-                kind="monthly_log",
                 title=f"{name} {spec.year}",
                 nav=nav,
                 components=(
@@ -168,9 +174,8 @@ class MonthlyLogSection:
                     ),
                 ),
             ),
-            Page(
+            MonthlyTasksPage(
                 dest=spec.dest_for_month_tasks(month),
-                kind="monthly_tasks",
                 title=f"Tasks · {name} {spec.year}",
                 nav=nav,
                 components=(
@@ -196,9 +201,8 @@ class BujoHabitSection:
             spec.dest_for_day(date(spec.year, month, day)) for day in range(1, days + 1)
         )
         return [
-            Page(
+            HabitsPage(
                 dest=spec.dest_for_habits(month),
-                kind="habits",
                 title=f"Habits · {month_name(month)} {spec.year}",
                 nav=bujo_nav(spec, month=month),
                 components=(
@@ -228,9 +232,8 @@ class RapidLogSection:
             weekday = WEEKDAY_LABELS[moment.weekday()]
             title = f"{weekday} {moment.day}"
             built.append(
-                Page(
+                RapidLogHubPage(
                     dest=dest,
-                    kind="rapid_log",
                     title=title,
                     nav=bujo_nav(spec, day=moment, month=month),
                     components=(
@@ -253,9 +256,8 @@ class CollectionSection:
     def pages(self) -> list[Page]:
         spec = self.spec
         return [
-            Page(
+            CollectionPage(
                 dest=spec.dest_for_bujo_collection(number),
-                kind="collection",
                 title="Collections",
                 nav=bujo_nav(
                     spec, collection_dest=spec.dest_for_bujo_collection(number)

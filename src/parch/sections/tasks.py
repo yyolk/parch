@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from parch.calendar import MONTH_NAMES, iso_monday, month_week_bands, quarter_of
 from parch.components import TasksIndex, TasksMonthBand, TasksWeekPage, TaskWeek
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, TaskPage, TasksIndexPage
 from parch.spec import Spec
 
 
@@ -27,9 +27,8 @@ class TasksSection:
             landing = self._landing(first_week.monday)
             index_dest = spec.dest_for_tasks_index(quarter)
             built.append(
-                Page(
+                TasksIndexPage(
                     dest=index_dest,
-                    kind="tasks_index",
                     title=f"Tasks Q{quarter} {spec.year}",
                     nav=planner_nav(
                         spec,
@@ -78,9 +77,8 @@ class TasksSection:
     def _dest_page(self, week: TaskWeek, index_dest: str) -> Page:
         spec = self.spec
         landing = self._landing(week.monday)
-        return Page(
+        return TaskPage(
             dest=week.dest,
-            kind="task",
             title="Tasks",
             nav=planner_nav(
                 spec,

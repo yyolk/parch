@@ -51,7 +51,7 @@ _OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})
 
 
 def _section_start(kind: str, prev_kind: str | None) -> bool:
-    """First non-cover page of a contiguous PageKind run (or first after cover)."""
+    """First non-cover page of a contiguous page-type run (or first after cover)."""
     if kind == "cover":
         return False
     return prev_kind is None or prev_kind == "cover" or prev_kind != kind

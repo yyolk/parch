@@ -9,7 +9,7 @@ from parch.components import (
     ReviewWeekPage,
 )
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, ReviewIndexPage, ReviewPage
 from parch.spec import Spec
 
 
@@ -28,9 +28,8 @@ class ReviewSection:
         landing = self._landing(first_week.monday)
         index_dest = spec.review_index_dest
         built = [
-            Page(
+            ReviewIndexPage(
                 dest=index_dest,
-                kind="review_index",
                 title="Review",
                 nav=planner_nav(
                     spec,
@@ -80,9 +79,8 @@ class ReviewSection:
             )
             for day in (week.monday + timedelta(days=offset) for offset in range(7))
         )
-        return Page(
+        return ReviewPage(
             dest=week.dest,
-            kind="review",
             title="Review",
             nav=planner_nav(
                 spec,

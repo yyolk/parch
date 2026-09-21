@@ -1,7 +1,7 @@
 from parch.calendar import month_touching_weeks
 from parch.components import FavoritesPage
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import FavoritesHubPage, Page
 from parch.spec import Spec
 
 
@@ -18,9 +18,8 @@ class FavoritesSection:
         first = month_touching_weeks(spec.year, spec.month, spec.weekday_start)[0]
         dest = spec.favorites_dest
         return [
-            Page(
+            FavoritesHubPage(
                 dest=dest,
-                kind="favorites",
                 title="Favorites",
                 nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
                 components=(FavoritesPage(year=spec.year),),

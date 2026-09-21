@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from parch.calendar import WEEKDAY_LABELS, iso_monday
 from parch.components import WeekDay, WeekStrip
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, WeeklyPage
 from parch.spec import Spec
 
 
@@ -29,9 +29,8 @@ class WeeklySection:
         )
         dest = spec.dest_for_week(monday)
         return [
-            Page(
+            WeeklyPage(
                 dest=dest,
-                kind="weekly",
                 title=f"Week {iso.week:02d}",
                 nav=planner_nav(spec, week_dest=dest, day=landing, month=landing.month),
                 components=(
