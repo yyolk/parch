@@ -20,6 +20,7 @@ from pathlib import Path
 
 from parch import ConfigError
 from parch.books.bullet_journal import BulletJournal
+from parch.books.dot_grid_notebook import DotGridNotebook
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
@@ -66,6 +67,9 @@ STENO_STEMS = ("steno",)
 # Pad-only full-bleed clone-dot sheet (dotgrid_sheets=1).
 DOTGRID_STEMS = ("dotgrid",)
 
+# Dot-grid notebook — cover + one full-bleed clone-dot page (sibling dests).
+DOTGRID_NOTEBOOK_STEMS = ("dotgrid-cover", "dotgrid-page")
+
 # Catalog Pages devices. Do not follow known_device_ids().
 # Grow this tuple when a device should join gh-pages specimens.
 CATALOG_DEVICE_IDS = ("supernote-nomad", "kindle-scribe")
@@ -85,6 +89,7 @@ def gallery_groups(
         ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
         ("bullet-journal", "Bullet Journal", BUJO_STEMS),
+        ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
         ("dotgrid-pad", "Dot grid pad", DOTGRID_STEMS),
     )
@@ -151,6 +156,16 @@ def bujo_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     )
 
 
+def dotgrid_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Dot-grid notebook press for catalog cover + one clone-dot page."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="dot-grid-notebook",
+        title="Dot grid",
+        dotgrid_sheets=1,
+    )
+
+
 def sample_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each catalog stem on *spec*."""
     jan1 = date(spec.year, 1, 1)
@@ -206,6 +221,14 @@ def bujo_dests(spec: Spec) -> dict[str, str]:
     }
 
 
+def dotgrid_notebook_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each dot-grid-notebook catalog stem."""
+    return {
+        "dotgrid-cover": spec.cover_dest,
+        "dotgrid-page": spec.dest_for_dotgrid_pad(1),
+    }
+
+
 def _page_numbers(
     pages: Sequence[Page], dests: dict[str, str], stems: Sequence[str]
 ) -> dict[str, int]:
@@ -252,6 +275,15 @@ def dotgrid_page_numbers(
 def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str, int]:
     """1-based page numbers from the bullet-journal walk."""
     return _page_numbers(BulletJournal().pages(spec), bujo_dests(spec), stems)
+
+
+def dotgrid_notebook_page_numbers(
+    spec: Spec, stems: Sequence[str] = DOTGRID_NOTEBOOK_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the dot-grid-notebook walk."""
+    return _page_numbers(
+        DotGridNotebook().pages(spec), dotgrid_notebook_dests(spec), stems
+    )
 
 
 def resolve_commit_sha(explicit: str | None = None) -> str | None:
@@ -492,6 +524,15 @@ def write_specimens(
         bujo_pdf = Path(tmp) / "bullet-journal.pdf"
         press(bujo_spec, bujo_pdf, proof=True)
         _render_stems(bujo_pdf, dest, bujo_page_numbers(bujo_spec), BUJO_STEMS)
+        notebook_spec = dotgrid_notebook_specimen_spec(device_id, year=year)
+        notebook_pdf = Path(tmp) / "dot-grid-notebook.pdf"
+        press(notebook_spec, notebook_pdf, proof=True)
+        _render_stems(
+            notebook_pdf,
+            dest,
+            dotgrid_notebook_page_numbers(notebook_spec),
+            DOTGRID_NOTEBOOK_STEMS,
+        )
         steno_spec = steno_specimen_spec(device_id, year=year)
         steno_pdf = Path(tmp) / "steno-pad.pdf"
         press(steno_spec, steno_pdf, proof=True)

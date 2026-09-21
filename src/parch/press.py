@@ -84,11 +84,13 @@ def press(
     ``plot_pages`` — no cover, no new Book. Single-count specs keep
     the existing hijacks: steno-only, or year-planner engineering
     pad-only. ``dotgrid_sheets`` appends ``dotgrid_pages`` after those
-    pads, or presses that ledger alone — no cover, no Book. A
-    ``dot-grid-notebook`` sibling is a follow-up. ``book =
-    "engineering-notebook"`` still presses cover + pad faces through
-    ``Book``; combining it with ``steno_sheets`` or ``dotgrid_sheets``
-    raises ``ConfigError``.
+    pads, or presses that ledger alone on year-planner — no cover.
+    ``book = "dot-grid-notebook"`` presses cover + clone-dot pages
+    through ``Book``. ``book = "engineering-notebook"`` still presses
+    cover + pad faces through ``Book``; combining it with
+    ``steno_sheets`` or ``dotgrid_sheets`` raises ``ConfigError``.
+    Combining ``dot-grid-notebook`` with ``engineering_sheets`` or
+    ``steno_sheets`` also raises ``ConfigError``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -131,7 +133,7 @@ def press(
             outline=spec.outline,
             top_clearance=spec.top_clearance,
         )
-    elif spec.dotgrid_sheets > 0:
+    elif spec.book == "year-planner" and spec.dotgrid_sheets > 0:
         plot_pages(
             lambda: dotgrid_pages(spec),
             plotter,

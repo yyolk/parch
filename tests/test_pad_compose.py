@@ -36,6 +36,18 @@ def test_engineering_notebook_rejects_dotgrid_sheets():
         Spec(book="engineering-notebook", engineering_sheets=1, dotgrid_sheets=1)
 
 
+def test_dot_grid_notebook_rejects_engineering_sheets():
+    with pytest.raises(
+        ConfigError, match="dot-grid-notebook cannot set engineering_sheets"
+    ):
+        Spec(book="dot-grid-notebook", dotgrid_sheets=1, engineering_sheets=1)
+
+
+def test_dot_grid_notebook_rejects_steno_sheets():
+    with pytest.raises(ConfigError, match="dot-grid-notebook cannot set steno_sheets"):
+        Spec(book="dot-grid-notebook", dotgrid_sheets=1, steno_sheets=1)
+
+
 def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
     spec = Spec(engineering_sheets=1, steno_sheets=1)
     plotter = RecordingPlotter()

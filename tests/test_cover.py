@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from parch.books import BulletJournal, EngineeringNotebook, ProjectsNotebook
+from parch.books import (
+    BulletJournal,
+    DotGridNotebook,
+    EngineeringNotebook,
+    ProjectsNotebook,
+)
 from parch.components import CoverTitle
 from parch.devices import NOMAD
 from parch.layouts.planner.layout import PlannerLayout
@@ -78,6 +83,25 @@ def test_engineering_omitted_title_keeps_engineering_headline():
     assert cover.display_title == "Engineering"
     texts = _paint_texts(page)
     assert "Engineering" in texts
+    assert "Year Book" not in texts
+
+
+def test_dot_grid_omitted_title_keeps_dot_grid_headline():
+    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=1)
+    page, cover = _cover_page(DotGridNotebook().pages(spec))
+    assert cover.display_title == "Dot grid"
+    texts = _paint_texts(page)
+    assert "Dot grid" in texts
+    assert "Year Book" not in texts
+
+
+def test_dot_grid_title_is_headline():
+    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=1, title="Dots")
+    page, cover = _cover_page(DotGridNotebook().pages(spec))
+    assert cover.display_title == "Dots"
+    texts = _paint_texts(page)
+    assert "Dots" in texts
+    assert "Dot grid" not in texts
     assert "Year Book" not in texts
 
 
