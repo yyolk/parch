@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/python:3.14
 
+USER root
 COPY --from=ghcr.io/astral-sh/uv:0.12.17 /uv /uvx /usr/local/bin/
 
 # Venv lives outside the workspace so a bind-mounted repo does not hide it.
@@ -13,6 +14,6 @@ WORKDIR /tmp/parch
 COPY --chown=vscode:vscode pyproject.toml uv.lock README.md LICENSE ./
 COPY --chown=vscode:vscode src ./src
 RUN uv sync --all-groups --frozen \
-    && rm -rf /tmp/parch /home/vscode/.cache/uv
+    && rm -rf /home/vscode/.cache/uv
 
 WORKDIR /home/vscode

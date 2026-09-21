@@ -1,6 +1,7 @@
 {
   "name": "parch",
   "image": "ghcr.io/yyolk/parch-devcontainer:latest",
+  "remoteUser": "vscode",
   "postCreateCommand": "uv sync --all-groups",
   "remoteEnv": {
     "PATH": "/home/vscode/.venv/bin:/usr/local/bin:${containerEnv:PATH}",
