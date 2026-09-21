@@ -126,18 +126,19 @@ def test_pagekind_literal_is_gone():
     assert not hasattr(page_mod, "PageKind")
 
 
+def _members(alias: object) -> set[type]:
+    value = getattr(alias, "__value__")
+    assert type(value) is types.UnionType
+    return set(get_args(value))
+
+
 def test_page_is_closed_union_of_full_bleed_and_header():
-    union = Page.__value__
-    assert type(union) is types.UnionType
-    members = set(get_args(union))
-    assert members == _MEMBERS
-    assert members == set(get_args(FullBleedPage.__value__)) | set(
-        get_args(HeaderPage.__value__)
-    )
-    assert CoverPage in get_args(FullBleedPage.__value__)
-    assert DotgridPage in get_args(FullBleedPage.__value__)
-    assert StenoPadPage in get_args(FullBleedPage.__value__)
-    assert AnnualPage in get_args(HeaderPage.__value__)
+    assert _members(Page) == {FullBleedPage, HeaderPage}
+    assert _members(FullBleedPage) | _members(HeaderPage) == _MEMBERS
+    assert CoverPage in _members(FullBleedPage)
+    assert DotgridPage in _members(FullBleedPage)
+    assert StenoPadPage in _members(FullBleedPage)
+    assert AnnualPage in _members(HeaderPage)
 
 
 def test_each_member_owns_its_kind_tag():
@@ -150,6 +151,8 @@ def test_layout_matches_on_type_with_assert_never():
     assert "match page:" in text
     assert "match page.kind:" not in text
     assert text.count("assert_never") >= 2
+    for cls in _MEMBERS:
+        assert f"{cls.__name__}()" in text, f"{cls.__name__} missing from layout match"
 
 
 def test_sections_emit_typed_pages_and_layout_paints():
