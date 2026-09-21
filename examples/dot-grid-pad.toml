@@ -1,0 +1,10 @@
+# Single-face edge-to-edge dot-grid pad.
+# Full device page — clone ``paint_dot_grid`` / CLONE_DOT_*.
+# No header, nav, content_frame, or cover notebook.
+# ``dot_sheets > 0`` presses this section only (pad compose row):
+#   parch press examples/dot-grid-pad.toml -o out/dot-grid-pad.pdf
+device = "supernote-nomad"
+title = "Dot grid"
+
+[dot]
+sheets = 2

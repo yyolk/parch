@@ -27,8 +27,8 @@ class Book(Protocol):
         """Reserve dests, then paint each page."""
 
 
-# Reader outline hubs only. Weeks, days, notes, leaves, habits, pad,
-# rapid-log, and monthly-task kinds omitted.
+# Reader outline hubs only. Weeks, days, notes, leaves, habits, pad
+# (engineering, steno, dot-grid), rapid-log, and monthly-task kinds omitted.
 # RUN: once per contiguous kind-run (tasks_index re-fires after task leaves).
 # EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
 _OUTLINE_RUN = frozenset(

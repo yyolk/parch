@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPad,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -1060,14 +1061,18 @@ def paint_project(
             name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK
         )
         _paint_clone_tasks(plotter, tasks)
-        _paint_clone_dot_grid(plotter, notes)
+        paint_dot_grid(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
         _paint_clone_status_track(plotter, rail)
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
-    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
+def paint_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch.
+
+    Shared by the projects-clone notes pocket and the edge-to-edge pad page.
+    One implementation: ``CLONE_DOT_PITCH`` / ``CLONE_DOT``.
+    """
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
     nx = max(2, int(inset.w / CLONE_DOT_PITCH))
@@ -1085,6 +1090,11 @@ def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
                 fill=True,
                 fill_gray=RULE_C,
             )
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """Clone notes pocket — same grid as the pad page painter."""
+    paint_dot_grid(plotter, box)
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3251,3 +3261,20 @@ def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
         stroke_width=HAIR,
         stroke_gray=MUTED,
     )
+
+
+def device_page(device: Device) -> Rect:
+    """Full device page — no content_frame, writing, or nav insets."""
+    return Rect(0.0, 0.0, device.page_width, device.page_height)
+
+
+def paint_dot_grid_pad(
+    plotter: Plotter,
+    device: Device,
+    pad: DotGridPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Edge-to-edge clone dots on the full device page. No chrome strip."""
+    _bound_ramp(plotter, ramp)
+    paint_dot_grid(plotter, device_page(device))
