@@ -1,4 +1,4 @@
-"""Lined / dot-grid mix notebook — cover → duplex pair sheets."""
+"""Lined / dot-grid mix notebook — cover → duplex pairs (zip when 2+ types)."""
 
 from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp

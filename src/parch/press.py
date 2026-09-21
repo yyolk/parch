@@ -100,9 +100,9 @@ def press(
     presses cover + lined pages through ``Book``. Exclusive notebooks
     reject mixed pad counts. ``book = "lined-dot-grid-mix-notebook"``
     (alias ``lined-dotgrid-notebook``) prefixes cover then walks
-    duplex pair sheets: ``lined-dot-grid`` then ``dot-grid-lined``
-    when both counts are set. Either type alone is enough. Pad-only
-    year-planner still presses one duplex pair type — no cover.
+    duplex pair sheets. One type is a plain run; two or more types
+    zip by sheet (``lined-dot-grid`` starts; leftover sheets append).
+    Pad-only year-planner still presses one duplex pair type — no cover.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(

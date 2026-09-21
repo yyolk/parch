@@ -1,6 +1,7 @@
 # Lined / dot-grid mix notebook — cover, then duplex pair sheets.
-# Each sheet is front + back (name is front then back). Either type
-# or both: default walk is lined-dot-grid, then dot-grid-lined.
+# Each sheet is front + back (name is front then back). One type is a
+# plain run. Two types zip by sheet (lined-dot-grid starts; leftovers
+# append). This example is one type (no zip).
 # Not pad-only: examples/lined-dot-grid-pad.toml (no cover).
 # Alias book id ``lined-dotgrid-notebook`` still loads this mix book.
 #   parch press examples/lined-dot-grid-mix-notebook.toml -o out/lined-dot-grid-mix-notebook.pdf
