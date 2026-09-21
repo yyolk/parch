@@ -8,7 +8,7 @@ chrome list.
 """
 
 from dataclasses import dataclass
-from typing import Literal, TypeIs, assert_never, get_args
+from typing import Literal, TypeIs, assert_never, cast, get_args
 
 from parch.components import Component
 
@@ -55,8 +55,12 @@ def _literal_args(alias: object) -> tuple[str, ...]:
     return get_args(getattr(alias, "__value__", alias))
 
 
-CHROME_KINDS: frozenset[str] = frozenset(_literal_args(ChromeKind))
-PAD_KINDS: frozenset[str] = frozenset(_literal_args(PadKind))
+CHROME_KINDS: frozenset[ChromeKind] = frozenset(
+    cast(tuple[ChromeKind, ...], _literal_args(ChromeKind))
+)
+PAD_KINDS: frozenset[PadKind] = frozenset(
+    cast(tuple[PadKind, ...], _literal_args(PadKind))
+)
 
 
 def is_chrome_kind(kind: PageKind) -> TypeIs[ChromeKind]:
