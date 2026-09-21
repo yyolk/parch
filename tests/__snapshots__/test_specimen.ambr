@@ -1,0 +1,102 @@
+# serializer version: 1
+# name: test_bujo_dests_and_pages[dests]
+  dict({
+    'bujo-cover': 'cover',
+    'bujo-future': 'bujo-future-2026-01',
+    'bujo-index': 'bujo-index-2026-01',
+    'bujo-key': 'bujo-key-2026',
+  })
+# ---
+# name: test_bujo_dests_and_pages[pages]
+  dict({
+    'bujo-cover': 1,
+    'bujo-future': 4,
+    'bujo-index': 3,
+    'bujo-key': 2,
+  })
+# ---
+# name: test_dotgrid_dests_and_pages[dests]
+  dict({
+    'dotgrid': 'dotgrid-2026-01',
+  })
+# ---
+# name: test_dotgrid_dests_and_pages[pages]
+  dict({
+    'dotgrid': 1,
+  })
+# ---
+# name: test_projects_dests_and_pages[dests]
+  dict({
+    'projects-cover': 'cover',
+    'projects-index': 'projects-index-2026-01',
+    'projects-project-1': 'projects-2026-01',
+  })
+# ---
+# name: test_projects_dests_and_pages[pages]
+  dict({
+    'projects-cover': 1,
+    'projects-index': 2,
+    'projects-project-1': 3,
+  })
+# ---
+# name: test_sample_dests_and_pages_for_january[dests]
+  dict({
+    'annual': 'year-2026',
+    'checkoff-365': 'checkoff-365-2026',
+    'cover': 'cover',
+    'daily-jan1': '2026-01-01',
+    'favorites': 'favorites-2026',
+    'habits-jan': 'month-2026-01-habits',
+    'meeting-1': 'meeting-2026-01',
+    'meetings': 'meetings-index-2026',
+    'monthly-jan': 'month-2026-01',
+    'my-100': 'my-100-2026',
+    'notes-jan1': '2026-01-01-notes-1',
+    'project-1': 'projects-2026-01',
+    'projects': 'projects-index-2026-01',
+    'quarterly-q1': 'quarter-2026-Q1',
+    'review': 'review-index-2026',
+    'review-w01': 'review-2026-W01',
+    'tasks': 'tasks-index-2026-Q1',
+    'tasks-w01': 'tasks-2026-W01',
+    'weekly-w01': 'week-2026-W01',
+  })
+# ---
+# name: test_sample_dests_and_pages_for_january[extras-pages]
+  dict({
+    'annual': 2,
+    'checkoff-365': 3,
+    'favorites': 4,
+    'my-100': 5,
+  })
+# ---
+# name: test_sample_dests_and_pages_for_january[pages]
+  dict({
+    'annual': 2,
+    'cover': 1,
+    'daily-jan1': 7,
+    'habits-jan': 5,
+    'meeting-1': 89,
+    'meetings': 88,
+    'monthly-jan': 4,
+    'notes-jan1': 8,
+    'project-1': 80,
+    'projects': 79,
+    'quarterly-q1': 3,
+    'review': 73,
+    'review-w01': 74,
+    'tasks': 105,
+    'tasks-w01': 106,
+    'weekly-w01': 6,
+  })
+# ---
+# name: test_steno_dests_and_pages[dests]
+  dict({
+    'steno': 'steno-2026-01',
+  })
+# ---
+# name: test_steno_dests_and_pages[pages]
+  dict({
+    'steno': 1,
+  })
+# ---

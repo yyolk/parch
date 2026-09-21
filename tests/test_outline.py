@@ -12,7 +12,6 @@ from parch.books import (
     outline_entries,
     plot_pages,
 )
-from parch.calendar import MONTH_NAMES
 from parch.fonts.ramp import EffectiveRamp
 from parch.plotter import RecordingPlotter
 from parch.press import press
@@ -88,7 +87,7 @@ def test_projects_notebook_outlines_index_not_cover():
     assert spec.dest_for_project(1) not in dests
 
 
-def test_year_planner_outlines_annual_indexes_quarter_month():
+def test_year_planner_outlines_annual_indexes_quarter_month(snapshot):
     spec = Spec(months=(1,), notes_pages=0, outline=True)
     book = YearPlanner()
     pages = book.pages(spec)
@@ -98,15 +97,10 @@ def test_year_planner_outlines_annual_indexes_quarter_month():
     dest_kind = {page.dest: page.kind for page in pages}
     outlined_kinds = {dest_kind[dest] for dest in dests}
 
-    assert dests == [
-        spec.year_dest,
-        spec.quarter_dest,
-        spec.month_dest,
-        spec.review_index_dest,
-        spec.projects_index_dest,
-        spec.meetings_index_dest,
-        spec.tasks_index_dest,
-    ]
+    assert [(page.kind, page.dest, page.title) for page in pages] == snapshot(
+        name="ledger"
+    )
+    assert plotter.outlines() == snapshot(name="outline")
     assert plotter.outlines() == outline_entries(pages)
     titles = [title for title, _dest in plotter.outlines()]
     assert titles.count("Tasks Q1 2026") == 1
@@ -144,7 +138,7 @@ def test_year_planner_outlines_my_100_after_annual_when_on():
     assert later == []
 
 
-def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
+def test_year_planner_full_year_outline_once_indexes_each_quarter_month(snapshot):
     spec = Spec(notes_pages=0, outline=True)
     pages = YearPlanner().pages(spec)
     entries = outline_entries(pages)
@@ -152,28 +146,14 @@ def test_year_planner_full_year_outline_once_indexes_each_quarter_month():
     dests = [dest for _title, dest in entries]
     dest_kind = {page.dest: page.kind for page in pages}
     outlined_kinds = {dest_kind[dest] for dest in dests}
-    month_titles = [f"{name} {spec.year}" for name in MONTH_NAMES]
-    quarter_titles = [f"Q{quarter} {spec.year}" for quarter in range(1, 5)]
-    tasks_titles = [f"Tasks Q{quarter} {spec.year}" for quarter in range(1, 5)]
     pressed_tasks = [page for page in pages if page.kind == "tasks_index"]
 
-    assert titles == [
-        str(spec.year),
-        *quarter_titles,
-        *month_titles,
-        "Review",
-        "Projects",
-        "Meetings",
-        *tasks_titles,
-    ]
+    assert entries == snapshot
     assert [title for title, dest in entries if dest_kind[dest] == "tasks_index"] == [
         page.title for page in pressed_tasks
     ]
     assert len(pressed_tasks) == 4
-    assert len(set(tasks_titles)) == 4
     assert "Tasks" not in titles
-    assert [title for title in titles if title.startswith("Q")] == quarter_titles
-    assert [title for title in titles if title in set(month_titles)] == month_titles
     assert outlined_kinds == _OUTLINE_HUBS
     assert outlined_kinds.isdisjoint(_EXCLUDED_KINDS)
     assert spec.cover_dest not in dests
@@ -257,7 +237,7 @@ def test_example_engineering_toml_enables_outline():
     assert spec.book == "engineering-notebook"
 
 
-def test_bullet_journal_january_outline_hubs():
+def test_bullet_journal_january_outline_hubs(snapshot):
     spec = Spec(
         book="bullet-journal",
         months=(1,),
@@ -269,19 +249,13 @@ def test_bullet_journal_january_outline_hubs():
     entries = outline_entries(pages)
     dests = [dest for _title, dest in entries]
     dest_kind = {page.dest: page.kind for page in pages}
+    assert entries == snapshot
     assert [dest_kind[dest] for dest in dests] == [
         "bujo_key",
         "bujo_index",
         "future_log",
         "monthly_log",
         "collection",
-    ]
-    assert dests == [
-        spec.bujo_key_dest,
-        spec.bujo_index_dest,
-        spec.bujo_future_dest,
-        spec.dest_for_month(1),
-        spec.dest_for_bujo_collection(1),
     ]
     assert spec.cover_dest not in dests
     assert spec.dest_for_habits(1) not in dests

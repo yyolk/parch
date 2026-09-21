@@ -9,10 +9,10 @@ from parch.press import press
 from parch.spec import Spec
 
 
-def test_projects_notebook_is_cover_then_projects():
+def test_projects_notebook_is_cover_then_projects(snapshot):
     spec = Spec(notes_pages=1, book="projects-notebook")
     pages = ProjectsNotebook().pages(spec)
-    assert [page.kind for page in pages[:2]] == ["cover", "projects_index"]
+    assert [(page.kind, page.dest) for page in pages] == snapshot
     assert {page.kind for page in pages} == {"cover", "projects_index", "project"}
     assert len(pages) == 1 + spec.project_index_pages + spec.project_count
 

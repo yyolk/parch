@@ -5,23 +5,11 @@ from parch.plotter import RecordingPlotter
 from parch.spec import Spec
 
 
-def test_annual_page_and_year_nav():
+def test_annual_page_and_year_nav(snapshot):
     spec = Spec(notes_pages=1)
     pages = YearPlanner().pages(spec)
     dests = [page.dest for page in pages]
-    assert dests[:7] == [
-        "cover",
-        "year-2026",
-        "quarter-2026-Q1",
-        "quarter-2026-Q2",
-        "quarter-2026-Q3",
-        "quarter-2026-Q4",
-        "month-2026-01",
-    ]
-    assert dests.index("review-index-2026") > dests.index("2026-12-31")
-    assert dests.index("projects-index-2026-01") > dests.index("review-2026-W53")
-    assert dests.index("meetings-index-2026") > dests.index("projects-2026-08")
-    assert dests.index("tasks-index-2026-Q1") > dests.index("meeting-2026-16")
+    assert dests == snapshot
     cover = pages[0]
     assert cover.components[0].cta_dest == "year-2026"
 

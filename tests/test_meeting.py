@@ -350,15 +350,14 @@ def test_meeting_index_paint_date_cues_and_links():
     assert dict(strip_items(page))["Meet"] == spec.meetings_index_dest
 
 
-def test_meeting_rows_knob():
+def test_meeting_rows_knob(snapshot):
     spec = Spec(notes_pages=1, meeting_index_rows=12)
     pages = MeetingSection(spec).pages()
     index = next(p for p in pages if p.kind == "meetings_index")
     roster = next(item for item in index.components if isinstance(item, MeetingIndex))
     assert len(roster.slots) == 12
     dests = [page.dest for page in pages]
-    assert dests[0] == "meetings-index-2026"
-    assert dests[1:] == [f"meeting-2026-{slot:02d}" for slot in range(1, 13)]
+    assert dests == snapshot
     assert "meeting-2026-13" not in dests
     plotter = RecordingPlotter()
     paint_meetings_index(plotter, well_rect(NOMAD), roster)

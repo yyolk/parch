@@ -204,7 +204,7 @@ def test_specimen_index_html_omits_footer_without_commit():
     assert "github.com/" not in html
 
 
-def test_sample_dests_and_pages_for_january():
+def test_sample_dests_and_pages_for_january(snapshot):
     spec = specimen_spec("supernote-nomad")
     assert spec.months == (1,)
     assert spec.notes_pages == 1
@@ -212,95 +212,54 @@ def test_sample_dests_and_pages_for_january():
     assert spec.my_100 is False
     assert spec.checkoff_365 is False
     dests = sample_dests(spec)
-    assert dests["cover"] == "cover"
-    assert dests["annual"] == "year-2026"
-    assert dests["favorites"] == "favorites-2026"
-    assert dests["my-100"] == "my-100-2026"
-    assert dests["checkoff-365"] == "checkoff-365-2026"
+    assert dests == snapshot(name="dests")
     assert set(EXTRAS_STEMS) <= set(dests)
-    assert dests["projects"] == "projects-index-2026-01"
-    assert dests["project-1"] == "projects-2026-01"
-    assert dests["meetings"] == "meetings-index-2026"
-    assert dests["meeting-1"] == "meeting-2026-01"
-    assert dests["tasks"] == "tasks-index-2026-Q1"
-    assert dests["tasks-w01"] == "tasks-2026-W01"
-    assert dests["review"] == "review-index-2026"
-    assert dests["review-w01"] == "review-2026-W01"
-    assert dests["quarterly-q1"] == "quarter-2026-Q1"
-    assert dests["monthly-jan"] == "month-2026-01"
-    assert dests["habits-jan"] == "month-2026-01-habits"
-    assert dests["weekly-w01"] == "week-2026-W01"
-    assert dests["daily-jan1"] == "2026-01-01"
-    assert dests["notes-jan1"] == "2026-01-01-notes-1"
     numbers = sample_page_numbers(spec)
+    assert numbers == snapshot(name="pages")
     assert set(numbers) == set(SAMPLE_STEMS)
-    assert numbers["cover"] == 1
-    assert numbers["annual"] == 2
-    assert numbers["quarterly-q1"] == 3
-    assert numbers["monthly-jan"] == 4
-    assert numbers["habits-jan"] == 5
-    assert (
-        numbers["cover"]
-        < numbers["annual"]
-        < numbers["quarterly-q1"]
-        < numbers["monthly-jan"]
-        < numbers["habits-jan"]
-        < numbers["weekly-w01"]
-        < numbers["daily-jan1"]
-        < numbers["notes-jan1"]
-        < numbers["review"]
-        < numbers["review-w01"]
-        < numbers["projects"]
-        < numbers["project-1"]
-        < numbers["meetings"]
-        < numbers["meeting-1"]
-        < numbers["tasks"]
-        < numbers["tasks-w01"]
-    )
     assert all(page >= 1 for page in numbers.values())
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
     extras = replace(spec, favorites_pages=1, my_100=True, checkoff_365=True)
     extra_numbers = sample_page_numbers(extras, ("annual", *EXTRAS_STEMS))
+    assert extra_numbers == snapshot(name="extras-pages")
     assert set(EXTRAS_STEMS) <= extra_numbers.keys()
     assert all(extra_numbers[stem] > extra_numbers["annual"] for stem in EXTRAS_STEMS)
 
 
-def test_projects_dests_and_pages():
+def test_projects_dests_and_pages(snapshot):
     spec = projects_specimen_spec("kindle-scribe")
     assert spec.book == "projects-notebook"
     assert spec.device == "kindle-scribe"
     dests = projects_dests(spec)
-    assert dests["projects-cover"] == "cover"
-    assert (
-        dests["projects-index"] == spec.projects_index_dest == "projects-index-2026-01"
-    )
-    assert dests["projects-project-1"] == spec.dest_for_project(1) == "projects-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["projects-index"] == spec.projects_index_dest
+    assert dests["projects-project-1"] == spec.dest_for_project(1)
     numbers = projects_page_numbers(spec)
+    assert numbers == snapshot(name="pages")
     assert set(numbers) == set(PROJECTS_STEMS)
-    assert numbers["projects-cover"] == 1
-    assert numbers["projects-index"] == 2
-    assert numbers["projects-project-1"] == 3
 
 
-def test_steno_dests_and_pages():
+def test_steno_dests_and_pages(snapshot):
     spec = steno_specimen_spec("supernote-nomad")
     assert spec.steno_sheets == 1
     dests = steno_dests(spec)
-    assert dests["steno"] == spec.dest_for_steno_pad(1) == "steno-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["steno"] == spec.dest_for_steno_pad(1)
     numbers = steno_page_numbers(spec)
-    assert numbers == {"steno": 1}
+    assert numbers == snapshot(name="pages")
 
 
-def test_dotgrid_dests_and_pages():
+def test_dotgrid_dests_and_pages(snapshot):
     spec = dotgrid_specimen_spec("supernote-nomad")
     assert spec.dotgrid_sheets == 1
     dests = dotgrid_dests(spec)
-    assert dests["dotgrid"] == spec.dest_for_dotgrid_pad(1) == "dotgrid-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["dotgrid"] == spec.dest_for_dotgrid_pad(1)
     numbers = dotgrid_page_numbers(spec)
-    assert numbers == {"dotgrid": 1}
+    assert numbers == snapshot(name="pages")
 
 
-def test_bujo_dests_and_pages():
+def test_bujo_dests_and_pages(snapshot):
     spec = bujo_specimen_spec("kindle-scribe")
     assert spec.book == "bullet-journal"
     assert spec.device == "kindle-scribe"
@@ -308,16 +267,14 @@ def test_bujo_dests_and_pages():
     assert spec.bujo_index_pages == 1
     assert spec.bujo_collections == 1
     dests = bujo_dests(spec)
-    assert dests["bujo-cover"] == spec.cover_dest == "cover"
-    assert dests["bujo-key"] == spec.bujo_key_dest == "bujo-key-2026"
-    assert dests["bujo-index"] == spec.bujo_index_dest == "bujo-index-2026-01"
-    assert dests["bujo-future"] == spec.bujo_future_dest == "bujo-future-2026-01"
+    assert dests == snapshot(name="dests")
+    assert dests["bujo-cover"] == spec.cover_dest
+    assert dests["bujo-key"] == spec.bujo_key_dest
+    assert dests["bujo-index"] == spec.bujo_index_dest
+    assert dests["bujo-future"] == spec.bujo_future_dest
     numbers = bujo_page_numbers(spec)
+    assert numbers == snapshot(name="pages")
     assert set(numbers) == set(BUJO_STEMS)
-    assert numbers["bujo-cover"] == 1
-    assert numbers["bujo-key"] == 2
-    assert numbers["bujo-index"] == 3
-    assert numbers["bujo-future"] == 4
 
 
 def test_specimen_cli_help(capsys):

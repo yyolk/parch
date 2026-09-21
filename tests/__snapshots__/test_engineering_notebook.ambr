@@ -1,0 +1,31 @@
+# serializer version: 1
+# name: test_engineering_notebook_is_cover_then_duplex_pads
+  list([
+    tuple(
+      'cover',
+      'cover',
+    ),
+    tuple(
+      'engineering_front',
+      'engineering-2026-01-front',
+    ),
+    tuple(
+      'engineering_back',
+      'engineering-2026-01-back',
+    ),
+    tuple(
+      'engineering_front',
+      'engineering-2026-02-front',
+    ),
+    tuple(
+      'engineering_back',
+      'engineering-2026-02-back',
+    ),
+  ])
+# ---
+# name: test_plot_pages_walks_a_section_callable_without_book
+  list([
+    'engineering-2026-01-front',
+    'engineering-2026-01-back',
+  ])
+# ---

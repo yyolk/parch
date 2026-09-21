@@ -17,16 +17,10 @@ from parch.sections.engineering import EngineeringPadSection
 from parch.spec import Spec
 
 
-def test_engineering_notebook_is_cover_then_duplex_pads():
+def test_engineering_notebook_is_cover_then_duplex_pads(snapshot):
     spec = Spec(book="engineering-notebook", engineering_sheets=2, title="Engineering")
     pages = EngineeringNotebook().pages(spec)
-    assert [page.kind for page in pages] == [
-        "cover",
-        "engineering_front",
-        "engineering_back",
-        "engineering_front",
-        "engineering_back",
-    ]
+    assert [(page.kind, page.dest) for page in pages] == snapshot
     assert len(pages) == 1 + 2 * spec.engineering_sheets
 
     cover = pages[0].components[0]
@@ -69,7 +63,7 @@ def test_press_selects_engineering_notebook_from_toml(tmp_path: Path):
     assert len(PdfReader(out).pages) == 1 + 2 * spec.engineering_sheets
 
 
-def test_plot_pages_walks_a_section_callable_without_book():
+def test_plot_pages_walks_a_section_callable_without_book(snapshot):
     spec = Spec(engineering_sheets=1)
     plotter = RecordingPlotter()
     plot_pages(
@@ -78,8 +72,5 @@ def test_plot_pages_walks_a_section_callable_without_book():
         ramp=EffectiveRamp(),
         device=spec.device,
     )
-    assert plotter.dests() == [
-        spec.dest_for_engineering_pad(1, "front"),
-        spec.dest_for_engineering_pad(1, "back"),
-    ]
+    assert plotter.dests() == snapshot
     assert "cover" not in plotter.dests()
