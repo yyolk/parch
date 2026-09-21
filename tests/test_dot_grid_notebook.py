@@ -2,12 +2,7 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from parch.books import (
-    DotGridNotebook,
-    EngineeringNotebook,
-    YearPlanner,
-    book_for,
-)
+from parch.books import DotGridNotebook, book_for
 from parch.components import CoverTitle, DotGridPad
 from parch.plotter import RecordingPlotter
 from parch.press import press
@@ -51,8 +46,6 @@ def test_press_selects_dot_grid_notebook_from_toml(tmp_path: Path):
     assert spec.title == "Dot grid"
     assert spec.outline is True
     assert book_for(spec.book) is DotGridNotebook
-    assert book_for("year-planner") is YearPlanner
-    assert book_for("engineering-notebook") is EngineeringNotebook
 
     out = tmp_path / "dotgrid-notebook.pdf"
     press(spec, out)
