@@ -8,6 +8,7 @@ from parch.fonts.ramp import TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
+from parch.sections.kind_table import outline_kinds
 from parch.sections.page import Page
 from parch.spec import Spec
 
@@ -31,23 +32,8 @@ class Book(Protocol):
 # rapid-log, and monthly-task kinds omitted.
 # RUN: once per contiguous kind-run (tasks_index re-fires after task leaves).
 # EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
-_OUTLINE_RUN = frozenset(
-    {
-        "annual",
-        "favorites",
-        "my_100",
-        "checkoff_365",
-        "projects_index",
-        "meetings_index",
-        "tasks_index",
-        "review_index",
-        "bujo_key",
-        "bujo_index",
-        "future_log",
-        "collection",
-    }
-)
-_OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})
+_OUTLINE_RUN = outline_kinds("run")
+_OUTLINE_EACH = outline_kinds("each")
 
 
 def _section_start(kind: str, prev_kind: str | None) -> bool:

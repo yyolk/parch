@@ -56,6 +56,7 @@ from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
+from parch.sections.kind_table import PAGE_KIND_BY_ID
 from parch.sections.page import Page
 from parch.tracks import columns, rows
 
@@ -3010,51 +3011,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
 
 
 def strip_active(kind: str) -> str:
-    match kind:
-        case "annual":
-            return "Year"
-        case "favorites":
-            return "Fav"
-        case "my_100":
-            return "100"
-        case "checkoff_365":
-            return "365"
-        case "quarter":
-            return "Quar"
-        case "month":
-            return "Mon"
-        case "weekly":
-            return "Week"
-        case "daily":
-            return "Day"
-        case "daily_notes":
-            return "Notes"
-        case "habits":
-            return "Habit"
-        case "projects_index" | "project":
-            return "Proj"
-        case "meetings_index" | "meeting":
-            return "Meet"
-        case "tasks_index" | "task":
-            return "Task"
-        case "review_index" | "review":
-            return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid" | "lined":
-            return ""
-        case "bujo_key":
-            return "Key"
-        case "bujo_index":
-            return "Idx"
-        case "future_log":
-            return "Fut"
-        case "monthly_log" | "monthly_tasks":
-            return "Mon"
-        case "rapid_log":
-            return "Day"
-        case "collection":
-            return "Col"
-        case _:
-            return "Year"
+    row = PAGE_KIND_BY_ID.get(kind)
+    if row is None:
+        return "Year"
+    return row.strip
 
 
 ENG_HEADER_H = 14.0

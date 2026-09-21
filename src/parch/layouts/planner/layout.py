@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -84,7 +86,9 @@ from parch.layouts.planner.painters import (
     well_rect,
 )
 from parch.plotter.protocol import Plotter
+from parch.sections.kind_table import is_well_kind, page_face
 from parch.sections.page import Page
+from parch.sections.page_kind import WellKind
 
 __all__ = [
     "COL_GAP",
@@ -114,10 +118,10 @@ class PlannerLayout:
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp
-        match page.kind:
+        match page_face(page.kind):
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case "engineering_front" | "engineering_back":
+            case "engineering":
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
@@ -129,7 +133,10 @@ class PlannerLayout:
                 )
             case "lined":
                 paint_lined_page(plotter, device, _one(page, LinedPad), ramp=self.ramp)
-            case _:
+            case "well":
+                kind = page.kind
+                if not is_well_kind(kind):
+                    raise ValueError(f"not a well kind {kind!r}")
                 paint_header(
                     plotter,
                     device,
@@ -148,11 +155,15 @@ class PlannerLayout:
                     ramp=self.ramp,
                 )
                 well = well_rect(device)
-                self._paint_well(page, plotter, well)
+                self._paint_well(page, plotter, well, kind)
+            case _ as unreachable:
+                assert_never(unreachable)
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+    def _paint_well(
+        self, page: Page, plotter: Plotter, well: Rect, kind: WellKind
+    ) -> None:
         ramp = self.ramp
-        match page.kind:
+        match kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "favorites":
@@ -217,8 +228,8 @@ class PlannerLayout:
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
             case "collection":
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
-            case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 def _header_meta(page: Page) -> str:
