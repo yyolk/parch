@@ -2,6 +2,7 @@
 
 import shutil
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -207,9 +208,9 @@ def test_sample_dests_and_pages_for_january():
     spec = specimen_spec("supernote-nomad")
     assert spec.months == (1,)
     assert spec.notes_pages == 1
-    assert spec.favorites_pages == 1
-    assert spec.my_100 is True
-    assert spec.checkoff_365 is True
+    assert spec.favorites_pages == 0
+    assert spec.my_100 is False
+    assert spec.checkoff_365 is False
     dests = sample_dests(spec)
     assert dests["cover"] == "cover"
     assert dests["annual"] == "year-2026"
@@ -231,23 +232,16 @@ def test_sample_dests_and_pages_for_january():
     assert dests["weekly-w01"] == "week-2026-W01"
     assert dests["daily-jan1"] == "2026-01-01"
     assert dests["notes-jan1"] == "2026-01-01-notes-1"
-    numbers = sample_page_numbers(spec, (*SAMPLE_STEMS, *EXTRAS_STEMS))
-    assert set(numbers) == set(SAMPLE_STEMS) | set(EXTRAS_STEMS)
-    assert set(sample_page_numbers(spec)) == set(SAMPLE_STEMS)
+    numbers = sample_page_numbers(spec)
+    assert set(numbers) == set(SAMPLE_STEMS)
     assert numbers["cover"] == 1
     assert numbers["annual"] == 2
-    assert numbers["checkoff-365"] == 3
-    assert numbers["favorites"] == 4
-    assert numbers["my-100"] == 5
-    assert numbers["quarterly-q1"] == 8
-    assert numbers["monthly-jan"] == 9
-    assert numbers["habits-jan"] == 10
+    assert numbers["quarterly-q1"] == 3
+    assert numbers["monthly-jan"] == 4
+    assert numbers["habits-jan"] == 5
     assert (
         numbers["cover"]
         < numbers["annual"]
-        < numbers["checkoff-365"]
-        < numbers["favorites"]
-        < numbers["my-100"]
         < numbers["quarterly-q1"]
         < numbers["monthly-jan"]
         < numbers["habits-jan"]
@@ -264,7 +258,41 @@ def test_sample_dests_and_pages_for_january():
         < numbers["tasks-w01"]
     )
     assert all(page >= 1 for page in numbers.values())
-    assert len(set(numbers.values())) == len(SAMPLE_STEMS) + len(EXTRAS_STEMS)
+    assert len(set(numbers.values())) == len(SAMPLE_STEMS)
+    extras = replace(spec, favorites_pages=1, my_100=True, checkoff_365=True)
+    extra_numbers = sample_page_numbers(extras, (*SAMPLE_STEMS, *EXTRAS_STEMS))
+    assert set(extra_numbers) == set(SAMPLE_STEMS) | set(EXTRAS_STEMS)
+    assert extra_numbers["cover"] == 1
+    assert extra_numbers["annual"] == 2
+    assert extra_numbers["checkoff-365"] == 3
+    assert extra_numbers["favorites"] == 4
+    assert extra_numbers["my-100"] == 5
+    assert extra_numbers["quarterly-q1"] == 8
+    assert extra_numbers["monthly-jan"] == 9
+    assert extra_numbers["habits-jan"] == 10
+    assert (
+        extra_numbers["cover"]
+        < extra_numbers["annual"]
+        < extra_numbers["checkoff-365"]
+        < extra_numbers["favorites"]
+        < extra_numbers["my-100"]
+        < extra_numbers["quarterly-q1"]
+        < extra_numbers["monthly-jan"]
+        < extra_numbers["habits-jan"]
+        < extra_numbers["weekly-w01"]
+        < extra_numbers["daily-jan1"]
+        < extra_numbers["notes-jan1"]
+        < extra_numbers["review"]
+        < extra_numbers["review-w01"]
+        < extra_numbers["projects"]
+        < extra_numbers["project-1"]
+        < extra_numbers["meetings"]
+        < extra_numbers["meeting-1"]
+        < extra_numbers["tasks"]
+        < extra_numbers["tasks-w01"]
+    )
+    assert all(page >= 1 for page in extra_numbers.values())
+    assert len(set(extra_numbers.values())) == len(SAMPLE_STEMS) + len(EXTRAS_STEMS)
 
 
 def test_projects_dests_and_pages():
@@ -401,7 +429,19 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     monkeypatch.setattr("parch.specimen.render_page_png", fake_render)
     dest = tmp_path / "nomad"
     write_specimens(dest, "supernote-nomad")
-    assert any(spec.book == "year-planner" for spec in presses)
+    year_presses = [spec for spec in presses if spec.book == "year-planner"]
+    assert any(
+        spec.favorites_pages == 0
+        and spec.my_100 is False
+        and spec.checkoff_365 is False
+        for spec in year_presses
+    )
+    assert any(
+        spec.favorites_pages == 1
+        and spec.my_100 is True
+        and spec.checkoff_365 is True
+        for spec in year_presses
+    )
     assert any(spec.book == "engineering-notebook" for spec in presses)
     assert any(spec.book == "projects-notebook" for spec in presses)
     assert any(spec.book == "bullet-journal" for spec in presses)
