@@ -3209,6 +3209,10 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
 
 
 STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
+# Close dots on 20220804011810_steno.png: ~4×2 px cores, ~9.5 px apart, gray 0.
+STENO_DOT_W_MM = 4 / 300 * 25.4
+STENO_DOT_H_MM = 2 / 300 * 25.4
+STENO_DOT_PITCH_MM = 9.5 / 300 * 25.4
 
 
 @dataclass(frozen=True, slots=True)
@@ -3240,7 +3244,7 @@ def paint_steno_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Single-face Gregg pad — lined + center. No header, holes, or duplex back."""
+    """Single-face Gregg pad — dotted lines + center. No header, holes, or duplex back."""
     _bound_ramp(plotter, ramp)
     frame = device.content_frame()
     _paint_steno_frame(plotter, frame)
@@ -3290,25 +3294,37 @@ def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:
     )
 
 
+def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
+    """Black flat dots along one horizontal. Fixed pitch, no Spec knob."""
+    span = x1 - x0
+    i = 0
+    while i * STENO_DOT_PITCH_MM + STENO_DOT_W_MM <= span + 1e-9:
+        plotter.rect(
+            Rect(
+                x0 + i * STENO_DOT_PITCH_MM,
+                y - STENO_DOT_H_MM / 2,
+                STENO_DOT_W_MM,
+                STENO_DOT_H_MM,
+            ),
+            stroke=False,
+            fill=True,
+            fill_gray=INK,
+        )
+        i += 1
+
+
 def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
-    """Horizontals RULE/MUTED; one heavier center HAIR/MUTED across the frame."""
+    """Close black dots on each horizontal; solid black center across the frame."""
     ruling = steno_ruling(box)
     grid = ruling.origin
     for i in range(ruling.n_lines):
         y = grid.y + i * ruling.pitch
-        plotter.line(
-            grid.x,
-            y,
-            grid.right,
-            y,
-            stroke_width=RULE,
-            stroke_gray=MUTED,
-        )
+        _paint_steno_dots(plotter, grid.x, grid.right, y)
     plotter.line(
         ruling.center_x,
         box.y,
         ruling.center_x,
         box.bottom,
         stroke_width=HAIR,
-        stroke_gray=MUTED,
+        stroke_gray=INK,
     )

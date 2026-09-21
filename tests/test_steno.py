@@ -10,8 +10,11 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
     HAIR,
     HEADER_H,
+    INK,
     MUTED,
-    RULE,
+    STENO_DOT_H_MM,
+    STENO_DOT_PITCH_MM,
+    STENO_DOT_W_MM,
     STENO_PITCH_MM,
     StenoRuling,
     paint_steno_pad,
@@ -90,7 +93,7 @@ def test_ruling_is_gregg_pitch_with_equal_columns():
         assert leftover < ruling.pitch
 
 
-def test_paint_is_lined_center_without_header():
+def test_paint_is_dotted_center_without_header():
     pad = StenoPad(sheet=1, sheets=1)
     ink = RecordingPlotter()
     paint_steno_pad(ink, NOMAD, pad)
@@ -102,29 +105,41 @@ def test_paint_is_lined_center_without_header():
     assert "Notes" not in texts
     frame = NOMAD.content_frame()
     ruling = steno_ruling(frame)
-    horizontals = [
+    dots = [
         op
-        for op in _lines(ink)
-        if op[2] == op[4]
-        and op[5] == pytest.approx(RULE)
-        and op[6] == pytest.approx(MUTED)
+        for op in ink.ops
+        if op[0] == "rect"
+        and not op[2]
+        and op[3]
+        and op[5] == pytest.approx(INK)
+        and op[1].w == pytest.approx(STENO_DOT_W_MM)
+        and op[1].h == pytest.approx(STENO_DOT_H_MM)
     ]
+    ys = sorted({op[1].y + op[1].h / 2 for op in dots})
+    assert len(ys) == ruling.n_lines
+    for prev, nxt in zip(ys, ys[1:]):
+        assert nxt - prev == pytest.approx(STENO_PITCH_MM)
+    for y, line_y in zip(ys, (frame.y + i * ruling.pitch for i in range(ruling.n_lines))):
+        assert y == pytest.approx(line_y)
+    row = sorted(op[1].x for op in dots if op[1].y + op[1].h / 2 == pytest.approx(ys[0]))
+    assert len(row) > 2
+    for prev, nxt in zip(row, row[1:]):
+        assert nxt - prev == pytest.approx(STENO_DOT_PITCH_MM)
+    assert row[0] == pytest.approx(frame.x)
+    assert row[-1] + STENO_DOT_W_MM <= frame.right + 1e-6
+    assert not [op for op in _lines(ink) if op[2] == op[4]]
     centers = [
         op
         for op in _lines(ink)
         if op[1] == op[3]
         and op[5] == pytest.approx(HAIR)
-        and op[6] == pytest.approx(MUTED)
+        and op[6] == pytest.approx(INK)
     ]
-    assert len(horizontals) == ruling.n_lines
     assert len(centers) == 1
     center = centers[0]
     assert center[1] == pytest.approx(ruling.center_x)
     assert center[2] == pytest.approx(frame.y)
     assert center[4] == pytest.approx(frame.bottom)
-    ys = sorted(op[2] for op in horizontals)
-    for prev, nxt in zip(ys, ys[1:]):
-        assert nxt - prev == pytest.approx(STENO_PITCH_MM)
     frames = [
         op
         for op in ink.ops
