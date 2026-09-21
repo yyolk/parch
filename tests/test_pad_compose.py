@@ -116,18 +116,20 @@ def test_lined_dotgrid_mix_notebook_rejects_single_sided_pad_sheets():
         )
 
 
-def test_lined_dotgrid_mix_notebook_accepts_either_or_both_duplex_types():
+def test_lined_dotgrid_mix_notebook_accepts_exactly_one_duplex_type():
     either = Spec(book="lined-dot-grid-mix-notebook", lined_dot_grid_sheets=1)
     assert either.lined_dot_grid_sheets == 1
     flipped = Spec(book="lined-dot-grid-mix-notebook", dot_grid_lined_sheets=2)
     assert flipped.dot_grid_lined_sheets == 2
-    both = Spec(
-        book="lined-dot-grid-mix-notebook",
-        lined_dot_grid_sheets=1,
-        dot_grid_lined_sheets=1,
-    )
-    assert both.lined_dot_grid_sheets == 1
-    assert both.dot_grid_lined_sheets == 1
+    with pytest.raises(
+        ConfigError,
+        match="cannot set both lined_dot_grid_sheets and dot_grid_lined_sheets",
+    ):
+        Spec(
+            book="lined-dot-grid-mix-notebook",
+            lined_dot_grid_sheets=1,
+            dot_grid_lined_sheets=1,
+        )
 
 
 def test_engineering_notebook_rejects_duplex_pair_sheets():

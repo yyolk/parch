@@ -227,10 +227,8 @@ def test_habit_columns_from_toml_keys():
         Spec(
             book="lined-dot-grid-mix-notebook", lined_dot_grid_sheets=1, lined_sheets=1
         )
-    assert (
-        Spec(book="lined-dotgrid-notebook", lined_dot_grid_sheets=1).book
-        == "lined-dot-grid-mix-notebook"
-    )
+    with pytest.raises(ConfigError, match="book must be"):
+        Spec(book="lined-dotgrid-notebook", lined_dot_grid_sheets=1)
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"

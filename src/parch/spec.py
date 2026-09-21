@@ -15,7 +15,6 @@ from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _MIX_BOOK = "lined-dot-grid-mix-notebook"
-_MIX_BOOK_ALIAS = "lined-dotgrid-notebook"
 _PAIR_ORDERS = frozenset({"lined-dot-grid", "dot-grid-lined"})
 _BOOKS = frozenset(
     {
@@ -25,7 +24,6 @@ _BOOKS = frozenset(
         "dot-grid-notebook",
         "lined-notebook",
         _MIX_BOOK,
-        _MIX_BOOK_ALIAS,
         "bullet-journal",
     }
 )
@@ -334,8 +332,6 @@ class Spec:
             )
         if self.book not in _BOOKS:
             raise ConfigError(f"book must be {_BOOK_CHOICES}, not {self.book!r}")
-        if self.book == _MIX_BOOK_ALIAS:
-            object.__setattr__(self, "book", _MIX_BOOK)
         if self.top_clearance is not None and self.top_clearance < 0:
             raise ConfigError("top_clearance must be >= 0")
         if self.book == "engineering-notebook" and self.engineering_sheets < 1:
@@ -354,14 +350,9 @@ class Spec:
             raise ConfigError("dot-grid-notebook cannot set steno_sheets")
         if self.book == "dot-grid-notebook" and self.lined_sheets:
             raise ConfigError("dot-grid-notebook cannot set lined_sheets")
-        if (
-            self.book == "year-planner"
-            and self.lined_dot_grid_sheets
-            and self.dot_grid_lined_sheets
-        ):
+        if self.lined_dot_grid_sheets and self.dot_grid_lined_sheets:
             raise ConfigError(
-                "year-planner cannot set both lined_dot_grid_sheets and "
-                "dot_grid_lined_sheets"
+                "cannot set both lined_dot_grid_sheets and dot_grid_lined_sheets"
             )
         _pair = self.lined_dot_grid_sheets or self.dot_grid_lined_sheets
         if (

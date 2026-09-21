@@ -117,8 +117,7 @@ def test_spec_duplex_dests_and_toml():
 def test_cannot_set_both_duplex_orders():
     with pytest.raises(
         ConfigError,
-        match="year-planner cannot set both lined_dot_grid_sheets and "
-        "dot_grid_lined_sheets",
+        match="cannot set both lined_dot_grid_sheets and dot_grid_lined_sheets",
     ):
         Spec(lined_dot_grid_sheets=1, dot_grid_lined_sheets=1)
 

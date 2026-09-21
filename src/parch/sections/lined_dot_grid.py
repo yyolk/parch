@@ -38,36 +38,6 @@ class LinedDotGridPadSection:
         return built
 
 
-def duplex_pair_pages(spec: Spec) -> list[Page]:
-    """One type is a plain run. Two or more types zip by sheet (pair stays together)."""
-    runs = [
-        run
-        for run in (
-            LinedDotGridPadSection(spec, "lined-dot-grid").pages(),
-            LinedDotGridPadSection(spec, "dot-grid-lined").pages(),
-        )
-        if run
-    ]
-    if len(runs) <= 1:
-        return runs[0] if runs else []
-    return _zip_sheet_runs(runs)
-
-
-def _zip_sheet_runs(runs: list[list[Page]]) -> list[Page]:
-    """Interleave duplex sheets. Leftover sheets from a longer run append."""
-    chunks = [_sheet_chunks(run) for run in runs]
-    built: list[Page] = []
-    for index in range(max(len(chunk) for chunk in chunks)):
-        for chunk in chunks:
-            if index < len(chunk):
-                built.extend(chunk[index])
-    return built
-
-
-def _sheet_chunks(pages: list[Page]) -> list[list[Page]]:
-    return [pages[i : i + 2] for i in range(0, len(pages), 2)]
-
-
 def _pair_page(
     spec: Spec,
     order: PairOrder,
