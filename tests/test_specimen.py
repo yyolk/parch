@@ -93,8 +93,8 @@ def test_gallery_groups_split_optional_extras():
         "Lined notebook",
         LINED_NOTEBOOK_STEMS,
     )
-    assert groups["lined-dotgrid-notebook"] == (
-        "Lined / dot-grid notebook",
+    assert groups["lined-dotgrid-mix-notebook"] == (
+        "Lined / dotgrid mix notebook",
         LINED_DOTGRID_NOTEBOOK_STEMS,
     )
     year_stems = groups["year-planner"][1]
@@ -140,8 +140,10 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
     assert html.index('id="bullet-journal"') < html.index('id="dot-grid-notebook"')
     assert html.index('id="dot-grid-notebook"') < html.index('id="lined-notebook"')
-    assert html.index('id="lined-notebook"') < html.index('id="lined-dotgrid-notebook"')
-    assert html.index('id="lined-dotgrid-notebook"') < html.index('id="steno-pad"')
+    assert html.index('id="lined-notebook"') < html.index(
+        'id="lined-dotgrid-mix-notebook"'
+    )
+    assert html.index('id="lined-dotgrid-mix-notebook"') < html.index('id="steno-pad"')
     assert html.index('id="steno-pad"') < html.index('id="dotgrid-pad"')
     assert html.index('id="dotgrid-pad"') < html.index('id="lined-pad"')
     year_html = html[
@@ -358,17 +360,16 @@ def test_lined_notebook_dests_and_pages():
 
 def test_lined_dotgrid_notebook_dests_and_pages():
     spec = lined_dotgrid_notebook_specimen_spec("kindle-scribe")
-    assert spec.book == "lined-dotgrid-notebook"
+    assert spec.book == "lined-dotgrid-mix-notebook"
     assert spec.device == "kindle-scribe"
-    assert spec.lined_sheets == 1
-    assert spec.dotgrid_sheets == 1
+    assert spec.lined_dotgrid_sheets == 1
     dests = lined_dotgrid_notebook_dests(spec)
     assert dests["lined-dotgrid-cover"] == spec.cover_dest == "cover"
-    assert dests["lined-dotgrid-lined"] == spec.dest_for_lined_pad(1) == "lined-2026-01"
-    assert (
-        dests["lined-dotgrid-dotgrid"]
-        == spec.dest_for_dotgrid_pad(1)
-        == "dotgrid-2026-01"
+    assert dests["lined-dotgrid-lined"] == spec.dest_for_duplex_pair_pad(
+        "lined-dotgrid", 1, "front"
+    )
+    assert dests["lined-dotgrid-dotgrid"] == spec.dest_for_duplex_pair_pad(
+        "lined-dotgrid", 1, "back"
     )
     numbers = lined_dotgrid_notebook_page_numbers(spec)
     assert set(numbers) == set(LINED_DOTGRID_NOTEBOOK_STEMS)
@@ -506,7 +507,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.book == "bullet-journal" for spec in presses)
     assert any(spec.book == "dot-grid-notebook" for spec in presses)
     assert any(spec.book == "lined-notebook" for spec in presses)
-    assert any(spec.book == "lined-dotgrid-notebook" for spec in presses)
+    assert any(spec.book == "lined-dotgrid-mix-notebook" for spec in presses)
     assert any(spec.steno_sheets == 1 for spec in presses)
     assert any(
         spec.book == "year-planner" and spec.dotgrid_sheets == 1 for spec in presses

@@ -14,6 +14,8 @@ from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
 from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
+_MIX_BOOK = "lined-dotgrid-mix-notebook"
+_PAIR_ORDERS = frozenset({"lined-dotgrid", "dotgrid-lined"})
 _BOOKS = frozenset(
     {
         "year-planner",
@@ -21,14 +23,21 @@ _BOOKS = frozenset(
         "engineering-notebook",
         "dot-grid-notebook",
         "lined-notebook",
-        "lined-dotgrid-notebook",
+        _MIX_BOOK,
         "bullet-journal",
     }
 )
 _BOOK_CHOICES = (
     "year-planner, projects-notebook, engineering-notebook, "
     "bullet-journal, dot-grid-notebook, lined-notebook, or "
-    "lined-dotgrid-notebook"
+    "lined-dotgrid-mix-notebook"
+)
+_EXCLUSIVE_NOTEBOOKS = frozenset(
+    {
+        "engineering-notebook",
+        "dot-grid-notebook",
+        "lined-notebook",
+    }
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
@@ -306,6 +315,8 @@ class Spec:
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     dotgrid_sheets: int = 0  # full-bleed clone-dot pages; 0 keeps year-planner press
     lined_sheets: int = 0  # full-bleed lined pages; 0 keeps year-planner press
+    lined_dotgrid_sheets: int = 0  # duplex lined front / dotgrid back
+    dotgrid_lined_sheets: int = 0  # duplex dotgrid front / lined back
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -339,13 +350,37 @@ class Spec:
             raise ConfigError("dot-grid-notebook cannot set steno_sheets")
         if self.book == "dot-grid-notebook" and self.lined_sheets:
             raise ConfigError("dot-grid-notebook cannot set lined_sheets")
+        if self.lined_dotgrid_sheets and self.dotgrid_lined_sheets:
+            raise ConfigError(
+                "cannot set both lined_dotgrid_sheets and dotgrid_lined_sheets"
+            )
+        _pair = self.lined_dotgrid_sheets or self.dotgrid_lined_sheets
         if (
             self.book == "year-planner"
             and self.lined_sheets
-            and (self.engineering_sheets or self.steno_sheets or self.dotgrid_sheets)
+            and (
+                self.engineering_sheets
+                or self.steno_sheets
+                or self.dotgrid_sheets
+                or _pair
+            )
         ):
             raise ConfigError(
                 "year-planner cannot mix lined_sheets with other pad counts"
+            )
+        if (
+            self.book == "year-planner"
+            and _pair
+            and (
+                self.engineering_sheets
+                or self.steno_sheets
+                or self.dotgrid_sheets
+                or self.lined_sheets
+            )
+        ):
+            raise ConfigError(
+                "year-planner cannot mix duplex lined/dotgrid sheets with other "
+                "pad counts"
             )
         if self.book == "lined-notebook" and self.lined_sheets < 1:
             raise ConfigError("lined-notebook requires lined_sheets >= 1")
@@ -355,14 +390,24 @@ class Spec:
             raise ConfigError("lined-notebook cannot set steno_sheets")
         if self.book == "lined-notebook" and self.dotgrid_sheets:
             raise ConfigError("lined-notebook cannot set dotgrid_sheets")
-        if self.book == "lined-dotgrid-notebook" and self.lined_sheets < 1:
-            raise ConfigError("lined-dotgrid-notebook requires lined_sheets >= 1")
-        if self.book == "lined-dotgrid-notebook" and self.dotgrid_sheets < 1:
-            raise ConfigError("lined-dotgrid-notebook requires dotgrid_sheets >= 1")
-        if self.book == "lined-dotgrid-notebook" and self.engineering_sheets:
-            raise ConfigError("lined-dotgrid-notebook cannot set engineering_sheets")
-        if self.book == "lined-dotgrid-notebook" and self.steno_sheets:
-            raise ConfigError("lined-dotgrid-notebook cannot set steno_sheets")
+        if self.book == _MIX_BOOK and not (
+            self.lined_dotgrid_sheets or self.dotgrid_lined_sheets
+        ):
+            raise ConfigError(
+                f"{_MIX_BOOK} requires lined_dotgrid_sheets or dotgrid_lined_sheets"
+            )
+        if self.book == _MIX_BOOK and self.lined_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set lined_sheets")
+        if self.book == _MIX_BOOK and self.dotgrid_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set dotgrid_sheets")
+        if self.book == _MIX_BOOK and self.engineering_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set engineering_sheets")
+        if self.book == _MIX_BOOK and self.steno_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set steno_sheets")
+        if self.book in _EXCLUSIVE_NOTEBOOKS and self.lined_dotgrid_sheets:
+            raise ConfigError(f"{self.book} cannot set lined_dotgrid_sheets")
+        if self.book in _EXCLUSIVE_NOTEBOOKS and self.dotgrid_lined_sheets:
+            raise ConfigError(f"{self.book} cannot set dotgrid_lined_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -396,6 +441,10 @@ class Spec:
             raise ConfigError("dotgrid_sheets must be 0–100")
         if not 0 <= self.lined_sheets <= 100:
             raise ConfigError("lined_sheets must be 0–100")
+        if not 0 <= self.lined_dotgrid_sheets <= 100:
+            raise ConfigError("lined_dotgrid_sheets must be 0–100")
+        if not 0 <= self.dotgrid_lined_sheets <= 100:
+            raise ConfigError("dotgrid_lined_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -657,6 +706,31 @@ class Spec:
             raise ConfigError(f"lined sheet out of range: {sheet}")
         return _dest(t"lined-{self.year:04d}-{sheet:02d}")
 
+    def dest_for_duplex_pair_pad(self, order: str, sheet: int, face: str) -> str:
+        """1-based duplex dest, e.g. ``lined-dotgrid-2026-01-front``."""
+        if order not in _PAIR_ORDERS:
+            raise ConfigError(
+                "duplex pair order must be lined-dotgrid or dotgrid-lined, "
+                f"not {order!r}"
+            )
+        if face not in {"front", "back"}:
+            raise ConfigError(f"duplex pair face must be front or back, not {face!r}")
+        count = (
+            self.lined_dotgrid_sheets
+            if order == "lined-dotgrid"
+            else self.dotgrid_lined_sheets
+        )
+        label = (
+            "lined_dotgrid_sheets"
+            if order == "lined-dotgrid"
+            else "dotgrid_lined_sheets"
+        )
+        if count < 1:
+            raise ConfigError(f"{label} must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= count:
+            raise ConfigError(f"duplex pair sheet out of range: {sheet}")
+        return _dest(t"{order}-{self.year:04d}-{sheet:02d}-{face}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -683,6 +757,10 @@ class Spec:
         dotgrid_table = dotgrid if isinstance(dotgrid, dict) else {}
         lined = data.get("lined")
         lined_table = lined if isinstance(lined, dict) else {}
+        lined_dotgrid = data.get("lined-dotgrid")
+        lined_dotgrid_table = lined_dotgrid if isinstance(lined_dotgrid, dict) else {}
+        dotgrid_lined = data.get("dotgrid-lined")
+        dotgrid_lined_table = dotgrid_lined if isinstance(dotgrid_lined, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
@@ -723,6 +801,12 @@ class Spec:
                 dotgrid_table.get("sheets", data.get("dotgrid_sheets", 0))
             ),
             lined_sheets=int(lined_table.get("sheets", data.get("lined_sheets", 0))),
+            lined_dotgrid_sheets=int(
+                lined_dotgrid_table.get("sheets", data.get("lined_dotgrid_sheets", 0))
+            ),
+            dotgrid_lined_sheets=int(
+                dotgrid_lined_table.get("sheets", data.get("dotgrid_lined_sheets", 0))
+            ),
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -782,6 +866,8 @@ class Spec:
             "steno": {"sheets": self.steno_sheets},
             "dotgrid": {"sheets": self.dotgrid_sheets},
             "lined": {"sheets": self.lined_sheets},
+            "lined-dotgrid": {"sheets": self.lined_dotgrid_sheets},
+            "dotgrid-lined": {"sheets": self.dotgrid_lined_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
@@ -852,6 +938,12 @@ class Spec:
                 "",
                 "[lined]",
                 f"sheets = {self.lined_sheets}",
+                "",
+                "[lined-dotgrid]",
+                f"sheets = {self.lined_dotgrid_sheets}",
+                "",
+                "[dotgrid-lined]",
+                f"sheets = {self.dotgrid_lined_sheets}",
                 "",
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",

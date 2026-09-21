@@ -72,6 +72,8 @@ def test_dest_names_from_tstrings():
     assert spec.steno_sheets == 0
     assert spec.dotgrid_sheets == 0
     assert spec.lined_sheets == 0
+    assert spec.lined_dotgrid_sheets == 0
+    assert spec.dotgrid_lined_sheets == 0
     assert spec.outline is False
     assert spec.my_100 is False
     assert spec.my_100_dest == "my-100-2026"
@@ -162,6 +164,15 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_path(Path("examples/dotgrid.toml")).dotgrid_sheets == 1
     assert Spec.from_mapping({"lined": {"sheets": 2}}).lined_sheets == 2
     assert Spec.from_path(Path("examples/lined-pad.toml")).lined_sheets == 1
+    assert Spec.from_mapping({"lined-dotgrid": {"sheets": 2}}).lined_dotgrid_sheets == 2
+    assert (
+        Spec.from_path(Path("examples/lined-dotgrid-pad.toml")).lined_dotgrid_sheets
+        == 1
+    )
+    assert (
+        Spec.from_path(Path("examples/dotgrid-lined-pad.toml")).dotgrid_lined_sheets
+        == 1
+    )
     assert (
         Spec.from_mapping({"book": "dot-grid-notebook", "dotgrid": {"sheets": 1}}).book
         == "dot-grid-notebook"
@@ -188,27 +199,32 @@ def test_habit_columns_from_toml_keys():
     assert (
         Spec.from_mapping(
             {
-                "book": "lined-dotgrid-notebook",
-                "lined": {"sheets": 1},
-                "dotgrid": {"sheets": 1},
+                "book": "lined-dotgrid-mix-notebook",
+                "lined-dotgrid": {"sheets": 1},
             }
         ).book
-        == "lined-dotgrid-notebook"
+        == "lined-dotgrid-mix-notebook"
     )
     assert (
-        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).book
-        == "lined-dotgrid-notebook"
+        Spec.from_path(Path("examples/lined-dotgrid-mix-notebook.toml")).book
+        == "lined-dotgrid-mix-notebook"
     )
     assert (
-        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).lined_sheets == 6
+        Spec.from_path(
+            Path("examples/lined-dotgrid-mix-notebook.toml")
+        ).lined_dotgrid_sheets
+        == 6
     )
-    assert (
-        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).dotgrid_sheets == 6
-    )
-    with pytest.raises(ConfigError, match="lined-dotgrid-notebook requires lined"):
-        Spec(book="lined-dotgrid-notebook", dotgrid_sheets=1)
-    with pytest.raises(ConfigError, match="lined-dotgrid-notebook requires dotgrid"):
-        Spec(book="lined-dotgrid-notebook", lined_sheets=1)
+    with pytest.raises(
+        ConfigError, match="lined-dotgrid-mix-notebook requires lined_dotgrid"
+    ):
+        Spec(book="lined-dotgrid-mix-notebook")
+    with pytest.raises(
+        ConfigError, match="lined-dotgrid-mix-notebook cannot set lined_sheets"
+    ):
+        Spec(book="lined-dotgrid-mix-notebook", lined_dotgrid_sheets=1, lined_sheets=1)
+    with pytest.raises(ConfigError, match="book must be"):
+        Spec(book="lined-dotgrid-notebook", lined_dotgrid_sheets=1)
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"

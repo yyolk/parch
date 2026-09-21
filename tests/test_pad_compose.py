@@ -79,26 +79,62 @@ def test_lined_notebook_rejects_dotgrid_sheets():
 
 def test_lined_dotgrid_notebook_rejects_engineering_sheets():
     with pytest.raises(
-        ConfigError, match="lined-dotgrid-notebook cannot set engineering_sheets"
+        ConfigError, match="lined-dotgrid-mix-notebook cannot set engineering_sheets"
     ):
         Spec(
-            book="lined-dotgrid-notebook",
-            lined_sheets=1,
-            dotgrid_sheets=1,
+            book="lined-dotgrid-mix-notebook",
+            lined_dotgrid_sheets=1,
             engineering_sheets=1,
         )
 
 
 def test_lined_dotgrid_notebook_rejects_steno_sheets():
     with pytest.raises(
-        ConfigError, match="lined-dotgrid-notebook cannot set steno_sheets"
+        ConfigError, match="lined-dotgrid-mix-notebook cannot set steno_sheets"
     ):
         Spec(
-            book="lined-dotgrid-notebook",
-            lined_sheets=1,
-            dotgrid_sheets=1,
+            book="lined-dotgrid-mix-notebook",
+            lined_dotgrid_sheets=1,
             steno_sheets=1,
         )
+
+
+def test_lined_dotgrid_mix_notebook_rejects_single_sided_pad_sheets():
+    with pytest.raises(
+        ConfigError, match="lined-dotgrid-mix-notebook cannot set lined_sheets"
+    ):
+        Spec(book="lined-dotgrid-mix-notebook", lined_dotgrid_sheets=1, lined_sheets=1)
+    with pytest.raises(
+        ConfigError, match="lined-dotgrid-mix-notebook cannot set dotgrid_sheets"
+    ):
+        Spec(
+            book="lined-dotgrid-mix-notebook",
+            lined_dotgrid_sheets=1,
+            dotgrid_sheets=1,
+        )
+
+
+def test_lined_dotgrid_mix_notebook_accepts_exactly_one_duplex_type():
+    either = Spec(book="lined-dotgrid-mix-notebook", lined_dotgrid_sheets=1)
+    assert either.lined_dotgrid_sheets == 1
+    flipped = Spec(book="lined-dotgrid-mix-notebook", dotgrid_lined_sheets=2)
+    assert flipped.dotgrid_lined_sheets == 2
+    with pytest.raises(
+        ConfigError,
+        match="cannot set both lined_dotgrid_sheets and dotgrid_lined_sheets",
+    ):
+        Spec(
+            book="lined-dotgrid-mix-notebook",
+            lined_dotgrid_sheets=1,
+            dotgrid_lined_sheets=1,
+        )
+
+
+def test_engineering_notebook_rejects_duplex_pair_sheets():
+    with pytest.raises(
+        ConfigError, match="engineering-notebook cannot set lined_dotgrid_sheets"
+    ):
+        Spec(book="engineering-notebook", engineering_sheets=1, lined_dotgrid_sheets=1)
 
 
 def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
