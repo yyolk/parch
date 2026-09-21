@@ -185,6 +185,30 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_path(Path("examples/lined-notebook.toml")).lined_sheets == 12
     with pytest.raises(ConfigError, match="lined-notebook requires"):
         Spec(book="lined-notebook")
+    assert (
+        Spec.from_mapping(
+            {
+                "book": "lined-dotgrid-notebook",
+                "lined": {"sheets": 1},
+                "dotgrid": {"sheets": 1},
+            }
+        ).book
+        == "lined-dotgrid-notebook"
+    )
+    assert (
+        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).book
+        == "lined-dotgrid-notebook"
+    )
+    assert (
+        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).lined_sheets == 6
+    )
+    assert (
+        Spec.from_path(Path("examples/lined-dotgrid-notebook.toml")).dotgrid_sheets == 6
+    )
+    with pytest.raises(ConfigError, match="lined-dotgrid-notebook requires lined"):
+        Spec(book="lined-dotgrid-notebook", dotgrid_sheets=1)
+    with pytest.raises(ConfigError, match="lined-dotgrid-notebook requires dotgrid"):
+        Spec(book="lined-dotgrid-notebook", lined_sheets=1)
     nomad = Spec.from_path(Path("examples/nomad.toml"))
     assert nomad.device == "supernote-nomad"
     assert nomad.book == "year-planner"
