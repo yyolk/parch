@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -129,7 +131,33 @@ class PlannerLayout:
                 )
             case "lined":
                 paint_lined_page(plotter, device, _one(page, LinedPad), ramp=self.ramp)
-            case _:
+            case (
+                "annual"
+                | "favorites"
+                | "my_100"
+                | "checkoff_365"
+                | "projects_index"
+                | "project"
+                | "meetings_index"
+                | "meeting"
+                | "tasks_index"
+                | "task"
+                | "review_index"
+                | "review"
+                | "quarter"
+                | "month"
+                | "habits"
+                | "weekly"
+                | "daily"
+                | "daily_notes"
+                | "bujo_key"
+                | "bujo_index"
+                | "future_log"
+                | "monthly_log"
+                | "monthly_tasks"
+                | "rapid_log"
+                | "collection"
+            ):
                 paint_header(
                     plotter,
                     device,
@@ -149,6 +177,8 @@ class PlannerLayout:
                 )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
+            case _:
+                assert_never(page.kind)
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
         ramp = self.ramp
@@ -217,8 +247,17 @@ class PlannerLayout:
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
             case "collection":
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
+            case (
+                "cover"
+                | "engineering_front"
+                | "engineering_back"
+                | "steno"
+                | "dotgrid"
+                | "lined"
+            ):
+                raise ValueError(f"bleed page has no well: {page.kind}")
             case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+                assert_never(page.kind)
 
 
 def _header_meta(page: Page) -> str:
@@ -279,8 +318,17 @@ def _header_meta(page: Page) -> str:
         case "daily_notes":
             label = _one(page, Notes).label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
-        case _:
+        case (
+            "cover"
+            | "engineering_front"
+            | "engineering_back"
+            | "steno"
+            | "dotgrid"
+            | "lined"
+        ):
             return ""
+        case _:
+            assert_never(page.kind)
 
 
 def _header_meta_dest(page: Page) -> str | None:
@@ -295,8 +343,37 @@ def _header_meta_dest(page: Page) -> str | None:
             return _one(page, MonthlyCalendarList).tasks_dest
         case "monthly_tasks":
             return _one(page, MonthlyTaskWell).calendar_dest
-        case _:
+        case (
+            "cover"
+            | "favorites"
+            | "my_100"
+            | "checkoff_365"
+            | "projects_index"
+            | "project"
+            | "meetings_index"
+            | "meeting"
+            | "tasks_index"
+            | "task"
+            | "review_index"
+            | "review"
+            | "quarter"
+            | "weekly"
+            | "daily"
+            | "daily_notes"
+            | "engineering_front"
+            | "engineering_back"
+            | "steno"
+            | "dotgrid"
+            | "lined"
+            | "bujo_key"
+            | "bujo_index"
+            | "future_log"
+            | "rapid_log"
+            | "collection"
+        ):
             return None
+        case _:
+            assert_never(page.kind)
 
 
 def _header_chip(page: Page) -> str:
@@ -319,8 +396,36 @@ def _header_chip(page: Page) -> str:
         case "collection":
             number = _one(page, CollectionLeaf).number
             return f"{number:02d}"
-        case _:
+        case (
+            "cover"
+            | "annual"
+            | "favorites"
+            | "checkoff_365"
+            | "projects_index"
+            | "meetings_index"
+            | "tasks_index"
+            | "review_index"
+            | "quarter"
+            | "month"
+            | "habits"
+            | "weekly"
+            | "daily"
+            | "daily_notes"
+            | "engineering_front"
+            | "engineering_back"
+            | "steno"
+            | "dotgrid"
+            | "lined"
+            | "bujo_key"
+            | "bujo_index"
+            | "future_log"
+            | "monthly_log"
+            | "monthly_tasks"
+            | "rapid_log"
+        ):
             return ""
+        case _:
+            assert_never(page.kind)
 
 
 def _header_chip_dest(page: Page) -> str | None:
@@ -338,8 +443,36 @@ def _header_chip_dest(page: Page) -> str | None:
             return _one(page, ReviewWeekPage).index_dest or None
         case "collection":
             return _one(page, CollectionLeaf).index_dest or None
-        case _:
+        case (
+            "cover"
+            | "annual"
+            | "favorites"
+            | "checkoff_365"
+            | "projects_index"
+            | "meetings_index"
+            | "tasks_index"
+            | "review_index"
+            | "quarter"
+            | "month"
+            | "habits"
+            | "weekly"
+            | "daily"
+            | "daily_notes"
+            | "engineering_front"
+            | "engineering_back"
+            | "steno"
+            | "dotgrid"
+            | "lined"
+            | "bujo_key"
+            | "bujo_index"
+            | "future_log"
+            | "monthly_log"
+            | "monthly_tasks"
+            | "rapid_log"
+        ):
             return None
+        case _:
+            assert_never(page.kind)
 
 
 def _one[T](page: Page, typ: type[T]) -> T:
