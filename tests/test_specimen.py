@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from parch import ConfigError
+from parch.devices import get_device
 from parch.press import main
 from parch.specimen import (
     BUJO_STEMS,
@@ -237,6 +238,16 @@ def test_specimen_index_html_omits_footer_without_commit():
     html = specimen_index_html("kindle-scribe")
     assert "<footer>" not in html
     assert "github.com/" not in html
+
+
+def test_scribe_specimen_follows_zero_top_clearance():
+    """Scribe catalog spec omits top_clearance and resolves to the 0 default."""
+    spec = specimen_spec("kindle-scribe")
+    assert spec.top_clearance is None
+    slate = get_device(spec.device, top_clearance=spec.top_clearance)
+    assert slate.top_clearance == 0.0
+    assert slate.content_top == 0.0
+    assert projects_specimen_spec("kindle-scribe").top_clearance is None
 
 
 def test_sample_dests_and_pages_for_january():

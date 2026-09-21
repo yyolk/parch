@@ -80,8 +80,9 @@ def test_content_stays_below_top_clearance():
             assert op[1].y >= TOP_CLEARANCE - 0.01
 
 
-def test_scribe_header_sits_below_tap_floor():
-    """Measured Send-to-Kindle: taps solid from ~8 mm; header chip/meta sit there."""
+def test_scribe_header_sits_at_zero_top_clearance():
+    """Scribe default has no top band; header hits sit at y=0."""
+    assert SCRIBE.top_clearance == 0.0
     plotter = RecordingPlotter()
     paint_header(
         plotter,
@@ -94,17 +95,17 @@ def test_scribe_header_sits_below_tap_floor():
     fills = [op for op in plotter.ops if op[0] == "rect" and op[3]]
     assert len(fills) == 1
     assert fills[0][1].y == pytest.approx(0.0)
-    assert fills[0][1].h == pytest.approx(SCRIBE.top_clearance + HEADER_H)
+    assert fills[0][1].h == pytest.approx(HEADER_H)
     assert fills[0][5] == pytest.approx(INK)
     for op in plotter.ops:
         if op[0] in {"text", "link"}:
             assert op[1].y == pytest.approx(SCRIBE.content_top)
-            assert op[1].y >= TOP_CLEARANCE - 0.01
 
 
-def test_plot_pages_honors_spec_top_clearance():
-    """Year-planner paint path applies Spec.top_clearance to the slate."""
-    spec = Spec(device="kindle-scribe", top_clearance=0.0, months=(1,), notes_pages=0)
+def test_bare_scribe_spec_omits_top_band():
+    """A Scribe Spec that omits top_clearance paints the header at y=0."""
+    spec = Spec(device="kindle-scribe", months=(1,), notes_pages=0)
+    assert spec.top_clearance is None
     plotter = RecordingPlotter()
     plot_pages(
         AnnualSection(spec).pages,
@@ -124,9 +125,33 @@ def test_plot_pages_honors_spec_top_clearance():
     ]
     assert fills
     assert all(op[1].h == pytest.approx(HEADER_H) for op in fills)
+
+
+def test_plot_pages_honors_spec_top_clearance():
+    """Year-planner paint path applies a positive Spec.top_clearance to the slate."""
+    spec = Spec(device="kindle-scribe", top_clearance=8.0, months=(1,), notes_pages=0)
+    plotter = RecordingPlotter()
+    plot_pages(
+        AnnualSection(spec).pages,
+        plotter,
+        ramp=EffectiveRamp(),
+        device=spec.device,
+        top_clearance=spec.top_clearance,
+    )
+    fills = [
+        op
+        for op in plotter.ops
+        if op[0] == "rect"
+        and op[3]
+        and op[1].y == pytest.approx(0.0)
+        and op[1].w == pytest.approx(SCRIBE.page_width)
+        and op[5] == pytest.approx(INK)
+    ]
+    assert fills
+    assert all(op[1].h == pytest.approx(spec.top_clearance + HEADER_H) for op in fills)
     for op in plotter.ops:
         if op[0] in {"text", "link"}:
-            assert op[1].y >= -0.01
+            assert op[1].y >= spec.top_clearance - 0.01
 
 
 def test_cover_has_no_top_fill():

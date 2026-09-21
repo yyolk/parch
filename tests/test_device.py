@@ -40,14 +40,14 @@ def test_scribe_geometry():
     assert SCRIBE.width_px == 1860
     assert SCRIBE.height_px == 2480
     assert SCRIBE.ppi == 300
-    assert SCRIBE.top_clearance == 8.0
-    assert SCRIBE.content_top == SCRIBE.top_clearance == 8.0
+    assert SCRIBE.top_clearance == 0.0
+    assert SCRIBE.content_top == SCRIBE.top_clearance == 0.0
     assert SCRIBE.writing_clearance == 4.0
     assert SCRIBE.bottom_clearance == 10.0
     assert SCRIBE.root_body == ROOT_BODY == Pt(8.5) == NOMAD.root_body
     frame = SCRIBE.content_frame()
     assert frame.x == 4.0
-    assert frame.y == 8.0
+    assert frame.y == 0.0
     assert frame.w == pytest.approx(157.48 - 8.0)
     assert frame.bottom == pytest.approx(209.97 - NAV_H - SCRIBE.bottom_clearance)
 
