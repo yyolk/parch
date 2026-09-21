@@ -5,6 +5,7 @@ Key marks read the Jost cut ``FontCatalog`` already bound on the ramp
 walks that file's outline; we do not stroke paths or fetch a remote face.
 ``Fpdf2Plotter.text`` still places ordinary lines by baseline. Compose uses
 ``origin_for_nest`` so a glyph's ink nest lands on a shared seat.
+``string_width`` is hmtx advance (same as fpdf2 ``get_string_width``).
 """
 
 from dataclasses import dataclass
@@ -25,6 +26,31 @@ _BASELINE_NUDGE_MM = 0.12
 def pt_mm(pt: float) -> float:
     """PDF point → millimetre."""
     return pt * _PT_MM
+
+
+@lru_cache(maxsize=256)
+def _glyph_advance(path: str, char: str, size_pt: float) -> float:
+    """Horizontal advance of one character, in millimetres."""
+    font = _ttfont(path)
+    cmap = font.getBestCmap()
+    name = cmap[ord(char)]
+    advance, _lsb = font["hmtx"][name]
+    return advance * pt_mm(size_pt) / font["head"].unitsPerEm
+
+
+def string_width(path: str, text: str, size_pt: float) -> float:
+    """Advance width of one line, in millimetres (fpdf2 ``get_string_width``)."""
+    return sum(_glyph_advance(path, char, size_pt) for char in text)
+
+
+def fit_line_size(path: str, text: str, size_pt: float, max_width_mm: float) -> float:
+    """Largest size at or below ``size_pt`` whose advance fits ``max_width_mm``."""
+    if not text or max_width_mm <= 0:
+        return size_pt
+    width = string_width(path, text, size_pt)
+    if width <= max_width_mm:
+        return size_pt
+    return size_pt * max_width_mm / width
 
 
 def text_baseline(box: Rect, size_pt: float) -> float:

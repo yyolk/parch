@@ -45,7 +45,13 @@ from parch.components import (
     WeekStrip,
 )
 from parch.devices.registry import NAV_H, Device
-from parch.fonts.metrics import glyph_ink, ink_rect, origin_for_nest, pt_mm
+from parch.fonts.metrics import (
+    fit_line_size,
+    glyph_ink,
+    ink_rect,
+    origin_for_nest,
+    pt_mm,
+)
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
@@ -62,6 +68,9 @@ WASH = 236 / 255
 SOFT = 210 / 255
 RULE_C = 198 / 255
 PAPER = 1.0
+# Cover display well: inner frame plus air so ink stays off the stroke.
+COVER_FRAME_INNER = 4.6
+COVER_TITLE_PAD = 1.0
 LINE_PITCH = 4.15  # notes / lined-pad ruling — not a Spec/TOML knob
 
 HEADER_H = 9.0
@@ -76,6 +85,16 @@ def _bound_ramp(plotter: Plotter, ramp: TypeRamp | None) -> TypeRamp:
     resolved = EffectiveRamp() if ramp is None else ramp
     plotter.ramp = resolved
     return resolved
+
+
+def _cover_headline_ink(headline: str, well: Rect, ramp: TypeRamp) -> TypeInk:
+    """Display ink, shrunk so the headline stays one line inside ``well``."""
+    ink = ramp.ink("display")
+    path = str(ramp.catalog.path(ink.family, ink.weight))
+    size = fit_line_size(path, headline, float(ink.size), well.w)
+    if size == float(ink.size):
+        return ink
+    return TypeInk(family=ink.family, weight=ink.weight, size=Pt(size))
 
 
 def _ink_text(
@@ -220,7 +239,7 @@ def paint_cover(
     plotter: Plotter, device: Device, cover: CoverTitle, *, ramp: TypeRamp
 ) -> None:
     top = device.content_top
-    outer, inner = 3.2, 4.6
+    outer, inner = 3.2, COVER_FRAME_INNER
     # Frame sits below top clearance and above unmarked bottom OS chrome.
     ox, oy = outer, max(outer, top + 0.6)
     o_bottom = max(outer, device.bottom_clearance + 0.6)
@@ -260,11 +279,17 @@ def paint_cover(
             align="center",
         )
     year_box = Rect(0.0, 56.0, device.page_width, 20.0)
+    well = Rect(
+        ix + COVER_TITLE_PAD,
+        year_box.y,
+        device.page_width - 2 * (ix + COVER_TITLE_PAD),
+        year_box.h,
+    )
     _ink_text(
         plotter,
-        year_box,
+        well,
         headline,
-        TypeRef(step="display"),
+        _cover_headline_ink(headline, well, ramp),
         gray=INK,
         align="center",
     )
