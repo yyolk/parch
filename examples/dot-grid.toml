@@ -1,0 +1,12 @@
+# Edge-to-edge clone-pitch dot grid (exploratory DG6).
+# Same ``CLONE_DOT_PITCH`` / ``CLONE_DOT`` as project-note pockets —
+# no second pitch. Painter fills page bleed (0,0 → page size),
+# including under bezel / clearance, not ``content_frame``.
+# Pad-only: ``dot_grid_sheets > 0`` presses DotGridSection (no Book,
+# no cover). A full *-notebook is a follow-up, not this spike.
+#   parch press examples/dot-grid.toml -o out/dot-grid.pdf
+device = "supernote-nomad"
+title = "Dot grid"
+
+[dot_grid]
+sheets = 1

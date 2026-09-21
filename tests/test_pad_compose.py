@@ -29,6 +29,13 @@ def test_engineering_notebook_rejects_steno_sheets():
         Spec(book="engineering-notebook", engineering_sheets=1, steno_sheets=1)
 
 
+def test_engineering_notebook_rejects_dot_grid_sheets():
+    with pytest.raises(
+        ConfigError, match="engineering-notebook cannot set dot_grid_sheets"
+    ):
+        Spec(book="engineering-notebook", engineering_sheets=1, dot_grid_sheets=1)
+
+
 def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
     spec = Spec(engineering_sheets=1, steno_sheets=1)
     plotter = RecordingPlotter()
@@ -40,3 +47,16 @@ def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
     ]
     assert spec.cover_dest not in plotter.dests()
     assert spec.year_dest not in plotter.dests()
+
+
+def test_press_pads_then_dot_grid(tmp_path: Path):
+    spec = Spec(engineering_sheets=1, steno_sheets=1, dot_grid_sheets=1)
+    plotter = RecordingPlotter()
+    press(spec, tmp_path / "pads-dots.pdf", plotter=plotter)
+    assert plotter.dests() == [
+        spec.dest_for_engineering_pad(1, "front"),
+        spec.dest_for_engineering_pad(1, "back"),
+        spec.dest_for_steno_pad(1),
+        spec.dest_for_dot_grid(1),
+    ]
+    assert spec.cover_dest not in plotter.dests()

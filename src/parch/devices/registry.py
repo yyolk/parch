@@ -50,6 +50,10 @@ class Device:
             h=self.page_height - top - nav_band,
         )
 
+    def page_bleed(self) -> Rect:
+        """Full page including under bezel / clearance. Not ``content_frame``."""
+        return Rect(0.0, 0.0, self.page_width, self.page_height)
+
 
 # 1404×1872 @ 300 PPI → 118.87×158.50 mm. Top clearance 8 mm.
 # Body root 8.5pt: month day nums land on pre-snap 8.5; ratios follow.

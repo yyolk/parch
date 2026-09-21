@@ -28,6 +28,7 @@ type PageKind = Literal[
     "engineering_front",
     "engineering_back",
     "steno",
+    "dot_grid",
     "bujo_key",
     "bujo_index",
     "future_log",

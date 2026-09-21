@@ -14,6 +14,7 @@ from parch.components.bujo import (
 )
 from parch.components.checkoff import Checkoff365
 from parch.components.cover import CoverTitle
+from parch.components.dot_grid import DotGrid
 from parch.components.engineering import EngineeringFace, EngineeringPad
 from parch.components.favorites import FavoritesPage
 from parch.components.habit import HabitGrid
@@ -44,6 +45,7 @@ type Component = (
     | BujoKey
     | CollectionLeaf
     | CoverTitle
+    | DotGrid
     | EngineeringPad
     | FavoritesPage
     | FutureLogPage
@@ -88,6 +90,7 @@ __all__ = [
     "CollectionLeaf",
     "Component",
     "CoverTitle",
+    "DotGrid",
     "FutureLogBand",
     "FutureLogPage",
     "MonthlyCalendarList",

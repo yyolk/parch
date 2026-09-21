@@ -62,6 +62,18 @@ def test_get_device_top_clearance_override():
     assert bare.content_top == 0.0
 
 
+def test_page_bleed_is_full_page():
+    for device in (NOMAD, SCRIBE):
+        bleed = device.page_bleed()
+        frame = device.content_frame()
+        assert bleed.x == 0.0
+        assert bleed.y == 0.0
+        assert bleed.w == device.page_width
+        assert bleed.h == device.page_height
+        assert bleed.w > frame.w
+        assert bleed.h > frame.h
+
+
 def test_bottom_clearance_seats_content_frame():
     assert NOMAD.bottom_clearance == 0.0
     assert SCRIBE.bottom_clearance == 10.0

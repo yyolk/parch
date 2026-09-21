@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGrid,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -1066,10 +1067,17 @@ def paint_project(
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
-    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
-    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect, *, pocket: bool = True) -> None:
+    """E-ink dot grid — RULE_C dots on tracks at ``CLONE_DOT_PITCH``.
+
+    Pocket (project notes): SOFT hairline + inset. Bleed (dot-grid page):
+    fill *box* with no frame. Same pitch as project notes — no second pitch.
+    """
+    if pocket:
+        plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+        inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    else:
+        inset = box
     nx = max(2, int(inset.w / CLONE_DOT_PITCH))
     ny = max(2, int(inset.h / CLONE_DOT_PITCH))
     for band in rows(inset, ny):
@@ -1085,6 +1093,21 @@ def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
                 fill=True,
                 fill_gray=RULE_C,
             )
+
+
+def paint_dot_grid(
+    plotter: Plotter,
+    device: Device,
+    grid: DotGrid,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Edge-to-edge ``CLONE_DOT_*`` — page bleed, not ``content_frame``.
+
+    Pitch is the project-note constant (2.8 mm). ``grid`` is the sheet index.
+    """
+    _bound_ramp(plotter, ramp)
+    _paint_clone_dot_grid(plotter, device.page_bleed(), pocket=False)
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3010,7 +3033,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno":
+        case "engineering_front" | "engineering_back" | "steno" | "dot_grid":
             return ""
         case "bujo_key":
             return "Key"

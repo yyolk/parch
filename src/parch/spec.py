@@ -299,6 +299,9 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    dot_grid_sheets: int = (
+        0  # edge-to-edge CLONE_DOT_* pages; 0 keeps year-planner press
+    )
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -320,6 +323,8 @@ class Spec:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if self.book == "engineering-notebook" and self.steno_sheets:
             raise ConfigError("engineering-notebook cannot set steno_sheets")
+        if self.book == "engineering-notebook" and self.dot_grid_sheets:
+            raise ConfigError("engineering-notebook cannot set dot_grid_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -349,6 +354,8 @@ class Spec:
             raise ConfigError("engineering_sheets must be 0–100")
         if not 0 <= self.steno_sheets <= 100:
             raise ConfigError("steno_sheets must be 0–100")
+        if not 0 <= self.dot_grid_sheets <= 100:
+            raise ConfigError("dot_grid_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -594,6 +601,14 @@ class Spec:
             raise ConfigError(f"steno sheet out of range: {sheet}")
         return _dest(t"steno-{self.year:04d}-{sheet:02d}")
 
+    def dest_for_dot_grid(self, sheet: int) -> str:
+        """1-based single-face dest, e.g. ``dot-grid-2026-01``."""
+        if self.dot_grid_sheets < 1:
+            raise ConfigError("dot_grid_sheets must be >= 1 to name a dest")
+        if not 1 <= sheet <= self.dot_grid_sheets:
+            raise ConfigError(f"dot-grid sheet out of range: {sheet}")
+        return _dest(t"dot-grid-{self.year:04d}-{sheet:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -616,6 +631,8 @@ class Spec:
         engineering_table = engineering if isinstance(engineering, dict) else {}
         steno = data.get("steno")
         steno_table = steno if isinstance(steno, dict) else {}
+        dot_grid = data.get("dot_grid")
+        dot_grid_table = dot_grid if isinstance(dot_grid, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
@@ -652,6 +669,9 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            dot_grid_sheets=int(
+                dot_grid_table.get("sheets", data.get("dot_grid_sheets", 0))
+            ),
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -709,6 +729,7 @@ class Spec:
             "tasks": {"rows": self.task_rows},
             "engineering": {"sheets": self.engineering_sheets},
             "steno": {"sheets": self.steno_sheets},
+            "dot_grid": {"sheets": self.dot_grid_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
@@ -773,6 +794,9 @@ class Spec:
                 "",
                 "[steno]",
                 f"sheets = {self.steno_sheets}",
+                "",
+                "[dot_grid]",
+                f"sheets = {self.dot_grid_sheets}",
                 "",
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",
