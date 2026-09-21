@@ -8,6 +8,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books import Book, book_for, plot_pages
 from parch.devices import get_device
+from parch.dotgrid import dotgrid_pages
 from parch.fonts import (
     PROOF_PROFILE,
     ProofProfile,
@@ -82,8 +83,11 @@ def press(
     engineering faces then the Gregg pages and walks them with one
     ``plot_pages`` — no cover, no new Book. Single-count specs keep
     the existing hijacks: steno-only, or year-planner engineering
-    pad-only. ``book = "engineering-notebook"`` still presses cover +
-    pad faces through ``Book``; combining it with ``steno_sheets``
+    pad-only. ``dotgrid_sheets`` appends ``dotgrid_pages`` after those
+    pads, or presses that ledger alone — no cover, no Book. A
+    ``dot-grid-notebook`` sibling is a follow-up. ``book =
+    "engineering-notebook"`` still presses cover + pad faces through
+    ``Book``; combining it with ``steno_sheets`` or ``dotgrid_sheets``
     raises ``ConfigError``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
@@ -98,6 +102,7 @@ def press(
             lambda: [
                 *EngineeringPadSection(spec).pages(),
                 *StenoPadSection(spec).pages(),
+                *dotgrid_pages(spec),
             ],
             plotter,
             ramp=resolved,
@@ -107,7 +112,7 @@ def press(
         )
     elif spec.steno_sheets > 0:
         plot_pages(
-            StenoPadSection(spec).pages,
+            lambda: [*StenoPadSection(spec).pages(), *dotgrid_pages(spec)],
             plotter,
             ramp=resolved,
             device=spec.device,
@@ -116,7 +121,19 @@ def press(
         )
     elif spec.book == "year-planner" and spec.engineering_sheets > 0:
         plot_pages(
-            EngineeringPadSection(spec).pages,
+            lambda: [
+                *EngineeringPadSection(spec).pages(),
+                *dotgrid_pages(spec),
+            ],
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.dotgrid_sheets > 0:
+        plot_pages(
+            lambda: dotgrid_pages(spec),
             plotter,
             ramp=resolved,
             device=spec.device,

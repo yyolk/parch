@@ -34,6 +34,10 @@ class Device:
         """First Y chrome/content may occupy."""
         return self.top_clearance
 
+    def page_rect(self) -> Rect:
+        """Full-bleed page — no clearance, no writing inset."""
+        return Rect(0.0, 0.0, self.page_width, self.page_height)
+
     def content_frame(self) -> Rect:
         """Chrome + wells: below top clearance, above nav strip + bottom OS chrome.
 

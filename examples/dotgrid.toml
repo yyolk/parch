@@ -1,0 +1,10 @@
+# Single-face edge-to-edge clone-dot page. Pad-only — no cover, no
+# ``dot-grid-notebook`` book (that's a follow-up). Full-bleed page rect,
+# CLONE_DOT_PITCH / CLONE_DOT. ``dotgrid_sheets > 0`` presses this ledger
+# (appends after engineering / steno when those counts are also set):
+#   parch press examples/dotgrid.toml -o out/dotgrid.pdf
+device = "supernote-nomad"
+title = "Dot grid"
+
+[dotgrid]
+sheets = 1
