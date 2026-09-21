@@ -71,6 +71,7 @@ def test_dest_names_from_tstrings():
     assert spec.engineering_sheets == 0
     assert spec.steno_sheets == 0
     assert spec.dotgrid_sheets == 0
+    assert spec.lined_sheets == 0
     assert spec.outline is False
     assert spec.my_100 is False
     assert spec.my_100_dest == "my-100-2026"
@@ -159,6 +160,8 @@ def test_habit_columns_from_toml_keys():
     assert Spec.from_path(Path("examples/steno-pad.toml")).steno_sheets == 1
     assert Spec.from_mapping({"dotgrid": {"sheets": 2}}).dotgrid_sheets == 2
     assert Spec.from_path(Path("examples/dotgrid.toml")).dotgrid_sheets == 1
+    assert Spec.from_mapping({"lined": {"sheets": 2}}).lined_sheets == 2
+    assert Spec.from_path(Path("examples/lined-pad.toml")).lined_sheets == 1
     assert (
         Spec.from_mapping({"book": "dot-grid-notebook", "dotgrid": {"sheets": 1}}).book
         == "dot-grid-notebook"

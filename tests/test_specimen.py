@@ -17,6 +17,7 @@ from parch.specimen import (
     EXTRAS_STEMS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
+    LINED_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
     STENO_STEMS,
@@ -31,6 +32,9 @@ from parch.specimen import (
     dotgrid_notebook_specimen_spec,
     dotgrid_page_numbers,
     dotgrid_specimen_spec,
+    lined_dests,
+    lined_page_numbers,
+    lined_specimen_spec,
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
@@ -72,6 +76,7 @@ def test_gallery_groups_split_optional_extras():
     assert groups["optional-extras"] == ("Optional extras", EXTRAS_STEMS)
     assert groups["steno-pad"] == ("Steno pad", STENO_STEMS)
     assert groups["dotgrid-pad"] == ("Dot grid pad", DOTGRID_STEMS)
+    assert groups["lined-pad"] == ("Lined pad", LINED_STEMS)
     assert groups["dot-grid-notebook"] == (
         "Dot grid notebook",
         DOTGRID_NOTEBOOK_STEMS,
@@ -120,6 +125,7 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="bullet-journal"') < html.index('id="dot-grid-notebook"')
     assert html.index('id="dot-grid-notebook"') < html.index('id="steno-pad"')
     assert html.index('id="steno-pad"') < html.index('id="dotgrid-pad"')
+    assert html.index('id="dotgrid-pad"') < html.index('id="lined-pad"')
     year_html = html[
         html.index('id="year-planner"') : html.index('id="optional-extras"')
     ]
@@ -309,6 +315,15 @@ def test_dotgrid_dests_and_pages():
     assert numbers == {"dotgrid": 1}
 
 
+def test_lined_dests_and_pages():
+    spec = lined_specimen_spec("supernote-nomad")
+    assert spec.lined_sheets == 1
+    dests = lined_dests(spec)
+    assert dests["lined"] == spec.dest_for_lined_pad(1) == "lined-2026-01"
+    numbers = lined_page_numbers(spec)
+    assert numbers == {"lined": 1}
+
+
 def test_dotgrid_notebook_dests_and_pages():
     spec = dotgrid_notebook_specimen_spec("kindle-scribe")
     assert spec.book == "dot-grid-notebook"
@@ -440,6 +455,9 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.steno_sheets == 1 for spec in presses)
     assert any(
         spec.book == "year-planner" and spec.dotgrid_sheets == 1 for spec in presses
+    )
+    assert any(
+        spec.book == "year-planner" and spec.lined_sheets == 1 for spec in presses
     )
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:

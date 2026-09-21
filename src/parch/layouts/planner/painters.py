@@ -19,6 +19,7 @@ from parch.components import (
     FavoritesPage,
     FutureLogPage,
     HabitGrid,
+    LinedPad,
     MeetingAgenda,
     MeetingIndex,
     MonthGrid,
@@ -61,6 +62,7 @@ WASH = 236 / 255
 SOFT = 210 / 255
 RULE_C = 198 / 255
 PAPER = 1.0
+LINE_PITCH = 4.15  # notes / lined-pad ruling — not a Spec/TOML knob
 
 HEADER_H = 9.0
 COL_GAP = 3.0
@@ -2456,11 +2458,7 @@ def paint_notes(
         align="left",
     )
     body = Rect(box.x, box.y + header_h + 0.4, box.w, box.h - header_h - 0.4)
-    pitch = 4.15
-    y = body.y + pitch
-    while y < body.bottom - 0.15:
-        plotter.line(body.x, y, body.right, y, stroke_width=RULE, stroke_gray=RULE_C)
-        y += pitch
+    paint_lines(plotter, body)
 
 
 def daily_left_seats(left: Rect) -> tuple[Rect, Rect]:
@@ -3016,7 +3014,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid":
+        case "engineering_front" | "engineering_back" | "steno" | "dotgrid" | "lined":
             return ""
         case "bujo_key":
             return "Key"
@@ -3234,6 +3232,26 @@ def paint_dotgrid_page(
     """Single-face full-bleed clone-dot page. No header, holes, or chrome."""
     _bound_ramp(plotter, ramp)
     paint_dot_grid(plotter, device.page_rect())
+
+
+def paint_lines(plotter: Plotter, box: Rect) -> None:
+    """RULE_C horizontals at ``LINE_PITCH``. No pocket frame."""
+    y = box.y + LINE_PITCH
+    while y < box.bottom - 0.15:
+        plotter.line(box.x, y, box.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+        y += LINE_PITCH
+
+
+def paint_lined_page(
+    plotter: Plotter,
+    device: Device,
+    pad: LinedPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face full-bleed lined page. No header, holes, or chrome."""
+    _bound_ramp(plotter, ramp)
+    paint_lines(plotter, device.page_rect())
 
 
 def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:

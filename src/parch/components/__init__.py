@@ -18,6 +18,7 @@ from parch.components.dotgrid import DotGridPad
 from parch.components.engineering import EngineeringFace, EngineeringPad
 from parch.components.favorites import FavoritesPage
 from parch.components.habit import HabitGrid
+from parch.components.lined import LinedPad
 from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
 from parch.components.my_100 import My100Page
@@ -50,6 +51,7 @@ type Component = (
     | FavoritesPage
     | FutureLogPage
     | HabitGrid
+    | LinedPad
     | MonthlyCalendarList
     | MonthlyTaskWell
     | RapidLogPage
@@ -100,6 +102,7 @@ __all__ = [
     "EngineeringPad",
     "FavoritesPage",
     "HabitGrid",
+    "LinedPad",
     "MeetingAgenda",
     "MeetingIndex",
     "MeetingSlot",

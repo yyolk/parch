@@ -25,6 +25,7 @@ from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.dotgrid import dotgrid_pages
+from parch.lined import lined_pages
 from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
@@ -67,6 +68,9 @@ STENO_STEMS = ("steno",)
 # Pad-only full-bleed clone-dot sheet (dotgrid_sheets=1).
 DOTGRID_STEMS = ("dotgrid",)
 
+# Pad-only full-bleed lined sheet (lined_sheets=1).
+LINED_STEMS = ("lined",)
+
 # Dot-grid notebook — cover + one full-bleed clone-dot page (sibling dests).
 DOTGRID_NOTEBOOK_STEMS = ("dotgrid-cover", "dotgrid-page")
 
@@ -92,6 +96,7 @@ def gallery_groups(
         ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
         ("dotgrid-pad", "Dot grid pad", DOTGRID_STEMS),
+        ("lined-pad", "Lined pad", LINED_STEMS),
     )
 
 
@@ -142,6 +147,13 @@ def dotgrid_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """One full-bleed clone-dot sheet for the catalog."""
     return replace(
         specimen_spec(device_id, year=year), dotgrid_sheets=1, title="Dot grid"
+    )
+
+
+def lined_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """One full-bleed lined sheet for the catalog."""
+    return replace(
+        specimen_spec(device_id, year=year), lined_sheets=1, title="Lined pad"
     )
 
 
@@ -211,6 +223,11 @@ def dotgrid_dests(spec: Spec) -> dict[str, str]:
     return {"dotgrid": spec.dest_for_dotgrid_pad(1)}
 
 
+def lined_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for the pad-only lined catalog stem."""
+    return {"lined": spec.dest_for_lined_pad(1)}
+
+
 def bujo_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each bullet-journal catalog stem."""
     return {
@@ -270,6 +287,13 @@ def dotgrid_page_numbers(
 ) -> dict[str, int]:
     """1-based page numbers from the pad-only dot-grid walk."""
     return _page_numbers(dotgrid_pages(spec), dotgrid_dests(spec), stems)
+
+
+def lined_page_numbers(
+    spec: Spec, stems: Sequence[str] = LINED_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the pad-only lined walk."""
+    return _page_numbers(lined_pages(spec), lined_dests(spec), stems)
 
 
 def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str, int]:
@@ -543,6 +567,10 @@ def write_specimens(
         _render_stems(
             dotgrid_pdf, dest, dotgrid_page_numbers(dotgrid_spec), DOTGRID_STEMS
         )
+        lined_spec = lined_specimen_spec(device_id, year=year)
+        lined_pdf = Path(tmp) / "lined-pad.pdf"
+        press(lined_spec, lined_pdf, proof=True)
+        _render_stems(lined_pdf, dest, lined_page_numbers(lined_spec), LINED_STEMS)
     write_device_index(dest, spec.device, groups=gallery_groups(stems), commit=commit)
     return dest
 

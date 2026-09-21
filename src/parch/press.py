@@ -18,6 +18,7 @@ from parch.fonts import (
     require_overlay,
 )
 from parch.fonts.ramp import OverlayData
+from parch.lined import lined_pages
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
@@ -91,6 +92,11 @@ def press(
     ``steno_sheets`` or ``dotgrid_sheets`` raises ``ConfigError``.
     Combining ``dot-grid-notebook`` with ``engineering_sheets`` or
     ``steno_sheets`` also raises ``ConfigError``.
+    ``lined_sheets`` on year-planner with no other pad counts presses
+    ``lined_pages`` alone — no cover. Mixing lined with engineering /
+    steno / dotgrid on year-planner raises ``ConfigError`` (P5
+    compose without lined is unchanged). Exclusive notebooks reject
+    ``lined_sheets``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -136,6 +142,15 @@ def press(
     elif spec.book == "year-planner" and spec.dotgrid_sheets > 0:
         plot_pages(
             lambda: dotgrid_pages(spec),
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.book == "year-planner" and spec.lined_sheets > 0:
+        plot_pages(
+            lambda: lined_pages(spec),
             plotter,
             ramp=resolved,
             device=spec.device,
