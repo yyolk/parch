@@ -1,0 +1,13 @@
+# Lined notebook — cover → edge-to-edge lined pages (sibling book).
+#   parch press examples/lined-notebook.toml -o out/lined-notebook.pdf
+# Swap device = "kindle-scribe" for the other slate.
+# Pad-only (no cover) is examples/lined-pad.toml.
+book = "lined-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Lined"
+# Reader sidebar outline (bookmarks). Cover and pad faces are skipped. Default is false.
+outline = true
+
+[lined]
+sheets = 12

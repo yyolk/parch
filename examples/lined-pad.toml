@@ -1,7 +1,8 @@
-# Single-face edge-to-edge lined page. Pad-only — no cover, no
-# ``lined-notebook`` book (that's a follow-up). Full-bleed page rect,
-# LINE_PITCH notes ruling. ``lined_sheets > 0`` presses this ledger
-# alone on year-planner (mix with engineering / steno / dotgrid raises):
+# Single-face edge-to-edge lined page. Pad-only — no cover.
+# Sibling book (cover + sheets): examples/lined-notebook.toml.
+# Full-bleed page rect, LINE_PITCH notes ruling. ``lined_sheets > 0``
+# presses this ledger alone on year-planner (mix with engineering /
+# steno / dotgrid raises):
 #   parch press examples/lined-pad.toml -o out/lined-pad.pdf
 device = "supernote-nomad"
 title = "Lined pad"
