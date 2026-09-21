@@ -158,15 +158,21 @@ def test_press_example_toml_is_one_page(tmp_path: Path):
     assert spec.cover_dest not in dests
 
 
-def test_press_does_not_append_lined_onto_existing_pad_compose(tmp_path: Path):
-    spec = Spec(engineering_sheets=1, steno_sheets=1, dotgrid_sheets=1)
-    plotter = RecordingPlotter()
-    press(spec, tmp_path / "pads.pdf", plotter=plotter)
-    assert plotter.dests() == [
-        spec.dest_for_engineering_pad(1, "front"),
-        spec.dest_for_engineering_pad(1, "back"),
-        spec.dest_for_steno_pad(1),
-        spec.dest_for_dotgrid_pad(1),
-    ]
-    assert spec.cover_dest not in plotter.dests()
-    assert spec.year_dest not in plotter.dests()
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"engineering_sheets": 1},
+        {"steno_sheets": 1},
+        {"dotgrid_sheets": 1},
+        {"engineering_sheets": 1, "steno_sheets": 1, "dotgrid_sheets": 1},
+    ],
+)
+def test_year_planner_rejects_lined_mixed_with_other_pads(kwargs):
+    with pytest.raises(
+        ConfigError, match="year-planner cannot mix lined_sheets with other pad counts"
+    ):
+        Spec(lined_sheets=1, **kwargs)
+    with pytest.raises(
+        ConfigError, match="year-planner cannot mix lined_sheets with other pad counts"
+    ):
+        Spec(book="year-planner", lined_sheets=1, **kwargs)

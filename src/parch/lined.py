@@ -10,7 +10,7 @@ def lined_pages(spec: Spec) -> list[Page]:
 
     Exclusive pad-only when this count is > 0 on year-planner and
     other pad counts stay 0. Year-planner mix with engineering /
-    steno / dotgrid is a follow-up — this helper stays empty-safe.
+    steno / dotgrid raises ``ConfigError`` — this helper stays empty-safe.
     """
     built: list[Page] = []
     for sheet in range(1, spec.lined_sheets + 1):

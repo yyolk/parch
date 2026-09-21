@@ -336,6 +336,14 @@ class Spec:
             raise ConfigError("dot-grid-notebook cannot set steno_sheets")
         if self.book == "dot-grid-notebook" and self.lined_sheets:
             raise ConfigError("dot-grid-notebook cannot set lined_sheets")
+        if (
+            self.book == "year-planner"
+            and self.lined_sheets
+            and (self.engineering_sheets or self.steno_sheets or self.dotgrid_sheets)
+        ):
+            raise ConfigError(
+                "year-planner cannot mix lined_sheets with other pad counts"
+            )
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
