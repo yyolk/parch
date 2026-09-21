@@ -114,9 +114,6 @@ def specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
         year=year,
         months=(1,),
         notes_pages=1,
-        favorites_pages=1,
-        my_100=True,
-        checkoff_365=True,
     )
 
 
@@ -456,14 +453,18 @@ def write_specimens(
     """Press slim planner, notebooks, pads; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
-    press_stems = (*stems, *(stem for stem in EXTRAS_STEMS if stem not in stems))
-    numbers = sample_page_numbers(spec, press_stems)
+    numbers = sample_page_numbers(spec, stems)
+    extras = replace(spec, favorites_pages=1, my_100=True, checkoff_365=True)
+    extras_numbers = sample_page_numbers(extras, EXTRAS_STEMS)
     from parch.press import press
 
     with tempfile.TemporaryDirectory() as tmp:
         pdf = Path(tmp) / "specimen.pdf"
         press(spec, pdf, proof=True)
-        _render_stems(pdf, dest, numbers, press_stems)
+        _render_stems(pdf, dest, numbers, stems)
+        extras_pdf = Path(tmp) / "specimen-extras.pdf"
+        press(extras, extras_pdf, proof=True)
+        _render_stems(extras_pdf, dest, extras_numbers, EXTRAS_STEMS)
         notebook = Path(tmp) / "engineering-notebook.pdf"
         press(
             replace(
