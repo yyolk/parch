@@ -1,9 +1,12 @@
 """Page is what a section builds. Layout seats it; painters ink it."""
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from parch.components import Component
+
+if TYPE_CHECKING:
+    from parch.sections.visit import PageVisitor
 
 type PageKind = Literal[
     "cover",
@@ -53,3 +56,9 @@ class Page:
     title: str
     nav: tuple[NavItem, ...]
     components: tuple[Component, ...]
+
+    def accept[R](self, visitor: PageVisitor[R]) -> R:
+        """Double-dispatch this kind onto ``visitor.visit_*``."""
+        from parch.sections.visit import accept as dispatch
+
+        return dispatch(self, visitor)

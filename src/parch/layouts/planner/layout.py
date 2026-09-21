@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import override
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -85,6 +87,7 @@ from parch.layouts.planner.painters import (
 )
 from parch.plotter.protocol import Plotter
 from parch.sections.page import Page
+from parch.sections.visit import PageVisitor, accept
 
 __all__ = [
     "COL_GAP",
@@ -113,112 +116,263 @@ class PlannerLayout:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
+        """Ink one page by accepting a closed paint visitor."""
         plotter.ramp = self.ramp
-        match page.kind:
-            case "cover":
-                paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case "engineering_front" | "engineering_back":
-                paint_engineering_pad(
-                    plotter, device, _one(page, EngineeringPad), ramp=self.ramp
-                )
-            case "steno":
-                paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
-            case "dotgrid":
-                paint_dotgrid_page(
-                    plotter, device, _one(page, DotGridPad), ramp=self.ramp
-                )
-            case "lined":
-                paint_lined_page(plotter, device, _one(page, LinedPad), ramp=self.ramp)
-            case _:
-                paint_header(
-                    plotter,
-                    device,
-                    page.title,
-                    _header_meta(page),
-                    _header_meta_dest(page),
-                    ramp=self.ramp,
-                    chip=_header_chip(page),
-                    chip_dest=_header_chip_dest(page),
-                )
-                paint_nav(
-                    plotter,
-                    device,
-                    strip_items(page),
-                    strip_active(page.kind),
-                    ramp=self.ramp,
-                )
-                well = well_rect(device)
-                self._paint_well(page, plotter, well)
+        accept(page, _PaintVisitor(self.ramp, plotter, device))
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
-        ramp = self.ramp
-        match page.kind:
-            case "annual":
-                paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
-            case "favorites":
-                paint_favorites(plotter, well, _one(page, FavoritesPage), ramp=ramp)
-            case "my_100":
-                paint_my_100(plotter, well, _one(page, My100Page), ramp=ramp)
-            case "checkoff_365":
-                paint_checkoff_365(plotter, well, _one(page, Checkoff365), ramp=ramp)
-            case "projects_index":
-                paint_projects_index(
-                    plotter, well, _one(page, ProjectsIndex), ramp=ramp
-                )
-            case "project":
-                paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
-            case "meetings_index":
-                paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=ramp)
-            case "meeting":
-                paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=ramp)
-            case "tasks_index":
-                paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=ramp)
-            case "task":
-                paint_task(plotter, well, _one(page, TasksWeekPage), ramp=ramp)
-            case "review_index":
-                paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=ramp)
-            case "review":
-                paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=ramp)
-            case "quarter":
-                paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
-            case "month":
-                paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
-            case "habits":
-                paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=ramp)
-            case "weekly":
-                paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
-            case "daily":
-                paint_daily(
-                    plotter,
-                    well,
-                    _one(page, Schedule),
-                    _one(page, AnnualMonth),
-                    _one(page, Priorities),
-                    _one(page, Notes),
-                    ramp=ramp,
-                )
-            case "daily_notes":
-                paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
-            case "bujo_key":
-                paint_bujo_key(plotter, well, _one(page, BujoKey), ramp=ramp)
-            case "bujo_index":
-                paint_bujo_index(plotter, well, _one(page, BujoIndex), ramp=ramp)
-            case "future_log":
-                paint_future_log(plotter, well, _one(page, FutureLogPage), ramp=ramp)
-            case "monthly_log":
-                paint_monthly_calendar_list(
-                    plotter, well, _one(page, MonthlyCalendarList), ramp=ramp
-                )
-            case "monthly_tasks":
-                paint_monthly_task_well(
-                    plotter, well, _one(page, MonthlyTaskWell), ramp=ramp
-                )
-            case "rapid_log":
-                paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
-            case "collection":
-                paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
-            case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+
+class _PaintVisitor(PageVisitor[None]):
+    """Full-bleed kinds skip chrome; every other kind paints header, nav, then well."""
+
+    def __init__(self, ramp: TypeRamp, plotter: Plotter, device: Device) -> None:
+        self._ramp = ramp
+        self._plotter = plotter
+        self._device = device
+
+    def _chrome(self, page: Page) -> Rect:
+        """Header and nav, then the writable well."""
+        paint_header(
+            self._plotter,
+            self._device,
+            page.title,
+            _header_meta(page),
+            _header_meta_dest(page),
+            ramp=self._ramp,
+            chip=_header_chip(page),
+            chip_dest=_header_chip_dest(page),
+        )
+        paint_nav(
+            self._plotter,
+            self._device,
+            strip_items(page),
+            strip_active(page.kind),
+            ramp=self._ramp,
+        )
+        return well_rect(self._device)
+
+    def _engineering(self, page: Page) -> None:
+        paint_engineering_pad(
+            self._plotter, self._device, _one(page, EngineeringPad), ramp=self._ramp
+        )
+
+    @override
+    def visit_cover(self, page: Page) -> None:
+        paint_cover(
+            self._plotter, self._device, _one(page, CoverTitle), ramp=self._ramp
+        )
+
+    @override
+    def visit_engineering_front(self, page: Page) -> None:
+        self._engineering(page)
+
+    @override
+    def visit_engineering_back(self, page: Page) -> None:
+        self._engineering(page)
+
+    @override
+    def visit_steno(self, page: Page) -> None:
+        paint_steno_pad(
+            self._plotter, self._device, _one(page, StenoPad), ramp=self._ramp
+        )
+
+    @override
+    def visit_dotgrid(self, page: Page) -> None:
+        paint_dotgrid_page(
+            self._plotter, self._device, _one(page, DotGridPad), ramp=self._ramp
+        )
+
+    @override
+    def visit_lined(self, page: Page) -> None:
+        paint_lined_page(
+            self._plotter, self._device, _one(page, LinedPad), ramp=self._ramp
+        )
+
+    @override
+    def visit_annual(self, page: Page) -> None:
+        paint_annual(
+            self._plotter, self._chrome(page), _one(page, AnnualGrid), ramp=self._ramp
+        )
+
+    @override
+    def visit_favorites(self, page: Page) -> None:
+        paint_favorites(
+            self._plotter,
+            self._chrome(page),
+            _one(page, FavoritesPage),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_my_100(self, page: Page) -> None:
+        paint_my_100(
+            self._plotter, self._chrome(page), _one(page, My100Page), ramp=self._ramp
+        )
+
+    @override
+    def visit_checkoff_365(self, page: Page) -> None:
+        paint_checkoff_365(
+            self._plotter, self._chrome(page), _one(page, Checkoff365), ramp=self._ramp
+        )
+
+    @override
+    def visit_projects_index(self, page: Page) -> None:
+        paint_projects_index(
+            self._plotter,
+            self._chrome(page),
+            _one(page, ProjectsIndex),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_project(self, page: Page) -> None:
+        paint_project(
+            self._plotter,
+            self._chrome(page),
+            _one(page, ProjectsBoard),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_meetings_index(self, page: Page) -> None:
+        paint_meetings_index(
+            self._plotter, self._chrome(page), _one(page, MeetingIndex), ramp=self._ramp
+        )
+
+    @override
+    def visit_meeting(self, page: Page) -> None:
+        paint_meeting(
+            self._plotter,
+            self._chrome(page),
+            _one(page, MeetingAgenda),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_tasks_index(self, page: Page) -> None:
+        paint_tasks_index(
+            self._plotter, self._chrome(page), _one(page, TasksIndex), ramp=self._ramp
+        )
+
+    @override
+    def visit_task(self, page: Page) -> None:
+        paint_task(
+            self._plotter,
+            self._chrome(page),
+            _one(page, TasksWeekPage),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_review_index(self, page: Page) -> None:
+        paint_review_index(
+            self._plotter, self._chrome(page), _one(page, ReviewIndex), ramp=self._ramp
+        )
+
+    @override
+    def visit_review(self, page: Page) -> None:
+        paint_review(
+            self._plotter,
+            self._chrome(page),
+            _one(page, ReviewWeekPage),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_quarter(self, page: Page) -> None:
+        paint_quarter(
+            self._plotter, self._chrome(page), _one(page, QuarterGrid), ramp=self._ramp
+        )
+
+    @override
+    def visit_month(self, page: Page) -> None:
+        paint_month_grid(
+            self._plotter, self._chrome(page), _one(page, MonthGrid), ramp=self._ramp
+        )
+
+    @override
+    def visit_habits(self, page: Page) -> None:
+        paint_habit_grid(
+            self._plotter, self._chrome(page), _one(page, HabitGrid), ramp=self._ramp
+        )
+
+    @override
+    def visit_weekly(self, page: Page) -> None:
+        paint_week(
+            self._plotter, self._chrome(page), _one(page, WeekStrip), ramp=self._ramp
+        )
+
+    @override
+    def visit_daily(self, page: Page) -> None:
+        well = self._chrome(page)
+        paint_daily(
+            self._plotter,
+            well,
+            _one(page, Schedule),
+            _one(page, AnnualMonth),
+            _one(page, Priorities),
+            _one(page, Notes),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_daily_notes(self, page: Page) -> None:
+        paint_notes(
+            self._plotter, self._chrome(page), _one(page, Notes), ramp=self._ramp
+        )
+
+    @override
+    def visit_bujo_key(self, page: Page) -> None:
+        paint_bujo_key(
+            self._plotter, self._chrome(page), _one(page, BujoKey), ramp=self._ramp
+        )
+
+    @override
+    def visit_bujo_index(self, page: Page) -> None:
+        paint_bujo_index(
+            self._plotter, self._chrome(page), _one(page, BujoIndex), ramp=self._ramp
+        )
+
+    @override
+    def visit_future_log(self, page: Page) -> None:
+        paint_future_log(
+            self._plotter,
+            self._chrome(page),
+            _one(page, FutureLogPage),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_monthly_log(self, page: Page) -> None:
+        paint_monthly_calendar_list(
+            self._plotter,
+            self._chrome(page),
+            _one(page, MonthlyCalendarList),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_monthly_tasks(self, page: Page) -> None:
+        paint_monthly_task_well(
+            self._plotter,
+            self._chrome(page),
+            _one(page, MonthlyTaskWell),
+            ramp=self._ramp,
+        )
+
+    @override
+    def visit_rapid_log(self, page: Page) -> None:
+        paint_rapid_log(
+            self._plotter, self._chrome(page), _one(page, RapidLogPage), ramp=self._ramp
+        )
+
+    @override
+    def visit_collection(self, page: Page) -> None:
+        paint_collection(
+            self._plotter,
+            self._chrome(page),
+            _one(page, CollectionLeaf),
+            ramp=self._ramp,
+        )
 
 
 def _header_meta(page: Page) -> str:
