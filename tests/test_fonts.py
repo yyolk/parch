@@ -1,7 +1,7 @@
 import pytest
 
 from parch.components import CoverTitle
-from parch.devices import NOMAD
+from parch.devices import NOMAD, SCRIBE
 from parch.fonts import (
     DISPLAY_SIZE,
     JOST_RATIOS,
@@ -25,8 +25,14 @@ from parch.fonts import (
     jost_catalog,
     pt_from_em,
 )
+from parch.fonts.metrics import fit_line_size, string_width
 from parch.geom import Rect
-from parch.layouts.planner.painters import paint_cover, paint_header
+from parch.layouts.planner.painters import (
+    COVER_FRAME_INNER,
+    COVER_TITLE_PAD,
+    paint_cover,
+    paint_header,
+)
 from parch.plotter import RecordingPlotter
 from parch.plotter.fpdf2 import Fpdf2Plotter
 
@@ -165,6 +171,71 @@ def test_header_uses_title_and_chrome_steps():
     assert _family(meta) == "jost"
 
 
+def _cover_title_well_w(device) -> float:
+    return device.page_width - 2 * (COVER_FRAME_INNER + COVER_TITLE_PAD)
+
+
+def test_string_width_matches_fpdf2_and_scales():
+    path = str(jost_catalog().path("jost", "heavy"))
+    plotter = Fpdf2Plotter(NOMAD)
+    plotter.begin_page()
+    plotter.pdf.set_font("jost:heavy", "", 42)
+    for text in ("2026", "Projects", "Lined / Dot grid"):
+        assert string_width(path, text, 42) == pytest.approx(
+            plotter.pdf.get_string_width(text)
+        )
+    assert string_width(path, "Projects", 21) == pytest.approx(
+        string_width(path, "Projects", 42) / 2
+    )
+    assert string_width(path, "", 42) == 0.0
+
+
+def test_fit_line_size_keeps_short_and_shrinks_wide():
+    path = str(jost_catalog().path("jost", "heavy"))
+    well = _cover_title_well_w(NOMAD)
+    assert fit_line_size(path, "Projects", 42, well) == 42
+    fitted = fit_line_size(path, "Lined / Dot grid", 42, well)
+    assert fitted < 42
+    assert string_width(path, "Lined / Dot grid", fitted) == pytest.approx(well)
+    assert fit_line_size(path, "Lined / Dot grid", 42, 0) == 42
+
+
+def test_cover_long_headline_shrinks_to_one_line_inside_well():
+    cover = CoverTitle(
+        year=2026,
+        cta_label="",
+        cta_dest="lined-2026-01",
+        display_title="Lined / Dot grid",
+    )
+    plotter = RecordingPlotter()
+    paint_cover(plotter, NOMAD, cover, ramp=EffectiveRamp())
+    title = next(
+        op for op in plotter.ops if op[0] == "text" and op[2] == "Lined / Dot grid"
+    )
+    path = str(jost_catalog().path("jost", "heavy"))
+    well = _cover_title_well_w(NOMAD)
+    assert title[3] < 42
+    assert string_width(path, "Lined / Dot grid", title[3]) == pytest.approx(well)
+    assert title[9] == "heavy"
+    texts = [op[2] for op in plotter.ops if op[0] == "text"]
+    assert texts.count("Lined / Dot grid") == 1
+
+
+def test_cover_headline_keeps_display_size_on_wider_page():
+    cover = CoverTitle(
+        year=2026,
+        cta_label="",
+        cta_dest="lined-2026-01",
+        display_title="Lined / Dot grid",
+    )
+    plotter = RecordingPlotter()
+    paint_cover(plotter, SCRIBE, cover, ramp=EffectiveRamp())
+    title = next(
+        op for op in plotter.ops if op[0] == "text" and op[2] == "Lined / Dot grid"
+    )
+    assert title[3] == 42
+
+
 def test_cover_display_title_is_headline_year_is_eyebrow():
     cover = CoverTitle(
         year=2026,
@@ -187,6 +258,8 @@ def test_cover_display_title_is_headline_year_is_eyebrow():
 
 def test_cover_honors_stub_ramp():
     class StubRamp:
+        catalog = jost_catalog()
+
         def __init__(self) -> None:
             self.calls: list[tuple[TypeStep, TypeEmphasis]] = []
 
