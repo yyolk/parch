@@ -1,0 +1,11 @@
+# Coverless edge-to-edge clone-dot notebook (exploratory DG3).
+# Explicit book id — not a year-planner pad hijack.
+#   parch press examples/dot-grid.toml -o out/dot-grid.pdf
+# Swap device = "kindle-scribe" for the other slate.
+book = "dot-grid"
+year = 2026
+device = "supernote-nomad"
+title = "Dot grid"
+
+[dot_grid]
+sheets = 8

@@ -22,6 +22,13 @@ def test_spec_from_mapping_accepts_both_pad_tables():
     assert "year =" not in Path("examples/pads.toml").read_text()
 
 
+def test_dot_grid_rejects_pad_sheet_counts():
+    with pytest.raises(ConfigError, match="dot-grid cannot set engineering_sheets"):
+        Spec(book="dot-grid", dot_grid_sheets=1, engineering_sheets=1)
+    with pytest.raises(ConfigError, match="dot-grid cannot set steno_sheets"):
+        Spec(book="dot-grid", dot_grid_sheets=1, steno_sheets=1)
+
+
 def test_engineering_notebook_rejects_steno_sheets():
     with pytest.raises(
         ConfigError, match="engineering-notebook cannot set steno_sheets"

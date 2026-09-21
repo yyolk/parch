@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridSheet,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -3010,7 +3011,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno":
+        case "engineering_front" | "engineering_back" | "steno" | "dot_grid":
             return ""
         case "bujo_key":
             return "Key"
@@ -3202,6 +3203,23 @@ def steno_ruling(box: Rect) -> StenoRuling:
         n_gaps + 1,
         box.x + box.w / 2,
     )
+
+
+def dot_grid_page(device: Device) -> Rect:
+    """Physical page — full-bleed, not ``content_frame`` (no chrome inset)."""
+    return Rect(0.0, 0.0, device.page_width, device.page_height)
+
+
+def paint_dot_grid(
+    plotter: Plotter,
+    device: Device,
+    sheet: DotGridSheet,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Edge-to-edge clone-dot page. Reuses ``_paint_clone_dot_grid`` / ``CLONE_DOT_*``."""
+    _bound_ramp(plotter, ramp)
+    _paint_clone_dot_grid(plotter, dot_grid_page(device))
 
 
 def paint_steno_pad(

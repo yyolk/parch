@@ -6,6 +6,7 @@ from pypdf.generic import Destination
 
 from parch.books import (
     BulletJournal,
+    DotGrid,
     EngineeringNotebook,
     ProjectsNotebook,
     YearPlanner,
@@ -45,6 +46,7 @@ _EXCLUDED_KINDS = frozenset(
         "engineering_front",
         "engineering_back",
         "steno",
+        "dot_grid",
         "monthly_tasks",
         "rapid_log",
     }
@@ -65,6 +67,17 @@ def test_plot_pages_omits_outline_when_disabled():
     EngineeringNotebook().plot(spec, plotter)
     assert plotter.outlines() == []
     assert spec.outline is False
+
+
+def test_dot_grid_outline_empty_when_enabled():
+    spec = Spec(book="dot-grid", dot_grid_sheets=2, outline=True)
+    plotter = RecordingPlotter()
+    DotGrid().plot(spec, plotter)
+    assert plotter.outlines() == []
+    dests = plotter.dests()
+    assert spec.dest_for_dot_grid(1) in dests
+    assert spec.dest_for_dot_grid(2) in dests
+    assert spec.cover_dest not in dests
 
 
 def test_engineering_notebook_outline_empty_when_enabled():

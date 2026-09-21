@@ -11,6 +11,7 @@ from parch.press import main
 from parch.specimen import (
     BUJO_STEMS,
     CATALOG_DEVICE_IDS,
+    DOT_GRID_STEMS,
     EXTRAS_STEMS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
@@ -21,6 +22,9 @@ from parch.specimen import (
     bujo_specimen_spec,
     catalog_dest,
     catalog_index_html,
+    dot_grid_dests,
+    dot_grid_page_numbers,
+    dot_grid_specimen_spec,
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
@@ -102,6 +106,7 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="optional-extras"') < html.index('id="engineering-notebook"')
     assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
     assert html.index('id="bullet-journal"') < html.index('id="steno-pad"')
+    assert html.index('id="steno-pad"') < html.index('id="dot-grid"')
     year_html = html[
         html.index('id="year-planner"') : html.index('id="optional-extras"')
     ]
@@ -285,6 +290,17 @@ def test_steno_dests_and_pages():
     assert numbers == {"steno": 1}
 
 
+def test_dot_grid_dests_and_pages():
+    spec = dot_grid_specimen_spec("supernote-nomad")
+    assert spec.book == "dot-grid"
+    assert spec.dot_grid_sheets == 1
+    dests = dot_grid_dests(spec)
+    assert dests["dot-grid"] == spec.dest_for_dot_grid(1) == "dot-grid-2026-01"
+    numbers = dot_grid_page_numbers(spec)
+    assert numbers == {"dot-grid": 1}
+    assert DOT_GRID_STEMS == ("dot-grid",)
+
+
 def test_bujo_dests_and_pages():
     spec = bujo_specimen_spec("kindle-scribe")
     assert spec.book == "bullet-journal"
@@ -389,6 +405,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.book == "projects-notebook" for spec in presses)
     assert any(spec.book == "bullet-journal" for spec in presses)
     assert any(spec.steno_sheets == 1 for spec in presses)
+    assert any(spec.book == "dot-grid" for spec in presses)
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:
         assert (dest / f"{stem}.png").is_file()

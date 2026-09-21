@@ -84,7 +84,8 @@ def press(
     the existing hijacks: steno-only, or year-planner engineering
     pad-only. ``book = "engineering-notebook"`` still presses cover +
     pad faces through ``Book``; combining it with ``steno_sheets``
-    raises ``ConfigError``.
+    raises ``ConfigError``. ``book = "dot-grid"`` is an explicit
+    coverless sibling (not a pad hijack) of N ``dot_grid_sheets``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(

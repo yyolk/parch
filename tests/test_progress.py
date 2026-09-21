@@ -124,6 +124,20 @@ def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     ]
 
 
+def test_dot_grid_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(book="dot-grid", dot_grid_sheets=2)
+    press(spec, tmp_path / "dot-grid.pdf", plotter=RecordingPlotter())
+    assert ticks == [
+        (1, 2, "dot_grid"),
+        (2, 2, "dot_grid"),
+    ]
+
+
 def test_both_pads_press_ticks_engineering_then_steno(tmp_path: Path, monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(

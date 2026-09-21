@@ -20,6 +20,7 @@ from pathlib import Path
 
 from parch import ConfigError
 from parch.books.bullet_journal import BulletJournal
+from parch.books.dot_grid import DotGrid
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
@@ -62,6 +63,9 @@ BUJO_STEMS = ("bujo-cover", "bujo-key", "bujo-index", "bujo-future")
 # Pad-only Gregg sheet (steno_sheets=1).
 STENO_STEMS = ("steno",)
 
+# Coverless edge-to-edge clone-dot book (dot_grid_sheets=1).
+DOT_GRID_STEMS = ("dot-grid",)
+
 # Catalog Pages devices. Do not follow known_device_ids().
 # Grow this tuple when a device should join gh-pages specimens.
 CATALOG_DEVICE_IDS = ("supernote-nomad", "kindle-scribe")
@@ -82,6 +86,7 @@ def gallery_groups(
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
         ("bullet-journal", "Bullet Journal", BUJO_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
+        ("dot-grid", "Dot grid", DOT_GRID_STEMS),
     )
 
 
@@ -128,6 +133,16 @@ def steno_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """One Gregg pad sheet for the catalog."""
     return replace(
         specimen_spec(device_id, year=year), steno_sheets=1, title="Steno pad"
+    )
+
+
+def dot_grid_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """One coverless full-bleed clone-dot sheet for the catalog."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="dot-grid",
+        dot_grid_sheets=1,
+        title="Dot grid",
     )
 
 
@@ -182,6 +197,11 @@ def steno_dests(spec: Spec) -> dict[str, str]:
     return {"steno": spec.dest_for_steno_pad(1)}
 
 
+def dot_grid_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for the coverless dot-grid catalog stem."""
+    return {"dot-grid": spec.dest_for_dot_grid(1)}
+
+
 def bujo_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each bullet-journal catalog stem."""
     return {
@@ -226,6 +246,13 @@ def steno_page_numbers(
 ) -> dict[str, int]:
     """1-based page numbers from the pad-only steno walk."""
     return _page_numbers(StenoPadSection(spec).pages(), steno_dests(spec), stems)
+
+
+def dot_grid_page_numbers(
+    spec: Spec, stems: Sequence[str] = DOT_GRID_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the coverless dot-grid walk."""
+    return _page_numbers(DotGrid().pages(spec), dot_grid_dests(spec), stems)
 
 
 def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str, int]:
@@ -429,7 +456,7 @@ def write_specimens(
     year: int = 2026,
     commit: str | None = None,
 ) -> Path:
-    """Press slim planner, notebooks, bullet journal, and steno pad; write PNGs + index."""
+    """Press slim planner, notebooks, bullet journal, steno, and dot-grid; write PNGs + index."""
     spec = specimen_spec(device_id, year=year)
     dest.mkdir(parents=True, exist_ok=True)
     press_stems = (*stems, *(stem for stem in EXTRAS_STEMS if stem not in stems))
@@ -471,6 +498,10 @@ def write_specimens(
         steno_pdf = Path(tmp) / "steno-pad.pdf"
         press(steno_spec, steno_pdf, proof=True)
         _render_stems(steno_pdf, dest, steno_page_numbers(steno_spec), STENO_STEMS)
+        dots_spec = dot_grid_specimen_spec(device_id, year=year)
+        dots_pdf = Path(tmp) / "dot-grid.pdf"
+        press(dots_spec, dots_pdf, proof=True)
+        _render_stems(dots_pdf, dest, dot_grid_page_numbers(dots_spec), DOT_GRID_STEMS)
     write_device_index(dest, spec.device, groups=gallery_groups(stems), commit=commit)
     return dest
 
