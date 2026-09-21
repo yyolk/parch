@@ -139,6 +139,36 @@ def test_both_pads_press_ticks_engineering_then_steno(tmp_path: Path, monkeypatc
     ]
 
 
+def test_dotgrid_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(dotgrid_sheets=2)
+    press(spec, tmp_path / "dotgrid.pdf", plotter=RecordingPlotter())
+    assert ticks == [
+        (1, 2, "dotgrid"),
+        (2, 2, "dotgrid"),
+    ]
+
+
+def test_three_pads_press_ticks_engineering_steno_dotgrid(tmp_path: Path, monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(engineering_sheets=1, steno_sheets=1, dotgrid_sheets=1)
+    press(spec, tmp_path / "pads.pdf", plotter=RecordingPlotter())
+    assert ticks == [
+        (1, 4, "engineering_front"),
+        (2, 4, "engineering_back"),
+        (3, 4, "steno"),
+        (4, 4, "dotgrid"),
+    ]
+
+
 def test_projects_notebook_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(

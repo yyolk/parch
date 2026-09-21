@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPad,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -1066,13 +1067,18 @@ def paint_project(
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
-    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
-    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
-    nx = max(2, int(inset.w / CLONE_DOT_PITCH))
-    ny = max(2, int(inset.h / CLONE_DOT_PITCH))
-    for band in rows(inset, ny):
+def dot_grid_counts(box: Rect) -> tuple[int, int]:
+    """Columns and rows that ``paint_dot_grid`` seats in *box*."""
+    return (
+        max(2, int(box.w / CLONE_DOT_PITCH)),
+        max(2, int(box.h / CLONE_DOT_PITCH)),
+    )
+
+
+def paint_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """RULE_C dots on tracks at ``CLONE_DOT_PITCH``. Shared by notes + full page."""
+    nx, ny = dot_grid_counts(box)
+    for band in rows(box, ny):
         for cell in columns(band, nx):
             plotter.rect(
                 Rect(
@@ -1085,6 +1091,30 @@ def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
                 fill=True,
                 fill_gray=RULE_C,
             )
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, then the shared ``paint_dot_grid`` tracks."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    paint_dot_grid(plotter, inset)
+
+
+def device_page_rect(device: Device) -> Rect:
+    """Full device page — no writing_clearance, header, or nav inset."""
+    return Rect(0.0, 0.0, device.page_width, device.page_height)
+
+
+def paint_dot_grid_page(
+    plotter: Plotter,
+    device: Device,
+    pad: DotGridPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face full-bleed dots. No header, strip, or writing_clearance."""
+    _bound_ramp(plotter, ramp)
+    paint_dot_grid(plotter, device_page_rect(device))
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3010,7 +3040,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno":
+        case "engineering_front" | "engineering_back" | "steno" | "dotgrid":
             return ""
         case "bujo_key":
             return "Key"

@@ -12,6 +12,7 @@ from parch.sections.checkoff import Checkoff365Section
 from parch.sections.cover import CoverSection
 from parch.sections.daily import DailySection
 from parch.sections.daily_notes import DailyNotesSection
+from parch.sections.dotgrid import DotGridSection
 from parch.sections.engineering import EngineeringPadSection
 from parch.sections.favorites import FavoritesSection
 from parch.sections.habit import HabitSection
@@ -39,6 +40,7 @@ __all__ = [
     "RapidLogSection",
     "DailyNotesSection",
     "DailySection",
+    "DotGridSection",
     "EngineeringPadSection",
     "FavoritesSection",
     "HabitSection",

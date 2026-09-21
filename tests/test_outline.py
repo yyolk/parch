@@ -16,6 +16,7 @@ from parch.calendar import MONTH_NAMES
 from parch.fonts.ramp import EffectiveRamp
 from parch.plotter import RecordingPlotter
 from parch.press import press
+from parch.sections.dotgrid import DotGridSection
 from parch.sections.engineering import EngineeringPadSection
 from parch.spec import Spec
 
@@ -45,6 +46,7 @@ _EXCLUDED_KINDS = frozenset(
         "engineering_front",
         "engineering_back",
         "steno",
+        "dotgrid",
         "monthly_tasks",
         "rapid_log",
     }
@@ -207,6 +209,21 @@ def test_pad_only_plot_pages_outline_empty_for_eng_kinds():
     )
     assert plotter.outlines() == []
     assert spec.dest_for_engineering_pad(1, "front") in plotter.dests()
+    assert spec.cover_dest not in plotter.dests()
+
+
+def test_pad_only_plot_pages_outline_empty_for_dotgrid():
+    spec = Spec(dotgrid_sheets=1, outline=True)
+    plotter = RecordingPlotter()
+    plot_pages(
+        DotGridSection(spec).pages,
+        plotter,
+        ramp=EffectiveRamp(),
+        device=spec.device,
+        outline=spec.outline,
+    )
+    assert plotter.outlines() == []
+    assert spec.dest_for_dotgrid_pad(1) in plotter.dests()
     assert spec.cover_dest not in plotter.dests()
 
 

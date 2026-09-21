@@ -1,4 +1,4 @@
-"""P5: both pad sheet counts compose in press() without a Book."""
+"""Pad sheet counts compose in press() without a Book."""
 
 from pathlib import Path
 
@@ -20,6 +20,14 @@ def test_spec_from_mapping_accepts_both_pad_tables():
     assert example.steno_sheets == 1
     assert example.book == "year-planner"
     assert "year =" not in Path("examples/pads.toml").read_text()
+    triple = Spec.from_mapping(
+        {
+            "engineering": {"sheets": 1},
+            "steno": {"sheets": 1},
+            "dotgrid": {"sheets": 2},
+        }
+    )
+    assert triple.dotgrid_sheets == 2
 
 
 def test_engineering_notebook_rejects_steno_sheets():
@@ -27,6 +35,13 @@ def test_engineering_notebook_rejects_steno_sheets():
         ConfigError, match="engineering-notebook cannot set steno_sheets"
     ):
         Spec(book="engineering-notebook", engineering_sheets=1, steno_sheets=1)
+
+
+def test_engineering_notebook_rejects_dotgrid_sheets():
+    with pytest.raises(
+        ConfigError, match="engineering-notebook cannot set dotgrid_sheets"
+    ):
+        Spec(book="engineering-notebook", engineering_sheets=1, dotgrid_sheets=1)
 
 
 def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
@@ -37,6 +52,20 @@ def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):
         spec.dest_for_engineering_pad(1, "front"),
         spec.dest_for_engineering_pad(1, "back"),
         spec.dest_for_steno_pad(1),
+    ]
+    assert spec.cover_dest not in plotter.dests()
+    assert spec.year_dest not in plotter.dests()
+
+
+def test_press_pads_compose_dotgrid(tmp_path: Path):
+    spec = Spec(engineering_sheets=1, steno_sheets=1, dotgrid_sheets=1)
+    plotter = RecordingPlotter()
+    press(spec, tmp_path / "pads.pdf", plotter=plotter)
+    assert plotter.dests() == [
+        spec.dest_for_engineering_pad(1, "front"),
+        spec.dest_for_engineering_pad(1, "back"),
+        spec.dest_for_steno_pad(1),
+        spec.dest_for_dotgrid_pad(1),
     ]
     assert spec.cover_dest not in plotter.dests()
     assert spec.year_dest not in plotter.dests()

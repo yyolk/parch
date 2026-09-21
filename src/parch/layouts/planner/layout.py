@@ -9,6 +9,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPad,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -52,6 +53,7 @@ from parch.layouts.planner.painters import (
     paint_collection,
     paint_cover,
     paint_daily,
+    paint_dot_grid_page,
     paint_engineering_pad,
     paint_favorites,
     paint_future_log,
@@ -119,6 +121,10 @@ class PlannerLayout:
                 )
             case "steno":
                 paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
+            case "dotgrid":
+                paint_dot_grid_page(
+                    plotter, device, _one(page, DotGridPad), ramp=self.ramp
+                )
             case _:
                 paint_header(
                     plotter,

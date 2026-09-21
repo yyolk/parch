@@ -1,0 +1,10 @@
+# Full-bleed e-ink dot grid (projects-notes pitch).
+# Edge-to-edge — no header, strip, or writing_clearance inset.
+# ``dotgrid_sheets > 0`` presses this section and composes with other
+# pads (engineering, steno) when those sheet counts are also set:
+#   parch press examples/dotgrid-pad.toml -o out/dotgrid-pad.pdf
+device = "supernote-nomad"
+title = "Dot grid"
+
+[dotgrid]
+sheets = 1
