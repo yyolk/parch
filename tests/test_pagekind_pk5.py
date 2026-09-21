@@ -96,6 +96,6 @@ def test_layout_chrome_well_rejects_unknown_kind():
     ink = RecordingPlotter()
     try:
         PlannerLayout().paint(page, ink, NOMAD)
-    except (ValueError, AssertionError, TypeError):
+    except ValueError, AssertionError, TypeError:
         return
     raise AssertionError("unknown chrome kind must fail closed")
