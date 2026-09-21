@@ -3209,6 +3209,14 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
 
 
 STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
+# Ink insets on 20220804011810_steno.png (1404×1872 @ 300 ppi). No frame.
+_STENO_PNG_MM = 25.4 / 300
+STENO_H_LEFT_MM = 42 * _STENO_PNG_MM
+STENO_H_RIGHT_MM = 46 * _STENO_PNG_MM
+STENO_H_TOP_MM = 127 * _STENO_PNG_MM
+STENO_H_BOTTOM_MM = 91 * _STENO_PNG_MM
+STENO_V_TOP_MM = 71 * _STENO_PNG_MM
+STENO_V_BOTTOM_MM = 33 * _STENO_PNG_MM
 
 
 @dataclass(frozen=True, slots=True)
@@ -3233,6 +3241,16 @@ def steno_ruling(box: Rect) -> StenoRuling:
     )
 
 
+def steno_horizontal_field(device: Device) -> Rect:
+    """Dotted-field insets from the SuperNote steno PNG. No frame."""
+    return Rect(
+        STENO_H_LEFT_MM,
+        STENO_H_TOP_MM,
+        device.page_width - STENO_H_LEFT_MM - STENO_H_RIGHT_MM,
+        device.page_height - STENO_H_TOP_MM - STENO_H_BOTTOM_MM,
+    )
+
+
 def paint_steno_pad(
     plotter: Plotter,
     device: Device,
@@ -3240,11 +3258,9 @@ def paint_steno_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Single-face Gregg pad — lined + center. No header, holes, or duplex back."""
+    """Single-face Gregg pad — template insets, no frame. No header or holes."""
     _bound_ramp(plotter, ramp)
-    frame = device.content_frame()
-    _paint_steno_frame(plotter, frame)
-    _paint_steno_ruling(plotter, frame)
+    _paint_steno_ruling(plotter, device)
 
 
 def paint_dotgrid_page(
@@ -3279,20 +3295,10 @@ def paint_lined_page(
     paint_lines(plotter, device.page_rect())
 
 
-def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:
-    """content_frame hairline — no hole-margin strip."""
-    plotter.rect(
-        frame,
-        stroke=True,
-        fill=False,
-        stroke_width=HAIR,
-        stroke_gray=MUTED,
-    )
-
-
-def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
-    """Horizontals RULE/MUTED; one heavier center HAIR/MUTED across the frame."""
-    ruling = steno_ruling(box)
+def _paint_steno_ruling(plotter: Plotter, device: Device) -> None:
+    """Solid horizontals in the PNG field; longer center rule, page-centered."""
+    field = steno_horizontal_field(device)
+    ruling = steno_ruling(field)
     grid = ruling.origin
     for i in range(ruling.n_lines):
         y = grid.y + i * ruling.pitch
@@ -3305,10 +3311,10 @@ def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
             stroke_gray=MUTED,
         )
     plotter.line(
-        ruling.center_x,
-        box.y,
-        ruling.center_x,
-        box.bottom,
+        device.page_width / 2,
+        STENO_V_TOP_MM,
+        device.page_width / 2,
+        device.page_height - STENO_V_BOTTOM_MM,
         stroke_width=HAIR,
         stroke_gray=MUTED,
     )
