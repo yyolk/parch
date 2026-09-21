@@ -3294,6 +3294,12 @@ def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:
     )
 
 
+def steno_dot_field(box: Rect) -> Rect:
+    """Seat the first dotted line just inside the frame's top stroke."""
+    seat_y = box.y + HAIR / 2 + STENO_DOT_H_MM / 2
+    return Rect(box.x, seat_y, box.w, box.bottom - seat_y)
+
+
 def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
     """Black flat dots along one horizontal. Fixed pitch, no Spec knob."""
     span = x1 - x0
@@ -3315,7 +3321,7 @@ def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
 
 def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
     """Close black dots on each horizontal; solid black center across the frame."""
-    ruling = steno_ruling(box)
+    ruling = steno_ruling(steno_dot_field(box))
     grid = ruling.origin
     for i in range(ruling.n_lines):
         y = grid.y + i * ruling.pitch

@@ -18,6 +18,7 @@ from parch.layouts.planner.painters import (
     STENO_PITCH_MM,
     StenoRuling,
     paint_steno_pad,
+    steno_dot_field,
     steno_ruling,
 )
 from parch.plotter import RecordingPlotter
@@ -104,7 +105,7 @@ def test_paint_is_dotted_center_without_header():
     assert "Sheet" not in texts
     assert "Notes" not in texts
     frame = NOMAD.content_frame()
-    ruling = steno_ruling(frame)
+    ruling = steno_ruling(steno_dot_field(frame))
     dots = [
         op
         for op in ink.ops
@@ -119,7 +120,9 @@ def test_paint_is_dotted_center_without_header():
     assert len(ys) == ruling.n_lines
     for prev, nxt in zip(ys, ys[1:]):
         assert nxt - prev == pytest.approx(STENO_PITCH_MM)
-    for y, line_y in zip(ys, (frame.y + i * ruling.pitch for i in range(ruling.n_lines))):
+    for y, line_y in zip(
+        ys, (ruling.origin.y + i * ruling.pitch for i in range(ruling.n_lines))
+    ):
         assert y == pytest.approx(line_y)
     row = sorted(op[1].x for op in dots if op[1].y + op[1].h / 2 == pytest.approx(ys[0]))
     assert len(row) > 2
