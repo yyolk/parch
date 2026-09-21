@@ -16,8 +16,6 @@ from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _MIX_BOOK = "lined-dotgrid-mix-notebook"
 _DOTGRID_BOOK = "dotgrid-notebook"
-# Short-lived: #528 shipped book = "dot-grid-notebook".
-_DOTGRID_BOOK_ALIAS = "dot-grid-notebook"
 _PAIR_ORDERS = frozenset({"lined-dotgrid", "dotgrid-lined"})
 _BOOKS = frozenset(
     {
@@ -329,8 +327,6 @@ class Spec:
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
-        if self.book == _DOTGRID_BOOK_ALIAS:
-            object.__setattr__(self, "book", _DOTGRID_BOOK)
         if self.week_start not in _WEEK_STARTS:
             raise ConfigError(
                 f"week_start must be monday or sunday, not {self.week_start!r}"

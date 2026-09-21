@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import pytest
 from pypdf import PdfReader
 
+from parch import ConfigError
 from parch.books import DotGridNotebook, book_for
 from parch.components import CoverTitle, DotGridPad
 from parch.plotter import RecordingPlotter
@@ -47,7 +49,8 @@ def test_press_selects_dot_grid_notebook_from_toml(tmp_path: Path):
     assert spec.outline is True
     assert book_for(spec.book) is DotGridNotebook
     assert book_for("dotgrid-notebook") is DotGridNotebook
-    assert book_for("dot-grid-notebook") is DotGridNotebook
+    with pytest.raises(ConfigError, match="book must be"):
+        book_for("dot-grid-notebook")
 
     out = tmp_path / "dotgrid-notebook.pdf"
     press(spec, out)

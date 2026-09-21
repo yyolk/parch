@@ -32,7 +32,7 @@ def book_for(name: str) -> type[Book]:
             return ProjectsNotebook
         case "engineering-notebook":
             return EngineeringNotebook
-        case "dotgrid-notebook" | "dot-grid-notebook":
+        case "dotgrid-notebook":
             return DotGridNotebook
         case "lined-notebook":
             return LinedNotebook
