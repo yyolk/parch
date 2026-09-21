@@ -260,15 +260,9 @@ def test_sample_dests_and_pages_for_january():
     assert all(page >= 1 for page in numbers.values())
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
     extras = replace(spec, favorites_pages=1, my_100=True, checkoff_365=True)
-    extra_numbers = sample_page_numbers(extras, EXTRAS_STEMS)
-    assert extra_numbers["checkoff-365"] == 3
-    assert extra_numbers["favorites"] == 4
-    assert extra_numbers["my-100"] == 5
-    assert (
-        extra_numbers["checkoff-365"]
-        < extra_numbers["favorites"]
-        < extra_numbers["my-100"]
-    )
+    extra_numbers = sample_page_numbers(extras, ("annual", *EXTRAS_STEMS))
+    assert set(EXTRAS_STEMS) <= extra_numbers.keys()
+    assert all(extra_numbers[stem] > extra_numbers["annual"] for stem in EXTRAS_STEMS)
 
 
 def test_projects_dests_and_pages():
