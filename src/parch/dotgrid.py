@@ -1,4 +1,4 @@
-"""Edge-to-edge clone-dot pages. No cover. Press plots this ledger when count > 0."""
+"""Edge-to-edge clone-dot pages. Pad-only has no cover; ``DotGridNotebook`` prefixes one."""
 
 from parch.components.dotgrid import DotGridPad
 from parch.sections.page import Page

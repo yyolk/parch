@@ -1,0 +1,13 @@
+# Dot-grid notebook — cover → edge-to-edge clone-dot pages (sibling book).
+#   parch press examples/dotgrid-notebook.toml -o out/dotgrid-notebook.pdf
+# Swap device = "kindle-scribe" for the other slate.
+# Pad-only (no cover) is examples/dotgrid.toml.
+book = "dot-grid-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Dot grid"
+# Reader sidebar outline (bookmarks). Cover and pad faces are skipped. Default is false.
+outline = true
+
+[dotgrid]
+sheets = 12

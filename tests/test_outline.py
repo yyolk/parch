@@ -6,6 +6,7 @@ from pypdf.generic import Destination
 
 from parch.books import (
     BulletJournal,
+    DotGridNotebook,
     EngineeringNotebook,
     ProjectsNotebook,
     YearPlanner,
@@ -45,6 +46,7 @@ _EXCLUDED_KINDS = frozenset(
         "engineering_front",
         "engineering_back",
         "steno",
+        "dotgrid",
         "monthly_tasks",
         "rapid_log",
     }
@@ -75,6 +77,16 @@ def test_engineering_notebook_outline_empty_when_enabled():
     dests = plotter.dests()
     assert spec.cover_dest in dests
     assert spec.dest_for_engineering_pad(1, "front") in dests
+
+
+def test_dot_grid_notebook_outline_empty_when_enabled():
+    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2, outline=True)
+    plotter = RecordingPlotter()
+    DotGridNotebook().plot(spec, plotter)
+    assert plotter.outlines() == []
+    dests = plotter.dests()
+    assert spec.cover_dest in dests
+    assert spec.dest_for_dotgrid_pad(1) in dests
 
 
 def test_projects_notebook_outlines_index_not_cover():
@@ -244,6 +256,17 @@ def test_press_pdf_engineering_outline_empty_when_enabled(tmp_path: Path):
     assert spec.cover_dest in dests
 
 
+def test_press_pdf_dot_grid_outline_empty_when_enabled(tmp_path: Path):
+    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2, outline=True)
+    out = tmp_path / "dotgrid-outline.pdf"
+    press(spec, out)
+    reader = PdfReader(out)
+    assert reader.outline == []
+    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
+    assert spec.dest_for_dotgrid_pad(1) in dests
+    assert spec.cover_dest in dests
+
+
 def test_press_pdf_outline_absent_when_disabled(tmp_path: Path):
     spec = Spec(book="engineering-notebook", engineering_sheets=1)
     out = tmp_path / "eng-plain.pdf"
@@ -255,6 +278,12 @@ def test_example_engineering_toml_enables_outline():
     spec = Spec.from_path(Path("examples/engineering.toml"))
     assert spec.outline is True
     assert spec.book == "engineering-notebook"
+
+
+def test_example_dotgrid_notebook_toml_enables_outline():
+    spec = Spec.from_path(Path("examples/dotgrid-notebook.toml"))
+    assert spec.outline is True
+    assert spec.book == "dot-grid-notebook"
 
 
 def test_bullet_journal_january_outline_hubs():
