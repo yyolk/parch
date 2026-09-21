@@ -83,10 +83,10 @@ def test_gallery_groups_split_optional_extras():
     assert groups["year-planner"][0] == "Year planner"
     assert groups["optional-extras"] == ("Optional extras", EXTRAS_STEMS)
     assert groups["steno-pad"] == ("Steno pad", STENO_STEMS)
-    assert groups["dotgrid-pad"] == ("Dot grid pad", DOTGRID_STEMS)
+    assert groups["dotgrid-pad"] == ("Dotgrid pad", DOTGRID_STEMS)
     assert groups["lined-pad"] == ("Lined pad", LINED_STEMS)
-    assert groups["dot-grid-notebook"] == (
-        "Dot grid notebook",
+    assert groups["dotgrid-notebook"] == (
+        "Dotgrid notebook",
         DOTGRID_NOTEBOOK_STEMS,
     )
     assert groups["lined-notebook"] == (
@@ -138,8 +138,8 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="year-planner"') < html.index('id="optional-extras"')
     assert html.index('id="optional-extras"') < html.index('id="engineering-notebook"')
     assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
-    assert html.index('id="bullet-journal"') < html.index('id="dot-grid-notebook"')
-    assert html.index('id="dot-grid-notebook"') < html.index('id="lined-notebook"')
+    assert html.index('id="bullet-journal"') < html.index('id="dotgrid-notebook"')
+    assert html.index('id="dotgrid-notebook"') < html.index('id="lined-notebook"')
     assert html.index('id="lined-notebook"') < html.index(
         'id="lined-dotgrid-mix-notebook"'
     )
@@ -380,7 +380,7 @@ def test_lined_dotgrid_notebook_dests_and_pages():
 
 def test_dotgrid_notebook_dests_and_pages():
     spec = dotgrid_notebook_specimen_spec("kindle-scribe")
-    assert spec.book == "dot-grid-notebook"
+    assert spec.book == "dotgrid-notebook"
     assert spec.device == "kindle-scribe"
     assert spec.dotgrid_sheets == 1
     dests = dotgrid_notebook_dests(spec)
@@ -505,7 +505,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.book == "engineering-notebook" for spec in presses)
     assert any(spec.book == "projects-notebook" for spec in presses)
     assert any(spec.book == "bullet-journal" for spec in presses)
-    assert any(spec.book == "dot-grid-notebook" for spec in presses)
+    assert any(spec.book == "dotgrid-notebook" for spec in presses)
     assert any(spec.book == "lined-notebook" for spec in presses)
     assert any(spec.book == "lined-dotgrid-mix-notebook" for spec in presses)
     assert any(spec.steno_sheets == 1 for spec in presses)

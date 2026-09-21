@@ -174,20 +174,25 @@ def test_habit_columns_from_toml_keys():
         == 1
     )
     assert (
-        Spec.from_mapping({"book": "dot-grid-notebook", "dotgrid": {"sheets": 1}}).book
-        == "dot-grid-notebook"
+        Spec.from_mapping({"book": "dotgrid-notebook", "dotgrid": {"sheets": 1}}).book
+        == "dotgrid-notebook"
     )
     assert (
+        Spec.from_mapping({"book": "dot-grid-notebook", "dotgrid": {"sheets": 1}}).book
+        == "dotgrid-notebook"
+    )
+    assert Spec(book="dot-grid-notebook", dotgrid_sheets=1).book == "dotgrid-notebook"
+    assert (
         Spec.from_path(Path("examples/dotgrid-notebook.toml")).book
-        == "dot-grid-notebook"
+        == "dotgrid-notebook"
     )
     assert Spec.from_path(Path("examples/dotgrid-notebook.toml")).dotgrid_sheets == 12
     with pytest.raises(ConfigError, match="book must be"):
         Spec.from_mapping({"book": "meetings-notebook"})
     with pytest.raises(ConfigError, match="engineering-notebook requires"):
         Spec(book="engineering-notebook")
-    with pytest.raises(ConfigError, match="dot-grid-notebook requires"):
-        Spec(book="dot-grid-notebook")
+    with pytest.raises(ConfigError, match="dotgrid-notebook requires"):
+        Spec(book="dotgrid-notebook")
     assert (
         Spec.from_mapping({"book": "lined-notebook", "lined": {"sheets": 1}}).book
         == "lined-notebook"

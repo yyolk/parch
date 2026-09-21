@@ -32,7 +32,7 @@ def book_for(name: str) -> type[Book]:
             return ProjectsNotebook
         case "engineering-notebook":
             return EngineeringNotebook
-        case "dot-grid-notebook":
+        case "dotgrid-notebook" | "dot-grid-notebook":
             return DotGridNotebook
         case "lined-notebook":
             return LinedNotebook
@@ -44,6 +44,6 @@ def book_for(name: str) -> type[Book]:
             raise ConfigError(
                 "book must be year-planner, projects-notebook, "
                 "engineering-notebook, bullet-journal, "
-                "dot-grid-notebook, lined-notebook, or "
+                "dotgrid-notebook, lined-notebook, or "
                 f"lined-dotgrid-mix-notebook, not {name!r}"
             )

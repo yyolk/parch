@@ -87,11 +87,11 @@ def press(
     the existing hijacks: steno-only, or year-planner engineering
     pad-only. ``dotgrid_sheets`` appends ``dotgrid_pages`` after those
     pads, or presses that ledger alone on year-planner — no cover.
-    ``book = "dot-grid-notebook"`` presses cover + clone-dot pages
+    ``book = "dotgrid-notebook"`` presses cover + clone-dot pages
     through ``Book``. ``book = "engineering-notebook"`` still presses
     cover + pad faces through ``Book``; combining it with
     ``steno_sheets`` or ``dotgrid_sheets`` raises ``ConfigError``.
-    Combining ``dot-grid-notebook`` with ``engineering_sheets`` or
+    Combining ``dotgrid-notebook`` with ``engineering_sheets`` or
     ``steno_sheets`` also raises ``ConfigError``.
     ``lined_sheets`` on year-planner with no other pad counts presses
     ``lined_pages`` alone — no cover. Mixing lined with engineering /

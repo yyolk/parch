@@ -10,7 +10,7 @@ from parch.spec import Spec
 
 
 def test_dot_grid_notebook_is_cover_then_clone_dot_pages():
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2, title="Dot grid")
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, title="Dot grid")
     pages = DotGridNotebook().pages(spec)
     assert [page.kind for page in pages] == ["cover", "dotgrid", "dotgrid"]
     assert len(pages) == 1 + spec.dotgrid_sheets
@@ -40,12 +40,14 @@ def test_dot_grid_notebook_is_cover_then_clone_dot_pages():
 
 def test_press_selects_dot_grid_notebook_from_toml(tmp_path: Path):
     spec = Spec.from_path(Path("examples/dotgrid-notebook.toml"))
-    assert spec.book == "dot-grid-notebook"
+    assert spec.book == "dotgrid-notebook"
     assert spec.dotgrid_sheets == 12
     assert spec.device == "supernote-nomad"
     assert spec.title == "Dot grid"
     assert spec.outline is True
     assert book_for(spec.book) is DotGridNotebook
+    assert book_for("dotgrid-notebook") is DotGridNotebook
+    assert book_for("dot-grid-notebook") is DotGridNotebook
 
     out = tmp_path / "dotgrid-notebook.pdf"
     press(spec, out)

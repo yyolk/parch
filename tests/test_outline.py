@@ -83,7 +83,7 @@ def test_engineering_notebook_outline_empty_when_enabled():
 
 
 def test_dot_grid_notebook_outline_empty_when_enabled():
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2, outline=True)
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, outline=True)
     plotter = RecordingPlotter()
     DotGridNotebook().plot(spec, plotter)
     assert plotter.outlines() == []
@@ -285,7 +285,7 @@ def test_press_pdf_engineering_outline_empty_when_enabled(tmp_path: Path):
 
 
 def test_press_pdf_dot_grid_outline_empty_when_enabled(tmp_path: Path):
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2, outline=True)
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, outline=True)
     out = tmp_path / "dotgrid-outline.pdf"
     press(spec, out)
     reader = PdfReader(out)
@@ -311,7 +311,7 @@ def test_example_engineering_toml_enables_outline():
 def test_example_dotgrid_notebook_toml_enables_outline():
     spec = Spec.from_path(Path("examples/dotgrid-notebook.toml"))
     assert spec.outline is True
-    assert spec.book == "dot-grid-notebook"
+    assert spec.book == "dotgrid-notebook"
 
 
 def test_press_pdf_lined_outline_empty_when_enabled(tmp_path: Path):
