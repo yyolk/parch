@@ -99,7 +99,6 @@ def test_scribe_header_sits_at_zero_top_clearance():
     assert fills[0][5] == pytest.approx(INK)
     for op in plotter.ops:
         if op[0] in {"text", "link"}:
-            assert op[1].y == pytest.approx(0.0)
             assert op[1].y == pytest.approx(SCRIBE.content_top)
 
 
@@ -129,8 +128,8 @@ def test_bare_scribe_spec_omits_top_band():
 
 
 def test_plot_pages_honors_spec_top_clearance():
-    """Year-planner paint path applies Spec.top_clearance to the slate."""
-    spec = Spec(device="kindle-scribe", top_clearance=0.0, months=(1,), notes_pages=0)
+    """Year-planner paint path applies a positive Spec.top_clearance to the slate."""
+    spec = Spec(device="kindle-scribe", top_clearance=8.0, months=(1,), notes_pages=0)
     plotter = RecordingPlotter()
     plot_pages(
         AnnualSection(spec).pages,
@@ -149,10 +148,10 @@ def test_plot_pages_honors_spec_top_clearance():
         and op[5] == pytest.approx(INK)
     ]
     assert fills
-    assert all(op[1].h == pytest.approx(HEADER_H) for op in fills)
+    assert all(op[1].h == pytest.approx(spec.top_clearance + HEADER_H) for op in fills)
     for op in plotter.ops:
         if op[0] in {"text", "link"}:
-            assert op[1].y >= -0.01
+            assert op[1].y >= spec.top_clearance - 0.01
 
 
 def test_cover_has_no_top_fill():

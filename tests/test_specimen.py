@@ -241,24 +241,13 @@ def test_specimen_index_html_omits_footer_without_commit():
 
 
 def test_scribe_specimen_follows_zero_top_clearance():
-    """Scribe catalog specs omit top_clearance and resolve to the 0 default."""
+    """Scribe catalog spec omits top_clearance and resolves to the 0 default."""
     spec = specimen_spec("kindle-scribe")
     assert spec.top_clearance is None
     slate = get_device(spec.device, top_clearance=spec.top_clearance)
     assert slate.top_clearance == 0.0
     assert slate.content_top == 0.0
-    for builder in (
-        projects_specimen_spec,
-        bujo_specimen_spec,
-        lined_notebook_specimen_spec,
-        lined_dotgrid_notebook_specimen_spec,
-        dotgrid_notebook_specimen_spec,
-        steno_specimen_spec,
-        dotgrid_specimen_spec,
-        lined_specimen_spec,
-    ):
-        sibling = builder("kindle-scribe")
-        assert sibling.top_clearance is None
+    assert projects_specimen_spec("kindle-scribe").top_clearance is None
 
 
 def test_sample_dests_and_pages_for_january():

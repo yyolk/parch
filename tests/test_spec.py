@@ -242,7 +242,7 @@ def test_habit_columns_from_toml_keys():
     assert nomad.top_clearance is None
     scribe = Spec.from_path(Path("examples/scribe.toml"))
     assert scribe.device == "kindle-scribe"
-    assert scribe.top_clearance == 0.0
+    assert scribe.top_clearance is None
 
 
 def test_top_clearance_toml_override():

@@ -3,7 +3,6 @@
 year = 2026
 device = "kindle-scribe"
 # Device default top clearance is 0. A positive value reserves a top band.
-top_clearance = 0
 week_start = "monday"
 months = { from = 1, to = 12 }
 title = "Year planner"
