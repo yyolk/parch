@@ -2,7 +2,7 @@ from parch.calendar import month_touching_weeks
 from parch.components import My100Page
 from parch.devices import get_device
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -38,7 +38,7 @@ class My100Section:
             built.append(
                 Page(
                     dest=dest,
-                    kind="my_100",
+                    kind=PageKind.MY_100,
                     title="My 100",
                     nav=nav,
                     components=(

@@ -1,7 +1,7 @@
 """Edge-to-edge clone-dot pages. Pad-only has no cover; ``DotGridNotebook`` prefixes one."""
 
 from parch.components.dotgrid import DotGridPad
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -16,7 +16,7 @@ def dotgrid_pages(spec: Spec) -> list[Page]:
         built.append(
             Page(
                 dest=spec.dest_for_dotgrid_pad(sheet),
-                kind="dotgrid",
+                kind=PageKind.DOTGRID,
                 title="Dot grid",
                 nav=(),
                 components=(DotGridPad(sheet=sheet, sheets=spec.dotgrid_sheets),),

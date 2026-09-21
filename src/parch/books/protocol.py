@@ -8,7 +8,7 @@ from parch.fonts.ramp import TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -33,31 +33,31 @@ class Book(Protocol):
 # EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
 _OUTLINE_RUN = frozenset(
     {
-        "annual",
-        "favorites",
-        "my_100",
-        "checkoff_365",
-        "projects_index",
-        "meetings_index",
-        "tasks_index",
-        "review_index",
-        "bujo_key",
-        "bujo_index",
-        "future_log",
-        "collection",
+        PageKind.ANNUAL,
+        PageKind.FAVORITES,
+        PageKind.MY_100,
+        PageKind.CHECKOFF_365,
+        PageKind.PROJECTS_INDEX,
+        PageKind.MEETINGS_INDEX,
+        PageKind.TASKS_INDEX,
+        PageKind.REVIEW_INDEX,
+        PageKind.BUJO_KEY,
+        PageKind.BUJO_INDEX,
+        PageKind.FUTURE_LOG,
+        PageKind.COLLECTION,
     }
 )
-_OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})
+_OUTLINE_EACH = frozenset({PageKind.QUARTER, PageKind.MONTH, PageKind.MONTHLY_LOG})
 
 
-def _section_start(kind: str, prev_kind: str | None) -> bool:
+def _section_start(kind: PageKind, prev_kind: PageKind | None) -> bool:
     """First non-cover page of a contiguous PageKind run (or first after cover)."""
-    if kind == "cover":
+    if kind is PageKind.COVER:
         return False
-    return prev_kind is None or prev_kind == "cover" or prev_kind != kind
+    return prev_kind is None or prev_kind is PageKind.COVER or prev_kind != kind
 
 
-def _should_outline(kind: str, prev_kind: str | None) -> bool:
+def _should_outline(kind: PageKind, prev_kind: PageKind | None) -> bool:
     return kind in _OUTLINE_EACH or (
         kind in _OUTLINE_RUN and _section_start(kind, prev_kind)
     )
@@ -69,7 +69,7 @@ def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
     Cover and non-hub kinds are omitted. RUN kinds emit once per kind-run;
     EACH kinds emit every page (Q1–Q4 and each pressed month).
     """
-    prev_kind: str | None = None
+    prev_kind: PageKind | None = None
     entries: list[tuple[str, str]] = []
     for page in pages:
         if _should_outline(page.kind, prev_kind):

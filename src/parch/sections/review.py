@@ -9,7 +9,7 @@ from parch.components import (
     ReviewWeekPage,
 )
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -30,7 +30,7 @@ class ReviewSection:
         built = [
             Page(
                 dest=index_dest,
-                kind="review_index",
+                kind=PageKind.REVIEW_INDEX,
                 title="Review",
                 nav=planner_nav(
                     spec,
@@ -82,7 +82,7 @@ class ReviewSection:
         )
         return Page(
             dest=week.dest,
-            kind="review",
+            kind=PageKind.REVIEW,
             title="Review",
             nav=planner_nav(
                 spec,

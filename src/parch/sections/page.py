@@ -1,43 +1,45 @@
 """Page is what a section builds. Layout seats it; painters ink it."""
 
 from dataclasses import dataclass
-from typing import Literal
+from enum import StrEnum
 
 from parch.components import Component
 
-type PageKind = Literal[
-    "cover",
-    "annual",
-    "favorites",
-    "my_100",
-    "checkoff_365",
-    "projects_index",
-    "project",
-    "meetings_index",
-    "meeting",
-    "tasks_index",
-    "task",
-    "review_index",
-    "review",
-    "quarter",
-    "month",
-    "habits",
-    "weekly",
-    "daily",
-    "daily_notes",
-    "engineering_front",
-    "engineering_back",
-    "steno",
-    "dotgrid",
-    "lined",
-    "bujo_key",
-    "bujo_index",
-    "future_log",
-    "monthly_log",
-    "monthly_tasks",
-    "rapid_log",
-    "collection",
-]
+
+class PageKind(StrEnum):
+    """Closed page-kind set; the enum body is the only list."""
+
+    COVER = "cover"
+    ANNUAL = "annual"
+    FAVORITES = "favorites"
+    MY_100 = "my_100"
+    CHECKOFF_365 = "checkoff_365"
+    PROJECTS_INDEX = "projects_index"
+    PROJECT = "project"
+    MEETINGS_INDEX = "meetings_index"
+    MEETING = "meeting"
+    TASKS_INDEX = "tasks_index"
+    TASK = "task"
+    REVIEW_INDEX = "review_index"
+    REVIEW = "review"
+    QUARTER = "quarter"
+    MONTH = "month"
+    HABITS = "habits"
+    WEEKLY = "weekly"
+    DAILY = "daily"
+    DAILY_NOTES = "daily_notes"
+    ENGINEERING_FRONT = "engineering_front"
+    ENGINEERING_BACK = "engineering_back"
+    STENO = "steno"
+    DOTGRID = "dotgrid"
+    LINED = "lined"
+    BUJO_KEY = "bujo_key"
+    BUJO_INDEX = "bujo_index"
+    FUTURE_LOG = "future_log"
+    MONTHLY_LOG = "monthly_log"
+    MONTHLY_TASKS = "monthly_tasks"
+    RAPID_LOG = "rapid_log"
+    COLLECTION = "collection"
 
 
 @dataclass(frozen=True, slots=True)

@@ -25,9 +25,9 @@ class LinedDotGridPadSection:
             else spec.dotgrid_lined_sheets
         )
         front_kind, back_kind = (
-            ("lined", "dotgrid")
+            (PageKind.LINED, PageKind.DOTGRID)
             if self.order == "lined-dotgrid"
-            else ("dotgrid", "lined")
+            else (PageKind.DOTGRID, PageKind.LINED)
         )
         built: list[Page] = []
         for sheet in range(1, sheets + 1):
@@ -47,7 +47,7 @@ def _pair_page(
     kind: PageKind,
 ) -> Page:
     dest = spec.dest_for_duplex_pair_pad(order, sheet, face)
-    if kind == "lined":
+    if kind is PageKind.LINED:
         component: LinedPad | DotGridPad = LinedPad(sheet=sheet, sheets=sheets)
         title = "Lined"
     else:

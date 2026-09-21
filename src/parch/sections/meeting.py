@@ -1,7 +1,7 @@
 from parch.calendar import month_touching_weeks
 from parch.components import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 MEET_AGENDA = 4
@@ -26,7 +26,7 @@ class MeetingSection:
         built = [
             Page(
                 dest=spec.meetings_index_dest,
-                kind="meetings_index",
+                kind=PageKind.MEETINGS_INDEX,
                 title="Meetings",
                 nav=nav,
                 components=(
@@ -40,7 +40,7 @@ class MeetingSection:
             built.append(
                 Page(
                     dest=slot.dest,
-                    kind="meeting",
+                    kind=PageKind.MEETING,
                     title="Meeting",
                     nav=planner_nav(
                         spec,

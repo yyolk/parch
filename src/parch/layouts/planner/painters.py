@@ -3,6 +3,7 @@
 import math
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import assert_never
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
@@ -56,7 +57,7 @@ from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.tracks import columns, rows
 
 HAIR = 0.18
@@ -2935,56 +2936,58 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
     match page.kind:
-        case "annual":
+        case PageKind.ANNUAL:
             dests["Year"] = page.dest
-        case "favorites":
+        case PageKind.FAVORITES:
             dests["Fav"] = page.dest
-        case "my_100":
+        case PageKind.MY_100:
             pass
-        case "checkoff_365":
+        case PageKind.CHECKOFF_365:
             dests["365"] = page.dest
-        case "quarter":
+        case PageKind.QUARTER:
             dests["Quar"] = page.dest
-        case "month":
+        case PageKind.MONTH:
             dests["Mon"] = page.dest
-        case "habits":
+        case PageKind.HABITS:
             dests["Habit"] = page.dest
-        case "projects_index":
+        case PageKind.PROJECTS_INDEX:
             dests["Proj"] = page.dest
-        case "project":
+        case PageKind.PROJECT:
             pass
-        case "meetings_index":
+        case PageKind.MEETINGS_INDEX:
             dests["Meet"] = page.dest
-        case "meeting":
+        case PageKind.MEETING:
             pass
-        case "tasks_index":
+        case PageKind.TASKS_INDEX:
             dests["Task"] = page.dest
-        case "task":
+        case PageKind.TASK:
             pass
-        case "review_index":
+        case PageKind.REVIEW_INDEX:
             dests["Rev"] = page.dest
-        case "review":
+        case PageKind.REVIEW:
             pass
-        case "weekly":
+        case PageKind.WEEKLY:
             dests["Week"] = page.dest
-        case "daily":
+        case PageKind.DAILY:
             dests["Day"] = page.dest
-        case "daily_notes":
+        case PageKind.DAILY_NOTES:
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-        case "bujo_key":
+        case PageKind.BUJO_KEY:
             dests["Key"] = page.dest
-        case "bujo_index":
+        case PageKind.BUJO_INDEX:
             dests["Idx"] = page.dest
-        case "future_log":
+        case PageKind.FUTURE_LOG:
             dests["Fut"] = page.dest
-        case "monthly_log" | "monthly_tasks":
+        case PageKind.MONTHLY_LOG | PageKind.MONTHLY_TASKS:
             dests["Mon"] = (
-                page.dest if page.kind == "monthly_log" else dests.get("Mon", page.dest)
+                page.dest
+                if page.kind is PageKind.MONTHLY_LOG
+                else dests.get("Mon", page.dest)
             )
-        case "rapid_log":
+        case PageKind.RAPID_LOG:
             dests["Day"] = page.dest
-        case "collection":
+        case PageKind.COLLECTION:
             dests["Col"] = page.dest
     order = (
         "Key",
@@ -3009,52 +3012,60 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
-def strip_active(kind: str) -> str:
+def strip_active(kind: PageKind) -> str:
     match kind:
-        case "annual":
+        case PageKind.ANNUAL:
             return "Year"
-        case "favorites":
+        case PageKind.FAVORITES:
             return "Fav"
-        case "my_100":
+        case PageKind.MY_100:
             return "100"
-        case "checkoff_365":
+        case PageKind.CHECKOFF_365:
             return "365"
-        case "quarter":
+        case PageKind.QUARTER:
             return "Quar"
-        case "month":
+        case PageKind.MONTH:
             return "Mon"
-        case "weekly":
+        case PageKind.WEEKLY:
             return "Week"
-        case "daily":
+        case PageKind.DAILY:
             return "Day"
-        case "daily_notes":
+        case PageKind.DAILY_NOTES:
             return "Notes"
-        case "habits":
+        case PageKind.HABITS:
             return "Habit"
-        case "projects_index" | "project":
+        case PageKind.PROJECTS_INDEX | PageKind.PROJECT:
             return "Proj"
-        case "meetings_index" | "meeting":
+        case PageKind.MEETINGS_INDEX | PageKind.MEETING:
             return "Meet"
-        case "tasks_index" | "task":
+        case PageKind.TASKS_INDEX | PageKind.TASK:
             return "Task"
-        case "review_index" | "review":
+        case PageKind.REVIEW_INDEX | PageKind.REVIEW:
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid" | "lined":
+        case PageKind.COVER:
+            return "Year"
+        case (
+            PageKind.ENGINEERING_FRONT
+            | PageKind.ENGINEERING_BACK
+            | PageKind.STENO
+            | PageKind.DOTGRID
+            | PageKind.LINED
+        ):
             return ""
-        case "bujo_key":
+        case PageKind.BUJO_KEY:
             return "Key"
-        case "bujo_index":
+        case PageKind.BUJO_INDEX:
             return "Idx"
-        case "future_log":
+        case PageKind.FUTURE_LOG:
             return "Fut"
-        case "monthly_log" | "monthly_tasks":
+        case PageKind.MONTHLY_LOG | PageKind.MONTHLY_TASKS:
             return "Mon"
-        case "rapid_log":
+        case PageKind.RAPID_LOG:
             return "Day"
-        case "collection":
+        case PageKind.COLLECTION:
             return "Col"
         case _:
-            return "Year"
+            assert_never(kind)
 
 
 ENG_HEADER_H = 14.0
