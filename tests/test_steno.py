@@ -10,11 +10,16 @@ from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
     HAIR,
     HEADER_H,
-    MUTED,
-    RULE,
+    INK,
+    STENO_DOT_H_MM,
+    STENO_DOT_PITCH_MM,
+    STENO_DOT_W_MM,
     STENO_PITCH_MM,
+    STENO_V_BOTTOM_MM,
+    STENO_V_TOP_MM,
     StenoRuling,
     paint_steno_pad,
+    steno_horizontal_field,
     steno_ruling,
 )
 from parch.plotter import RecordingPlotter
@@ -69,69 +74,78 @@ def test_spec_steno_dests_and_toml():
     assert both.engineering_sheets == 1
 
 
-def test_ruling_is_gregg_pitch_with_equal_columns():
-    assert STENO_PITCH_MM == pytest.approx(25.4 / 3)
+def test_ruling_matches_template_field():
+    assert STENO_PITCH_MM == pytest.approx(5.0)
     for device in (NOMAD, SCRIBE):
-        frame = device.content_frame()
-        ruling = steno_ruling(frame)
+        field = steno_horizontal_field(device)
+        ruling = steno_ruling(field)
         assert isinstance(ruling, StenoRuling)
         assert ruling.pitch == pytest.approx(STENO_PITCH_MM)
-        assert ruling.n_lines >= 2
-        assert ruling.origin.y == pytest.approx(frame.y)
-        assert ruling.origin.x == pytest.approx(frame.x)
-        assert ruling.origin.w == pytest.approx(frame.w)
-        assert ruling.origin.bottom <= frame.bottom + 1e-9
+        assert ruling.n_lines == int(field.h / STENO_PITCH_MM) + 1
+        assert ruling.origin.y == pytest.approx(field.y)
+        assert ruling.origin.x == pytest.approx(field.x)
+        assert ruling.origin.w == pytest.approx(field.w)
+        assert ruling.origin.bottom <= field.bottom + 1e-9
         assert ruling.origin.h == pytest.approx((ruling.n_lines - 1) * ruling.pitch)
-        left = ruling.center_x - frame.x
-        right = frame.right - ruling.center_x
+        left = ruling.center_x - field.x
+        right = field.right - ruling.center_x
         assert left == pytest.approx(right, abs=1e-6)
-        leftover = frame.bottom - ruling.origin.bottom
+        leftover = field.bottom - ruling.origin.bottom
         assert leftover >= -1e-9
         assert leftover < ruling.pitch
+    nomad = steno_ruling(steno_horizontal_field(NOMAD))
+    assert nomad.n_lines == 29
 
 
-def test_paint_is_lined_center_without_header():
+def test_paint_matches_template_without_frame():
     pad = StenoPad(sheet=1, sheets=1)
-    ink = RecordingPlotter()
-    paint_steno_pad(ink, NOMAD, pad)
-    texts = _texts(ink)
-    assert texts == []
-    assert "Subject" not in texts
-    assert "Date" not in texts
-    assert "Sheet" not in texts
-    assert "Notes" not in texts
-    frame = NOMAD.content_frame()
-    ruling = steno_ruling(frame)
-    horizontals = [
-        op
-        for op in _lines(ink)
-        if op[2] == op[4]
-        and op[5] == pytest.approx(RULE)
-        and op[6] == pytest.approx(MUTED)
-    ]
-    centers = [
-        op
-        for op in _lines(ink)
-        if op[1] == op[3]
-        and op[5] == pytest.approx(HAIR)
-        and op[6] == pytest.approx(MUTED)
-    ]
-    assert len(horizontals) == ruling.n_lines
-    assert len(centers) == 1
-    center = centers[0]
-    assert center[1] == pytest.approx(ruling.center_x)
-    assert center[2] == pytest.approx(frame.y)
-    assert center[4] == pytest.approx(frame.bottom)
-    ys = sorted(op[2] for op in horizontals)
-    for prev, nxt in zip(ys, ys[1:]):
-        assert nxt - prev == pytest.approx(STENO_PITCH_MM)
-    frames = [
-        op
-        for op in ink.ops
-        if op[0] == "rect" and op[1] == frame and op[2] and not op[3]
-    ]
-    assert frames
-    assert frames[0][6] == pytest.approx(MUTED)
+    for device in (NOMAD, SCRIBE):
+        ink = RecordingPlotter()
+        paint_steno_pad(ink, device, pad)
+        assert _texts(ink) == []
+        assert not [op for op in ink.ops if op[0] == "rect" and op[2]]
+        field = steno_horizontal_field(device)
+        ruling = steno_ruling(field)
+        dots = [
+            op
+            for op in ink.ops
+            if op[0] == "rect"
+            and not op[2]
+            and op[3]
+            and op[5] == pytest.approx(INK)
+            and op[1].w == pytest.approx(STENO_DOT_W_MM)
+            and op[1].h == pytest.approx(STENO_DOT_H_MM)
+        ]
+        ys = sorted({op[1].y + op[1].h / 2 for op in dots})
+        assert len(ys) == ruling.n_lines
+        assert ys[0] == pytest.approx(field.y)
+        for prev, nxt in zip(ys, ys[1:]):
+            assert nxt - prev == pytest.approx(STENO_PITCH_MM)
+        row = sorted(
+            op[1].x for op in dots if op[1].y + op[1].h / 2 == pytest.approx(ys[0])
+        )
+        assert len(row) > 2
+        for prev, nxt in zip(row, row[1:]):
+            assert nxt - prev == pytest.approx(STENO_DOT_PITCH_MM)
+        assert row[0] == pytest.approx(field.x)
+        assert row[-1] + STENO_DOT_W_MM <= field.right + 1e-6
+        assert not [op for op in _lines(ink) if op[2] == op[4]]
+        centers = [
+            op
+            for op in _lines(ink)
+            if op[1] == op[3]
+            and op[5] == pytest.approx(HAIR)
+            and op[6] == pytest.approx(INK)
+        ]
+        assert len(centers) == 1
+        center = centers[0]
+        assert center[1] == pytest.approx(device.page_width / 2)
+        assert center[2] == pytest.approx(STENO_V_TOP_MM)
+        assert center[4] == pytest.approx(device.page_height - STENO_V_BOTTOM_MM)
+        assert center[2] < ys[0]
+        assert center[4] > ys[-1]
+        if device is NOMAD:
+            assert len(ys) == 29
 
 
 def test_layout_skips_planner_slab_and_nav():

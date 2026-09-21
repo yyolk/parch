@@ -3209,12 +3209,23 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
         )
 
 
-STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
+STENO_PITCH_MM = 5.0  # SuperNote steno PNG ~59 px @ 300 ppi; not Gregg ⅓″
+# Ink on 20220804011810_steno.png (1404×1872 @ 300 ppi). No frame, no Spec knob.
+_STENO_PNG_MM = 25.4 / 300
+STENO_H_LEFT_MM = 42 * _STENO_PNG_MM
+STENO_H_RIGHT_MM = 46 * _STENO_PNG_MM
+STENO_H_TOP_MM = 127 * _STENO_PNG_MM
+STENO_H_BOTTOM_MM = 91 * _STENO_PNG_MM
+STENO_V_TOP_MM = 71 * _STENO_PNG_MM
+STENO_V_BOTTOM_MM = 33 * _STENO_PNG_MM
+STENO_DOT_W_MM = 4 * _STENO_PNG_MM
+STENO_DOT_H_MM = 2 * _STENO_PNG_MM
+STENO_DOT_PITCH_MM = 9.5 * _STENO_PNG_MM
 
 
 @dataclass(frozen=True, slots=True)
 class StenoRuling:
-    """Top-aligned Gregg ruling: ⅓″ horizontals, one vertical center rule."""
+    """Top-aligned steno ruling: 5 mm horizontals, one vertical center rule."""
 
     origin: Rect
     pitch: float
@@ -3223,7 +3234,7 @@ class StenoRuling:
 
 
 def steno_ruling(box: Rect) -> StenoRuling:
-    """Fit as many ⅓″ gaps as *box* allows. Center splits two equal columns."""
+    """Fit as many 5 mm gaps as *box* allows. Center splits two equal columns."""
     n_gaps = max(1, int(box.h / STENO_PITCH_MM))
     used_h = n_gaps * STENO_PITCH_MM
     return StenoRuling(
@@ -3234,6 +3245,16 @@ def steno_ruling(box: Rect) -> StenoRuling:
     )
 
 
+def steno_horizontal_field(device: Device) -> Rect:
+    """Dotted-field insets from the SuperNote steno PNG. No frame."""
+    return Rect(
+        STENO_H_LEFT_MM,
+        STENO_H_TOP_MM,
+        device.page_width - STENO_H_LEFT_MM - STENO_H_RIGHT_MM,
+        device.page_height - STENO_H_TOP_MM - STENO_H_BOTTOM_MM,
+    )
+
+
 def paint_steno_pad(
     plotter: Plotter,
     device: Device,
@@ -3241,11 +3262,9 @@ def paint_steno_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Single-face Gregg pad — lined + center. No header, holes, or duplex back."""
+    """Single-face steno pad — dotted 5 mm lines, no frame. No header or holes."""
     _bound_ramp(plotter, ramp)
-    frame = device.content_frame()
-    _paint_steno_frame(plotter, frame)
-    _paint_steno_ruling(plotter, frame)
+    _paint_steno_ruling(plotter, device)
 
 
 def paint_dotgrid_page(
@@ -3280,36 +3299,38 @@ def paint_lined_page(
     paint_lines(plotter, device.page_rect())
 
 
-def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:
-    """content_frame hairline — no hole-margin strip."""
-    plotter.rect(
-        frame,
-        stroke=True,
-        fill=False,
-        stroke_width=HAIR,
-        stroke_gray=MUTED,
-    )
+def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
+    """Black flat dots along one horizontal. Fixed pitch, no Spec knob."""
+    span = x1 - x0
+    i = 0
+    while i * STENO_DOT_PITCH_MM + STENO_DOT_W_MM <= span + 1e-9:
+        plotter.rect(
+            Rect(
+                x0 + i * STENO_DOT_PITCH_MM,
+                y - STENO_DOT_H_MM / 2,
+                STENO_DOT_W_MM,
+                STENO_DOT_H_MM,
+            ),
+            stroke=False,
+            fill=True,
+            fill_gray=INK,
+        )
+        i += 1
 
 
-def _paint_steno_ruling(plotter: Plotter, box: Rect) -> None:
-    """Horizontals RULE/MUTED; one heavier center HAIR/MUTED across the frame."""
-    ruling = steno_ruling(box)
+def _paint_steno_ruling(plotter: Plotter, device: Device) -> None:
+    """Close black dots in the PNG field; solid black center, page-centered."""
+    field = steno_horizontal_field(device)
+    ruling = steno_ruling(field)
     grid = ruling.origin
     for i in range(ruling.n_lines):
         y = grid.y + i * ruling.pitch
-        plotter.line(
-            grid.x,
-            y,
-            grid.right,
-            y,
-            stroke_width=RULE,
-            stroke_gray=MUTED,
-        )
+        _paint_steno_dots(plotter, grid.x, grid.right, y)
     plotter.line(
-        ruling.center_x,
-        box.y,
-        ruling.center_x,
-        box.bottom,
+        device.page_width / 2,
+        STENO_V_TOP_MM,
+        device.page_width / 2,
+        device.page_height - STENO_V_BOTTOM_MM,
         stroke_width=HAIR,
-        stroke_gray=MUTED,
+        stroke_gray=INK,
     )
