@@ -27,6 +27,7 @@ _BOOK_CHOICES = (
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
+_DOTGRID_KEYS = frozenset({"sheets"})
 _DEFAULT_SCHEDULE = Clock.parse({"from": time(7, 0, 0), "to": time(16, 0, 0)})
 # Calendar months: closed int domain 1–12. Not Clock (time-of-day).
 _MONTH = Domain(int, lo=1, hi=12, name="month")
@@ -182,6 +183,20 @@ def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     return int(raw.get("index_pages", 2)), int(raw.get("collections", 24))
 
 
+def _parse_dotgrid_sheets(data: TomlTable) -> int:
+    """``[dotgrid] sheets``. Nested table only — no leftover ``dotgrid_sheets`` int."""
+    raw = data.get("dotgrid")
+    if raw is None:
+        return 0
+    if not isinstance(raw, dict):
+        raise ConfigError("dotgrid must be a TOML table")
+    unknown = set(raw) - _DOTGRID_KEYS
+    if unknown:
+        key = sorted(unknown)[0]
+        raise ConfigError(f"unknown dotgrid key {key!r}")
+    return int(raw.get("sheets", 0))
+
+
 def _toml_str(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -299,6 +314,7 @@ class Spec:
     task_rows: int = 6  # toml floor; dest paint derives the fitted count
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
+    dotgrid_sheets: int = 0  # full-bleed clone-pitch pages; 0 keeps book press
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -320,6 +336,8 @@ class Spec:
             raise ConfigError("engineering-notebook requires engineering_sheets >= 1")
         if self.book == "engineering-notebook" and self.steno_sheets:
             raise ConfigError("engineering-notebook cannot set steno_sheets")
+        if self.book == "engineering-notebook" and self.dotgrid_sheets:
+            raise ConfigError("engineering-notebook cannot set dotgrid_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -349,6 +367,8 @@ class Spec:
             raise ConfigError("engineering_sheets must be 0–100")
         if not 0 <= self.steno_sheets <= 100:
             raise ConfigError("steno_sheets must be 0–100")
+        if not 0 <= self.dotgrid_sheets <= 100:
+            raise ConfigError("dotgrid_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -594,6 +614,14 @@ class Spec:
             raise ConfigError(f"steno sheet out of range: {sheet}")
         return _dest(t"steno-{self.year:04d}-{sheet:02d}")
 
+    def dest_for_dotgrid_pad(self, sheet: int) -> str:
+        """1-based single-face dest, e.g. ``dotgrid-2026-01``."""
+        if self.dotgrid_sheets < 1:
+            raise ConfigError("dotgrid_sheets must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= self.dotgrid_sheets:
+            raise ConfigError(f"dotgrid sheet out of range: {sheet}")
+        return _dest(t"dotgrid-{self.year:04d}-{sheet:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -617,6 +645,7 @@ class Spec:
         steno = data.get("steno")
         steno_table = steno if isinstance(steno, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
+        dotgrid_sheets = _parse_dotgrid_sheets(data)
         return cls(
             year=int(data.get("year", 2026)),
             device=str(data.get("device", "supernote-nomad")),
@@ -652,6 +681,7 @@ class Spec:
                 engineering_table.get("sheets", data.get("engineering_sheets", 0))
             ),
             steno_sheets=int(steno_table.get("sheets", data.get("steno_sheets", 0))),
+            dotgrid_sheets=dotgrid_sheets,
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -709,6 +739,7 @@ class Spec:
             "tasks": {"rows": self.task_rows},
             "engineering": {"sheets": self.engineering_sheets},
             "steno": {"sheets": self.steno_sheets},
+            "dotgrid": {"sheets": self.dotgrid_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
@@ -773,6 +804,9 @@ class Spec:
                 "",
                 "[steno]",
                 f"sheets = {self.steno_sheets}",
+                "",
+                "[dotgrid]",
+                f"sheets = {self.dotgrid_sheets}",
                 "",
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",

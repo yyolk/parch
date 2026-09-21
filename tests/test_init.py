@@ -79,6 +79,7 @@ def test_starter_toml_has_thin_header_and_live_keys():
     # Shared dump spells optional extras as live keys at Spec() defaults.
     assert "favorites = false" in text
     assert "[engineering]" in text
+    assert "[dotgrid]" in text
     assert "[bujo]" in text
 
 

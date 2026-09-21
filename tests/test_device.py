@@ -28,6 +28,18 @@ def test_top_clearance_is_not_the_well():
     assert frame.bottom == pytest.approx(158.5 - NAV_H)
 
 
+def test_page_rect_is_full_physical_page():
+    for device in (NOMAD, SCRIBE):
+        page = device.page_rect()
+        assert page.x == 0.0
+        assert page.y == 0.0
+        assert page.w == pytest.approx(device.page_width)
+        assert page.h == pytest.approx(device.page_height)
+        frame = device.content_frame()
+        assert page.w > frame.w
+        assert page.h > frame.h
+
+
 def test_scribe_geometry():
     assert SCRIBE.id == "kindle-scribe"
     assert SCRIBE.name == "Kindle Scribe (1st gen)"

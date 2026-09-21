@@ -1,0 +1,12 @@
+# Full-bleed clone-pitch dot-grid pad (exploratory DG3).
+# Edge-to-edge: no header, nav, or writing_clearance. Same pitch as
+# project-card notes (CLONE_DOT_PITCH). No cover — pad pages only.
+# Composes with [engineering] / [steno] on year-planner (see pads.toml).
+# engineering-notebook cannot set [dotgrid] (exclusive, like steno).
+# No leftover top-level ``dotgrid_sheets`` int — nested table only.
+#   parch press examples/dotgrid-pad.toml -o out/dotgrid-pad.pdf
+device = "supernote-nomad"
+title = "Dot grid pad"
+
+[dotgrid]
+sheets = 1
