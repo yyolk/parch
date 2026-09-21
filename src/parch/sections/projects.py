@@ -27,7 +27,6 @@ class ProjectsSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="projects_index",
                     title="Projects",
                     nav=nav,
                     components=(
@@ -43,7 +42,6 @@ class ProjectsSection:
         built.extend(
             Page(
                 dest=ticket.dest,
-                kind="project",
                 title="Projects",
                 nav=planner_nav(
                     spec,

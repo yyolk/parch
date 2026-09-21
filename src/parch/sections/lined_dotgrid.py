@@ -55,7 +55,6 @@ def _pair_page(
         title = "Dot grid"
     return Page(
         dest=dest,
-        kind=kind,
         title=title,
         nav=(),
         components=(component,),

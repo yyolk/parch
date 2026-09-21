@@ -31,7 +31,6 @@ class WeeklySection:
         return [
             Page(
                 dest=dest,
-                kind="weekly",
                 title=f"Week {iso.week:02d}",
                 nav=planner_nav(spec, week_dest=dest, day=landing, month=landing.month),
                 components=(

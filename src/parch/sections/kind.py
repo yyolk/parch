@@ -1,0 +1,37 @@
+"""Closed page-kind labels. Dispatch does not live here."""
+
+from typing import Literal
+
+type PageKind = Literal[
+    "cover",
+    "annual",
+    "favorites",
+    "my_100",
+    "checkoff_365",
+    "projects_index",
+    "project",
+    "meetings_index",
+    "meeting",
+    "tasks_index",
+    "task",
+    "review_index",
+    "review",
+    "quarter",
+    "month",
+    "habits",
+    "weekly",
+    "daily",
+    "daily_notes",
+    "engineering_front",
+    "engineering_back",
+    "steno",
+    "dotgrid",
+    "lined",
+    "bujo_key",
+    "bujo_index",
+    "future_log",
+    "monthly_log",
+    "monthly_tasks",
+    "rapid_log",
+    "collection",
+]

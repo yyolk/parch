@@ -38,7 +38,6 @@ class My100Section:
             built.append(
                 Page(
                     dest=dest,
-                    kind="my_100",
                     title="My 100",
                     nav=nav,
                     components=(

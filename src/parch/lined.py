@@ -17,7 +17,6 @@ def lined_pages(spec: Spec) -> list[Page]:
         built.append(
             Page(
                 dest=spec.dest_for_lined_pad(sheet),
-                kind="lined",
                 title="Lined",
                 nav=(),
                 components=(LinedPad(sheet=sheet, sheets=spec.lined_sheets),),

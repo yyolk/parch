@@ -20,7 +20,6 @@ class FavoritesSection:
         return [
             Page(
                 dest=dest,
-                kind="favorites",
                 title="Favorites",
                 nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
                 components=(FavoritesPage(year=spec.year),),

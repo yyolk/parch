@@ -27,7 +27,7 @@ def test_annual_page_and_year_nav():
 
     annual = pages[1]
     assert annual.kind == "annual"
-    assert strip_active(annual.kind) == "Year"
+    assert strip_active(annual) == "Year"
     assert strip_items(annual) == (
         ("Year", "year-2026"),
         ("Quar", "quarter-2026-Q1"),
@@ -45,7 +45,7 @@ def test_annual_page_and_year_nav():
 
     month = next(page for page in pages if page.dest == "month-2026-01")
     assert strip_items(month)[0] == ("Year", "year-2026")
-    assert strip_active(month.kind) == "Mon"
+    assert strip_active(month) == "Mon"
 
     grid = next(item for item in annual.components if isinstance(item, AnnualGrid))
     january, february, march, april = grid.months[:4]

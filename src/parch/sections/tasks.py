@@ -29,7 +29,6 @@ class TasksSection:
             built.append(
                 Page(
                     dest=index_dest,
-                    kind="tasks_index",
                     title=f"Tasks Q{quarter} {spec.year}",
                     nav=planner_nav(
                         spec,
@@ -80,7 +79,6 @@ class TasksSection:
         landing = self._landing(week.monday)
         return Page(
             dest=week.dest,
-            kind="task",
             title="Tasks",
             nav=planner_nav(
                 spec,

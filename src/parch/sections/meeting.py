@@ -26,7 +26,6 @@ class MeetingSection:
         built = [
             Page(
                 dest=spec.meetings_index_dest,
-                kind="meetings_index",
                 title="Meetings",
                 nav=nav,
                 components=(
@@ -40,7 +39,6 @@ class MeetingSection:
             built.append(
                 Page(
                     dest=slot.dest,
-                    kind="meeting",
                     title="Meeting",
                     nav=planner_nav(
                         spec,

@@ -16,7 +16,6 @@ def dotgrid_pages(spec: Spec) -> list[Page]:
         built.append(
             Page(
                 dest=spec.dest_for_dotgrid_pad(sheet),
-                kind="dotgrid",
                 title="Dot grid",
                 nav=(),
                 components=(DotGridPad(sheet=sheet, sheets=spec.dotgrid_sheets),),

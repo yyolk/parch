@@ -66,7 +66,6 @@ class AnnualSection:
         return [
             Page(
                 dest=spec.year_dest,
-                kind="annual",
                 title=str(spec.year),
                 nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
                 components=(

@@ -58,7 +58,6 @@ class BujoKeySection:
         return [
             Page(
                 dest=spec.bujo_key_dest,
-                kind="bujo_key",
                 title="Key",
                 nav=bujo_nav(spec),
                 components=(BujoKey(symbols=_KEY_SYMBOLS),),
@@ -82,7 +81,6 @@ class BujoIndexSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="bujo_index",
                     title="Index",
                     nav=bujo_nav(spec, index_dest=dest),
                     components=(
@@ -113,7 +111,6 @@ class FutureLogSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="future_log",
                     title="Future log",
                     nav=bujo_nav(spec, future_dest=dest),
                     components=(
@@ -155,7 +152,6 @@ class MonthlyLogSection:
         return [
             Page(
                 dest=spec.dest_for_month(month),
-                kind="monthly_log",
                 title=f"{name} {spec.year}",
                 nav=nav,
                 components=(
@@ -170,7 +166,6 @@ class MonthlyLogSection:
             ),
             Page(
                 dest=spec.dest_for_month_tasks(month),
-                kind="monthly_tasks",
                 title=f"Tasks · {name} {spec.year}",
                 nav=nav,
                 components=(
@@ -198,7 +193,6 @@ class BujoHabitSection:
         return [
             Page(
                 dest=spec.dest_for_habits(month),
-                kind="habits",
                 title=f"Habits · {month_name(month)} {spec.year}",
                 nav=bujo_nav(spec, month=month),
                 components=(
@@ -230,7 +224,6 @@ class RapidLogSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="rapid_log",
                     title=title,
                     nav=bujo_nav(spec, day=moment, month=month),
                     components=(
@@ -255,7 +248,6 @@ class CollectionSection:
         return [
             Page(
                 dest=spec.dest_for_bujo_collection(number),
-                kind="collection",
                 title="Collections",
                 nav=bujo_nav(
                     spec, collection_dest=spec.dest_for_bujo_collection(number)

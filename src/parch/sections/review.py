@@ -30,7 +30,6 @@ class ReviewSection:
         built = [
             Page(
                 dest=index_dest,
-                kind="review_index",
                 title="Review",
                 nav=planner_nav(
                     spec,
@@ -82,7 +81,6 @@ class ReviewSection:
         )
         return Page(
             dest=week.dest,
-            kind="review",
             title="Review",
             nav=planner_nav(
                 spec,

@@ -42,7 +42,7 @@ def test_quarter_page_and_nav():
     quarter = next(page for page in pages if page.dest == "quarter-2026-Q1")
     assert quarter.kind == "quarter"
     assert quarter.title == "Q1 2026"
-    assert strip_active(quarter.kind) == "Quar"
+    assert strip_active(quarter) == "Quar"
     assert strip_items(quarter) == (
         ("Year", "year-2026"),
         ("Quar", "quarter-2026-Q1"),

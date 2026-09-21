@@ -23,7 +23,6 @@ class DailyNotesSection:
             built.append(
                 Page(
                     dest=spec.dest_for_notes(day, index),
-                    kind="daily_notes",
                     title=f"{weekday} {day.day}  {index}/{spec.notes_pages}",
                     nav=planner_nav(
                         spec,

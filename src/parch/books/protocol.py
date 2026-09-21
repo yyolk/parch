@@ -1,14 +1,15 @@
 """Book protocol at press/dispatch; ``plot_pages`` walks a page ledger."""
 
 from collections.abc import Callable, Iterable
-from typing import Protocol
+from typing import Protocol, assert_never
 
 from parch.devices import get_device
 from parch.fonts.ramp import TypeRamp
 from parch.layouts.planner import PlannerLayout
 from parch.plotter.protocol import Plotter
 from parch.progress import render_progress
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
+from parch.sections.seating import seating_view
 from parch.spec import Spec
 
 
@@ -27,40 +28,24 @@ class Book(Protocol):
         """Reserve dests, then paint each page."""
 
 
-# Reader outline hubs only. Weeks, days, notes, leaves, habits, pad,
-# rapid-log, and monthly-task kinds omitted.
-# RUN: once per contiguous kind-run (tasks_index re-fires after task leaves).
-# EACH: every such page (contiguous Q1–Q4; months already interrupted by habits).
-_OUTLINE_RUN = frozenset(
-    {
-        "annual",
-        "favorites",
-        "my_100",
-        "checkoff_365",
-        "projects_index",
-        "meetings_index",
-        "tasks_index",
-        "review_index",
-        "bujo_key",
-        "bujo_index",
-        "future_log",
-        "collection",
-    }
-)
-_OUTLINE_EACH = frozenset({"quarter", "month", "monthly_log"})
-
-
-def _section_start(kind: str, prev_kind: str | None) -> bool:
+def _section_start(kind: PageKind, prev_kind: PageKind | None) -> bool:
     """First non-cover page of a contiguous PageKind run (or first after cover)."""
     if kind == "cover":
         return False
     return prev_kind is None or prev_kind == "cover" or prev_kind != kind
 
 
-def _should_outline(kind: str, prev_kind: str | None) -> bool:
-    return kind in _OUTLINE_EACH or (
-        kind in _OUTLINE_RUN and _section_start(kind, prev_kind)
-    )
+def _should_outline(page: Page, prev_kind: PageKind | None) -> bool:
+    """Hub policy from the seating: every page, once per run, or never."""
+    match seating_view(page.components, page.dest).outline:
+        case "each":
+            return True
+        case "run":
+            return _section_start(page.kind, prev_kind)
+        case "skip":
+            return False
+        case _:
+            assert_never(seating_view(page.components, page.dest).outline)
 
 
 def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
@@ -69,10 +54,10 @@ def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
     Cover and non-hub kinds are omitted. RUN kinds emit once per kind-run;
     EACH kinds emit every page (Q1–Q4 and each pressed month).
     """
-    prev_kind: str | None = None
+    prev_kind: PageKind | None = None
     entries: list[tuple[str, str]] = []
     for page in pages:
-        if _should_outline(page.kind, prev_kind):
+        if _should_outline(page, prev_kind):
             entries.append((page.title, page.dest))
         prev_kind = page.kind
     return entries

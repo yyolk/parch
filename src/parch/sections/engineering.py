@@ -21,7 +21,6 @@ class EngineeringPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_engineering_pad(sheet, "front"),
-                    kind="engineering_front",
                     title="Engineering",
                     nav=(),
                     components=(pad_front,),
@@ -30,7 +29,6 @@ class EngineeringPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_engineering_pad(sheet, "back"),
-                    kind="engineering_back",
                     title="Computation",
                     nav=(),
                     components=(pad_back,),

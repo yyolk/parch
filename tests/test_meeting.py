@@ -86,7 +86,7 @@ def test_meeting_index_page():
     assert [slot.dest for slot in roster.slots] == [
         f"meeting-2026-{slot:02d}" for slot in range(1, 17)
     ]
-    assert strip_active(page.kind) == "Meet"
+    assert strip_active(page) == "Meet"
     assert strip_items(page) == _MEET_STRIP
 
 
@@ -104,7 +104,7 @@ def test_meeting_dest_page():
     assert not hasattr(agenda, "attendees")
     assert MEET_AGENDA == 4
     assert MEET_ACTION_ITEMS == 3
-    assert strip_active(page.kind) == "Meet"
+    assert strip_active(page) == "Meet"
     assert strip_items(page) == _MEET_STRIP
     assert ("Meet", "meetings-index-2026") in strip_items(page)
 
@@ -231,7 +231,7 @@ def test_meeting_header_year_chip_and_meet_tab():
         assert label in texts
     assert texts.count("Notes") == 2
     assert "Action items" in texts
-    assert strip_active(page.kind) == "Meet"
+    assert strip_active(page) == "Meet"
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links.count("meetings-index-2026") >= 2
 
@@ -346,7 +346,7 @@ def test_meeting_index_paint_date_cues_and_links():
     assert "Meetings" in chrome_texts
     assert "Meet" in chrome_texts
     assert "2026" in chrome_texts
-    assert strip_active(page.kind) == "Meet"
+    assert strip_active(page) == "Meet"
     assert dict(strip_items(page))["Meet"] == spec.meetings_index_dest
 
 

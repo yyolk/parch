@@ -19,7 +19,6 @@ class DailySection:
         return [
             Page(
                 dest=spec.dest_for_day(day),
-                kind="daily",
                 title=f"{weekday[:3]} {day.day}",
                 nav=planner_nav(
                     spec, week_dest=spec.dest_for_week(day), day=day, month=day.month

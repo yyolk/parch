@@ -37,7 +37,6 @@ class CoverSection:
         return [
             Page(
                 dest=spec.cover_dest,
-                kind="cover",
                 title=str(spec.year),
                 nav=(NavItem(str(spec.year), landing),),
                 components=(

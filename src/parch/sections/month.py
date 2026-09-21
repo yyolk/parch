@@ -32,7 +32,6 @@ class MonthSection:
         return [
             Page(
                 dest=spec.dest_for_month(month),
-                kind="month",
                 title=f"{month_name(month)} {spec.year}",
                 nav=planner_nav(spec, week_dest=week_dests[0], month=month),
                 components=(

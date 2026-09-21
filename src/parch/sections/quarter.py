@@ -30,7 +30,6 @@ class QuarterSection:
         return [
             Page(
                 dest=dest,
-                kind="quarter",
                 title=f"Q{quarter} {spec.year}",
                 nav=planner_nav(
                     spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
