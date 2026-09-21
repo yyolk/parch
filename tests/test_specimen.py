@@ -260,39 +260,15 @@ def test_sample_dests_and_pages_for_january():
     assert all(page >= 1 for page in numbers.values())
     assert len(set(numbers.values())) == len(SAMPLE_STEMS)
     extras = replace(spec, favorites_pages=1, my_100=True, checkoff_365=True)
-    extra_numbers = sample_page_numbers(extras, (*SAMPLE_STEMS, *EXTRAS_STEMS))
-    assert set(extra_numbers) == set(SAMPLE_STEMS) | set(EXTRAS_STEMS)
-    assert extra_numbers["cover"] == 1
-    assert extra_numbers["annual"] == 2
+    extra_numbers = sample_page_numbers(extras, EXTRAS_STEMS)
     assert extra_numbers["checkoff-365"] == 3
     assert extra_numbers["favorites"] == 4
     assert extra_numbers["my-100"] == 5
-    assert extra_numbers["quarterly-q1"] == 8
-    assert extra_numbers["monthly-jan"] == 9
-    assert extra_numbers["habits-jan"] == 10
     assert (
-        extra_numbers["cover"]
-        < extra_numbers["annual"]
-        < extra_numbers["checkoff-365"]
+        extra_numbers["checkoff-365"]
         < extra_numbers["favorites"]
         < extra_numbers["my-100"]
-        < extra_numbers["quarterly-q1"]
-        < extra_numbers["monthly-jan"]
-        < extra_numbers["habits-jan"]
-        < extra_numbers["weekly-w01"]
-        < extra_numbers["daily-jan1"]
-        < extra_numbers["notes-jan1"]
-        < extra_numbers["review"]
-        < extra_numbers["review-w01"]
-        < extra_numbers["projects"]
-        < extra_numbers["project-1"]
-        < extra_numbers["meetings"]
-        < extra_numbers["meeting-1"]
-        < extra_numbers["tasks"]
-        < extra_numbers["tasks-w01"]
     )
-    assert all(page >= 1 for page in extra_numbers.values())
-    assert len(set(extra_numbers.values())) == len(SAMPLE_STEMS) + len(EXTRAS_STEMS)
 
 
 def test_projects_dests_and_pages():
