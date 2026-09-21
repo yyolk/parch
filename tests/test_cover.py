@@ -4,6 +4,7 @@ from parch.books import (
     BulletJournal,
     DotGridNotebook,
     EngineeringNotebook,
+    LinedDotGridNotebook,
     LinedNotebook,
     ProjectsNotebook,
 )
@@ -122,6 +123,15 @@ def test_lined_title_is_headline():
     texts = _paint_texts(page)
     assert "Notes" in texts
     assert "Lined" not in texts
+    assert "Year Book" not in texts
+
+
+def test_lined_dotgrid_omitted_title_keeps_pair_headline():
+    spec = Spec(book="lined-dotgrid-notebook", lined_sheets=1, dotgrid_sheets=1)
+    page, cover = _cover_page(LinedDotGridNotebook().pages(spec))
+    assert cover.display_title == "Lined / Dot grid"
+    texts = _paint_texts(page)
+    assert "Lined / Dot grid" in texts
     assert "Year Book" not in texts
 
 

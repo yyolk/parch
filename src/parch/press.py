@@ -97,7 +97,9 @@ def press(
     steno / dotgrid on year-planner raises ``ConfigError`` (P5
     compose without lined is unchanged). ``book = "lined-notebook"``
     presses cover + lined pages through ``Book``. Exclusive notebooks
-    reject mixed pad counts.
+    reject mixed pad counts. ``book = "lined-dotgrid-notebook"``
+    prefixes cover then interleaves ``lined_pages`` and
+    ``dotgrid_pages`` (lined starts).
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
