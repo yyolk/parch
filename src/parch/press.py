@@ -9,7 +9,6 @@ from parch import ConfigError
 from parch.books import Book, book_for, plot_pages
 from parch.devices import get_device
 from parch.dotgrid import dotgrid_pages
-from parch.lined import lined_pages
 from parch.fonts import (
     PROOF_PROFILE,
     ProofProfile,
@@ -19,6 +18,7 @@ from parch.fonts import (
     require_overlay,
 )
 from parch.fonts.ramp import OverlayData
+from parch.lined import lined_pages
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
