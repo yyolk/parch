@@ -18,7 +18,19 @@ from parch.sections.habit import HabitSection
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
 from parch.sections.my_100 import My100Section
-from parch.sections.page import NavItem, Page, PageKind
+from parch.sections.page import (
+    CHROME_KINDS,
+    PAD_KINDS,
+    ChromeKind,
+    NavItem,
+    PadKind,
+    Page,
+    PageKind,
+    exhaust_chrome_kind,
+    exhaust_pad_kind,
+    is_chrome_kind,
+    is_pad_kind,
+)
 from parch.sections.projects import ProjectsSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.review import ReviewSection
@@ -46,7 +58,11 @@ __all__ = [
     "MonthSection",
     "My100Section",
     "ProjectsSection",
+    "CHROME_KINDS",
+    "PAD_KINDS",
+    "ChromeKind",
     "NavItem",
+    "PadKind",
     "Page",
     "PageKind",
     "QuarterSection",
@@ -54,4 +70,8 @@ __all__ = [
     "StenoPadSection",
     "TasksSection",
     "WeeklySection",
+    "exhaust_chrome_kind",
+    "exhaust_pad_kind",
+    "is_chrome_kind",
+    "is_pad_kind",
 ]

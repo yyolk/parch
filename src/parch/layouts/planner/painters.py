@@ -3,6 +3,7 @@
 import math
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import assert_never
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
@@ -49,7 +50,7 @@ from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
-from parch.sections.page import Page
+from parch.sections.page import ChromeKind, Page, is_chrome_kind
 from parch.tracks import columns, rows
 
 HAIR = 0.18
@@ -2911,58 +2912,62 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["365"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
-    match page.kind:
-        case "annual":
-            dests["Year"] = page.dest
-        case "favorites":
-            dests["Fav"] = page.dest
-        case "my_100":
-            pass
-        case "checkoff_365":
-            dests["365"] = page.dest
-        case "quarter":
-            dests["Quar"] = page.dest
-        case "month":
-            dests["Mon"] = page.dest
-        case "habits":
-            dests["Habit"] = page.dest
-        case "projects_index":
-            dests["Proj"] = page.dest
-        case "project":
-            pass
-        case "meetings_index":
-            dests["Meet"] = page.dest
-        case "meeting":
-            pass
-        case "tasks_index":
-            dests["Task"] = page.dest
-        case "task":
-            pass
-        case "review_index":
-            dests["Rev"] = page.dest
-        case "review":
-            pass
-        case "weekly":
-            dests["Week"] = page.dest
-        case "daily":
-            dests["Day"] = page.dest
-        case "daily_notes":
-            dests["Notes"] = page.dest
-            dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-        case "bujo_key":
-            dests["Key"] = page.dest
-        case "bujo_index":
-            dests["Idx"] = page.dest
-        case "future_log":
-            dests["Fut"] = page.dest
-        case "monthly_log" | "monthly_tasks":
-            dests["Mon"] = (
-                page.dest if page.kind == "monthly_log" else dests.get("Mon", page.dest)
-            )
-        case "rapid_log":
-            dests["Day"] = page.dest
-        case "collection":
-            dests["Col"] = page.dest
+    kind = page.kind
+    if is_chrome_kind(kind):
+        match kind:
+            case "annual":
+                dests["Year"] = page.dest
+            case "favorites":
+                dests["Fav"] = page.dest
+            case "my_100":
+                pass
+            case "checkoff_365":
+                dests["365"] = page.dest
+            case "quarter":
+                dests["Quar"] = page.dest
+            case "month":
+                dests["Mon"] = page.dest
+            case "habits":
+                dests["Habit"] = page.dest
+            case "projects_index":
+                dests["Proj"] = page.dest
+            case "project":
+                pass
+            case "meetings_index":
+                dests["Meet"] = page.dest
+            case "meeting":
+                pass
+            case "tasks_index":
+                dests["Task"] = page.dest
+            case "task":
+                pass
+            case "review_index":
+                dests["Rev"] = page.dest
+            case "review":
+                pass
+            case "weekly":
+                dests["Week"] = page.dest
+            case "daily":
+                dests["Day"] = page.dest
+            case "daily_notes":
+                dests["Notes"] = page.dest
+                dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
+            case "bujo_key":
+                dests["Key"] = page.dest
+            case "bujo_index":
+                dests["Idx"] = page.dest
+            case "future_log":
+                dests["Fut"] = page.dest
+            case "monthly_log" | "monthly_tasks":
+                dests["Mon"] = (
+                    page.dest if kind == "monthly_log" else dests.get("Mon", page.dest)
+                )
+            case "rapid_log":
+                dests["Day"] = page.dest
+            case "collection":
+                dests["Col"] = page.dest
+            case _:
+                assert_never(kind)
     order = (
         "Key",
         "Idx",
@@ -2986,7 +2991,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
-def strip_active(kind: str) -> str:
+def strip_active(kind: ChromeKind) -> str:
     match kind:
         case "annual":
             return "Year"
@@ -3016,8 +3021,6 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid":
-            return ""
         case "bujo_key":
             return "Key"
         case "bujo_index":
@@ -3031,7 +3034,7 @@ def strip_active(kind: str) -> str:
         case "collection":
             return "Col"
         case _:
-            return "Year"
+            assert_never(kind)
 
 
 ENG_HEADER_H = 14.0

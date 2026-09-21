@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -82,7 +84,7 @@ from parch.layouts.planner.painters import (
     well_rect,
 )
 from parch.plotter.protocol import Plotter
-from parch.sections.page import Page
+from parch.sections.page import ChromeKind, PadKind, Page, is_pad_kind
 
 __all__ = [
     "COL_GAP",
@@ -99,7 +101,10 @@ __all__ = [
 
 
 class PlannerLayout:
-    """Seat components below the INK header. Cover and pad faces skip header/nav.
+    """Seat components below the INK header. Pad faces skip header/nav.
+
+    Top-level dispatch is chrome vs pad. Each side then exhausts its own
+    closed union — pads never appear in the chrome match.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
@@ -112,7 +117,16 @@ class PlannerLayout:
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp
-        match page.kind:
+        kind = page.kind
+        if is_pad_kind(kind):
+            self._paint_pad(page, plotter, device, kind)
+            return
+        self._paint_chrome(page, plotter, device, kind)
+
+    def _paint_pad(
+        self, page: Page, plotter: Plotter, device: Device, kind: PadKind
+    ) -> None:
+        match kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
             case "engineering_front" | "engineering_back":
@@ -126,29 +140,36 @@ class PlannerLayout:
                     plotter, device, _one(page, DotGridPad), ramp=self.ramp
                 )
             case _:
-                paint_header(
-                    plotter,
-                    device,
-                    page.title,
-                    _header_meta(page),
-                    _header_meta_dest(page),
-                    ramp=self.ramp,
-                    chip=_header_chip(page),
-                    chip_dest=_header_chip_dest(page),
-                )
-                paint_nav(
-                    plotter,
-                    device,
-                    strip_items(page),
-                    strip_active(page.kind),
-                    ramp=self.ramp,
-                )
-                well = well_rect(device)
-                self._paint_well(page, plotter, well)
+                assert_never(kind)
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+    def _paint_chrome(
+        self, page: Page, plotter: Plotter, device: Device, kind: ChromeKind
+    ) -> None:
+        paint_header(
+            plotter,
+            device,
+            page.title,
+            _header_meta(page, kind),
+            _header_meta_dest(page, kind),
+            ramp=self.ramp,
+            chip=_header_chip(page, kind),
+            chip_dest=_header_chip_dest(page, kind),
+        )
+        paint_nav(
+            plotter,
+            device,
+            strip_items(page),
+            strip_active(kind),
+            ramp=self.ramp,
+        )
+        well = well_rect(device)
+        self._paint_well(page, plotter, well, kind)
+
+    def _paint_well(
+        self, page: Page, plotter: Plotter, well: Rect, kind: ChromeKind
+    ) -> None:
         ramp = self.ramp
-        match page.kind:
+        match kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "favorites":
@@ -214,11 +235,11 @@ class PlannerLayout:
             case "collection":
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
             case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+                assert_never(kind)
 
 
-def _header_meta(page: Page) -> str:
-    match page.kind:
+def _header_meta(page: Page, kind: ChromeKind) -> str:
+    match kind:
         case "annual":
             return "Q1–Q4"
         case "favorites":
@@ -276,11 +297,11 @@ def _header_meta(page: Page) -> str:
             label = _one(page, Notes).label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
         case _:
-            return ""
+            assert_never(kind)
 
 
-def _header_meta_dest(page: Page) -> str | None:
-    match page.kind:
+def _header_meta_dest(page: Page, kind: ChromeKind) -> str | None:
+    match kind:
         case "annual":
             return _one(page, AnnualGrid).quarter_dest
         case "month":
@@ -295,8 +316,8 @@ def _header_meta_dest(page: Page) -> str | None:
             return None
 
 
-def _header_chip(page: Page) -> str:
-    match page.kind:
+def _header_chip(page: Page, kind: ChromeKind) -> str:
+    match kind:
         case "my_100":
             leaf = _one(page, My100Page)
             return f"{leaf.page:02d}" if leaf.pages > 1 else ""
@@ -319,8 +340,8 @@ def _header_chip(page: Page) -> str:
             return ""
 
 
-def _header_chip_dest(page: Page) -> str | None:
-    match page.kind:
+def _header_chip_dest(page: Page, kind: ChromeKind) -> str | None:
+    match kind:
         case "my_100":
             leaf = _one(page, My100Page)
             return leaf.index_dest if leaf.pages > 1 else None
