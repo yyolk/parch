@@ -114,7 +114,12 @@ def test_catalog_index_html_lists_both_devices():
 
 def test_specimen_index_html_is_png_gallery():
     html = specimen_index_html("supernote-nomad")
-    assert "supernote-nomad" in html
+    assert "<title>parch specimens — supernote-nomad</title>" in html
+    assert (
+        '<header>\n<p><a href="../">specimens</a></p>\n</header>\n'
+        "<h1>supernote-nomad</h1>\n"
+        "<nav>\n"
+    ) in html
     assert "<script" not in html
     assert 'href="../"' in html
     assert html.count("<figure>") == len(GALLERY_STEMS)
@@ -131,6 +136,7 @@ def test_specimen_index_html_is_png_gallery():
 
 def test_specimen_index_html_section_anchors():
     html = specimen_index_html("kindle-scribe")
+    assert "<h1>kindle-scribe</h1>\n<nav>" in html
     for section_id, title, _stems in GALLERY_GROUPS:
         assert f'<section id="{section_id}">' in html
         assert f"<h2>{title}</h2>" in html

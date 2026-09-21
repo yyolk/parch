@@ -470,7 +470,8 @@ def specimen_index_html(
         "<!DOCTYPE html>\n"
         f"<title>parch specimens — {device_id}</title>\n"
         + _catalog_style()
-        + '<p><a href="../">specimens</a></p>\n'
+        + '<header>\n<p><a href="../">specimens</a></p>\n</header>\n'
+        + f"<h1>{device_id}</h1>\n"
         + "<nav>\n<ul>\n"
         + toc
         + "\n</ul>\n</nav>\n"
