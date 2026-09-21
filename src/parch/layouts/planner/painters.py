@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPad,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -1066,13 +1067,11 @@ def paint_project(
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
-def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
-    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
-    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
-    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
-    nx = max(2, int(inset.w / CLONE_DOT_PITCH))
-    ny = max(2, int(inset.h / CLONE_DOT_PITCH))
-    for band in rows(inset, ny):
+def paint_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """RULE_C dots on tracks at ``CLONE_DOT_PITCH``. No pocket frame."""
+    nx = max(2, int(box.w / CLONE_DOT_PITCH))
+    ny = max(2, int(box.h / CLONE_DOT_PITCH))
+    for band in rows(box, ny):
         for cell in columns(band, nx):
             plotter.rect(
                 Rect(
@@ -1085,6 +1084,13 @@ def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
                 fill=True,
                 fill_gray=RULE_C,
             )
+
+
+def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+    """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
+    plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
+    inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
+    paint_dot_grid(plotter, inset)
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3010,7 +3016,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno":
+        case "engineering_front" | "engineering_back" | "steno" | "dotgrid":
             return ""
         case "bujo_key":
             return "Key"
@@ -3216,6 +3222,18 @@ def paint_steno_pad(
     frame = device.content_frame()
     _paint_steno_frame(plotter, frame)
     _paint_steno_ruling(plotter, frame)
+
+
+def paint_dotgrid_page(
+    plotter: Plotter,
+    device: Device,
+    pad: DotGridPad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face full-bleed clone-dot page. No header, holes, or chrome."""
+    _bound_ramp(plotter, ramp)
+    paint_dot_grid(plotter, device.page_rect())
 
 
 def _paint_steno_frame(plotter: Plotter, frame: Rect) -> None:

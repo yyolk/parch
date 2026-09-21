@@ -11,6 +11,10 @@ def test_nomad_geometry():
     assert NOMAD.id == "supernote-nomad"
     assert NOMAD.page_width == 118.87
     assert NOMAD.page_height == 158.5
+    assert NOMAD.page_rect().w == NOMAD.page_width
+    assert NOMAD.page_rect().h == NOMAD.page_height
+    assert NOMAD.page_rect().x == 0.0
+    assert NOMAD.page_rect().y == 0.0
     assert NOMAD.width_px == 1404
     assert NOMAD.height_px == 1872
     assert NOMAD.ppi == 300
