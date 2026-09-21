@@ -1,6 +1,6 @@
 from parch.calendar import month_name
 from parch.components import CoverTitle
-from parch.sections.page import NavItem, Page
+from parch.sections.page import NavItem, Page, PageKind
 from parch.spec import Spec
 
 
@@ -37,7 +37,7 @@ class CoverSection:
         return [
             Page(
                 dest=spec.cover_dest,
-                kind="cover",
+                kind=PageKind.COVER,
                 title=str(spec.year),
                 nav=(NavItem(str(spec.year), landing),),
                 components=(

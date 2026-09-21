@@ -4,7 +4,7 @@ from datetime import date
 from parch.calendar import month_name, month_touching_weeks
 from parch.components import HabitGrid
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -28,7 +28,7 @@ class HabitSection:
         return [
             Page(
                 dest=spec.dest_for_habits(month),
-                kind="habits",
+                kind=PageKind.HABITS,
                 title=f"Habits · {month_name(month)} {spec.year}",
                 nav=planner_nav(
                     spec, week_dest=spec.dest_for_week(first[0]), month=month

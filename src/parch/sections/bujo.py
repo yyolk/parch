@@ -20,7 +20,7 @@ from parch.components import (
 )
 from parch.components.bujo import FUTURE_LOG_MONTHS_PER_PAGE
 from parch.sections.nav import bujo_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 _KEY_SYMBOLS = (
@@ -58,7 +58,7 @@ class BujoKeySection:
         return [
             Page(
                 dest=spec.bujo_key_dest,
-                kind="bujo_key",
+                kind=PageKind.BUJO_KEY,
                 title="Key",
                 nav=bujo_nav(spec),
                 components=(BujoKey(symbols=_KEY_SYMBOLS),),
@@ -82,7 +82,7 @@ class BujoIndexSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="bujo_index",
+                    kind=PageKind.BUJO_INDEX,
                     title="Index",
                     nav=bujo_nav(spec, index_dest=dest),
                     components=(
@@ -113,7 +113,7 @@ class FutureLogSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="future_log",
+                    kind=PageKind.FUTURE_LOG,
                     title="Future log",
                     nav=bujo_nav(spec, future_dest=dest),
                     components=(
@@ -155,7 +155,7 @@ class MonthlyLogSection:
         return [
             Page(
                 dest=spec.dest_for_month(month),
-                kind="monthly_log",
+                kind=PageKind.MONTHLY_LOG,
                 title=f"{name} {spec.year}",
                 nav=nav,
                 components=(
@@ -170,7 +170,7 @@ class MonthlyLogSection:
             ),
             Page(
                 dest=spec.dest_for_month_tasks(month),
-                kind="monthly_tasks",
+                kind=PageKind.MONTHLY_TASKS,
                 title=f"Tasks · {name} {spec.year}",
                 nav=nav,
                 components=(
@@ -198,7 +198,7 @@ class BujoHabitSection:
         return [
             Page(
                 dest=spec.dest_for_habits(month),
-                kind="habits",
+                kind=PageKind.HABITS,
                 title=f"Habits · {month_name(month)} {spec.year}",
                 nav=bujo_nav(spec, month=month),
                 components=(
@@ -230,7 +230,7 @@ class RapidLogSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="rapid_log",
+                    kind=PageKind.RAPID_LOG,
                     title=title,
                     nav=bujo_nav(spec, day=moment, month=month),
                     components=(
@@ -255,7 +255,7 @@ class CollectionSection:
         return [
             Page(
                 dest=spec.dest_for_bujo_collection(number),
-                kind="collection",
+                kind=PageKind.COLLECTION,
                 title="Collections",
                 nav=bujo_nav(
                     spec, collection_dest=spec.dest_for_bujo_collection(number)

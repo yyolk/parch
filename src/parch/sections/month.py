@@ -1,7 +1,7 @@
 from parch.calendar import iso_monday, month_name, month_touching_weeks, weekday_labels
 from parch.components import MonthCell, MonthGrid
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -32,7 +32,7 @@ class MonthSection:
         return [
             Page(
                 dest=spec.dest_for_month(month),
-                kind="month",
+                kind=PageKind.MONTH,
                 title=f"{month_name(month)} {spec.year}",
                 nav=planner_nav(spec, week_dest=week_dests[0], month=month),
                 components=(

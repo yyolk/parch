@@ -2,7 +2,7 @@ from parch.calendar import month_touching_weeks, months_in_quarter
 from parch.components import QuarterGrid
 from parch.sections.annual import build_annual_month
 from parch.sections.nav import planner_nav
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
 
@@ -30,7 +30,7 @@ class QuarterSection:
         return [
             Page(
                 dest=dest,
-                kind="quarter",
+                kind=PageKind.QUARTER,
                 title=f"Q{quarter} {spec.year}",
                 nav=planner_nav(
                     spec, week_dest=spec.dest_for_week(first[0]), month=landing_month
