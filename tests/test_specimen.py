@@ -362,15 +362,14 @@ def test_lined_dotgrid_notebook_dests_and_pages():
     spec = lined_dotgrid_notebook_specimen_spec("kindle-scribe")
     assert spec.book == "lined-dot-grid-mix-notebook"
     assert spec.device == "kindle-scribe"
-    assert spec.lined_sheets == 1
-    assert spec.dotgrid_sheets == 1
+    assert spec.lined_dot_grid_sheets == 1
     dests = lined_dotgrid_notebook_dests(spec)
     assert dests["lined-dotgrid-cover"] == spec.cover_dest == "cover"
-    assert dests["lined-dotgrid-lined"] == spec.dest_for_lined_pad(1) == "lined-2026-01"
-    assert (
-        dests["lined-dotgrid-dotgrid"]
-        == spec.dest_for_dotgrid_pad(1)
-        == "dotgrid-2026-01"
+    assert dests["lined-dotgrid-lined"] == spec.dest_for_duplex_pair_pad(
+        "lined-dot-grid", 1, "front"
+    )
+    assert dests["lined-dotgrid-dotgrid"] == spec.dest_for_duplex_pair_pad(
+        "lined-dot-grid", 1, "back"
     )
     numbers = lined_dotgrid_notebook_page_numbers(spec)
     assert set(numbers) == set(LINED_DOTGRID_NOTEBOOK_STEMS)

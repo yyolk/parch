@@ -99,11 +99,10 @@ def press(
     compose without lined is unchanged). ``book = "lined-notebook"``
     presses cover + lined pages through ``Book``. Exclusive notebooks
     reject mixed pad counts. ``book = "lined-dot-grid-mix-notebook"``
-    (alias ``lined-dotgrid-notebook``) prefixes cover then interleaves
-    ``lined_pages`` and ``dotgrid_pages`` (lined starts) — zip, not
-    duplex. ``lined_dot_grid_sheets`` / ``dot_grid_lined_sheets`` on
-    year-planner press one duplex pair type (front/back per sheet, name
-    is front then back) — no cover, no mix-book walk.
+    (alias ``lined-dotgrid-notebook``) prefixes cover then walks
+    duplex pair sheets: ``lined-dot-grid`` then ``dot-grid-lined``
+    when both counts are set. Either type alone is enough. Pad-only
+    year-planner still presses one duplex pair type — no cover.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(

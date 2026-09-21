@@ -191,8 +191,7 @@ def lined_dotgrid_notebook_specimen_spec(device_id: str, *, year: int = 2026) ->
         specimen_spec(device_id, year=year),
         book="lined-dot-grid-mix-notebook",
         title="Lined / Dot grid",
-        lined_sheets=1,
-        dotgrid_sheets=1,
+        lined_dot_grid_sheets=1,
     )
 
 
@@ -279,8 +278,12 @@ def lined_dotgrid_notebook_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each lined-dot-grid-mix-notebook catalog stem."""
     return {
         "lined-dotgrid-cover": spec.cover_dest,
-        "lined-dotgrid-lined": spec.dest_for_lined_pad(1),
-        "lined-dotgrid-dotgrid": spec.dest_for_dotgrid_pad(1),
+        "lined-dotgrid-lined": spec.dest_for_duplex_pair_pad(
+            "lined-dot-grid", 1, "front"
+        ),
+        "lined-dotgrid-dotgrid": spec.dest_for_duplex_pair_pad(
+            "lined-dot-grid", 1, "back"
+        ),
     }
 
 

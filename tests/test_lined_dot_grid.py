@@ -1,4 +1,4 @@
-"""Duplex lined/dot-grid pad: front+back per sheet. Not the mix-book zip."""
+"""Duplex lined/dot-grid pad: front+back per sheet. Pad-only, no cover."""
 
 from pathlib import Path
 
@@ -117,7 +117,8 @@ def test_spec_duplex_dests_and_toml():
 def test_cannot_set_both_duplex_orders():
     with pytest.raises(
         ConfigError,
-        match="cannot set both lined_dot_grid_sheets and dot_grid_lined_sheets",
+        match="year-planner cannot set both lined_dot_grid_sheets and "
+        "dot_grid_lined_sheets",
     ):
         Spec(lined_dot_grid_sheets=1, dot_grid_lined_sheets=1)
 

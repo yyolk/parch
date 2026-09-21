@@ -39,7 +39,6 @@ _EXCLUSIVE_NOTEBOOKS = frozenset(
         "engineering-notebook",
         "dot-grid-notebook",
         "lined-notebook",
-        _MIX_BOOK,
     }
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
@@ -355,9 +354,14 @@ class Spec:
             raise ConfigError("dot-grid-notebook cannot set steno_sheets")
         if self.book == "dot-grid-notebook" and self.lined_sheets:
             raise ConfigError("dot-grid-notebook cannot set lined_sheets")
-        if self.lined_dot_grid_sheets and self.dot_grid_lined_sheets:
+        if (
+            self.book == "year-planner"
+            and self.lined_dot_grid_sheets
+            and self.dot_grid_lined_sheets
+        ):
             raise ConfigError(
-                "cannot set both lined_dot_grid_sheets and dot_grid_lined_sheets"
+                "year-planner cannot set both lined_dot_grid_sheets and "
+                "dot_grid_lined_sheets"
             )
         _pair = self.lined_dot_grid_sheets or self.dot_grid_lined_sheets
         if (
@@ -395,10 +399,16 @@ class Spec:
             raise ConfigError("lined-notebook cannot set steno_sheets")
         if self.book == "lined-notebook" and self.dotgrid_sheets:
             raise ConfigError("lined-notebook cannot set dotgrid_sheets")
-        if self.book == _MIX_BOOK and self.lined_sheets < 1:
-            raise ConfigError(f"{_MIX_BOOK} requires lined_sheets >= 1")
-        if self.book == _MIX_BOOK and self.dotgrid_sheets < 1:
-            raise ConfigError(f"{_MIX_BOOK} requires dotgrid_sheets >= 1")
+        if self.book == _MIX_BOOK and not (
+            self.lined_dot_grid_sheets or self.dot_grid_lined_sheets
+        ):
+            raise ConfigError(
+                f"{_MIX_BOOK} requires lined_dot_grid_sheets or dot_grid_lined_sheets"
+            )
+        if self.book == _MIX_BOOK and self.lined_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set lined_sheets")
+        if self.book == _MIX_BOOK and self.dotgrid_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set dotgrid_sheets")
         if self.book == _MIX_BOOK and self.engineering_sheets:
             raise ConfigError(f"{_MIX_BOOK} cannot set engineering_sheets")
         if self.book == _MIX_BOOK and self.steno_sheets:

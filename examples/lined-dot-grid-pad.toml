@@ -1,6 +1,6 @@
 # Duplex pair pad — no cover. Each sheet is lined front + dot-grid back.
 # Flip the name for the other front: examples/dot-grid-lined-pad.toml.
-# Mix/zip notebook (single-sided alternate): examples/lined-dot-grid-mix-notebook.toml.
+# Mix notebook (cover + these duplex sheets): examples/lined-dot-grid-mix-notebook.toml.
 # Painters and pitch inherit from lined / dotgrid. Not P5 concat.
 #   parch press examples/lined-dot-grid-pad.toml -o out/lined-dot-grid-pad.pdf
 device = "supernote-nomad"

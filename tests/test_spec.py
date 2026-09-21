@@ -202,8 +202,7 @@ def test_habit_columns_from_toml_keys():
         Spec.from_mapping(
             {
                 "book": "lined-dot-grid-mix-notebook",
-                "lined": {"sheets": 1},
-                "dotgrid": {"sheets": 1},
+                "lined-dot-grid": {"sheets": 1},
             }
         ).book
         == "lined-dot-grid-mix-notebook"
@@ -213,21 +212,23 @@ def test_habit_columns_from_toml_keys():
         == "lined-dot-grid-mix-notebook"
     )
     assert (
-        Spec.from_path(Path("examples/lined-dot-grid-mix-notebook.toml")).lined_sheets
+        Spec.from_path(
+            Path("examples/lined-dot-grid-mix-notebook.toml")
+        ).lined_dot_grid_sheets
         == 6
     )
-    assert (
-        Spec.from_path(Path("examples/lined-dot-grid-mix-notebook.toml")).dotgrid_sheets
-        == 6
-    )
-    with pytest.raises(ConfigError, match="lined-dot-grid-mix-notebook requires lined"):
-        Spec(book="lined-dot-grid-mix-notebook", dotgrid_sheets=1)
     with pytest.raises(
-        ConfigError, match="lined-dot-grid-mix-notebook requires dotgrid"
+        ConfigError, match="lined-dot-grid-mix-notebook requires lined_dot_grid"
     ):
-        Spec(book="lined-dot-grid-mix-notebook", lined_sheets=1)
+        Spec(book="lined-dot-grid-mix-notebook")
+    with pytest.raises(
+        ConfigError, match="lined-dot-grid-mix-notebook cannot set lined_sheets"
+    ):
+        Spec(
+            book="lined-dot-grid-mix-notebook", lined_dot_grid_sheets=1, lined_sheets=1
+        )
     assert (
-        Spec(book="lined-dotgrid-notebook", lined_sheets=1, dotgrid_sheets=1).book
+        Spec(book="lined-dotgrid-notebook", lined_dot_grid_sheets=1).book
         == "lined-dot-grid-mix-notebook"
     )
     nomad = Spec.from_path(Path("examples/nomad.toml"))

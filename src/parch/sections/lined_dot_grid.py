@@ -38,6 +38,14 @@ class LinedDotGridPadSection:
         return built
 
 
+def duplex_pair_pages(spec: Spec) -> list[Page]:
+    """lined-dot-grid sheets, then dot-grid-lined. Empty when that count is 0."""
+    return [
+        *LinedDotGridPadSection(spec, "lined-dot-grid").pages(),
+        *LinedDotGridPadSection(spec, "dot-grid-lined").pages(),
+    ]
+
+
 def _pair_page(
     spec: Spec,
     order: PairOrder,
