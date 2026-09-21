@@ -1,0 +1,8 @@
+.venv
+.git
+out
+.pytest_cache
+.ruff_cache
+dist
+.tools
+artifacts
