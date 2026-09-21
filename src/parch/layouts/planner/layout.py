@@ -1,5 +1,8 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
+import parch.sections.kinds as kinds
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -113,23 +116,50 @@ class PlannerLayout:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
+        """Paint one page. The match is closed on ``PageKind``."""
         plotter.ramp = self.ramp
         match page.kind:
-            case "cover":
+            case kinds.Cover():
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case "engineering_front" | "engineering_back":
+            case kinds.EngineeringFront() | kinds.EngineeringBack():
                 paint_engineering_pad(
                     plotter, device, _one(page, EngineeringPad), ramp=self.ramp
                 )
-            case "steno":
+            case kinds.Steno():
                 paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
-            case "dotgrid":
+            case kinds.Dotgrid():
                 paint_dotgrid_page(
                     plotter, device, _one(page, DotGridPad), ramp=self.ramp
                 )
-            case "lined":
+            case kinds.Lined():
                 paint_lined_page(plotter, device, _one(page, LinedPad), ramp=self.ramp)
-            case _:
+            case (
+                kinds.Annual()
+                | kinds.Favorites()
+                | kinds.My100()
+                | kinds.Checkoff365()
+                | kinds.ProjectsIndex()
+                | kinds.Project()
+                | kinds.MeetingsIndex()
+                | kinds.Meeting()
+                | kinds.TasksIndex()
+                | kinds.Task()
+                | kinds.ReviewIndex()
+                | kinds.Review()
+                | kinds.Quarter()
+                | kinds.Month()
+                | kinds.Habits()
+                | kinds.Weekly()
+                | kinds.Daily()
+                | kinds.DailyNotes()
+                | kinds.BujoKey()
+                | kinds.BujoIndex()
+                | kinds.FutureLog()
+                | kinds.MonthlyLog()
+                | kinds.MonthlyTasks()
+                | kinds.RapidLog()
+                | kinds.Collection()
+            ):
                 paint_header(
                     plotter,
                     device,
@@ -149,45 +179,48 @@ class PlannerLayout:
                 )
                 well = well_rect(device)
                 self._paint_well(page, plotter, well)
+            case _ as other:
+                assert_never(other)
 
     def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+        """Paint the seated well. Full-bleed kinds never reach this match."""
         ramp = self.ramp
         match page.kind:
-            case "annual":
+            case kinds.Annual():
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
-            case "favorites":
+            case kinds.Favorites():
                 paint_favorites(plotter, well, _one(page, FavoritesPage), ramp=ramp)
-            case "my_100":
+            case kinds.My100():
                 paint_my_100(plotter, well, _one(page, My100Page), ramp=ramp)
-            case "checkoff_365":
+            case kinds.Checkoff365():
                 paint_checkoff_365(plotter, well, _one(page, Checkoff365), ramp=ramp)
-            case "projects_index":
+            case kinds.ProjectsIndex():
                 paint_projects_index(
                     plotter, well, _one(page, ProjectsIndex), ramp=ramp
                 )
-            case "project":
+            case kinds.Project():
                 paint_project(plotter, well, _one(page, ProjectsBoard), ramp=ramp)
-            case "meetings_index":
+            case kinds.MeetingsIndex():
                 paint_meetings_index(plotter, well, _one(page, MeetingIndex), ramp=ramp)
-            case "meeting":
+            case kinds.Meeting():
                 paint_meeting(plotter, well, _one(page, MeetingAgenda), ramp=ramp)
-            case "tasks_index":
+            case kinds.TasksIndex():
                 paint_tasks_index(plotter, well, _one(page, TasksIndex), ramp=ramp)
-            case "task":
+            case kinds.Task():
                 paint_task(plotter, well, _one(page, TasksWeekPage), ramp=ramp)
-            case "review_index":
+            case kinds.ReviewIndex():
                 paint_review_index(plotter, well, _one(page, ReviewIndex), ramp=ramp)
-            case "review":
+            case kinds.Review():
                 paint_review(plotter, well, _one(page, ReviewWeekPage), ramp=ramp)
-            case "quarter":
+            case kinds.Quarter():
                 paint_quarter(plotter, well, _one(page, QuarterGrid), ramp=ramp)
-            case "month":
+            case kinds.Month():
                 paint_month_grid(plotter, well, _one(page, MonthGrid), ramp=ramp)
-            case "habits":
+            case kinds.Habits():
                 paint_habit_grid(plotter, well, _one(page, HabitGrid), ramp=ramp)
-            case "weekly":
+            case kinds.Weekly():
                 paint_week(plotter, well, _one(page, WeekStrip), ramp=ramp)
-            case "daily":
+            case kinds.Daily():
                 paint_daily(
                     plotter,
                     well,
@@ -197,28 +230,37 @@ class PlannerLayout:
                     _one(page, Notes),
                     ramp=ramp,
                 )
-            case "daily_notes":
+            case kinds.DailyNotes():
                 paint_notes(plotter, well, _one(page, Notes), ramp=ramp)
-            case "bujo_key":
+            case kinds.BujoKey():
                 paint_bujo_key(plotter, well, _one(page, BujoKey), ramp=ramp)
-            case "bujo_index":
+            case kinds.BujoIndex():
                 paint_bujo_index(plotter, well, _one(page, BujoIndex), ramp=ramp)
-            case "future_log":
+            case kinds.FutureLog():
                 paint_future_log(plotter, well, _one(page, FutureLogPage), ramp=ramp)
-            case "monthly_log":
+            case kinds.MonthlyLog():
                 paint_monthly_calendar_list(
                     plotter, well, _one(page, MonthlyCalendarList), ramp=ramp
                 )
-            case "monthly_tasks":
+            case kinds.MonthlyTasks():
                 paint_monthly_task_well(
                     plotter, well, _one(page, MonthlyTaskWell), ramp=ramp
                 )
-            case "rapid_log":
+            case kinds.RapidLog():
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
-            case "collection":
+            case kinds.Collection():
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
-            case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+            case (
+                kinds.Cover()
+                | kinds.EngineeringFront()
+                | kinds.EngineeringBack()
+                | kinds.Steno()
+                | kinds.Dotgrid()
+                | kinds.Lined()
+            ):
+                raise AssertionError(page.kind)
+            case _ as other:
+                assert_never(other)
 
 
 def _header_meta(page: Page) -> str:

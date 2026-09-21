@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+import parch.sections.kinds as kinds
 from parch.components.dotgrid import DotGridPad
 from parch.components.lined import LinedPad
 from parch.sections.page import Page, PageKind
@@ -25,9 +26,9 @@ class LinedDotGridPadSection:
             else spec.dotgrid_lined_sheets
         )
         front_kind, back_kind = (
-            ("lined", "dotgrid")
+            (kinds.Lined(), kinds.Dotgrid())
             if self.order == "lined-dotgrid"
-            else ("dotgrid", "lined")
+            else (kinds.Dotgrid(), kinds.Lined())
         )
         built: list[Page] = []
         for sheet in range(1, sheets + 1):

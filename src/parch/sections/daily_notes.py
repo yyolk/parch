@@ -2,6 +2,7 @@
 
 from datetime import date
 
+import parch.sections.kinds as kinds
 from parch.calendar import WEEKDAY_FULL
 from parch.components import Notes
 from parch.sections.nav import planner_nav
@@ -23,7 +24,7 @@ class DailyNotesSection:
             built.append(
                 Page(
                     dest=spec.dest_for_notes(day, index),
-                    kind="daily_notes",
+                    kind=kinds.DailyNotes(),
                     title=f"{weekday} {day.day}  {index}/{spec.notes_pages}",
                     nav=planner_nav(
                         spec,

@@ -1,3 +1,4 @@
+import parch.sections.kinds as kinds
 from parch.calendar import month_touching_weeks
 from parch.components import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.sections.nav import planner_nav
@@ -27,7 +28,7 @@ class ProjectsSection:
             built.append(
                 Page(
                     dest=dest,
-                    kind="projects_index",
+                    kind=kinds.ProjectsIndex(),
                     title="Projects",
                     nav=nav,
                     components=(
@@ -43,7 +44,7 @@ class ProjectsSection:
         built.extend(
             Page(
                 dest=ticket.dest,
-                kind="project",
+                kind=kinds.Project(),
                 title="Projects",
                 nav=planner_nav(
                     spec,

@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+import parch.sections.kinds as kinds
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, iso_monday, month_week_bands
 from parch.components import (
     ReviewDay,
@@ -30,7 +31,7 @@ class ReviewSection:
         built = [
             Page(
                 dest=index_dest,
-                kind="review_index",
+                kind=kinds.ReviewIndex(),
                 title="Review",
                 nav=planner_nav(
                     spec,
@@ -82,7 +83,7 @@ class ReviewSection:
         )
         return Page(
             dest=week.dest,
-            kind="review",
+            kind=kinds.Review(),
             title="Review",
             nav=planner_nav(
                 spec,

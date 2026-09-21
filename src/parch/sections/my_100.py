@@ -1,3 +1,4 @@
+import parch.sections.kinds as kinds
 from parch.calendar import month_touching_weeks
 from parch.components import My100Page
 from parch.devices import get_device
@@ -38,7 +39,7 @@ class My100Section:
             built.append(
                 Page(
                     dest=dest,
-                    kind="my_100",
+                    kind=kinds.My100(),
                     title="My 100",
                     nav=nav,
                     components=(

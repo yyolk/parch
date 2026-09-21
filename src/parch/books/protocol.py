@@ -72,9 +72,10 @@ def outline_entries(pages: Iterable[Page]) -> list[tuple[str, str]]:
     prev_kind: str | None = None
     entries: list[tuple[str, str]] = []
     for page in pages:
-        if _should_outline(page.kind, prev_kind):
+        kind = str(page.kind)
+        if _should_outline(kind, prev_kind):
             entries.append((page.title, page.dest))
-        prev_kind = page.kind
+        prev_kind = kind
     return entries
 
 
@@ -109,4 +110,4 @@ def plot_pages(
         if page.dest in picks:
             plotter.add_outline(page.title, page.dest)
         layout.paint(page, plotter, slate)
-        render_progress(i, n, page.kind)
+        render_progress(i, n, str(page.kind))

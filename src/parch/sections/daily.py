@@ -1,5 +1,6 @@
 from datetime import date
 
+import parch.sections.kinds as kinds
 from parch.calendar import WEEKDAY_FULL
 from parch.components import Notes, Priorities, Schedule
 from parch.sections.annual import build_month_mini
@@ -19,7 +20,7 @@ class DailySection:
         return [
             Page(
                 dest=spec.dest_for_day(day),
-                kind="daily",
+                kind=kinds.Daily(),
                 title=f"{weekday[:3]} {day.day}",
                 nav=planner_nav(
                     spec, week_dest=spec.dest_for_week(day), day=day, month=day.month

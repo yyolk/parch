@@ -1,5 +1,6 @@
 from datetime import date
 
+import parch.sections.kinds as kinds
 from parch.calendar import month_name, month_touching_weeks, month_weeks, weekday_labels
 from parch.components import AnnualGrid, AnnualMonth, MonthCell
 from parch.sections.nav import planner_nav
@@ -66,7 +67,7 @@ class AnnualSection:
         return [
             Page(
                 dest=spec.year_dest,
-                kind="annual",
+                kind=kinds.Annual(),
                 title=str(spec.year),
                 nav=planner_nav(spec, week_dest=spec.dest_for_week(first[0])),
                 components=(

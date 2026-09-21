@@ -1,5 +1,6 @@
 """Single-face Gregg stenographer pad — one lined page per sheet."""
 
+import parch.sections.kinds as kinds
 from parch.components.steno import StenoPad
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -19,7 +20,7 @@ class StenoPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_steno_pad(sheet),
-                    kind="steno",
+                    kind=kinds.Steno(),
                     title="Steno",
                     nav=(),
                     components=(StenoPad(sheet=sheet, sheets=sheets),),

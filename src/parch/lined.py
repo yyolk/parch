@@ -1,5 +1,6 @@
 """Edge-to-edge lined pages. Pad-only has no cover; a notebook may prefix one."""
 
+import parch.sections.kinds as kinds
 from parch.components.lined import LinedPad
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -17,7 +18,7 @@ def lined_pages(spec: Spec) -> list[Page]:
         built.append(
             Page(
                 dest=spec.dest_for_lined_pad(sheet),
-                kind="lined",
+                kind=kinds.Lined(),
                 title="Lined",
                 nav=(),
                 components=(LinedPad(sheet=sheet, sheets=spec.lined_sheets),),

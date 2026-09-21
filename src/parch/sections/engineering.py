@@ -1,5 +1,6 @@
 """Duplex engineering / computation pad — one front + one back page per sheet."""
 
+import parch.sections.kinds as kinds
 from parch.components.engineering import EngineeringPad
 from parch.sections.page import Page
 from parch.spec import Spec
@@ -21,7 +22,7 @@ class EngineeringPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_engineering_pad(sheet, "front"),
-                    kind="engineering_front",
+                    kind=kinds.EngineeringFront(),
                     title="Engineering",
                     nav=(),
                     components=(pad_front,),
@@ -30,7 +31,7 @@ class EngineeringPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_engineering_pad(sheet, "back"),
-                    kind="engineering_back",
+                    kind=kinds.EngineeringBack(),
                     title="Computation",
                     nav=(),
                     components=(pad_back,),

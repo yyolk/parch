@@ -56,7 +56,7 @@ from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
 from parch.plotter.protocol import Plotter, TextAlign
-from parch.sections.page import Page
+from parch.sections.page import Page, PageKind
 from parch.tracks import columns, rows
 
 HAIR = 0.18
@@ -3009,7 +3009,7 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
-def strip_active(kind: str) -> str:
+def strip_active(kind: PageKind | str) -> str:
     match kind:
         case "annual":
             return "Year"
