@@ -1,0 +1,30 @@
+# Kindle Scribe (1st gen) — same job as examples/scribe.toml.
+# Preserves the old 8 mm top band for comparison after the device default became 0.
+# notes_pages = 1 keeps the year artifact smaller; 2 still works.
+year = 2026
+device = "kindle-scribe"
+top_clearance = 8
+week_start = "monday"
+months = { from = 1, to = 12 }
+title = "Year planner"
+# Reader sidebar outline (bookmarks). Cover is skipped.
+outline = true
+
+[daily]
+schedule = { from = 07:00:00, to = 16:00:00 }
+notes_pages = 1
+priority_rows = 6
+
+[habits]
+columns = 10
+
+[projects]
+cards = 3
+tickets = 8
+index_pages = 3
+
+[meetings]
+index_rows = 16
+
+[tasks]
+rows = 6
