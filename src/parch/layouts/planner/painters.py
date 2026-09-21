@@ -14,6 +14,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPage,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -1085,6 +1086,30 @@ def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
                 fill=True,
                 fill_gray=RULE_C,
             )
+
+
+def dot_grid_page_rect(device: Device) -> Rect:
+    """Full-page bleed — ignore writing clearance, header, and nav strip."""
+    return Rect(0.0, 0.0, device.page_width, device.page_height)
+
+
+def paint_dot_grid(
+    plotter: Plotter,
+    device: Device,
+    sheet: DotGridPage,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Edge-to-edge clone-dot page. No header, nav strip, or writing margins.
+
+    Reuses ``_paint_clone_dot_grid`` / ``CLONE_DOT_*`` on the full device page
+    so extras sit in the year-planner walk without planner chrome. Device OS
+    chrome (Scribe bottom clearance) is painted through — these pages ignore
+    strip and margins on purpose.
+    """
+    _bound_ramp(plotter, ramp)
+    _ = sheet
+    _paint_clone_dot_grid(plotter, dot_grid_page_rect(device))
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3010,7 +3035,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno":
+        case "engineering_front" | "engineering_back" | "steno" | "dot_grid":
             return ""
         case "bujo_key":
             return "Key"

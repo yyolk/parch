@@ -1,8 +1,11 @@
-"""Year planner book — cover → annual → checkoff → favorites → my 100 → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks.
+"""Year planner book — cover → annual → checkoff → favorites → my 100 → quarters → months+habits → weeks → days+notes → review → projects index/dests → meetings → tasks → (optional dot-grid).
 
 ``spec.checkoff_365``, ``spec.favorites_pages``, and ``spec.my_100`` (all
 default off) insert after annual and before quarters; when on, checkoff
 then favorites then my 100.
+
+``spec.dot_grid_pages`` (default 0) inserts that many full-bleed clone-dot
+pages after tasks — extra writing sheets in this walk, not a pad book.
 """
 
 from parch.books.protocol import plot_pages
@@ -15,6 +18,7 @@ from parch.sections import (
     CoverSection,
     DailyNotesSection,
     DailySection,
+    DotGridSection,
     FavoritesSection,
     HabitSection,
     MeetingSection,
@@ -62,6 +66,7 @@ class YearPlanner:
         built.extend(ProjectsSection(spec).pages())
         built.extend(MeetingSection(spec).pages())
         built.extend(TasksSection(spec).pages())
+        built.extend(DotGridSection(spec).pages())
         return built
 
     def plot(self, spec: Spec, plotter: Plotter) -> None:

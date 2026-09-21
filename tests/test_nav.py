@@ -73,3 +73,12 @@ def test_extras_strip_active_on_own_pages():
     assert strip_active(fav.kind) == "Fav"
     assert strip_active(hundred.kind) == "100"
     assert strip_active(checkoff.kind) == "365"
+
+
+def test_dot_grid_pages_leave_strip_unchanged():
+    spec = Spec(notes_pages=1, months=(1,), dot_grid_pages=2)
+    year = next(page for page in YearPlanner().pages(spec) if page.kind == "annual")
+    assert _labels(year) == list(_DEFAULT_LABELS)
+    grid = next(page for page in YearPlanner().pages(spec) if page.kind == "dot_grid")
+    assert strip_active(grid.kind) == ""
+    assert strip_items(grid) == ()

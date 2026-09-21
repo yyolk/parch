@@ -9,6 +9,7 @@ from parch.components import (
     Checkoff365,
     CollectionLeaf,
     CoverTitle,
+    DotGridPage,
     EngineeringPad,
     FavoritesPage,
     FutureLogPage,
@@ -52,6 +53,7 @@ from parch.layouts.planner.painters import (
     paint_collection,
     paint_cover,
     paint_daily,
+    paint_dot_grid,
     paint_engineering_pad,
     paint_favorites,
     paint_future_log,
@@ -97,7 +99,7 @@ __all__ = [
 
 
 class PlannerLayout:
-    """Seat components below the INK header. Cover and pad faces skip header/nav.
+    """Seat components below the INK header. Cover, pads, and dot-grid skip header/nav.
 
     Holds an explicit ``TypeRamp`` (default ``EffectiveRamp``) and binds it
     onto the plotter. Painters pass ``TypeRef`` / ink on the closed TypeStep
@@ -119,6 +121,8 @@ class PlannerLayout:
                 )
             case "steno":
                 paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
+            case "dot_grid":
+                paint_dot_grid(plotter, device, _one(page, DotGridPage), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,

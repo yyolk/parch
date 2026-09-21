@@ -1,0 +1,13 @@
+# Exploratory DG4 — optional year-planner full-bleed clone-dot extras.
+# Spec count inserts blank pages after tasks (like notes extras).
+# Stays on book = "year-planner". No dot-grid-notebook / cover notebook.
+#   parch press examples/nomad-dot-grid.toml -o out/nomad-dot-grid.pdf
+year = 2026
+device = "supernote-nomad"
+week_start = "monday"
+month = 1
+title = "Year planner"
+dot_grid_pages = 2
+
+[daily]
+notes_pages = 0

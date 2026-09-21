@@ -168,6 +168,15 @@ def _parse_favorites_pages(data: TomlTable) -> int:
     return 0
 
 
+def _parse_dot_grid_pages(data: TomlTable) -> int:
+    """``dot_grid_pages`` count, or ``dot_grid`` bool. Default 0 (off)."""
+    if "dot_grid_pages" in data:
+        return int(data["dot_grid_pages"])
+    if "dot_grid" in data:
+        return 1 if _parse_bool(data["dot_grid"], "dot_grid") else 0
+    return 0
+
+
 def _parse_bujo(data: TomlTable) -> tuple[int, int]:
     """``[bujo]`` index_pages + collections. Unknown keys fail loudly."""
     raw = data.get("bujo")
@@ -303,6 +312,7 @@ class Spec:
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
     checkoff_365: bool = False  # optional year check-off sheet; default off
+    dot_grid_pages: int = 0  # 0 keeps year-planner press; N inserts bleed extras
     bujo_index_pages: int = 2
     bujo_collections: int = 24
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
@@ -351,6 +361,8 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
+        if not 0 <= self.dot_grid_pages <= 100:
+            raise ConfigError("dot_grid_pages must be 0–100")
         if not 1 <= self.bujo_index_pages <= 6:
             raise ConfigError("bujo index_pages must be 1–6")
         if not 0 <= self.bujo_collections <= 48:
@@ -530,6 +542,21 @@ class Spec:
             raise ConfigError(f"notes dest index must be >= 1, not {index}")
         return _dest(t"{day.isoformat()}-notes-{index}")
 
+    @property
+    def dot_grid_dest(self) -> str:
+        """Landing dest for the first extra clone-dot page."""
+        return self.dest_for_dot_grid(1)
+
+    def dest_for_dot_grid(self, page: int) -> str:
+        """Page 1 is ``dot-grid-{year}``; later pages append ``-{page:02d}``."""
+        if self.dot_grid_pages < 1:
+            raise ConfigError("dot_grid_pages must be >= 1 to name a dest")
+        if not 1 <= page <= self.dot_grid_pages:
+            raise ConfigError(f"dot grid page out of range: {page}")
+        if page == 1:
+            return _dest(t"dot-grid-{self.year:04d}")
+        return _dest(t"dot-grid-{self.year:04d}-{page:02d}")
+
     def dest_for_engineering_pad(self, sheet: int, face: str) -> str:
         """1-based duplex dest, e.g. ``engineering-2026-01-front``."""
         if face not in {"front", "back"}:
@@ -656,6 +683,7 @@ class Spec:
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
             checkoff_365=_parse_bool(data.get("checkoff_365", False), "checkoff_365"),
+            dot_grid_pages=_parse_dot_grid_pages(data),
             bujo_index_pages=bujo_index_pages,
             bujo_collections=bujo_collections,
             type_overlay=_parse_typography(data),
@@ -689,6 +717,7 @@ class Spec:
             "favorites": self.favorites_pages == 1,
             "my_100": self.my_100,
             "checkoff_365": self.checkoff_365,
+            "dot_grid_pages": self.dot_grid_pages,
             "daily": {
                 "schedule": dict(self.schedule.as_table()),
                 "notes_pages": self.notes_pages,
@@ -742,6 +771,7 @@ class Spec:
                 f"favorites = {_toml_bool(self.favorites_pages == 1)}",
                 f"my_100 = {_toml_bool(self.my_100)}",
                 f"checkoff_365 = {_toml_bool(self.checkoff_365)}",
+                f"dot_grid_pages = {self.dot_grid_pages}",
                 "",
                 "[daily]",
                 f"schedule = {_schedule_toml(self.schedule)}",

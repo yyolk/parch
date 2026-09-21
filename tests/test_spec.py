@@ -76,6 +76,7 @@ def test_dest_names_from_tstrings():
     assert spec.dest_for_my_100(1) == "my-100-2026"
     assert spec.dest_for_my_100(2) == "my-100-2026-02"
     assert spec.checkoff_365 is False
+    assert spec.dot_grid_pages == 0
     assert spec.bujo_index_pages == 2
     assert spec.bujo_collections == 24
     assert spec.bujo_key_dest == "bujo-key-2026"
@@ -150,6 +151,13 @@ def test_habit_columns_from_toml_keys():
     assert extras.checkoff_365 is True
     assert extras.notes_pages == 0
     assert extras.months == (1,)
+    assert extras.dot_grid_pages == 0
+    assert Spec.from_path(Path("examples/nomad-dot-grid.toml")).dot_grid_pages == 2
+    assert Spec.from_mapping({"dot_grid": True}).dot_grid_pages == 1
+    with pytest.raises(ConfigError, match="dot_grid must be a boolean"):
+        Spec.from_mapping({"dot_grid": 1})
+    with pytest.raises(ConfigError, match="dot_grid_pages must be 0–100"):
+        Spec(dot_grid_pages=-1)
     with pytest.raises(ConfigError, match="my_100 must be a boolean"):
         Spec.from_mapping({"my_100": 1})
     with pytest.raises(ConfigError, match="my 100 page must be >= 1"):
