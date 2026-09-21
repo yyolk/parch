@@ -103,7 +103,7 @@ def test_spec_duplex_dests_and_toml():
     with pytest.raises(ConfigError, match="front or back"):
         spec.dest_for_duplex_pair_pad("lined-dotgrid", 1, "verso")
     with pytest.raises(ConfigError, match="lined-dotgrid or dotgrid-lined"):
-        spec.dest_for_duplex_pair_pad("lined-dot-grid", 1, "front")
+        spec.dest_for_duplex_pair_pad("not-a-pair-order", 1, "front")
     with pytest.raises(ConfigError, match="lined_dotgrid_sheets must be >= 1"):
         Spec().dest_for_duplex_pair_pad("lined-dotgrid", 1, "front")
     with pytest.raises(ConfigError, match="duplex pair sheet out of range"):

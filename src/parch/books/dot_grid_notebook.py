@@ -1,4 +1,4 @@
-"""Dot-grid notebook — cover → edge-to-edge clone-dot pages (sibling of YearPlanner)."""
+"""Dotgrid notebook — cover → edge-to-edge clone-dot pages (sibling of YearPlanner)."""
 
 from parch.books.protocol import plot_pages
 from parch.dotgrid import dotgrid_pages

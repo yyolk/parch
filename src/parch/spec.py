@@ -15,13 +15,16 @@ from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _MIX_BOOK = "lined-dotgrid-mix-notebook"
+_DOTGRID_BOOK = "dotgrid-notebook"
+# Short-lived: #528 shipped book = "dot-grid-notebook".
+_DOTGRID_BOOK_ALIAS = "dot-grid-notebook"
 _PAIR_ORDERS = frozenset({"lined-dotgrid", "dotgrid-lined"})
 _BOOKS = frozenset(
     {
         "year-planner",
         "projects-notebook",
         "engineering-notebook",
-        "dot-grid-notebook",
+        _DOTGRID_BOOK,
         "lined-notebook",
         _MIX_BOOK,
         "bullet-journal",
@@ -29,13 +32,13 @@ _BOOKS = frozenset(
 )
 _BOOK_CHOICES = (
     "year-planner, projects-notebook, engineering-notebook, "
-    "bullet-journal, dot-grid-notebook, lined-notebook, or "
+    "bullet-journal, dotgrid-notebook, lined-notebook, or "
     "lined-dotgrid-mix-notebook"
 )
 _EXCLUSIVE_NOTEBOOKS = frozenset(
     {
         "engineering-notebook",
-        "dot-grid-notebook",
+        _DOTGRID_BOOK,
         "lined-notebook",
     }
 )
@@ -326,6 +329,8 @@ class Spec:
     type_overlay: TypeOverlay = field(default_factory=TypeOverlay)
 
     def __post_init__(self) -> None:
+        if self.book == _DOTGRID_BOOK_ALIAS:
+            object.__setattr__(self, "book", _DOTGRID_BOOK)
         if self.week_start not in _WEEK_STARTS:
             raise ConfigError(
                 f"week_start must be monday or sunday, not {self.week_start!r}"
@@ -342,14 +347,14 @@ class Spec:
             raise ConfigError("engineering-notebook cannot set dotgrid_sheets")
         if self.book == "engineering-notebook" and self.lined_sheets:
             raise ConfigError("engineering-notebook cannot set lined_sheets")
-        if self.book == "dot-grid-notebook" and self.dotgrid_sheets < 1:
-            raise ConfigError("dot-grid-notebook requires dotgrid_sheets >= 1")
-        if self.book == "dot-grid-notebook" and self.engineering_sheets:
-            raise ConfigError("dot-grid-notebook cannot set engineering_sheets")
-        if self.book == "dot-grid-notebook" and self.steno_sheets:
-            raise ConfigError("dot-grid-notebook cannot set steno_sheets")
-        if self.book == "dot-grid-notebook" and self.lined_sheets:
-            raise ConfigError("dot-grid-notebook cannot set lined_sheets")
+        if self.book == _DOTGRID_BOOK and self.dotgrid_sheets < 1:
+            raise ConfigError(f"{_DOTGRID_BOOK} requires dotgrid_sheets >= 1")
+        if self.book == _DOTGRID_BOOK and self.engineering_sheets:
+            raise ConfigError(f"{_DOTGRID_BOOK} cannot set engineering_sheets")
+        if self.book == _DOTGRID_BOOK and self.steno_sheets:
+            raise ConfigError(f"{_DOTGRID_BOOK} cannot set steno_sheets")
+        if self.book == _DOTGRID_BOOK and self.lined_sheets:
+            raise ConfigError(f"{_DOTGRID_BOOK} cannot set lined_sheets")
         if self.lined_dotgrid_sheets and self.dotgrid_lined_sheets:
             raise ConfigError(
                 "cannot set both lined_dotgrid_sheets and dotgrid_lined_sheets"

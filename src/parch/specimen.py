@@ -83,7 +83,7 @@ LINED_DOTGRID_NOTEBOOK_STEMS = (
     "lined-dotgrid-dotgrid",
 )
 
-# Dot-grid notebook — cover + one full-bleed clone-dot page (sibling dests).
+# Dotgrid notebook — cover + one full-bleed clone-dot page (sibling dests).
 DOTGRID_NOTEBOOK_STEMS = ("dotgrid-cover", "dotgrid-page")
 
 # Catalog Pages devices. Do not follow known_device_ids().
@@ -105,7 +105,7 @@ def gallery_groups(
         ("engineering-notebook", "Engineering notebook", ENGINEERING_STEMS),
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
         ("bullet-journal", "Bullet Journal", BUJO_STEMS),
-        ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
+        ("dotgrid-notebook", "Dotgrid notebook", DOTGRID_NOTEBOOK_STEMS),
         ("lined-notebook", "Lined notebook", LINED_NOTEBOOK_STEMS),
         (
             "lined-dotgrid-mix-notebook",
@@ -113,7 +113,7 @@ def gallery_groups(
             LINED_DOTGRID_NOTEBOOK_STEMS,
         ),
         ("steno-pad", "Steno pad", STENO_STEMS),
-        ("dotgrid-pad", "Dot grid pad", DOTGRID_STEMS),
+        ("dotgrid-pad", "Dotgrid pad", DOTGRID_STEMS),
         ("lined-pad", "Lined pad", LINED_STEMS),
     )
 
@@ -207,10 +207,10 @@ def bujo_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
 
 
 def dotgrid_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
-    """Dot-grid notebook press for catalog cover + one clone-dot page."""
+    """Dotgrid notebook press for catalog cover + one clone-dot page."""
     return replace(
         specimen_spec(device_id, year=year),
-        book="dot-grid-notebook",
+        book="dotgrid-notebook",
         title="Dot grid",
         dotgrid_sheets=1,
     )
@@ -257,7 +257,7 @@ def steno_dests(spec: Spec) -> dict[str, str]:
 
 
 def dotgrid_dests(spec: Spec) -> dict[str, str]:
-    """Named dest for the pad-only dot-grid catalog stem."""
+    """Named dest for the pad-only dotgrid catalog stem."""
     return {"dotgrid": spec.dest_for_dotgrid_pad(1)}
 
 
@@ -298,7 +298,7 @@ def bujo_dests(spec: Spec) -> dict[str, str]:
 
 
 def dotgrid_notebook_dests(spec: Spec) -> dict[str, str]:
-    """Named dest for each dot-grid-notebook catalog stem."""
+    """Named dest for each dotgrid-notebook catalog stem."""
     return {
         "dotgrid-cover": spec.cover_dest,
         "dotgrid-page": spec.dest_for_dotgrid_pad(1),
@@ -344,7 +344,7 @@ def steno_page_numbers(
 def dotgrid_page_numbers(
     spec: Spec, stems: Sequence[str] = DOTGRID_STEMS
 ) -> dict[str, int]:
-    """1-based page numbers from the pad-only dot-grid walk."""
+    """1-based page numbers from the pad-only dotgrid walk."""
     return _page_numbers(dotgrid_pages(spec), dotgrid_dests(spec), stems)
 
 
@@ -381,7 +381,7 @@ def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str
 def dotgrid_notebook_page_numbers(
     spec: Spec, stems: Sequence[str] = DOTGRID_NOTEBOOK_STEMS
 ) -> dict[str, int]:
-    """1-based page numbers from the dot-grid-notebook walk."""
+    """1-based page numbers from the dotgrid-notebook walk."""
     return _page_numbers(
         DotGridNotebook().pages(spec), dotgrid_notebook_dests(spec), stems
     )
@@ -626,7 +626,7 @@ def write_specimens(
         press(bujo_spec, bujo_pdf, proof=True)
         _render_stems(bujo_pdf, dest, bujo_page_numbers(bujo_spec), BUJO_STEMS)
         notebook_spec = dotgrid_notebook_specimen_spec(device_id, year=year)
-        notebook_pdf = Path(tmp) / "dot-grid-notebook.pdf"
+        notebook_pdf = Path(tmp) / "dotgrid-notebook.pdf"
         press(notebook_spec, notebook_pdf, proof=True)
         _render_stems(
             notebook_pdf,

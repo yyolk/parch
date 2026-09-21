@@ -302,7 +302,7 @@ def test_dot_grid_notebook_plot_ticks_each_page(monkeypatch):
         "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2)
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2)
     book = DotGridNotebook()
     pages = book.pages(spec)
     book.plot(spec, RecordingPlotter())
