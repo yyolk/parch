@@ -302,6 +302,7 @@ class Spec:
     engineering_sheets: int = 0  # duplex fronts+backs; 0 keeps year-planner press
     steno_sheets: int = 0  # single-face Gregg pages; 0 keeps year-planner press
     dotgrid_sheets: int = 0  # full-bleed clone-dot pages; 0 keeps year-planner press
+    lined_sheets: int = 0  # full-bleed lined pages; 0 keeps year-planner press
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -325,12 +326,16 @@ class Spec:
             raise ConfigError("engineering-notebook cannot set steno_sheets")
         if self.book == "engineering-notebook" and self.dotgrid_sheets:
             raise ConfigError("engineering-notebook cannot set dotgrid_sheets")
+        if self.book == "engineering-notebook" and self.lined_sheets:
+            raise ConfigError("engineering-notebook cannot set lined_sheets")
         if self.book == "dot-grid-notebook" and self.dotgrid_sheets < 1:
             raise ConfigError("dot-grid-notebook requires dotgrid_sheets >= 1")
         if self.book == "dot-grid-notebook" and self.engineering_sheets:
             raise ConfigError("dot-grid-notebook cannot set engineering_sheets")
         if self.book == "dot-grid-notebook" and self.steno_sheets:
             raise ConfigError("dot-grid-notebook cannot set steno_sheets")
+        if self.book == "dot-grid-notebook" and self.lined_sheets:
+            raise ConfigError("dot-grid-notebook cannot set lined_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()
@@ -362,6 +367,8 @@ class Spec:
             raise ConfigError("steno_sheets must be 0–100")
         if not 0 <= self.dotgrid_sheets <= 100:
             raise ConfigError("dotgrid_sheets must be 0–100")
+        if not 0 <= self.lined_sheets <= 100:
+            raise ConfigError("lined_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -615,6 +622,14 @@ class Spec:
             raise ConfigError(f"dotgrid sheet out of range: {sheet}")
         return _dest(t"dotgrid-{self.year:04d}-{sheet:02d}")
 
+    def dest_for_lined_pad(self, sheet: int) -> str:
+        """1-based single-face dest, e.g. ``lined-2026-01``."""
+        if self.lined_sheets < 1:
+            raise ConfigError("lined_sheets must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= self.lined_sheets:
+            raise ConfigError(f"lined sheet out of range: {sheet}")
+        return _dest(t"lined-{self.year:04d}-{sheet:02d}")
+
     @classmethod
     def from_mapping(cls, data: TomlTable) -> Spec:
         daily = data.get("daily")
@@ -639,6 +654,8 @@ class Spec:
         steno_table = steno if isinstance(steno, dict) else {}
         dotgrid = data.get("dotgrid")
         dotgrid_table = dotgrid if isinstance(dotgrid, dict) else {}
+        lined = data.get("lined")
+        lined_table = lined if isinstance(lined, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
@@ -678,6 +695,7 @@ class Spec:
             dotgrid_sheets=int(
                 dotgrid_table.get("sheets", data.get("dotgrid_sheets", 0))
             ),
+            lined_sheets=int(lined_table.get("sheets", data.get("lined_sheets", 0))),
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
             my_100=_parse_bool(data.get("my_100", False), "my_100"),
@@ -736,6 +754,7 @@ class Spec:
             "engineering": {"sheets": self.engineering_sheets},
             "steno": {"sheets": self.steno_sheets},
             "dotgrid": {"sheets": self.dotgrid_sheets},
+            "lined": {"sheets": self.lined_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
@@ -803,6 +822,9 @@ class Spec:
                 "",
                 "[dotgrid]",
                 f"sheets = {self.dotgrid_sheets}",
+                "",
+                "[lined]",
+                f"sheets = {self.lined_sheets}",
                 "",
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",

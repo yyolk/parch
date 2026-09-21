@@ -14,6 +14,7 @@ from parch.components import (
     FavoritesPage,
     FutureLogPage,
     HabitGrid,
+    LinedPad,
     MeetingAgenda,
     MeetingIndex,
     MonthGrid,
@@ -59,6 +60,7 @@ from parch.layouts.planner.painters import (
     paint_future_log,
     paint_habit_grid,
     paint_header,
+    paint_lined_page,
     paint_meeting,
     paint_meetings_index,
     paint_month_grid,
@@ -125,6 +127,8 @@ class PlannerLayout:
                 paint_dotgrid_page(
                     plotter, device, _one(page, DotGridPad), ramp=self.ramp
                 )
+            case "lined":
+                paint_lined_page(plotter, device, _one(page, LinedPad), ramp=self.ramp)
             case _:
                 paint_header(
                     plotter,

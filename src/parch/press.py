@@ -9,6 +9,7 @@ from parch import ConfigError
 from parch.books import Book, book_for, plot_pages
 from parch.devices import get_device
 from parch.dotgrid import dotgrid_pages
+from parch.lined import lined_pages
 from parch.fonts import (
     PROOF_PROFILE,
     ProofProfile,
@@ -91,6 +92,10 @@ def press(
     ``steno_sheets`` or ``dotgrid_sheets`` raises ``ConfigError``.
     Combining ``dot-grid-notebook`` with ``engineering_sheets`` or
     ``steno_sheets`` also raises ``ConfigError``.
+    ``lined_sheets`` on year-planner with no other pad counts presses
+    ``lined_pages`` alone — no cover. Mixing lined with engineering /
+    steno / dotgrid on year-planner is a follow-up (existing P5
+    compose is unchanged). Exclusive notebooks reject ``lined_sheets``.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -136,6 +141,15 @@ def press(
     elif spec.book == "year-planner" and spec.dotgrid_sheets > 0:
         plot_pages(
             lambda: dotgrid_pages(spec),
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.book == "year-planner" and spec.lined_sheets > 0:
+        plot_pages(
+            lambda: lined_pages(spec),
             plotter,
             ramp=resolved,
             device=spec.device,
