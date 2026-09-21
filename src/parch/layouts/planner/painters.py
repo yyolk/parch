@@ -3016,7 +3016,7 @@ def strip_active(kind: str) -> str:
             return "Task"
         case "review_index" | "review":
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid":
+        case "pad":
             return ""
         case "bujo_key":
             return "Key"

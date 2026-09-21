@@ -42,9 +42,7 @@ _EXCLUDED_KINDS = frozenset(
         "task",
         "review",
         "habits",
-        "engineering_front",
-        "engineering_back",
-        "steno",
+        "pad",
         "monthly_tasks",
         "rapid_log",
     }

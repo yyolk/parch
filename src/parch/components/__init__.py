@@ -37,6 +37,8 @@ from parch.components.steno import StenoPad
 from parch.components.tasks import TasksIndex, TasksMonthBand, TasksWeekPage, TaskWeek
 from parch.components.week import WeekDay, WeekStrip
 
+type PadComponent = EngineeringPad | StenoPad | DotGridPad
+
 type Component = (
     AnnualGrid
     | AnnualMonth
@@ -108,6 +110,7 @@ __all__ = [
     "MonthWeek",
     "My100Page",
     "Notes",
+    "PadComponent",
     "Priorities",
     "ProjectTicket",
     "ProjectsBoard",

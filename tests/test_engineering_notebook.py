@@ -22,10 +22,10 @@ def test_engineering_notebook_is_cover_then_duplex_pads():
     pages = EngineeringNotebook().pages(spec)
     assert [page.kind for page in pages] == [
         "cover",
-        "engineering_front",
-        "engineering_back",
-        "engineering_front",
-        "engineering_back",
+        "pad",
+        "pad",
+        "pad",
+        "pad",
     ]
     assert len(pages) == 1 + 2 * spec.engineering_sheets
 

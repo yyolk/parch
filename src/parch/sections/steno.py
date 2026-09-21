@@ -19,7 +19,7 @@ class StenoPadSection:
             built.append(
                 Page(
                     dest=spec.dest_for_steno_pad(sheet),
-                    kind="steno",
+                    kind="pad",
                     title="Steno",
                     nav=(),
                     components=(StenoPad(sheet=sheet, sheets=sheets),),

@@ -43,7 +43,7 @@ def _dots(plotter: RecordingPlotter) -> list[tuple]:
 def test_dotgrid_pages_emits_one_page_per_sheet():
     spec = Spec(dotgrid_sheets=2)
     pages = dotgrid_pages(spec)
-    assert [page.kind for page in pages] == ["dotgrid", "dotgrid"]
+    assert [page.kind for page in pages] == ["pad", "pad"]
     assert [page.dest for page in pages] == ["dotgrid-2026-01", "dotgrid-2026-02"]
     first = pages[0].components[0]
     assert isinstance(first, DotGridPad)

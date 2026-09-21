@@ -105,8 +105,8 @@ def test_engineering_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     spec = Spec(engineering_sheets=1)
     press(spec, tmp_path / "pad.pdf", plotter=RecordingPlotter())
     assert ticks == [
-        (1, 2, "engineering_front"),
-        (2, 2, "engineering_back"),
+        (1, 2, "pad"),
+        (2, 2, "pad"),
     ]
 
 
@@ -119,8 +119,8 @@ def test_steno_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     spec = Spec(steno_sheets=2)
     press(spec, tmp_path / "steno.pdf", plotter=RecordingPlotter())
     assert ticks == [
-        (1, 2, "steno"),
-        (2, 2, "steno"),
+        (1, 2, "pad"),
+        (2, 2, "pad"),
     ]
 
 
@@ -133,8 +133,8 @@ def test_dotgrid_pad_press_ticks_each_sheet(tmp_path: Path, monkeypatch):
     spec = Spec(dotgrid_sheets=2)
     press(spec, tmp_path / "dotgrid.pdf", plotter=RecordingPlotter())
     assert ticks == [
-        (1, 2, "dotgrid"),
-        (2, 2, "dotgrid"),
+        (1, 2, "pad"),
+        (2, 2, "pad"),
     ]
 
 
@@ -147,9 +147,9 @@ def test_both_pads_press_ticks_engineering_then_steno(tmp_path: Path, monkeypatc
     spec = Spec(engineering_sheets=1, steno_sheets=1)
     press(spec, tmp_path / "pads.pdf", plotter=RecordingPlotter())
     assert ticks == [
-        (1, 3, "engineering_front"),
-        (2, 3, "engineering_back"),
-        (3, 3, "steno"),
+        (1, 3, "pad"),
+        (2, 3, "pad"),
+        (3, 3, "pad"),
     ]
 
 
@@ -164,10 +164,10 @@ def test_pads_and_dotgrid_press_ticks_engineering_steno_then_dots(
     spec = Spec(engineering_sheets=1, steno_sheets=1, dotgrid_sheets=1)
     press(spec, tmp_path / "pads.pdf", plotter=RecordingPlotter())
     assert ticks == [
-        (1, 4, "engineering_front"),
-        (2, 4, "engineering_back"),
-        (3, 4, "steno"),
-        (4, 4, "dotgrid"),
+        (1, 4, "pad"),
+        (2, 4, "pad"),
+        (3, 4, "pad"),
+        (4, 4, "pad"),
     ]
 
 

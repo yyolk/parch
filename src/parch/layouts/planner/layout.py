@@ -1,5 +1,7 @@
 """Planner layout: device chrome + seat, then painters."""
 
+from typing import assert_never
+
 from parch.calendar import quarter_of, short_date_range
 from parch.components import (
     AnnualGrid,
@@ -21,6 +23,7 @@ from parch.components import (
     MonthlyTaskWell,
     My100Page,
     Notes,
+    PadComponent,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -82,7 +85,7 @@ from parch.layouts.planner.painters import (
     well_rect,
 )
 from parch.plotter.protocol import Plotter
-from parch.sections.page import Page
+from parch.sections.page import ChromeKind, Page
 
 __all__ = [
     "COL_GAP",
@@ -113,18 +116,17 @@ class PlannerLayout:
     def paint(self, page: Page, plotter: Plotter, device: Device) -> None:
         plotter.ramp = self.ramp
         match page.kind:
+            case "pad":
+                self._paint_pad(page, plotter, device)
+            case chrome:
+                self._paint_chrome(page, plotter, device, chrome)
+
+    def _paint_chrome(
+        self, page: Page, plotter: Plotter, device: Device, kind: ChromeKind
+    ) -> None:
+        match kind:
             case "cover":
                 paint_cover(plotter, device, _one(page, CoverTitle), ramp=self.ramp)
-            case "engineering_front" | "engineering_back":
-                paint_engineering_pad(
-                    plotter, device, _one(page, EngineeringPad), ramp=self.ramp
-                )
-            case "steno":
-                paint_steno_pad(plotter, device, _one(page, StenoPad), ramp=self.ramp)
-            case "dotgrid":
-                paint_dotgrid_page(
-                    plotter, device, _one(page, DotGridPad), ramp=self.ramp
-                )
             case _:
                 paint_header(
                     plotter,
@@ -144,11 +146,24 @@ class PlannerLayout:
                     ramp=self.ramp,
                 )
                 well = well_rect(device)
-                self._paint_well(page, plotter, well)
+                self._paint_well(page, plotter, well, kind)
 
-    def _paint_well(self, page: Page, plotter: Plotter, well: Rect) -> None:
+    def _paint_pad(self, page: Page, plotter: Plotter, device: Device) -> None:
+        match _pad_face(page):
+            case EngineeringPad() as pad:
+                paint_engineering_pad(plotter, device, pad, ramp=self.ramp)
+            case StenoPad() as pad:
+                paint_steno_pad(plotter, device, pad, ramp=self.ramp)
+            case DotGridPad() as pad:
+                paint_dotgrid_page(plotter, device, pad, ramp=self.ramp)
+            case _ as unreachable:
+                assert_never(unreachable)
+
+    def _paint_well(
+        self, page: Page, plotter: Plotter, well: Rect, kind: ChromeKind
+    ) -> None:
         ramp = self.ramp
-        match page.kind:
+        match kind:
             case "annual":
                 paint_annual(plotter, well, _one(page, AnnualGrid), ramp=ramp)
             case "favorites":
@@ -213,8 +228,10 @@ class PlannerLayout:
                 paint_rapid_log(plotter, well, _one(page, RapidLogPage), ramp=ramp)
             case "collection":
                 paint_collection(plotter, well, _one(page, CollectionLeaf), ramp=ramp)
-            case _:
-                raise ValueError(f"unknown page kind {page.kind!r}")
+            case "cover":
+                raise ValueError("cover has no well")
+            case _ as unreachable:
+                assert_never(unreachable)
 
 
 def _header_meta(page: Page) -> str:
@@ -343,3 +360,10 @@ def _one[T](page: Page, typ: type[T]) -> T:
         if isinstance(item, typ):
             return item
     raise TypeError(f"{page.kind} page missing {typ.__name__}")
+
+
+def _pad_face(page: Page) -> PadComponent:
+    for item in page.components:
+        if isinstance(item, EngineeringPad | StenoPad | DotGridPad):
+            return item
+    raise TypeError(f"{page.kind} page missing PadComponent")

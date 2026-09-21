@@ -34,7 +34,7 @@ def _lines(plotter: RecordingPlotter) -> list[tuple]:
 def test_section_emits_one_page_per_sheet():
     spec = Spec(steno_sheets=2)
     pages = StenoPadSection(spec).pages()
-    assert [page.kind for page in pages] == ["steno", "steno"]
+    assert [page.kind for page in pages] == ["pad", "pad"]
     assert [page.dest for page in pages] == ["steno-2026-01", "steno-2026-02"]
     first = pages[0].components[0]
     assert isinstance(first, StenoPad)

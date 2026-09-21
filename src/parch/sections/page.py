@@ -1,11 +1,16 @@
-"""Page is what a section builds. Layout seats it; painters ink it."""
+"""Page is what a section builds. Layout seats it; painters ink it.
+
+ChromeKind stays a closed planner/bujo set. Pads share one PageKind
+member (``pad``); the face is the closed PadComponent union, so a new
+pad does not grow PageKind.
+"""
 
 from dataclasses import dataclass
 from typing import Literal
 
 from parch.components import Component
 
-type PageKind = Literal[
+type ChromeKind = Literal[
     "cover",
     "annual",
     "favorites",
@@ -25,10 +30,6 @@ type PageKind = Literal[
     "weekly",
     "daily",
     "daily_notes",
-    "engineering_front",
-    "engineering_back",
-    "steno",
-    "dotgrid",
     "bujo_key",
     "bujo_index",
     "future_log",
@@ -37,6 +38,8 @@ type PageKind = Literal[
     "rapid_log",
     "collection",
 ]
+
+type PageKind = ChromeKind | Literal["pad"]
 
 
 @dataclass(frozen=True, slots=True)

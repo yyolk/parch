@@ -40,12 +40,7 @@ def _lines(plotter: RecordingPlotter) -> list[tuple]:
 def test_section_emits_duplex_pair_per_sheet():
     spec = Spec(engineering_sheets=2)
     pages = EngineeringPadSection(spec).pages()
-    assert [page.kind for page in pages] == [
-        "engineering_front",
-        "engineering_back",
-        "engineering_front",
-        "engineering_back",
-    ]
+    assert [page.kind for page in pages] == ["pad", "pad", "pad", "pad"]
     assert [page.dest for page in pages] == [
         "engineering-2026-01-front",
         "engineering-2026-01-back",
