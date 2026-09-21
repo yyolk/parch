@@ -36,6 +36,7 @@ def write_starter(path: Path, *, force: bool = False, spec: Spec | None = None) 
     """Write ``starter_toml`` to ``path``. Refuses to clobber unless ``force``."""
     if path.exists() and not force:
         raise ConfigError(f"{path} exists (pass --force to overwrite)")
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(starter_toml(spec), encoding="utf-8")
     return path
 
