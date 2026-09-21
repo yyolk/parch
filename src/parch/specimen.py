@@ -21,6 +21,7 @@ from pathlib import Path
 from parch import ConfigError
 from parch.books.bullet_journal import BulletJournal
 from parch.books.dot_grid_notebook import DotGridNotebook
+from parch.books.lined_notebook import LinedNotebook
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
@@ -71,6 +72,9 @@ DOTGRID_STEMS = ("dotgrid",)
 # Pad-only full-bleed lined sheet (lined_sheets=1).
 LINED_STEMS = ("lined",)
 
+# Lined notebook — cover + one full-bleed lined page (sibling dests).
+LINED_NOTEBOOK_STEMS = ("lined-cover", "lined-page")
+
 # Dot-grid notebook — cover + one full-bleed clone-dot page (sibling dests).
 DOTGRID_NOTEBOOK_STEMS = ("dotgrid-cover", "dotgrid-page")
 
@@ -94,6 +98,7 @@ def gallery_groups(
         ("projects-notebook", "Projects notebook", PROJECTS_STEMS),
         ("bullet-journal", "Bullet Journal", BUJO_STEMS),
         ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
+        ("lined-notebook", "Lined notebook", LINED_NOTEBOOK_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
         ("dotgrid-pad", "Dot grid pad", DOTGRID_STEMS),
         ("lined-pad", "Lined pad", LINED_STEMS),
@@ -154,6 +159,16 @@ def lined_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """One full-bleed lined sheet for the catalog."""
     return replace(
         specimen_spec(device_id, year=year), lined_sheets=1, title="Lined pad"
+    )
+
+
+def lined_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Lined notebook press for catalog cover + one lined page."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="lined-notebook",
+        title="Lined",
+        lined_sheets=1,
     )
 
 
@@ -228,6 +243,14 @@ def lined_dests(spec: Spec) -> dict[str, str]:
     return {"lined": spec.dest_for_lined_pad(1)}
 
 
+def lined_notebook_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each lined-notebook catalog stem."""
+    return {
+        "lined-cover": spec.cover_dest,
+        "lined-page": spec.dest_for_lined_pad(1),
+    }
+
+
 def bujo_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each bullet-journal catalog stem."""
     return {
@@ -294,6 +317,13 @@ def lined_page_numbers(
 ) -> dict[str, int]:
     """1-based page numbers from the pad-only lined walk."""
     return _page_numbers(lined_pages(spec), lined_dests(spec), stems)
+
+
+def lined_notebook_page_numbers(
+    spec: Spec, stems: Sequence[str] = LINED_NOTEBOOK_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the lined-notebook walk."""
+    return _page_numbers(LinedNotebook().pages(spec), lined_notebook_dests(spec), stems)
 
 
 def bujo_page_numbers(spec: Spec, stems: Sequence[str] = BUJO_STEMS) -> dict[str, int]:
@@ -556,6 +586,15 @@ def write_specimens(
             dest,
             dotgrid_notebook_page_numbers(notebook_spec),
             DOTGRID_NOTEBOOK_STEMS,
+        )
+        lined_notebook_spec = lined_notebook_specimen_spec(device_id, year=year)
+        lined_notebook_pdf = Path(tmp) / "lined-notebook.pdf"
+        press(lined_notebook_spec, lined_notebook_pdf, proof=True)
+        _render_stems(
+            lined_notebook_pdf,
+            dest,
+            lined_notebook_page_numbers(lined_notebook_spec),
+            LINED_NOTEBOOK_STEMS,
         )
         steno_spec = steno_specimen_spec(device_id, year=year)
         steno_pdf = Path(tmp) / "steno-pad.pdf"

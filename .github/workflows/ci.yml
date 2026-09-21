@@ -71,6 +71,8 @@ jobs:
             test -s out/specimens/$device/lined.png
             test -s out/specimens/$device/dotgrid-cover.png
             test -s out/specimens/$device/dotgrid-page.png
+            test -s out/specimens/$device/lined-cover.png
+            test -s out/specimens/$device/lined-page.png
             test -s out/specimens/$device/engineering-cover.png
             test -s out/specimens/$device/favorites.png
             test -s out/specimens/$device/my-100.png
@@ -86,6 +88,8 @@ jobs:
             grep -q 'src="lined.png"' out/specimens/$device/index.html
             grep -q 'src="dotgrid-cover.png"' out/specimens/$device/index.html
             grep -q 'src="dotgrid-page.png"' out/specimens/$device/index.html
+            grep -q 'src="lined-cover.png"' out/specimens/$device/index.html
+            grep -q 'src="lined-page.png"' out/specimens/$device/index.html
             grep -q 'src="favorites.png"' out/specimens/$device/index.html
             grep -q 'src="my-100.png"' out/specimens/$device/index.html
             grep -q 'src="checkoff-365.png"' out/specimens/$device/index.html
@@ -97,6 +101,7 @@ jobs:
             grep -q 'id="projects-notebook"' out/specimens/$device/index.html
             grep -q 'id="bullet-journal"' out/specimens/$device/index.html
             grep -q 'id="dot-grid-notebook"' out/specimens/$device/index.html
+            grep -q 'id="lined-notebook"' out/specimens/$device/index.html
             grep -q 'id="steno-pad"' out/specimens/$device/index.html
             grep -q 'id="dotgrid-pad"' out/specimens/$device/index.html
             grep -q 'id="lined-pad"' out/specimens/$device/index.html
@@ -107,6 +112,7 @@ jobs:
             grep -q '<h2>Projects notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Bullet Journal</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dot grid notebook</h2>' out/specimens/$device/index.html
+            grep -q '<h2>Lined notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dot grid pad</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined pad</h2>' out/specimens/$device/index.html
             grep -q "github.com/.*/commit/" out/specimens/$device/index.html
