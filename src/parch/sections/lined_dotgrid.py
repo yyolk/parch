@@ -1,4 +1,4 @@
-"""Duplex lined/dot-grid pad — one front + one back page per sheet."""
+"""Duplex lined/dotgrid pad — one front + one back page per sheet."""
 
 from typing import Literal
 
@@ -7,26 +7,26 @@ from parch.components.lined import LinedPad
 from parch.sections.page import Page, PageKind
 from parch.spec import Spec
 
-type PairOrder = Literal["lined-dot-grid", "dot-grid-lined"]
+type PairOrder = Literal["lined-dotgrid", "dotgrid-lined"]
 
 
 class LinedDotGridPadSection:
     """Emit duplex pair faces. Front kind is the first name token."""
 
-    def __init__(self, spec: Spec, order: PairOrder = "lined-dot-grid") -> None:
+    def __init__(self, spec: Spec, order: PairOrder = "lined-dotgrid") -> None:
         self.spec = spec
         self.order = order
 
     def pages(self) -> list[Page]:
         spec = self.spec
         sheets = (
-            spec.lined_dot_grid_sheets
-            if self.order == "lined-dot-grid"
-            else spec.dot_grid_lined_sheets
+            spec.lined_dotgrid_sheets
+            if self.order == "lined-dotgrid"
+            else spec.dotgrid_lined_sheets
         )
         front_kind, back_kind = (
             ("lined", "dotgrid")
-            if self.order == "lined-dot-grid"
+            if self.order == "lined-dotgrid"
             else ("dotgrid", "lined")
         )
         built: list[Page] = []

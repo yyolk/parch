@@ -11,8 +11,8 @@ from parch.spec import Spec
 
 def test_notebook_is_cover_then_one_duplex_section():
     spec = Spec(
-        book="lined-dot-grid-mix-notebook",
-        lined_dot_grid_sheets=2,
+        book="lined-dotgrid-mix-notebook",
+        lined_dotgrid_sheets=2,
         title="Lined / Dot grid",
     )
     pages = LinedDotGridNotebook().pages(spec)
@@ -23,11 +23,11 @@ def test_notebook_is_cover_then_one_duplex_section():
         "lined",
         "dotgrid",
     ]
-    assert len(pages) == 1 + 2 * spec.lined_dot_grid_sheets
+    assert len(pages) == 1 + 2 * spec.lined_dotgrid_sheets
 
     cover = pages[0].components[0]
     assert isinstance(cover, CoverTitle)
-    assert cover.cta_dest == spec.dest_for_duplex_pair_pad("lined-dot-grid", 1, "front")
+    assert cover.cta_dest == spec.dest_for_duplex_pair_pad("lined-dotgrid", 1, "front")
     assert cover.display_title == "Lined / Dot grid"
     assert cover.specs_lead == ""
 
@@ -42,18 +42,18 @@ def test_notebook_is_cover_then_one_duplex_section():
 
 
 def test_flip_only_cover_lands_on_dotgrid_front():
-    spec = Spec(book="lined-dot-grid-mix-notebook", dot_grid_lined_sheets=1)
+    spec = Spec(book="lined-dotgrid-mix-notebook", dotgrid_lined_sheets=1)
     pages = LinedDotGridNotebook().pages(spec)
     assert [page.kind for page in pages] == ["cover", "dotgrid", "lined"]
     cover = pages[0].components[0]
-    assert cover.cta_dest == spec.dest_for_duplex_pair_pad("dot-grid-lined", 1, "front")
+    assert cover.cta_dest == spec.dest_for_duplex_pair_pad("dotgrid-lined", 1, "front")
 
 
 def test_press_selects_mix_notebook_from_toml(tmp_path: Path):
-    spec = Spec.from_path(Path("examples/lined-dot-grid-mix-notebook.toml"))
-    assert spec.book == "lined-dot-grid-mix-notebook"
-    assert spec.lined_dot_grid_sheets == 6
-    assert spec.dot_grid_lined_sheets == 0
+    spec = Spec.from_path(Path("examples/lined-dotgrid-mix-notebook.toml"))
+    assert spec.book == "lined-dotgrid-mix-notebook"
+    assert spec.lined_dotgrid_sheets == 6
+    assert spec.dotgrid_lined_sheets == 0
     assert spec.lined_sheets == 0
     assert spec.dotgrid_sheets == 0
     assert spec.device == "supernote-nomad"
@@ -61,12 +61,12 @@ def test_press_selects_mix_notebook_from_toml(tmp_path: Path):
     assert spec.outline is True
     assert book_for(spec.book) is LinedDotGridNotebook
 
-    out = tmp_path / "lined-dot-grid-mix-notebook.pdf"
+    out = tmp_path / "lined-dotgrid-mix-notebook.pdf"
     press(spec, out)
     dests = {str(key).lstrip("/") for key in (PdfReader(out).named_destinations or {})}
     assert "cover" in dests
-    assert spec.dest_for_duplex_pair_pad("lined-dot-grid", 1, "front") in dests
-    assert spec.dest_for_duplex_pair_pad("lined-dot-grid", 6, "back") in dests
+    assert spec.dest_for_duplex_pair_pad("lined-dotgrid", 1, "front") in dests
+    assert spec.dest_for_duplex_pair_pad("lined-dotgrid", 6, "back") in dests
     assert spec.year_dest not in dests
     assert spec.cover_dest in dests
-    assert len(PdfReader(out).pages) == 1 + 2 * spec.lined_dot_grid_sheets
+    assert len(PdfReader(out).pages) == 1 + 2 * spec.lined_dotgrid_sheets

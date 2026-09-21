@@ -76,7 +76,7 @@ LINED_STEMS = ("lined",)
 # Lined notebook — cover + one full-bleed lined page (sibling dests).
 LINED_NOTEBOOK_STEMS = ("lined-cover", "lined-page")
 
-# Lined / dot-grid notebook — cover + first lined + first dot-grid.
+# Lined / dotgrid notebook — cover + first lined + first dotgrid.
 LINED_DOTGRID_NOTEBOOK_STEMS = (
     "lined-dotgrid-cover",
     "lined-dotgrid-lined",
@@ -108,8 +108,8 @@ def gallery_groups(
         ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
         ("lined-notebook", "Lined notebook", LINED_NOTEBOOK_STEMS),
         (
-            "lined-dot-grid-mix-notebook",
-            "Lined / dot-grid mix notebook",
+            "lined-dotgrid-mix-notebook",
+            "Lined / dotgrid mix notebook",
             LINED_DOTGRID_NOTEBOOK_STEMS,
         ),
         ("steno-pad", "Steno pad", STENO_STEMS),
@@ -186,12 +186,12 @@ def lined_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
 
 
 def lined_dotgrid_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
-    """Lined / dot-grid notebook press for catalog cover + first pair."""
+    """Lined / dotgrid notebook press for catalog cover + first pair."""
     return replace(
         specimen_spec(device_id, year=year),
-        book="lined-dot-grid-mix-notebook",
+        book="lined-dotgrid-mix-notebook",
         title="Lined / Dot grid",
-        lined_dot_grid_sheets=1,
+        lined_dotgrid_sheets=1,
     )
 
 
@@ -275,14 +275,14 @@ def lined_notebook_dests(spec: Spec) -> dict[str, str]:
 
 
 def lined_dotgrid_notebook_dests(spec: Spec) -> dict[str, str]:
-    """Named dest for each lined-dot-grid-mix-notebook catalog stem."""
+    """Named dest for each lined-dotgrid-mix-notebook catalog stem."""
     return {
         "lined-dotgrid-cover": spec.cover_dest,
         "lined-dotgrid-lined": spec.dest_for_duplex_pair_pad(
-            "lined-dot-grid", 1, "front"
+            "lined-dotgrid", 1, "front"
         ),
         "lined-dotgrid-dotgrid": spec.dest_for_duplex_pair_pad(
-            "lined-dot-grid", 1, "back"
+            "lined-dotgrid", 1, "back"
         ),
     }
 
@@ -365,7 +365,7 @@ def lined_notebook_page_numbers(
 def lined_dotgrid_notebook_page_numbers(
     spec: Spec, stems: Sequence[str] = LINED_DOTGRID_NOTEBOOK_STEMS
 ) -> dict[str, int]:
-    """1-based page numbers from the lined-dot-grid-mix-notebook walk."""
+    """1-based page numbers from the lined-dotgrid-mix-notebook walk."""
     return _page_numbers(
         LinedDotGridNotebook().pages(spec),
         lined_dotgrid_notebook_dests(spec),

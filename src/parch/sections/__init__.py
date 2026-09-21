@@ -15,7 +15,7 @@ from parch.sections.daily_notes import DailyNotesSection
 from parch.sections.engineering import EngineeringPadSection
 from parch.sections.favorites import FavoritesSection
 from parch.sections.habit import HabitSection
-from parch.sections.lined_dot_grid import LinedDotGridPadSection
+from parch.sections.lined_dotgrid import LinedDotGridPadSection
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
 from parch.sections.my_100 import My100Section

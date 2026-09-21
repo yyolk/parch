@@ -1,10 +1,10 @@
-"""Lined / dot-grid mix notebook — cover → one duplex pair section."""
+"""Lined / dotgrid mix notebook — cover → one duplex pair section."""
 
 from parch.books.protocol import plot_pages
 from parch.fonts.ramp import EffectiveRamp, TypeRamp
 from parch.plotter.protocol import Plotter
 from parch.sections import CoverSection, Page
-from parch.sections.lined_dot_grid import LinedDotGridPadSection
+from parch.sections.lined_dotgrid import LinedDotGridPadSection
 from parch.spec import Spec
 
 
@@ -13,7 +13,7 @@ class LinedDotGridNotebook:
         self.ramp: TypeRamp = EffectiveRamp() if ramp is None else ramp
 
     def pages(self, spec: Spec) -> list[Page]:
-        order = "lined-dot-grid" if spec.lined_dot_grid_sheets else "dot-grid-lined"
+        order = "lined-dotgrid" if spec.lined_dotgrid_sheets else "dotgrid-lined"
         body = LinedDotGridPadSection(spec, order).pages()
         landing = body[0].dest
         return [

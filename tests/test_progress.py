@@ -188,13 +188,13 @@ def test_pads_and_dotgrid_press_ticks_engineering_steno_then_dots(
     ]
 
 
-def test_lined_dot_grid_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
+def test_lined_dotgrid_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
         "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
-    spec = Spec(lined_dot_grid_sheets=1)
+    spec = Spec(lined_dotgrid_sheets=1)
     press(spec, tmp_path / "pair.pdf", plotter=RecordingPlotter())
     assert ticks == [
         (1, 2, "lined"),
@@ -202,13 +202,13 @@ def test_lined_dot_grid_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     ]
 
 
-def test_dot_grid_lined_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
+def test_dotgrid_lined_pad_press_ticks_each_face(tmp_path: Path, monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
         "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
-    spec = Spec(dot_grid_lined_sheets=1)
+    spec = Spec(dotgrid_lined_sheets=1)
     press(spec, tmp_path / "flipped.pdf", plotter=RecordingPlotter())
     assert ticks == [
         (1, 2, "dotgrid"),
@@ -272,7 +272,7 @@ def test_lined_dotgrid_notebook_plot_ticks_each_page(monkeypatch):
         "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
-    spec = Spec(book="lined-dot-grid-mix-notebook", lined_dot_grid_sheets=2)
+    spec = Spec(book="lined-dotgrid-mix-notebook", lined_dotgrid_sheets=2)
     book = LinedDotGridNotebook()
     pages = book.pages(spec)
     book.plot(spec, RecordingPlotter())

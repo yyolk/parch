@@ -1,8 +1,0 @@
-# Duplex pair pad — no cover. Each sheet is dot-grid front + lined back.
-# Flip the name for the other front: examples/lined-dot-grid-pad.toml.
-#   parch press examples/dot-grid-lined-pad.toml -o out/dot-grid-lined-pad.pdf
-device = "supernote-nomad"
-title = "Dot grid / Lined"
-
-[dot-grid-lined]
-sheets = 1

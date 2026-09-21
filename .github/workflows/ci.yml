@@ -108,7 +108,7 @@ jobs:
             grep -q 'id="bullet-journal"' out/specimens/$device/index.html
             grep -q 'id="dot-grid-notebook"' out/specimens/$device/index.html
             grep -q 'id="lined-notebook"' out/specimens/$device/index.html
-            grep -q 'id="lined-dot-grid-mix-notebook"' out/specimens/$device/index.html
+            grep -q 'id="lined-dotgrid-mix-notebook"' out/specimens/$device/index.html
             grep -q 'id="steno-pad"' out/specimens/$device/index.html
             grep -q 'id="dotgrid-pad"' out/specimens/$device/index.html
             grep -q 'id="lined-pad"' out/specimens/$device/index.html
@@ -120,7 +120,7 @@ jobs:
             grep -q '<h2>Bullet Journal</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dot grid notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined notebook</h2>' out/specimens/$device/index.html
-            grep -q '<h2>Lined / dot-grid mix notebook</h2>' out/specimens/$device/index.html
+            grep -q '<h2>Lined / dotgrid mix notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dot grid pad</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined pad</h2>' out/specimens/$device/index.html
             grep -q "github.com/.*/commit/" out/specimens/$device/index.html
