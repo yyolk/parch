@@ -3,8 +3,16 @@ FROM mcr.microsoft.com/devcontainers/python:3.14
 
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends poppler-utils \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends poppler-utils time \
+    && rm -rf /var/lib/apt/lists/* \
+    && printf '%s\n' \
+        '# Prefer GNU time over bash reserved-word time in interactive shells.' \
+        "alias time='/usr/bin/time'" \
+        > /etc/profile.d/gnu-time.sh \
+    && printf '\n%s\n' \
+        '# GNU time: interactive non-login bash (VS Code / Codespaces terminal).' \
+        '[ -f /etc/profile.d/gnu-time.sh ] && . /etc/profile.d/gnu-time.sh' \
+        >> /etc/bash.bashrc
 COPY --from=uv /uv /uvx /usr/local/bin/
 
 # Venv lives outside the workspace so a bind-mounted repo does not hide it.
