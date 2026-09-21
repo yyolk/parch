@@ -21,12 +21,14 @@ _BOOKS = frozenset(
         "engineering-notebook",
         "dot-grid-notebook",
         "lined-notebook",
+        "lined-dotgrid-notebook",
         "bullet-journal",
     }
 )
 _BOOK_CHOICES = (
     "year-planner, projects-notebook, engineering-notebook, "
-    "bullet-journal, dot-grid-notebook, or lined-notebook"
+    "bullet-journal, dot-grid-notebook, lined-notebook, or "
+    "lined-dotgrid-notebook"
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
 _BUJO_KEYS = frozenset({"index_pages", "collections"})
@@ -353,6 +355,14 @@ class Spec:
             raise ConfigError("lined-notebook cannot set steno_sheets")
         if self.book == "lined-notebook" and self.dotgrid_sheets:
             raise ConfigError("lined-notebook cannot set dotgrid_sheets")
+        if self.book == "lined-dotgrid-notebook" and self.lined_sheets < 1:
+            raise ConfigError("lined-dotgrid-notebook requires lined_sheets >= 1")
+        if self.book == "lined-dotgrid-notebook" and self.dotgrid_sheets < 1:
+            raise ConfigError("lined-dotgrid-notebook requires dotgrid_sheets >= 1")
+        if self.book == "lined-dotgrid-notebook" and self.engineering_sheets:
+            raise ConfigError("lined-dotgrid-notebook cannot set engineering_sheets")
+        if self.book == "lined-dotgrid-notebook" and self.steno_sheets:
+            raise ConfigError("lined-dotgrid-notebook cannot set steno_sheets")
         if not self.months:
             raise ConfigError("months must not be empty")
         seen: set[int] = set()

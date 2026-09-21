@@ -8,6 +8,7 @@ from parch.books import (
     BulletJournal,
     DotGridNotebook,
     EngineeringNotebook,
+    LinedDotGridNotebook,
     LinedNotebook,
     ProjectsNotebook,
     YearPlanner,
@@ -99,6 +100,22 @@ def test_lined_notebook_outline_empty_when_enabled():
     dests = plotter.dests()
     assert spec.cover_dest in dests
     assert spec.dest_for_lined_pad(1) in dests
+
+
+def test_lined_dotgrid_notebook_outline_empty_when_enabled():
+    spec = Spec(
+        book="lined-dotgrid-notebook",
+        lined_sheets=2,
+        dotgrid_sheets=2,
+        outline=True,
+    )
+    plotter = RecordingPlotter()
+    LinedDotGridNotebook().plot(spec, plotter)
+    assert plotter.outlines() == []
+    dests = plotter.dests()
+    assert spec.cover_dest in dests
+    assert spec.dest_for_lined_pad(1) in dests
+    assert spec.dest_for_dotgrid_pad(1) in dests
 
 
 def test_projects_notebook_outlines_index_not_cover():
@@ -313,6 +330,29 @@ def test_example_lined_notebook_toml_enables_outline():
     spec = Spec.from_path(Path("examples/lined-notebook.toml"))
     assert spec.outline is True
     assert spec.book == "lined-notebook"
+
+
+def test_press_pdf_lined_dotgrid_outline_empty_when_enabled(tmp_path: Path):
+    spec = Spec(
+        book="lined-dotgrid-notebook",
+        lined_sheets=2,
+        dotgrid_sheets=2,
+        outline=True,
+    )
+    out = tmp_path / "lined-dotgrid-outline.pdf"
+    press(spec, out)
+    reader = PdfReader(out)
+    assert reader.outline == []
+    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
+    assert spec.dest_for_lined_pad(1) in dests
+    assert spec.dest_for_dotgrid_pad(1) in dests
+    assert spec.cover_dest in dests
+
+
+def test_example_lined_dotgrid_notebook_toml_enables_outline():
+    spec = Spec.from_path(Path("examples/lined-dotgrid-notebook.toml"))
+    assert spec.outline is True
+    assert spec.book == "lined-dotgrid-notebook"
 
 
 def test_bullet_journal_january_outline_hubs():

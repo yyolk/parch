@@ -2,6 +2,7 @@ from parch import ConfigError
 from parch.books.bullet_journal import BulletJournal
 from parch.books.dot_grid_notebook import DotGridNotebook
 from parch.books.engineering_notebook import EngineeringNotebook
+from parch.books.lined_dotgrid_notebook import LinedDotGridNotebook
 from parch.books.lined_notebook import LinedNotebook
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.protocol import Book, outline_entries, plot_pages
@@ -12,6 +13,7 @@ __all__ = [
     "BulletJournal",
     "DotGridNotebook",
     "EngineeringNotebook",
+    "LinedDotGridNotebook",
     "LinedNotebook",
     "ProjectsNotebook",
     "YearPlanner",
@@ -34,11 +36,14 @@ def book_for(name: str) -> type[Book]:
             return DotGridNotebook
         case "lined-notebook":
             return LinedNotebook
+        case "lined-dotgrid-notebook":
+            return LinedDotGridNotebook
         case "bullet-journal":
             return BulletJournal
         case _:
             raise ConfigError(
                 "book must be year-planner, projects-notebook, "
                 "engineering-notebook, bullet-journal, "
-                f"dot-grid-notebook, or lined-notebook, not {name!r}"
+                "dot-grid-notebook, lined-notebook, or "
+                f"lined-dotgrid-notebook, not {name!r}"
             )
