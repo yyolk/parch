@@ -1,4 +1,4 @@
-name: Dev Container image
+name: Dev Container Image
 
 on:
   push:
