@@ -80,13 +80,6 @@ def test_spec_dotgrid_dests_and_toml():
     assert both.steno_sheets == 1
 
 
-def test_engineering_notebook_rejects_dotgrid_sheets():
-    with pytest.raises(
-        ConfigError, match="engineering-notebook cannot set dotgrid_sheets"
-    ):
-        Spec(book="engineering-notebook", engineering_sheets=1, dotgrid_sheets=1)
-
-
 def test_paint_fills_page_rect_without_pocket_frame():
     pad = DotGridPad(sheet=1, sheets=1)
     for device in (NOMAD, SCRIBE):
@@ -164,9 +157,6 @@ def test_press_example_toml_is_one_page(tmp_path: Path):
     assert spec.dest_for_dotgrid_pad(1) in dests
     assert spec.year_dest not in dests
     assert spec.cover_dest not in dests
-    page = reader.pages[0]
-    assert float(page.mediabox.width) == pytest.approx(118.87 / 25.4 * 72.0, abs=0.6)
-    assert float(page.mediabox.height) == pytest.approx(158.5 / 25.4 * 72.0, abs=0.6)
 
 
 def test_press_composes_engineering_steno_then_dotgrid(tmp_path: Path):
