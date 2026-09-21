@@ -296,13 +296,13 @@ def test_lined_notebook_plot_ticks_each_page(monkeypatch):
     assert [tick[2] for tick in ticks] == [page.kind for page in pages]
 
 
-def test_dot_grid_notebook_plot_ticks_each_page(monkeypatch):
+def test_dotgrid_notebook_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
         "parch.books.protocol.render_progress",
         lambda i, n, label: ticks.append((i, n, label)),
     )
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=2)
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2)
     book = DotGridNotebook()
     pages = book.pages(spec)
     book.plot(spec, RecordingPlotter())

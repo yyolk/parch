@@ -16,7 +16,7 @@ from parch.layouts.planner.painters import (
     CLONE_DOT_PITCH,
     HEADER_H,
     RULE_C,
-    paint_dot_grid,
+    paint_dotgrid,
     paint_dotgrid_page,
 )
 from parch.plotter import RecordingPlotter
@@ -107,10 +107,10 @@ def test_paint_fills_page_rect_without_pocket_frame():
         assert _texts(ink) == []
 
 
-def test_paint_dot_grid_is_the_shared_helper():
+def test_paint_dotgrid_is_the_shared_helper():
     box = Rect(0.0, 0.0, 28.0, 14.0)
     ink = RecordingPlotter()
-    paint_dot_grid(ink, box)
+    paint_dotgrid(ink, box)
     nx = max(2, int(box.w / CLONE_DOT_PITCH))
     ny = max(2, int(box.h / CLONE_DOT_PITCH))
     assert len(_dots(ink)) == nx * ny

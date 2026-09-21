@@ -88,8 +88,8 @@ def test_engineering_omitted_title_keeps_engineering_headline():
     assert "Year Book" not in texts
 
 
-def test_dot_grid_omitted_title_keeps_dot_grid_headline():
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=1)
+def test_dotgrid_omitted_title_keeps_dotgrid_headline():
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=1)
     page, cover = _cover_page(DotGridNotebook().pages(spec))
     assert cover.display_title == "Dot grid"
     texts = _paint_texts(page)
@@ -97,8 +97,8 @@ def test_dot_grid_omitted_title_keeps_dot_grid_headline():
     assert "Year Book" not in texts
 
 
-def test_dot_grid_title_is_headline():
-    spec = Spec(book="dot-grid-notebook", dotgrid_sheets=1, title="Dots")
+def test_dotgrid_title_is_headline():
+    spec = Spec(book="dotgrid-notebook", dotgrid_sheets=1, title="Dots")
     page, cover = _cover_page(DotGridNotebook().pages(spec))
     assert cover.display_title == "Dots"
     texts = _paint_texts(page)
