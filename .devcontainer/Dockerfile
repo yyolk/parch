@@ -2,6 +2,9 @@ FROM ghcr.io/astral-sh/uv:0.12.17 AS uv
 FROM mcr.microsoft.com/devcontainers/python:3.14
 
 USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=uv /uv /uvx /usr/local/bin/
 
 # Venv lives outside the workspace so a bind-mounted repo does not hide it.
