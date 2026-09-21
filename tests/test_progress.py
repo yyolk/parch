@@ -6,6 +6,7 @@ from parch.books import (
     BulletJournal,
     DotGridNotebook,
     EngineeringNotebook,
+    LinedNotebook,
     ProjectsNotebook,
     YearPlanner,
 )
@@ -229,6 +230,21 @@ def test_engineering_notebook_plot_ticks_each_page(monkeypatch):
     )
     spec = Spec(book="engineering-notebook", engineering_sheets=1)
     book = EngineeringNotebook()
+    pages = book.pages(spec)
+    book.plot(spec, RecordingPlotter())
+    assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))
+    assert all(tick[1] == len(pages) for tick in ticks)
+    assert [tick[2] for tick in ticks] == [page.kind for page in pages]
+
+
+def test_lined_notebook_plot_ticks_each_page(monkeypatch):
+    ticks: list[tuple[int, int, str]] = []
+    monkeypatch.setattr(
+        "parch.books.protocol.render_progress",
+        lambda i, n, label: ticks.append((i, n, label)),
+    )
+    spec = Spec(book="lined-notebook", lined_sheets=2)
+    book = LinedNotebook()
     pages = book.pages(spec)
     book.plot(spec, RecordingPlotter())
     assert [tick[0] for tick in ticks] == list(range(1, len(pages) + 1))
