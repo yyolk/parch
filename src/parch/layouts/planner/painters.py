@@ -1063,13 +1063,13 @@ def paint_project(
             name_field, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK
         )
         _paint_clone_tasks(plotter, tasks)
-        _paint_clone_dot_grid(plotter, notes)
+        _paint_clone_dotgrid(plotter, notes)
         _paint_clone_icon_strip(plotter, strip)
         _paint_clone_status_track(plotter, rail)
         plotter.rect(card, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=INK)
 
 
-def paint_dot_grid(plotter: Plotter, box: Rect) -> None:
+def paint_dotgrid(plotter: Plotter, box: Rect) -> None:
     """RULE_C dots on tracks at ``CLONE_DOT_PITCH``. No pocket frame."""
     nx = max(2, int(box.w / CLONE_DOT_PITCH))
     ny = max(2, int(box.h / CLONE_DOT_PITCH))
@@ -1088,11 +1088,11 @@ def paint_dot_grid(plotter: Plotter, box: Rect) -> None:
             )
 
 
-def _paint_clone_dot_grid(plotter: Plotter, box: Rect) -> None:
+def _paint_clone_dotgrid(plotter: Plotter, box: Rect) -> None:
     """E-ink dot grid — SOFT pocket, RULE_C dots on tracks at note pitch."""
     plotter.rect(box, stroke=True, fill=False, stroke_width=HAIR, stroke_gray=SOFT)
     inset = Rect(box.x + 1.1, box.y + 1.2, box.w - 2.2, box.h - 2.4)
-    paint_dot_grid(plotter, inset)
+    paint_dotgrid(plotter, inset)
 
 
 def _paint_clone_priority(plotter: Plotter, header: Rect) -> float:
@@ -3231,7 +3231,7 @@ def paint_dotgrid_page(
 ) -> None:
     """Single-face full-bleed clone-dot page. No header, holes, or chrome."""
     _bound_ramp(plotter, ramp)
-    paint_dot_grid(plotter, device.page_rect())
+    paint_dotgrid(plotter, device.page_rect())
 
 
 def paint_lines(plotter: Plotter, box: Rect) -> None:

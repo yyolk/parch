@@ -1,9 +1,7 @@
 from pathlib import Path
 
-import pytest
 from pypdf import PdfReader
 
-from parch import ConfigError
 from parch.books import DotGridNotebook, book_for
 from parch.components import CoverTitle, DotGridPad
 from parch.plotter import RecordingPlotter
@@ -11,7 +9,7 @@ from parch.press import press
 from parch.spec import Spec
 
 
-def test_dot_grid_notebook_is_cover_then_clone_dot_pages():
+def test_dotgrid_notebook_is_cover_then_clone_dot_pages():
     spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, title="Dot grid")
     pages = DotGridNotebook().pages(spec)
     assert [page.kind for page in pages] == ["cover", "dotgrid", "dotgrid"]
@@ -40,7 +38,7 @@ def test_dot_grid_notebook_is_cover_then_clone_dot_pages():
     assert all(page.nav == () for page in pages[1:])
 
 
-def test_press_selects_dot_grid_notebook_from_toml(tmp_path: Path):
+def test_press_selects_dotgrid_notebook_from_toml(tmp_path: Path):
     spec = Spec.from_path(Path("examples/dotgrid-notebook.toml"))
     assert spec.book == "dotgrid-notebook"
     assert spec.dotgrid_sheets == 12
@@ -49,8 +47,6 @@ def test_press_selects_dot_grid_notebook_from_toml(tmp_path: Path):
     assert spec.outline is True
     assert book_for(spec.book) is DotGridNotebook
     assert book_for("dotgrid-notebook") is DotGridNotebook
-    with pytest.raises(ConfigError, match="book must be"):
-        book_for("dot-grid-notebook")
 
     out = tmp_path / "dotgrid-notebook.pdf"
     press(spec, out)

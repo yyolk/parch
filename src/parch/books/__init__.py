@@ -1,6 +1,6 @@
 from parch import ConfigError
 from parch.books.bullet_journal import BulletJournal
-from parch.books.dot_grid_notebook import DotGridNotebook
+from parch.books.dotgrid_notebook import DotGridNotebook
 from parch.books.engineering_notebook import EngineeringNotebook
 from parch.books.lined_dotgrid_notebook import LinedDotGridNotebook
 from parch.books.lined_notebook import LinedNotebook

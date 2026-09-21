@@ -82,7 +82,7 @@ def test_engineering_notebook_outline_empty_when_enabled():
     assert spec.dest_for_engineering_pad(1, "front") in dests
 
 
-def test_dot_grid_notebook_outline_empty_when_enabled():
+def test_dotgrid_notebook_outline_empty_when_enabled():
     spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, outline=True)
     plotter = RecordingPlotter()
     DotGridNotebook().plot(spec, plotter)
@@ -284,7 +284,7 @@ def test_press_pdf_engineering_outline_empty_when_enabled(tmp_path: Path):
     assert spec.cover_dest in dests
 
 
-def test_press_pdf_dot_grid_outline_empty_when_enabled(tmp_path: Path):
+def test_press_pdf_dotgrid_outline_empty_when_enabled(tmp_path: Path):
     spec = Spec(book="dotgrid-notebook", dotgrid_sheets=2, outline=True)
     out = tmp_path / "dotgrid-outline.pdf"
     press(spec, out)

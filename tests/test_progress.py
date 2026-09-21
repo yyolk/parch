@@ -296,7 +296,7 @@ def test_lined_notebook_plot_ticks_each_page(monkeypatch):
     assert [tick[2] for tick in ticks] == [page.kind for page in pages]
 
 
-def test_dot_grid_notebook_plot_ticks_each_page(monkeypatch):
+def test_dotgrid_notebook_plot_ticks_each_page(monkeypatch):
     ticks: list[tuple[int, int, str]] = []
     monkeypatch.setattr(
         "parch.books.protocol.render_progress",

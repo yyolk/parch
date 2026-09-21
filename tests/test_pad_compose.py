@@ -36,14 +36,14 @@ def test_engineering_notebook_rejects_dotgrid_sheets():
         Spec(book="engineering-notebook", engineering_sheets=1, dotgrid_sheets=1)
 
 
-def test_dot_grid_notebook_rejects_engineering_sheets():
+def test_dotgrid_notebook_rejects_engineering_sheets():
     with pytest.raises(
         ConfigError, match="dotgrid-notebook cannot set engineering_sheets"
     ):
         Spec(book="dotgrid-notebook", dotgrid_sheets=1, engineering_sheets=1)
 
 
-def test_dot_grid_notebook_rejects_steno_sheets():
+def test_dotgrid_notebook_rejects_steno_sheets():
     with pytest.raises(ConfigError, match="dotgrid-notebook cannot set steno_sheets"):
         Spec(book="dotgrid-notebook", dotgrid_sheets=1, steno_sheets=1)
 
@@ -55,7 +55,7 @@ def test_engineering_notebook_rejects_lined_sheets():
         Spec(book="engineering-notebook", engineering_sheets=1, lined_sheets=1)
 
 
-def test_dot_grid_notebook_rejects_lined_sheets():
+def test_dotgrid_notebook_rejects_lined_sheets():
     with pytest.raises(ConfigError, match="dotgrid-notebook cannot set lined_sheets"):
         Spec(book="dotgrid-notebook", dotgrid_sheets=1, lined_sheets=1)
 
