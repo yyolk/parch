@@ -11,16 +11,21 @@ from parch.press import main
 from parch.specimen import (
     BUJO_STEMS,
     CATALOG_DEVICE_IDS,
+    DOTGRID_STEMS,
     EXTRAS_STEMS,
     GALLERY_GROUPS,
     GALLERY_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
+    STENO_STEMS,
     bujo_dests,
     bujo_page_numbers,
     bujo_specimen_spec,
     catalog_dest,
     catalog_index_html,
+    dotgrid_dests,
+    dotgrid_page_numbers,
+    dotgrid_specimen_spec,
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
@@ -60,6 +65,8 @@ def test_gallery_groups_split_optional_extras():
     groups = {section_id: (title, stems) for section_id, title, stems in GALLERY_GROUPS}
     assert groups["year-planner"][0] == "Year planner"
     assert groups["optional-extras"] == ("Optional extras", EXTRAS_STEMS)
+    assert groups["steno-pad"] == ("Steno pad", STENO_STEMS)
+    assert groups["dotgrid-pad"] == ("Dot grid pad", DOTGRID_STEMS)
     year_stems = groups["year-planner"][1]
     assert year_stems == SAMPLE_STEMS
     for stem in EXTRAS_STEMS:
@@ -102,6 +109,7 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="optional-extras"') < html.index('id="engineering-notebook"')
     assert html.index('id="projects-notebook"') < html.index('id="bullet-journal"')
     assert html.index('id="bullet-journal"') < html.index('id="steno-pad"')
+    assert html.index('id="steno-pad"') < html.index('id="dotgrid-pad"')
     year_html = html[
         html.index('id="year-planner"') : html.index('id="optional-extras"')
     ]
@@ -285,6 +293,15 @@ def test_steno_dests_and_pages():
     assert numbers == {"steno": 1}
 
 
+def test_dotgrid_dests_and_pages():
+    spec = dotgrid_specimen_spec("supernote-nomad")
+    assert spec.dotgrid_sheets == 1
+    dests = dotgrid_dests(spec)
+    assert dests["dotgrid"] == spec.dest_for_dotgrid_pad(1) == "dotgrid-2026-01"
+    numbers = dotgrid_page_numbers(spec)
+    assert numbers == {"dotgrid": 1}
+
+
 def test_bujo_dests_and_pages():
     spec = bujo_specimen_spec("kindle-scribe")
     assert spec.book == "bullet-journal"
@@ -389,6 +406,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     assert any(spec.book == "projects-notebook" for spec in presses)
     assert any(spec.book == "bullet-journal" for spec in presses)
     assert any(spec.steno_sheets == 1 for spec in presses)
+    assert any(spec.dotgrid_sheets == 1 for spec in presses)
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:
         assert (dest / f"{stem}.png").is_file()
