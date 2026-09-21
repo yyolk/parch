@@ -22,6 +22,7 @@ from parch.lined import lined_pages
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
+from parch.sections.lined_dot_grid import LinedDotGridPadSection
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
 
@@ -97,9 +98,12 @@ def press(
     steno / dotgrid on year-planner raises ``ConfigError`` (P5
     compose without lined is unchanged). ``book = "lined-notebook"``
     presses cover + lined pages through ``Book``. Exclusive notebooks
-    reject mixed pad counts. ``book = "lined-dotgrid-notebook"``
-    prefixes cover then interleaves ``lined_pages`` and
-    ``dotgrid_pages`` (lined starts).
+    reject mixed pad counts. ``book = "lined-dot-grid-mix-notebook"``
+    (alias ``lined-dotgrid-notebook``) prefixes cover then interleaves
+    ``lined_pages`` and ``dotgrid_pages`` (lined starts) — zip, not
+    duplex. ``lined_dot_grid_sheets`` / ``dot_grid_lined_sheets`` on
+    year-planner press one duplex pair type (front/back per sheet, name
+    is front then back) — no cover, no mix-book walk.
     """
     device = get_device(spec.device, top_clearance=spec.top_clearance)
     resolved = bind_ramp(
@@ -154,6 +158,24 @@ def press(
     elif spec.book == "year-planner" and spec.lined_sheets > 0:
         plot_pages(
             lambda: lined_pages(spec),
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.book == "year-planner" and spec.lined_dot_grid_sheets > 0:
+        plot_pages(
+            lambda: LinedDotGridPadSection(spec).pages(),
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.book == "year-planner" and spec.dot_grid_lined_sheets > 0:
+        plot_pages(
+            lambda: LinedDotGridPadSection(spec, order="dot-grid-lined").pages(),
             plotter,
             ramp=resolved,
             device=spec.device,

@@ -104,7 +104,7 @@ def test_lined_notebook_outline_empty_when_enabled():
 
 def test_lined_dotgrid_notebook_outline_empty_when_enabled():
     spec = Spec(
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         lined_sheets=2,
         dotgrid_sheets=2,
         outline=True,
@@ -334,7 +334,7 @@ def test_example_lined_notebook_toml_enables_outline():
 
 def test_press_pdf_lined_dotgrid_outline_empty_when_enabled(tmp_path: Path):
     spec = Spec(
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         lined_sheets=2,
         dotgrid_sheets=2,
         outline=True,
@@ -350,9 +350,9 @@ def test_press_pdf_lined_dotgrid_outline_empty_when_enabled(tmp_path: Path):
 
 
 def test_example_lined_dotgrid_notebook_toml_enables_outline():
-    spec = Spec.from_path(Path("examples/lined-dotgrid-notebook.toml"))
+    spec = Spec.from_path(Path("examples/lined-dot-grid-mix-notebook.toml"))
     assert spec.outline is True
-    assert spec.book == "lined-dotgrid-notebook"
+    assert spec.book == "lined-dot-grid-mix-notebook"
 
 
 def test_bullet_journal_january_outline_hubs():

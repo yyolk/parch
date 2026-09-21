@@ -12,7 +12,7 @@ from parch.spec import Spec
 
 def test_alternation_is_lined_then_dotgrid_and_reuses_helpers():
     spec = Spec(
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         lined_sheets=2,
         dotgrid_sheets=2,
     )
@@ -30,7 +30,7 @@ def test_alternation_is_lined_then_dotgrid_and_reuses_helpers():
 
 def test_alternation_appends_leftover_when_counts_differ():
     spec = Spec(
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         lined_sheets=3,
         dotgrid_sheets=1,
     )
@@ -41,7 +41,7 @@ def test_alternation_appends_leftover_when_counts_differ():
 
 def test_lined_dotgrid_notebook_is_cover_then_alternating_pages():
     spec = Spec(
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         lined_sheets=2,
         dotgrid_sheets=2,
         title="Lined / Dot grid",
@@ -72,9 +72,16 @@ def test_lined_dotgrid_notebook_is_cover_then_alternating_pages():
     assert all(page.nav == () for page in pages[1:])
 
 
+def test_alias_lined_dotgrid_notebook_is_the_mix_book():
+    spec = Spec(book="lined-dotgrid-notebook", lined_sheets=1, dotgrid_sheets=1)
+    assert spec.book == "lined-dot-grid-mix-notebook"
+    assert book_for("lined-dotgrid-notebook") is LinedDotGridNotebook
+    assert book_for("lined-dot-grid-mix-notebook") is LinedDotGridNotebook
+
+
 def test_press_selects_lined_dotgrid_notebook_from_toml(tmp_path: Path):
-    spec = Spec.from_path(Path("examples/lined-dotgrid-notebook.toml"))
-    assert spec.book == "lined-dotgrid-notebook"
+    spec = Spec.from_path(Path("examples/lined-dot-grid-mix-notebook.toml"))
+    assert spec.book == "lined-dot-grid-mix-notebook"
     assert spec.lined_sheets == 6
     assert spec.dotgrid_sheets == 6
     assert spec.device == "supernote-nomad"
@@ -82,7 +89,7 @@ def test_press_selects_lined_dotgrid_notebook_from_toml(tmp_path: Path):
     assert spec.outline is True
     assert book_for(spec.book) is LinedDotGridNotebook
 
-    out = tmp_path / "lined-dotgrid-notebook.pdf"
+    out = tmp_path / "lined-dot-grid-mix-notebook.pdf"
     press(spec, out)
     dests = {str(key).lstrip("/") for key in (PdfReader(out).named_destinations or {})}
     assert "cover" in dests

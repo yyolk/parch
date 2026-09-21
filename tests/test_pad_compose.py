@@ -79,10 +79,10 @@ def test_lined_notebook_rejects_dotgrid_sheets():
 
 def test_lined_dotgrid_notebook_rejects_engineering_sheets():
     with pytest.raises(
-        ConfigError, match="lined-dotgrid-notebook cannot set engineering_sheets"
+        ConfigError, match="lined-dot-grid-mix-notebook cannot set engineering_sheets"
     ):
         Spec(
-            book="lined-dotgrid-notebook",
+            book="lined-dot-grid-mix-notebook",
             lined_sheets=1,
             dotgrid_sheets=1,
             engineering_sheets=1,
@@ -91,14 +91,44 @@ def test_lined_dotgrid_notebook_rejects_engineering_sheets():
 
 def test_lined_dotgrid_notebook_rejects_steno_sheets():
     with pytest.raises(
-        ConfigError, match="lined-dotgrid-notebook cannot set steno_sheets"
+        ConfigError, match="lined-dot-grid-mix-notebook cannot set steno_sheets"
     ):
         Spec(
-            book="lined-dotgrid-notebook",
+            book="lined-dot-grid-mix-notebook",
             lined_sheets=1,
             dotgrid_sheets=1,
             steno_sheets=1,
         )
+
+
+def test_lined_dotgrid_mix_notebook_rejects_duplex_pair_sheets():
+    with pytest.raises(
+        ConfigError,
+        match="lined-dot-grid-mix-notebook cannot set lined_dot_grid_sheets",
+    ):
+        Spec(
+            book="lined-dot-grid-mix-notebook",
+            lined_sheets=1,
+            dotgrid_sheets=1,
+            lined_dot_grid_sheets=1,
+        )
+    with pytest.raises(
+        ConfigError,
+        match="lined-dot-grid-mix-notebook cannot set dot_grid_lined_sheets",
+    ):
+        Spec(
+            book="lined-dot-grid-mix-notebook",
+            lined_sheets=1,
+            dotgrid_sheets=1,
+            dot_grid_lined_sheets=1,
+        )
+
+
+def test_engineering_notebook_rejects_duplex_pair_sheets():
+    with pytest.raises(
+        ConfigError, match="engineering-notebook cannot set lined_dot_grid_sheets"
+    ):
+        Spec(book="engineering-notebook", engineering_sheets=1, lined_dot_grid_sheets=1)
 
 
 def test_press_both_pads_is_engineering_then_steno(tmp_path: Path):

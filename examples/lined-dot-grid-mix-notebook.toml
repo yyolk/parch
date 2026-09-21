@@ -1,0 +1,17 @@
+# Lined / dot-grid mix notebook — cover, then lined, dot, lined, dot, …
+# Single-sided zip via lined_sheets + dotgrid_sheets (lined starts).
+# Not duplex: examples/lined-dot-grid-pad.toml (lined front, dot-grid back).
+# Alias book id ``lined-dotgrid-notebook`` still loads this mix book.
+#   parch press examples/lined-dot-grid-mix-notebook.toml -o out/lined-dot-grid-mix-notebook.pdf
+book = "lined-dot-grid-mix-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Lined / Dot grid"
+# Reader sidebar outline (bookmarks). Cover and pad faces are skipped. Default is false.
+outline = true
+
+[lined]
+sheets = 6
+
+[dotgrid]
+sheets = 6

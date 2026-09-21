@@ -108,8 +108,8 @@ def gallery_groups(
         ("dot-grid-notebook", "Dot grid notebook", DOTGRID_NOTEBOOK_STEMS),
         ("lined-notebook", "Lined notebook", LINED_NOTEBOOK_STEMS),
         (
-            "lined-dotgrid-notebook",
-            "Lined / dot-grid notebook",
+            "lined-dot-grid-mix-notebook",
+            "Lined / dot-grid mix notebook",
             LINED_DOTGRID_NOTEBOOK_STEMS,
         ),
         ("steno-pad", "Steno pad", STENO_STEMS),
@@ -189,7 +189,7 @@ def lined_dotgrid_notebook_specimen_spec(device_id: str, *, year: int = 2026) ->
     """Lined / dot-grid notebook press for catalog cover + first pair."""
     return replace(
         specimen_spec(device_id, year=year),
-        book="lined-dotgrid-notebook",
+        book="lined-dot-grid-mix-notebook",
         title="Lined / Dot grid",
         lined_sheets=1,
         dotgrid_sheets=1,
@@ -276,7 +276,7 @@ def lined_notebook_dests(spec: Spec) -> dict[str, str]:
 
 
 def lined_dotgrid_notebook_dests(spec: Spec) -> dict[str, str]:
-    """Named dest for each lined-dotgrid-notebook catalog stem."""
+    """Named dest for each lined-dot-grid-mix-notebook catalog stem."""
     return {
         "lined-dotgrid-cover": spec.cover_dest,
         "lined-dotgrid-lined": spec.dest_for_lined_pad(1),
@@ -362,7 +362,7 @@ def lined_notebook_page_numbers(
 def lined_dotgrid_notebook_page_numbers(
     spec: Spec, stems: Sequence[str] = LINED_DOTGRID_NOTEBOOK_STEMS
 ) -> dict[str, int]:
-    """1-based page numbers from the lined-dotgrid-notebook walk."""
+    """1-based page numbers from the lined-dot-grid-mix-notebook walk."""
     return _page_numbers(
         LinedDotGridNotebook().pages(spec),
         lined_dotgrid_notebook_dests(spec),

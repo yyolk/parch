@@ -1,4 +1,4 @@
-"""Lined / dot-grid notebook — cover → lined, dot, lined, dot, … (sibling book)."""
+"""Lined / dot-grid mix notebook — cover → lined, dot, lined, dot, … (zip)."""
 
 from parch.books.protocol import plot_pages
 from parch.dotgrid import dotgrid_pages

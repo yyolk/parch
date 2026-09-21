@@ -4,6 +4,7 @@
 # presses this ledger alone on year-planner (mix with engineering /
 # steno / dotgrid raises):
 #   parch press examples/lined-pad.toml -o out/lined-pad.pdf
+# Duplex lined front / dot-grid back: examples/lined-dot-grid-pad.toml.
 device = "supernote-nomad"
 title = "Lined pad"
 
