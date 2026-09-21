@@ -437,9 +437,7 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
         for spec in year_presses
     )
     assert any(
-        spec.favorites_pages == 1
-        and spec.my_100 is True
-        and spec.checkoff_365 is True
+        spec.favorites_pages == 1 and spec.my_100 is True and spec.checkoff_365 is True
         for spec in year_presses
     )
     assert any(spec.book == "engineering-notebook" for spec in presses)
