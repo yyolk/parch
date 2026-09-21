@@ -1,4 +1,5 @@
-# Dependabot: GitHub Actions and uv (pyproject.toml + uv.lock)
+# Dependabot: GitHub Actions, uv (pyproject.toml + uv.lock), and
+# .devcontainer/Dockerfile images (Astral uv pin + Microsoft base).
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -18,5 +19,15 @@ updates:
       day: monday
     groups:
       python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      docker:
         patterns:
           - "*"

@@ -1,7 +1,8 @@
+FROM ghcr.io/astral-sh/uv:0.12.17 AS uv
 FROM mcr.microsoft.com/devcontainers/python:3.14
 
 USER root
-COPY --from=ghcr.io/astral-sh/uv:0.12.17 /uv /uvx /usr/local/bin/
+COPY --from=uv /uv /uvx /usr/local/bin/
 
 # Venv lives outside the workspace so a bind-mounted repo does not hide it.
 ENV UV_PROJECT_ENVIRONMENT=/home/vscode/.venv \
