@@ -124,7 +124,9 @@ def test_paint_is_dotted_center_without_header():
         ys, (ruling.origin.y + i * ruling.pitch for i in range(ruling.n_lines))
     ):
         assert y == pytest.approx(line_y)
-    row = sorted(op[1].x for op in dots if op[1].y + op[1].h / 2 == pytest.approx(ys[0]))
+    row = sorted(
+        op[1].x for op in dots if op[1].y + op[1].h / 2 == pytest.approx(ys[0])
+    )
     assert len(row) > 2
     for prev, nxt in zip(row, row[1:]):
         assert nxt - prev == pytest.approx(STENO_DOT_PITCH_MM)
