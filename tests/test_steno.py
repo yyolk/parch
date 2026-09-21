@@ -69,14 +69,15 @@ def test_spec_steno_dests_and_toml():
     assert both.engineering_sheets == 1
 
 
-def test_ruling_is_gregg_pitch_with_equal_columns():
-    assert STENO_PITCH_MM == pytest.approx(25.4 / 3)
+def test_ruling_is_template_pitch_with_equal_columns():
+    assert STENO_PITCH_MM == pytest.approx(5.0)
     for device in (NOMAD, SCRIBE):
         frame = device.content_frame()
         ruling = steno_ruling(frame)
         assert isinstance(ruling, StenoRuling)
         assert ruling.pitch == pytest.approx(STENO_PITCH_MM)
         assert ruling.n_lines >= 2
+        assert ruling.n_lines == int(frame.h / STENO_PITCH_MM) + 1
         assert ruling.origin.y == pytest.approx(frame.y)
         assert ruling.origin.x == pytest.approx(frame.x)
         assert ruling.origin.w == pytest.approx(frame.w)
@@ -88,6 +89,7 @@ def test_ruling_is_gregg_pitch_with_equal_columns():
         leftover = frame.bottom - ruling.origin.bottom
         assert leftover >= -1e-9
         assert leftover < ruling.pitch
+    assert steno_ruling(NOMAD.content_frame()).n_lines == 29
 
 
 def test_paint_is_lined_center_without_header():
