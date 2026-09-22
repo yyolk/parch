@@ -35,7 +35,7 @@ def test_habit_pages_follow_each_month():
     july = next(page for page in pages if page.dest == "month-2026-07-habits")
     assert july.kind == "habits"
     assert july.title == "Habits · July 2026"
-    assert strip_active(july.kind) == "Habit"
+    assert strip_active(july) == "Habit"
     assert ("Habit", "month-2026-07-habits") in strip_items(july)
     assert ("Mon", "month-2026-07") in strip_items(july)
     assert ("Quar", "quarter-2026-Q3") in strip_items(july)

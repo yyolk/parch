@@ -19,7 +19,7 @@ from parch.sections.lined_dotgrid import LinedDotGridPadSection
 from parch.sections.meeting import MeetingSection
 from parch.sections.month import MonthSection
 from parch.sections.my_100 import My100Section
-from parch.sections.page import NavItem, Page, PageKind
+from parch.sections.page import NavItem, Page
 from parch.sections.projects import ProjectsSection
 from parch.sections.quarter import QuarterSection
 from parch.sections.review import ReviewSection
@@ -50,7 +50,6 @@ __all__ = [
     "ProjectsSection",
     "NavItem",
     "Page",
-    "PageKind",
     "QuarterSection",
     "ReviewSection",
     "StenoPadSection",

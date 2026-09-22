@@ -9,6 +9,8 @@ from parch.spec import Spec
 
 
 class DailySection:
+    """Daily well. ``Schedule`` leads so layout can tell this from notes-only pages."""
+
     def __init__(self, spec: Spec) -> None:
         self.spec = spec
 

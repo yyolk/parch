@@ -80,6 +80,82 @@ type Component = (
     | WeekStrip
 )
 
+# Page-lead unions. Layout matches these — not a PageKind string list.
+# Nested Component members (AnnualMonth, tickets, bands, …) never lead.
+# New pad: add the type here + a match arm (and to Component if new).
+type ChromeComponent = CoverTitle | EngineeringPad | StenoPad | DotGridPad | LinedPad
+
+type WellComponent = (
+    AnnualGrid
+    | FavoritesPage
+    | My100Page
+    | Checkoff365
+    | ProjectsIndex
+    | ProjectsBoard
+    | MeetingIndex
+    | MeetingAgenda
+    | TasksIndex
+    | TasksWeekPage
+    | ReviewIndex
+    | ReviewWeekPage
+    | QuarterGrid
+    | MonthGrid
+    | HabitGrid
+    | WeekStrip
+    | Schedule
+    | Notes
+    | BujoKey
+    | BujoIndex
+    | FutureLogPage
+    | MonthlyCalendarList
+    | MonthlyTaskWell
+    | RapidLogPage
+    | CollectionLeaf
+)
+
+type PageComponent = ChromeComponent | WellComponent
+
+
+def as_page_component(item: Component) -> PageComponent:
+    """Narrow a Component to a page lead. Nested members are not leads."""
+    match item:
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | AnnualGrid()
+            | FavoritesPage()
+            | My100Page()
+            | Checkoff365()
+            | ProjectsIndex()
+            | ProjectsBoard()
+            | MeetingIndex()
+            | MeetingAgenda()
+            | TasksIndex()
+            | TasksWeekPage()
+            | ReviewIndex()
+            | ReviewWeekPage()
+            | QuarterGrid()
+            | MonthGrid()
+            | HabitGrid()
+            | WeekStrip()
+            | Schedule()
+            | Notes()
+            | BujoKey()
+            | BujoIndex()
+            | FutureLogPage()
+            | MonthlyCalendarList()
+            | MonthlyTaskWell()
+            | RapidLogPage()
+            | CollectionLeaf()
+        ) as lead:
+            return lead
+        case _:
+            raise TypeError(f"{type(item).__name__} is not a page component")
+
+
 __all__ = [
     "AnnualGrid",
     "AnnualMonth",
@@ -90,8 +166,12 @@ __all__ = [
     "BujoKeySymbol",
     "CalendarDayRow",
     "CollectionLeaf",
+    "ChromeComponent",
     "Component",
     "CoverTitle",
+    "PageComponent",
+    "WellComponent",
+    "as_page_component",
     "DotGridPad",
     "FutureLogBand",
     "FutureLogPage",

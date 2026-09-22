@@ -99,7 +99,7 @@ def test_year_planner_inserts_checkoff_after_annual_when_enabled():
     page = next(item for item in pages if item.kind == "checkoff_365")
     assert page.title == "365 Days Check-Off Sheet"
     assert page.dest == "checkoff-365-2026"
-    assert strip_active(page.kind) == "365"
+    assert strip_active(page) == "365"
     labels = [label for label, _ in strip_items(page)]
     assert "Check" not in labels
     assert ("365", spec.checkoff_365_dest) in strip_items(page)
@@ -294,7 +294,8 @@ def test_checkoff_header_strip_and_outline_when_enabled():
     texts = [op[2] for op in plotter.ops if op[0] == "text"]
     assert texts.count("365 Days Check-Off Sheet") == 1
     assert "2026" in texts
-    assert strip_active("checkoff_365") == "365"
+    page = next(item for item in pages if item.kind == "checkoff_365")
+    assert strip_active(page) == "365"
     outlined = [dest for _title, dest in plotter.outlines()]
     assert "checkoff-365-2026" in outlined
     assert plotter.outlines() == outline_entries(pages)
