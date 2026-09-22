@@ -2987,6 +2987,10 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Day"] = page.dest
         case CollectionLeaf():
             dests["Col"] = page.dest
+        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+            pass
+        case _ as unseen:
+            assert_never(unseen)
     order = (
         "Key",
         "Idx",
