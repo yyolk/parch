@@ -121,7 +121,7 @@ def test_my_100_page_and_strip():
     assert leaf.page == 1
     assert leaf.index_dest == spec.my_100_dest
     assert leaf.numbers[0] == 1
-    assert strip_active(page.kind) == "100"
+    assert strip_active(page) == "100"
     assert ("100", spec.my_100_dest) in strip_items(page)
     assert strip_items(page) == (
         *_YEAR_STRIP[:8],
@@ -281,7 +281,7 @@ def test_my_100_paginated_dests_and_chip():
         assert leaf.index_dest == "my-100-2026"
         assert leaf.numbers[0] == my_100_page_numbers(well, 2)[0]
         assert dict(strip_items(pages[1]))["100"] == spec.my_100_dest
-        assert strip_active(pages[1].kind) == "100"
+        assert strip_active(pages[1]) == "100"
     if pages_n > 2:
         assert pages[2].dest == "my-100-2026-03"
 

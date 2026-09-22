@@ -154,14 +154,14 @@ def test_january_components_and_strip_active():
     assert rapid.components[0].moment == date(2026, 1, 1)
     assert isinstance(by_kind["collection"].components[0], CollectionLeaf)
 
-    assert strip_active("bujo_key") == "Key"
-    assert strip_active("bujo_index") == "Idx"
-    assert strip_active("future_log") == "Fut"
-    assert strip_active("monthly_log") == "Mon"
-    assert strip_active("monthly_tasks") == "Mon"
-    assert strip_active("habits") == "Habit"
-    assert strip_active("rapid_log") == "Day"
-    assert strip_active("collection") == "Col"
+    assert strip_active(by_kind["bujo_key"]) == "Key"
+    assert strip_active(by_kind["bujo_index"]) == "Idx"
+    assert strip_active(by_kind["future_log"]) == "Fut"
+    assert strip_active(by_kind["monthly_log"]) == "Mon"
+    assert strip_active(by_kind["monthly_tasks"]) == "Mon"
+    assert strip_active(by_kind["habits"]) == "Habit"
+    assert strip_active(rapid) == "Day"
+    assert strip_active(by_kind["collection"]) == "Col"
 
 
 def test_january_future_log_is_one_band():

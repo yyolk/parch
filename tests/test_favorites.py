@@ -49,7 +49,7 @@ def test_favorites_after_annual_when_enabled():
     assert page.title == "Favorites"
     sheet = next(item for item in page.components if isinstance(item, FavoritesPage))
     assert sheet.year == 2026
-    assert strip_active(page.kind) == "Fav"
+    assert strip_active(page) == "Fav"
     labels = [label for label, _ in strip_items(page)]
     assert "Favorites" not in labels
     assert ("Fav", spec.favorites_dest) in strip_items(page)

@@ -142,7 +142,7 @@ def test_review_index_page():
     assert index.bands[0].weeks[-1].iso_week == 5
     assert index.bands[1].weeks[0].iso_week == 6
     assert index.bands[-1].weeks[-1].iso_week == 53
-    assert strip_active(page.kind) == "Rev"
+    assert strip_active(page) == "Rev"
     assert strip_items(page) == _REV_STRIP
 
 
@@ -171,7 +171,7 @@ def test_review_dest_page():
     assert dest.days[0].dest is None
     assert dest.days[3].dest == "2026-01-01"
     assert dest.days[6].dest == "2026-01-04"
-    assert strip_active(page.kind) == "Rev"
+    assert strip_active(page) == "Rev"
     assert strip_items(page) == _REV_STRIP
     assert ("Rev", "review-index-2026") in strip_items(page)
     assert ("Week", "week-2026-W01") in strip_items(page)
@@ -464,7 +464,7 @@ def test_review_header_week_chip_and_rev_tab():
         "Task",
     ):
         assert label in texts
-    assert strip_active(page.kind) == "Rev"
+    assert strip_active(page) == "Rev"
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links.count("review-index-2026") >= 2
     chip = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "W01")
@@ -485,7 +485,7 @@ def test_review_index_chrome_rev_tab():
     assert "2026" in texts
     assert "January" in texts
     assert "Rev" in texts
-    assert strip_active(page.kind) == "Rev"
+    assert strip_active(page) == "Rev"
     assert dict(strip_items(page))["Rev"] == spec.review_index_dest
 
 

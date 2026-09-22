@@ -3,6 +3,7 @@
 import math
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import assert_never
 
 from parch.calendar import MONTH_NAMES, WEEKDAY_LABELS, short_date_range
 from parch.components import (
@@ -2934,57 +2935,57 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["365"] = item.dest
         elif item.dest.count("-") == 2 and item.dest[:4].isdigit():
             dests["Day"] = item.dest
-    match page.kind:
-        case "annual":
+    match page.lead:
+        case AnnualGrid():
             dests["Year"] = page.dest
-        case "favorites":
+        case FavoritesPage():
             dests["Fav"] = page.dest
-        case "my_100":
+        case My100Page():
             pass
-        case "checkoff_365":
+        case Checkoff365():
             dests["365"] = page.dest
-        case "quarter":
+        case QuarterGrid():
             dests["Quar"] = page.dest
-        case "month":
+        case MonthGrid():
             dests["Mon"] = page.dest
-        case "habits":
+        case HabitGrid():
             dests["Habit"] = page.dest
-        case "projects_index":
+        case ProjectsIndex():
             dests["Proj"] = page.dest
-        case "project":
+        case ProjectsBoard():
             pass
-        case "meetings_index":
+        case MeetingIndex():
             dests["Meet"] = page.dest
-        case "meeting":
+        case MeetingAgenda():
             pass
-        case "tasks_index":
+        case TasksIndex():
             dests["Task"] = page.dest
-        case "task":
+        case TasksWeekPage():
             pass
-        case "review_index":
+        case ReviewIndex():
             dests["Rev"] = page.dest
-        case "review":
+        case ReviewWeekPage():
             pass
-        case "weekly":
+        case WeekStrip():
             dests["Week"] = page.dest
-        case "daily":
+        case Schedule():
             dests["Day"] = page.dest
-        case "daily_notes":
+        case Notes():
             dests["Notes"] = page.dest
             dests["Day"] = page.dest.rsplit("-notes-", 1)[0]
-        case "bujo_key":
+        case BujoKey():
             dests["Key"] = page.dest
-        case "bujo_index":
+        case BujoIndex():
             dests["Idx"] = page.dest
-        case "future_log":
+        case FutureLogPage():
             dests["Fut"] = page.dest
-        case "monthly_log" | "monthly_tasks":
-            dests["Mon"] = (
-                page.dest if page.kind == "monthly_log" else dests.get("Mon", page.dest)
-            )
-        case "rapid_log":
+        case MonthlyCalendarList():
+            dests["Mon"] = page.dest
+        case MonthlyTaskWell():
+            dests["Mon"] = dests.get("Mon", page.dest)
+        case RapidLogPage():
             dests["Day"] = page.dest
-        case "collection":
+        case CollectionLeaf():
             dests["Col"] = page.dest
     order = (
         "Key",
@@ -3009,52 +3010,48 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
     return tuple((label, dests[label]) for label in order if label in dests)
 
 
-def strip_active(kind: str) -> str:
-    match kind:
-        case "annual":
+def strip_active(page: Page) -> str:
+    match page.lead:
+        case AnnualGrid():
             return "Year"
-        case "favorites":
+        case FavoritesPage():
             return "Fav"
-        case "my_100":
+        case My100Page():
             return "100"
-        case "checkoff_365":
+        case Checkoff365():
             return "365"
-        case "quarter":
+        case QuarterGrid():
             return "Quar"
-        case "month":
+        case MonthGrid() | MonthlyCalendarList() | MonthlyTaskWell():
             return "Mon"
-        case "weekly":
+        case WeekStrip():
             return "Week"
-        case "daily":
+        case Schedule() | RapidLogPage():
             return "Day"
-        case "daily_notes":
+        case Notes():
             return "Notes"
-        case "habits":
+        case HabitGrid():
             return "Habit"
-        case "projects_index" | "project":
+        case ProjectsIndex() | ProjectsBoard():
             return "Proj"
-        case "meetings_index" | "meeting":
+        case MeetingIndex() | MeetingAgenda():
             return "Meet"
-        case "tasks_index" | "task":
+        case TasksIndex() | TasksWeekPage():
             return "Task"
-        case "review_index" | "review":
+        case ReviewIndex() | ReviewWeekPage():
             return "Rev"
-        case "engineering_front" | "engineering_back" | "steno" | "dotgrid" | "lined":
+        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
             return ""
-        case "bujo_key":
+        case BujoKey():
             return "Key"
-        case "bujo_index":
+        case BujoIndex():
             return "Idx"
-        case "future_log":
+        case FutureLogPage():
             return "Fut"
-        case "monthly_log" | "monthly_tasks":
-            return "Mon"
-        case "rapid_log":
-            return "Day"
-        case "collection":
+        case CollectionLeaf():
             return "Col"
-        case _:
-            return "Year"
+        case _ as unseen:
+            assert_never(unseen)
 
 
 ENG_HEADER_H = 14.0

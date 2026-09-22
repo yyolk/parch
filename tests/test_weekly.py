@@ -71,7 +71,7 @@ def test_week_dests_and_nav_strip():
         ("Meet", "meetings-index-2026"),
         ("Task", "tasks-index-2026-Q1"),
     )
-    assert strip_active(month.kind) == "Mon"
+    assert strip_active(month) == "Mon"
 
     feb = next(page for page in pages if page.dest == "month-2026-02")
     assert ("Mon", "month-2026-02") in strip_items(feb)
@@ -79,18 +79,18 @@ def test_week_dests_and_nav_strip():
     assert ("Notes", "2026-02-01-notes-1") in strip_items(feb)
 
     w01 = next(page for page in pages if page.dest == "week-2026-W01")
-    assert strip_active(w01.kind) == "Week"
+    assert strip_active(w01) == "Week"
     assert ("Week", "week-2026-W01") in strip_items(w01)
     assert ("Day", "2026-01-01") in strip_items(w01)
     assert ("Habit", "month-2026-01-habits") in strip_items(w01)
 
     jan15 = next(page for page in pages if page.dest == "2026-01-15")
     assert ("Week", "week-2026-W03") in strip_items(jan15)
-    assert strip_active(jan15.kind) == "Day"
+    assert strip_active(jan15) == "Day"
 
     notes = next(page for page in pages if page.dest == "2026-01-15-notes-1")
     assert ("Week", "week-2026-W03") in strip_items(notes)
-    assert strip_active(notes.kind) == "Notes"
+    assert strip_active(notes) == "Notes"
 
     w06 = next(page for page in pages if page.dest == "week-2026-W06")
     assert ("Day", "2026-02-02") in strip_items(w06)

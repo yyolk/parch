@@ -4,7 +4,7 @@ from typing import Literal
 
 from parch.components.dotgrid import DotGridPad
 from parch.components.lined import LinedPad
-from parch.sections.page import Page, PageKind
+from parch.sections.page import Page
 from parch.spec import Spec
 
 type PairOrder = Literal["lined-dotgrid", "dotgrid-lined"]
@@ -44,7 +44,7 @@ def _pair_page(
     sheet: int,
     sheets: int,
     face: str,
-    kind: PageKind,
+    kind: str,
 ) -> Page:
     dest = spec.dest_for_duplex_pair_pad(order, sheet, face)
     if kind == "lined":

@@ -112,7 +112,7 @@ def test_tasks_index_page():
     assert index.bands[0].weeks[-1].iso_week == 5
     assert index.bands[1].weeks[0].iso_week == 6
     assert index.bands[2].weeks[-1].iso_week == 14
-    assert strip_active(page.kind) == "Task"
+    assert strip_active(page) == "Task"
     assert strip_items(page) == _TASK_STRIP
 
 
@@ -129,7 +129,7 @@ def test_tasks_dest_page():
     assert dest.sunday == date(2026, 1, 4)
     assert dest.rows == 6
     assert dest.index_dest == "tasks-index-2026-Q1"
-    assert strip_active(page.kind) == "Task"
+    assert strip_active(page) == "Task"
     assert strip_items(page) == _TASK_STRIP
     assert ("Task", "tasks-index-2026-Q1") in strip_items(page)
     assert ("Week", "week-2026-W01") in strip_items(page)
@@ -377,7 +377,7 @@ def test_task_header_week_chip_and_task_tab():
         "Task",
     ):
         assert label in texts
-    assert strip_active(page.kind) == "Task"
+    assert strip_active(page) == "Task"
     links = [op[2] for op in plotter.ops if op[0] == "link"]
     assert links.count("tasks-index-2026-Q1") >= 2
     chip = next(op[1] for op in plotter.ops if op[0] == "text" and op[2] == "W01")
@@ -400,7 +400,7 @@ def test_tasks_index_chrome_task_tab():
     assert "Q1" in texts
     assert "January" in texts
     assert "Task" in texts
-    assert strip_active(page.kind) == "Task"
+    assert strip_active(page) == "Task"
     assert dict(strip_items(page))["Task"] == spec.tasks_index_dest
 
 

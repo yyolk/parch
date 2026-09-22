@@ -90,7 +90,7 @@ def test_projects_after_review_in_year_book():
     assert roster.year == 2026
     assert len(roster.tickets) == 8
 
-    assert strip_active(page.kind) == "Proj"
+    assert strip_active(page) == "Proj"
     assert strip_items(page) == _PROJ_STRIP
 
 
@@ -168,7 +168,7 @@ def test_projects_index_tickets_and_proj_nav():
     index = pages[proj]
     assert index.kind == "projects_index"
     assert index.title == "Projects"
-    assert strip_active(index.kind) == "Proj"
+    assert strip_active(index) == "Proj"
     assert strip_items(index) == _PROJ_STRIP
 
     roster = next(item for item in index.components if isinstance(item, ProjectsIndex))
@@ -184,7 +184,7 @@ def test_projects_index_tickets_and_proj_nav():
     leaf = next(page for page in pages if page.dest == "projects-2026-03")
     assert leaf.kind == "project"
     assert leaf.title == "Projects"
-    assert strip_active(leaf.kind) == "Proj"
+    assert strip_active(leaf) == "Proj"
     assert ("Proj", "projects-index-2026-01") in strip_items(leaf)
     board = next(item for item in leaf.components if isinstance(item, ProjectsBoard))
     assert board.cards == 3
@@ -549,7 +549,7 @@ def test_paint_project_and_index_chip():
     assert "Index" not in labels
     assert "Proj" in labels
     assert "In Progress" in labels
-    assert strip_active(page.kind) == "Proj"
+    assert strip_active(page) == "Proj"
     assert dict(strip_items(page))["Proj"] == spec.projects_index_dest
     assert spec.projects_index_dest == "projects-index-2026-01"
     leaf_links = [op[2] for op in chrome.ops if op[0] == "link"]

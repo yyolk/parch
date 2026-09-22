@@ -70,6 +70,6 @@ def test_extras_strip_active_on_own_pages():
     fav = next(page for page in pages if page.kind == "favorites")
     hundred = next(page for page in pages if page.kind == "my_100")
     checkoff = next(page for page in pages if page.kind == "checkoff_365")
-    assert strip_active(fav.kind) == "Fav"
-    assert strip_active(hundred.kind) == "100"
-    assert strip_active(checkoff.kind) == "365"
+    assert strip_active(fav) == "Fav"
+    assert strip_active(hundred) == "100"
+    assert strip_active(checkoff) == "365"
