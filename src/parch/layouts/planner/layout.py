@@ -280,8 +280,10 @@ def _header_meta(page: Page) -> str:
         case Notes() as notes:
             label = notes.label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
-        case _:
+        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
             return ""
+        case _ as unseen:
+            assert_never(unseen)
 
 
 def _header_meta_dest(page: Page) -> str | None:
@@ -296,8 +298,36 @@ def _header_meta_dest(page: Page) -> str | None:
             return calendar.tasks_dest
         case MonthlyTaskWell() as tasks:
             return tasks.calendar_dest
-        case _:
+        case (
+            FavoritesPage()
+            | My100Page()
+            | Checkoff365()
+            | ProjectsIndex()
+            | ProjectsBoard()
+            | MeetingIndex()
+            | MeetingAgenda()
+            | TasksIndex()
+            | TasksWeekPage()
+            | ReviewIndex()
+            | ReviewWeekPage()
+            | QuarterGrid()
+            | WeekStrip()
+            | Schedule()
+            | Notes()
+            | BujoKey()
+            | BujoIndex()
+            | FutureLogPage()
+            | RapidLogPage()
+            | CollectionLeaf()
+            | CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+        ):
             return None
+        case _ as unseen:
+            assert_never(unseen)
 
 
 def _header_chip(page: Page) -> str:
@@ -314,8 +344,35 @@ def _header_chip(page: Page) -> str:
             return f"W{week.iso_week:02d}"
         case CollectionLeaf() as leaf:
             return f"{leaf.number:02d}"
-        case _:
+        case (
+            AnnualGrid()
+            | FavoritesPage()
+            | Checkoff365()
+            | ProjectsIndex()
+            | MeetingIndex()
+            | TasksIndex()
+            | ReviewIndex()
+            | QuarterGrid()
+            | MonthGrid()
+            | HabitGrid()
+            | WeekStrip()
+            | Schedule()
+            | Notes()
+            | BujoKey()
+            | BujoIndex()
+            | FutureLogPage()
+            | MonthlyCalendarList()
+            | MonthlyTaskWell()
+            | RapidLogPage()
+            | CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+        ):
             return ""
+        case _ as unseen:
+            assert_never(unseen)
 
 
 def _header_chip_dest(page: Page) -> str | None:
@@ -332,8 +389,35 @@ def _header_chip_dest(page: Page) -> str | None:
             return week.index_dest or None
         case CollectionLeaf() as leaf:
             return leaf.index_dest or None
-        case _:
+        case (
+            AnnualGrid()
+            | FavoritesPage()
+            | Checkoff365()
+            | ProjectsIndex()
+            | MeetingIndex()
+            | TasksIndex()
+            | ReviewIndex()
+            | QuarterGrid()
+            | MonthGrid()
+            | HabitGrid()
+            | WeekStrip()
+            | Schedule()
+            | Notes()
+            | BujoKey()
+            | BujoIndex()
+            | FutureLogPage()
+            | MonthlyCalendarList()
+            | MonthlyTaskWell()
+            | RapidLogPage()
+            | CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+        ):
             return None
+        case _ as unseen:
+            assert_never(unseen)
 
 
 def _one[T](page: Page, typ: type[T]) -> T:
