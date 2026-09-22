@@ -75,7 +75,7 @@ def test_spec_steno_dests_and_toml():
 
 
 def test_ruling_matches_template_field():
-    assert STENO_PITCH_MM == pytest.approx(5.0)
+    assert STENO_PITCH_MM == pytest.approx(25.4 / 3)
     for device in (NOMAD, SCRIBE):
         field = steno_horizontal_field(device)
         ruling = steno_ruling(field)
@@ -94,7 +94,7 @@ def test_ruling_matches_template_field():
         assert leftover >= -1e-9
         assert leftover < ruling.pitch
     nomad = steno_ruling(steno_horizontal_field(NOMAD))
-    assert nomad.n_lines == 29
+    assert nomad.n_lines == 17
 
 
 def test_paint_matches_template_without_frame():
@@ -145,7 +145,7 @@ def test_paint_matches_template_without_frame():
         assert center[2] < ys[0]
         assert center[4] > ys[-1]
         if device is NOMAD:
-            assert len(ys) == 29
+            assert len(ys) == 17
 
 
 def test_layout_skips_planner_slab_and_nav():

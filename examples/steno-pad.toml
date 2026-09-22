@@ -1,5 +1,5 @@
 # Single-face Gregg stenographer pad.
-# Dotted 5 mm + one center rule, inset like the SuperNote steno PNG. No frame.
+# Dotted Gregg ⅓″ + one center rule, inset like the SuperNote steno PNG. No frame.
 # No steno-notebook book yet — ``steno_sheets > 0`` presses this
 # section only:
 #   parch press examples/steno-pad.toml -o out/steno-pad.pdf

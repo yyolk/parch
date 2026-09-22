@@ -3209,7 +3209,7 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
         )
 
 
-STENO_PITCH_MM = 5.0  # SuperNote steno PNG ~59 px @ 300 ppi; not Gregg ⅓″
+STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
 # Ink on 20220804011810_steno.png (1404×1872 @ 300 ppi). No frame, no Spec knob.
 _STENO_PNG_MM = 25.4 / 300
 STENO_H_LEFT_MM = 42 * _STENO_PNG_MM
@@ -3225,7 +3225,7 @@ STENO_DOT_PITCH_MM = 9.5 * _STENO_PNG_MM
 
 @dataclass(frozen=True, slots=True)
 class StenoRuling:
-    """Top-aligned steno ruling: 5 mm horizontals, one vertical center rule."""
+    """Top-aligned Gregg ruling: ⅓″ horizontals, one vertical center rule."""
 
     origin: Rect
     pitch: float
@@ -3234,7 +3234,7 @@ class StenoRuling:
 
 
 def steno_ruling(box: Rect) -> StenoRuling:
-    """Fit as many 5 mm gaps as *box* allows. Center splits two equal columns."""
+    """Fit as many ⅓″ gaps as *box* allows. Center splits two equal columns."""
     n_gaps = max(1, int(box.h / STENO_PITCH_MM))
     used_h = n_gaps * STENO_PITCH_MM
     return StenoRuling(
@@ -3262,7 +3262,7 @@ def paint_steno_pad(
     *,
     ramp: TypeRamp | None = None,
 ) -> None:
-    """Single-face steno pad — dotted 5 mm lines, no frame. No header or holes."""
+    """Single-face Gregg pad — dotted ⅓″ lines, no frame. No header or holes."""
     _bound_ramp(plotter, ramp)
     _paint_steno_ruling(plotter, device)
 
