@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,10 @@ from parch.layouts.planner.painters import (
     STENO_DOT_H_MM,
     STENO_DOT_PITCH_MM,
     STENO_DOT_W_MM,
+    STENO_H_BOTTOM_MM,
+    STENO_H_LEFT_MM,
+    STENO_H_RIGHT_MM,
+    STENO_H_TOP_MM,
     STENO_PITCH_MM,
     STENO_V_BOTTOM_MM,
     STENO_V_TOP_MM,
@@ -97,6 +102,48 @@ def test_ruling_matches_template_field():
     assert nomad.n_lines == 17
 
 
+def test_field_seats_from_content_frame():
+    """PNG insets ride each device's content frame. Nomad stays the sheet."""
+    nomad_field = steno_horizontal_field(NOMAD)
+    nomad_frame = NOMAD.content_frame()
+    assert nomad_field.x == pytest.approx(STENO_H_LEFT_MM)
+    assert nomad_field.y == pytest.approx(STENO_H_TOP_MM)
+    assert nomad_field.right == pytest.approx(NOMAD.page_width - STENO_H_RIGHT_MM)
+    assert nomad_field.bottom == pytest.approx(NOMAD.page_height - STENO_H_BOTTOM_MM)
+    assert steno_ruling(nomad_field).n_lines == 17
+
+    scribe_field = steno_horizontal_field(SCRIBE)
+    scribe_frame = SCRIBE.content_frame()
+    assert scribe_field.x - scribe_frame.x == pytest.approx(
+        nomad_field.x - nomad_frame.x
+    )
+    assert scribe_field.y - scribe_frame.y == pytest.approx(
+        nomad_field.y - nomad_frame.y
+    )
+    assert scribe_frame.right - scribe_field.right == pytest.approx(
+        nomad_frame.right - nomad_field.right
+    )
+    assert scribe_frame.bottom - scribe_field.bottom == pytest.approx(
+        nomad_frame.bottom - nomad_field.bottom
+    )
+    page = SCRIBE.page_rect()
+    assert scribe_field.x >= page.x
+    assert scribe_field.y >= page.y
+    assert scribe_field.right <= page.right
+    assert scribe_field.bottom <= page.bottom
+    assert scribe_field.bottom <= SCRIBE.page_height - SCRIBE.bottom_clearance
+
+    raised = replace(SCRIBE, top_clearance=8.0)
+    raised_field = steno_horizontal_field(raised)
+    raised_frame = raised.content_frame()
+    assert raised_field.y - raised_frame.y == pytest.approx(
+        scribe_field.y - scribe_frame.y
+    )
+    assert raised_field.bottom - raised_frame.bottom == pytest.approx(
+        scribe_field.bottom - scribe_frame.bottom
+    )
+
+
 def test_paint_matches_template_without_frame():
     pad = StenoPad(sheet=1, sheets=1)
     for device in (NOMAD, SCRIBE):
@@ -129,6 +176,13 @@ def test_paint_matches_template_without_frame():
             assert nxt - prev == pytest.approx(STENO_DOT_PITCH_MM)
         assert row[0] == pytest.approx(field.x)
         assert row[-1] + STENO_DOT_W_MM <= field.right + 1e-6
+        page = device.page_rect()
+        for dot in dots:
+            rect = dot[1]
+            assert rect.x >= page.x - 1e-6
+            assert rect.y >= page.y - 1e-6
+            assert rect.right <= page.right + 1e-6
+            assert rect.bottom <= page.bottom + 1e-6
         assert not [op for op in _lines(ink) if op[2] == op[4]]
         centers = [
             op
@@ -139,13 +193,21 @@ def test_paint_matches_template_without_frame():
         ]
         assert len(centers) == 1
         center = centers[0]
+        over_top = STENO_H_TOP_MM - STENO_V_TOP_MM
+        over_bottom = STENO_H_BOTTOM_MM - STENO_V_BOTTOM_MM
         assert center[1] == pytest.approx(device.page_width / 2)
-        assert center[2] == pytest.approx(STENO_V_TOP_MM)
-        assert center[4] == pytest.approx(device.page_height - STENO_V_BOTTOM_MM)
-        assert center[2] < ys[0]
-        assert center[4] > ys[-1]
+        assert center[2] == pytest.approx(max(0.0, field.y - over_top))
+        assert center[4] == pytest.approx(
+            min(device.page_height, field.bottom + over_bottom)
+        )
+        assert page.y <= center[2] < ys[0]
+        assert ys[-1] < center[4] <= page.bottom
         if device is NOMAD:
+            assert center[2] == pytest.approx(STENO_V_TOP_MM)
+            assert center[4] == pytest.approx(device.page_height - STENO_V_BOTTOM_MM)
             assert len(ys) == 17
+        if device is SCRIBE:
+            assert center[4] <= device.page_height - device.bottom_clearance
 
 
 def test_layout_skips_planner_slab_and_nav():
