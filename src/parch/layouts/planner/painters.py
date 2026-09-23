@@ -45,7 +45,7 @@ from parch.components import (
     TaskWeek,
     WeekStrip,
 )
-from parch.devices.registry import NAV_H, Device
+from parch.devices.registry import NAV_H, NOMAD, Device
 from parch.fonts.metrics import (
     fit_line_size,
     glyph_ink,
@@ -3211,6 +3211,9 @@ def _paint_engineering_grid(plotter: Plotter, box: Rect) -> None:
 
 STENO_PITCH_MM = 25.4 / 3  # hardcoded Gregg ⅓″ — not a Spec/TOML knob
 # Ink on 20220804011810_steno.png (1404×1872 @ 300 ppi). No frame, no Spec knob.
+# These are page-edge insets of that Nomad sheet. Seating turns them into
+# offsets from Nomad's content frame, then applies the offsets to whatever
+# device is being pressed.
 _STENO_PNG_MM = 25.4 / 300
 STENO_H_LEFT_MM = 42 * _STENO_PNG_MM
 STENO_H_RIGHT_MM = 46 * _STENO_PNG_MM
@@ -3245,14 +3248,49 @@ def steno_ruling(box: Rect) -> StenoRuling:
     )
 
 
-def steno_horizontal_field(device: Device) -> Rect:
-    """Dotted-field insets from the SuperNote steno PNG. No frame."""
-    return Rect(
-        STENO_H_LEFT_MM,
-        STENO_H_TOP_MM,
-        device.page_width - STENO_H_LEFT_MM - STENO_H_RIGHT_MM,
-        device.page_height - STENO_H_TOP_MM - STENO_H_BOTTOM_MM,
+def _steno_frame_offsets() -> tuple[float, float, float, float]:
+    """PNG page insets as offsets from Nomad's content frame.
+
+    Positive is inside the frame. The measured sheet sits a hair outside
+    the frame on the left, right, and bottom, so those three are negative.
+    """
+    anchor = NOMAD.content_frame()
+    return (
+        STENO_H_LEFT_MM - anchor.x,
+        STENO_H_TOP_MM - anchor.y,
+        STENO_H_RIGHT_MM - (NOMAD.page_width - anchor.right),
+        STENO_H_BOTTOM_MM - (NOMAD.page_height - anchor.bottom),
     )
+
+
+def steno_horizontal_field(device: Device) -> Rect:
+    """Dotted field: PNG offsets applied to ``device.content_frame()``.
+
+    Nomad reproduces the SuperNote sheet (Gregg ⅓″, 17 lines). Scribe
+    keeps those same offsets from its own content frame, so the dots stay
+    on the page and out of the bottom dead zone.
+    """
+    frame = device.content_frame()
+    left, top, right, bottom = _steno_frame_offsets()
+    return Rect(
+        frame.x + left,
+        frame.y + top,
+        frame.w - left - right,
+        frame.h - top - bottom,
+    )
+
+
+def _steno_center_ys(device: Device, field: Rect) -> tuple[float, float]:
+    """Solid center, longer than *field* by the PNG's extra reach.
+
+    Scribe's content frame starts at the page top, so the overhang above
+    the frame is cut at y=0. The rule still starts above the first dots.
+    """
+    over_top = STENO_H_TOP_MM - STENO_V_TOP_MM
+    over_bottom = STENO_H_BOTTOM_MM - STENO_V_BOTTOM_MM
+    y0 = max(0.0, field.y - over_top)
+    y1 = min(device.page_height, field.bottom + over_bottom)
+    return y0, y1
 
 
 def paint_steno_pad(
@@ -3319,18 +3357,19 @@ def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
 
 
 def _paint_steno_ruling(plotter: Plotter, device: Device) -> None:
-    """Close black dots in the PNG field; solid black center, page-centered."""
+    """Close black dots in the content-frame field; solid center past them."""
     field = steno_horizontal_field(device)
     ruling = steno_ruling(field)
     grid = ruling.origin
     for i in range(ruling.n_lines):
         y = grid.y + i * ruling.pitch
         _paint_steno_dots(plotter, grid.x, grid.right, y)
+    y0, y1 = _steno_center_ys(device, field)
     plotter.line(
         device.page_width / 2,
-        STENO_V_TOP_MM,
+        y0,
         device.page_width / 2,
-        device.page_height - STENO_V_BOTTOM_MM,
+        y1,
         stroke_width=HAIR,
         stroke_gray=INK,
     )
