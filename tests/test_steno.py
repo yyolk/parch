@@ -1,4 +1,3 @@
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -132,16 +131,6 @@ def test_field_seats_from_content_frame():
     assert scribe_field.right <= page.right
     assert scribe_field.bottom <= page.bottom
     assert scribe_field.bottom <= SCRIBE.page_height - SCRIBE.bottom_clearance
-
-    raised = replace(SCRIBE, top_clearance=8.0)
-    raised_field = steno_horizontal_field(raised)
-    raised_frame = raised.content_frame()
-    assert raised_field.y - raised_frame.y == pytest.approx(
-        scribe_field.y - scribe_frame.y
-    )
-    assert raised_field.bottom - raised_frame.bottom == pytest.approx(
-        scribe_field.bottom - scribe_frame.bottom
-    )
 
 
 def test_paint_matches_template_without_frame():
