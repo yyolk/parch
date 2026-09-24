@@ -3352,9 +3352,17 @@ def paint_lined_page(
     paint_lines(plotter, device.page_rect())
 
 
+# Equal-angle fan around the vanishing point. Not a Spec/TOML knob.
+PERSPECTIVE_RAY_STEP_DEG = 5.0
+
+
 @dataclass(frozen=True, slots=True)
 class PerspectiveRay:
-    """One perspective line through the vanishing point, clipped to the page."""
+    """One ray from the vanishing point to the page edge.
+
+    ``angle`` is radians from +x, in ``[0, 2π)``. ``(x1, y1)`` is the
+    vanishing point and ``(x2, y2)`` is the clipped end on the page boundary.
+    """
 
     x1: float
     y1: float
@@ -3423,27 +3431,65 @@ def _edge_falloff(center: float, pitch: float, edge: float, *, outward: int) -> 
     return (inside + pitch) - radius
 
 
-def _line_angle(dx: float, dy: float) -> float:
-    """Undirected angle in ``[0, π)``. Opposite directions are one line."""
-    ang = math.atan2(dy, dx)
-    if ang < 0.0:
-        ang += math.pi
-    if ang >= math.pi:
-        ang = 0.0
-    return ang
+def _clip_ray(page: Rect, cx: float, cy: float, theta: float) -> tuple[float, float]:
+    """Page-boundary hit of the ray from ``(cx, cy)`` at ``theta`` radians."""
+    dx = math.cos(theta)
+    dy = math.sin(theta)
+    if abs(dx) < 1e-12:
+        dx = 0.0
+    if abs(dy) < 1e-12:
+        dy = 0.0
+    spans: list[float] = []
+    if dx > 0.0:
+        spans.append((page.right - cx) / dx)
+    elif dx < 0.0:
+        spans.append((page.x - cx) / dx)
+    if dy > 0.0:
+        spans.append((page.bottom - cy) / dy)
+    elif dy < 0.0:
+        spans.append((page.y - cy) / dy)
+    t = min(spans)
+    x = cx + t * dx
+    y = cy + t * dy
+    if abs(x - page.x) <= 1e-6:
+        x = page.x
+    elif abs(x - page.right) <= 1e-6:
+        x = page.right
+    if abs(y - page.y) <= 1e-6:
+        y = page.y
+    elif abs(y - page.bottom) <= 1e-6:
+        y = page.bottom
+    return (x, y)
+
+
+def _perspective_rays(page: Rect, cx: float, cy: float) -> tuple[PerspectiveRay, ...]:
+    """``360 / step`` rays at ``θ = k · step``. Even ``k`` is ``MUTED``."""
+    count = round(360.0 / PERSPECTIVE_RAY_STEP_DEG)
+    rays: list[PerspectiveRay] = []
+    for k in range(count):
+        theta = math.radians(k * PERSPECTIVE_RAY_STEP_DEG)
+        x2, y2 = _clip_ray(page, cx, cy, theta)
+        rays.append(
+            PerspectiveRay(
+                x1=cx,
+                y1=cy,
+                x2=x2,
+                y2=y2,
+                gray=MUTED if k % 2 == 0 else GHOST,
+                angle=theta,
+            )
+        )
+    return tuple(rays)
 
 
 def perspective_grid(page: Rect, pitch: float) -> PerspectiveGrid:
-    """Square mesh plus perspective lines on the full page rect.
+    """Square mesh plus an equal-angle fan on the full page rect.
 
     Grid lines are ``cx ± pitch/2 + k·pitch`` (and the same in y), clipped
-    to the page. Perspective lines pass through the vanishing point
-    ``(cx, cy)`` and one boundary target: each grid line's meeting with the
-    page edge, the four page corners, and the four edge points of the
-    horizontal and vertical through the vanishing point. A target and its
-    point reflection through the center are the same line. Lines are sorted
-    by angle and alternate ``MUTED`` then ``GHOST``. Each line is the chord
-    between its two boundary intersections, so it is clipped to the page.
+    to the page, so the vanishing point is the center of a cell. Rays leave
+    that point at ``θ = k · PERSPECTIVE_RAY_STEP_DEG`` and stop on the page
+    edge. Even ``k`` (multiples of 10°) is ``MUTED``; odd ``k`` (the 5°
+    offsets) is ``GHOST``. Opposite rays are one chord through the center.
     """
     cx = page.x + page.w / 2.0
     cy = page.y + page.h / 2.0
@@ -3455,46 +3501,12 @@ def perspective_grid(page: Rect, pitch: float) -> PerspectiveGrid:
         _edge_falloff(cy, pitch, page.y, outward=-1),
         _edge_falloff(cy, pitch, page.bottom, outward=1),
     )
-    targets: list[tuple[float, float]] = [
-        (page.x, page.y),
-        (page.right, page.y),
-        (cx, page.y),
-        (page.x, cy),
-    ]
-    targets.extend((x, page.y) for x in verticals)
-    targets.extend((page.x, y) for y in horizontals)
-    by_angle = sorted((_line_angle(x - cx, y - cy), x, y) for x, y in targets)
-    unique: list[tuple[float, float, float]] = []
-    for ang, x, y in by_angle:
-        if unique and abs(ang - unique[-1][0]) < 1e-7:
-            continue
-        unique.append((ang, x, y))
-    rays: list[PerspectiveRay] = []
-    for index, (ang, x, y) in enumerate(unique):
-        x1 = page.x if abs(x - page.x) <= 1e-6 else x
-        y1 = page.y if abs(y - page.y) <= 1e-6 else y
-        x1 = page.right if abs(x1 - page.right) <= 1e-6 else x1
-        y1 = page.bottom if abs(y1 - page.bottom) <= 1e-6 else y1
-        x2 = 2.0 * cx - x1
-        y2 = 2.0 * cy - y1
-        x2 = min(max(x2, page.x), page.right)
-        y2 = min(max(y2, page.y), page.bottom)
-        rays.append(
-            PerspectiveRay(
-                x1=x1,
-                y1=y1,
-                x2=x2,
-                y2=y2,
-                gray=MUTED if index % 2 == 0 else GHOST,
-                angle=ang,
-            )
-        )
     return PerspectiveGrid(
         page=page,
         pitch=pitch,
         verticals=verticals,
         horizontals=horizontals,
-        rays=tuple(rays),
+        rays=_perspective_rays(page, cx, cy),
         falloff=falloff,
     )
 

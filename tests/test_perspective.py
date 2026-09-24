@@ -18,9 +18,9 @@ from parch.layouts.planner.painters import (
     HAIR,
     HEADER_H,
     MUTED,
+    PERSPECTIVE_RAY_STEP_DEG,
     RULE,
     RULE_C,
-    PerspectiveGrid,
     paint_perspective_page,
     perspective_grid,
 )
@@ -48,23 +48,6 @@ def _on_boundary(page: Rect, x: float, y: float) -> bool:
         or abs(y - page.bottom) <= 1e-6
     )
     return inside and on_edge
-
-
-def _expected_ray_count(grid: PerspectiveGrid) -> int:
-    """One ray per grid line, plus the two axes, plus the two page diagonals.
-
-    A grid line that sits on an edge already produces the corner diagonal, so
-    that diagonal is not an extra ray. When both axes land on grid lines the
-    same diagonal is produced twice (once from each edge) and counts once.
-    """
-    page = grid.page
-    vertical_on_edge = any(abs(x - page.x) <= 1e-6 for x in grid.verticals)
-    horizontal_on_edge = any(abs(y - page.y) <= 1e-6 for y in grid.horizontals)
-    if vertical_on_edge and horizontal_on_edge:
-        return len(grid.verticals) + len(grid.horizontals)
-    if vertical_on_edge or horizontal_on_edge:
-        return len(grid.verticals) + len(grid.horizontals) + 2
-    return len(grid.verticals) + len(grid.horizontals) + 4
 
 
 def test_perspective_pages_emits_one_page_per_sheet():
@@ -187,29 +170,51 @@ def test_zero_falloff_puts_a_grid_line_on_each_edge():
     assert grid.verticals[-1] == pytest.approx(55.0)
     assert grid.horizontals[0] == pytest.approx(0.0)
     assert grid.horizontals[-1] == pytest.approx(55.0)
-    assert len(grid.rays) == _expected_ray_count(grid)
     wide = perspective_grid(Rect(0.0, 0.0, 55.0, 40.0), 5.0)
     assert wide.falloff[0] == pytest.approx(0.0)
     assert wide.falloff[2] > 0.0
-    assert len(wide.rays) == _expected_ray_count(wide)
 
 
-def test_rays_alternate_and_are_clipped_to_the_page():
-    for page in (NOMAD.page_rect(), SCRIBE.page_rect(), Rect(0.0, 0.0, 100.0, 63.0)):
+def test_rays_are_equal_angle_and_clipped_to_the_page():
+    step = math.radians(PERSPECTIVE_RAY_STEP_DEG)
+    count = round(360.0 / PERSPECTIVE_RAY_STEP_DEG)
+    pages = (
+        NOMAD.page_rect(),
+        SCRIBE.page_rect(),
+        Rect(0.0, 0.0, 100.0, 63.0),
+        Rect(1.5, 2.25, 90.0, 130.4),
+        Rect(0.0, 0.0, 55.0, 55.0),
+        Rect(0.0, 0.0, 55.0, 40.0),
+    )
+    for page in pages:
         grid = perspective_grid(page, ENG_PITCH_MM)
         cx, cy = grid.center
-        assert len(grid.rays) == _expected_ray_count(grid)
-        assert len(grid.rays) >= 2
-        angles = [ray.angle for ray in grid.rays]
-        assert angles == sorted(angles)
-        assert all(angles[i] < angles[i + 1] for i in range(len(angles) - 1))
-        assert all(0.0 <= ray.angle < math.pi for ray in grid.rays)
-        for index, ray in enumerate(grid.rays):
-            assert ray.gray == pytest.approx(MUTED if index % 2 == 0 else GHOST)
-            assert _on_boundary(page, ray.x1, ray.y1)
+        assert PERSPECTIVE_RAY_STEP_DEG == pytest.approx(5.0)
+        assert count == 72
+        assert len(grid.rays) == count
+        for k, ray in enumerate(grid.rays):
+            assert ray.angle == pytest.approx(k * step)
+            assert ray.gray == pytest.approx(MUTED if k % 2 == 0 else GHOST)
+            assert ray.x1 == pytest.approx(cx)
+            assert ray.y1 == pytest.approx(cy)
             assert _on_boundary(page, ray.x2, ray.y2)
-            assert (ray.x1 + ray.x2) / 2 == pytest.approx(cx)
-            assert (ray.y1 + ray.y2) / 2 == pytest.approx(cy)
+            assert page.x - 1e-6 <= ray.x2 <= page.right + 1e-6
+            assert page.y - 1e-6 <= ray.y2 <= page.bottom + 1e-6
+        half = count // 2
+        for k in range(half):
+            near = grid.rays[k]
+            far = grid.rays[k + half]
+            assert near.gray == pytest.approx(far.gray)
+            dx1, dy1 = near.x2 - cx, near.y2 - cy
+            dx2, dy2 = far.x2 - cx, far.y2 - cy
+            assert dx1 * dy2 - dy1 * dx2 == pytest.approx(0.0, abs=1e-6)
+            assert dx1 * dx2 + dy1 * dy2 < 0.0
+        axis_h = grid.rays[0]
+        axis_v = grid.rays[round(90.0 / PERSPECTIVE_RAY_STEP_DEG)]
+        assert axis_h.y2 == pytest.approx(cy)
+        assert axis_h.x2 == pytest.approx(page.right)
+        assert axis_v.x2 == pytest.approx(cx)
+        assert axis_v.y2 == pytest.approx(page.bottom)
 
 
 def test_vanishing_point_is_the_page_center_not_the_content_frame():
