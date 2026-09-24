@@ -114,11 +114,7 @@ def _rays(
     # positive side (top edge right of center, right edge above center). The
     # grid is symmetric, so the mirror chord is the other sign. Angle 0 is the
     # horizontal axis, increasing toward the top of the page.
-    quadrant: list[
-        tuple[
-            float, tuple[float, float, float, float], tuple[float, float, float, float]
-        ]
-    ] = []
+    quadrant = []
     for k in range(1, ks[-1] + 1, 2):
         x = cx + (k + 0.5) * pitch
         pos = (x, box.y, 2 * cx - x, box.bottom)
@@ -131,18 +127,11 @@ def _rays(
         mirror = (box.x, y_right, box.right, y)
         quadrant.append((math.atan2(cy - y_right, box.right - cx), pos, mirror))
     quadrant.sort(key=lambda item: item[0])
-    # ``mirror`` sits in (0°, 90°) and ``pos`` in (90°, 180°). Emitting those
-    # bands around the two axes is undirected-angle order, which the painter's
-    # stable dark sort keeps inside each tone.
-    low: list[PerspectiveRay] = []
-    high: list[PerspectiveRay] = []
+    rays: list[PerspectiveRay] = []
     for i, (_ang, pos, mirror) in enumerate(quadrant):
         dark = i % 2 == 1
-        low.append(PerspectiveRay(*mirror, dark=dark))
-        high.append(PerspectiveRay(*pos, dark=dark))
-    return (
-        PerspectiveRay(box.x, cy, box.right, cy, dark=True),
-        *low,
-        PerspectiveRay(cx, box.y, cx, box.bottom, dark=True),
-        *reversed(high),
-    )
+        rays.append(PerspectiveRay(*pos, dark=dark))
+        rays.append(PerspectiveRay(*mirror, dark=dark))
+    rays.append(PerspectiveRay(box.x, cy, box.right, cy, dark=True))
+    rays.append(PerspectiveRay(cx, box.y, cx, box.bottom, dark=True))
+    return tuple(rays)
