@@ -1,0 +1,13 @@
+# Perspective notebook — cover → edge-to-edge perspective pages.
+#   parch press examples/perspective-notebook.toml -o out/perspective-notebook.pdf
+# Swap device = "kindle-scribe" for the other slate.
+# Pad-only (no cover) is examples/perspective-pad.toml.
+book = "perspective-notebook"
+year = 2026
+device = "supernote-nomad"
+title = "Perspective"
+# Reader sidebar outline (bookmarks). Cover and pad faces are skipped. Default is false.
+outline = true
+
+[perspective]
+sheets = 12

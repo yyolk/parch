@@ -23,6 +23,7 @@ from parch.components.meeting import MeetingAgenda, MeetingIndex, MeetingSlot
 from parch.components.month_grid import MonthCell, MonthGrid, MonthWeek
 from parch.components.my_100 import My100Page
 from parch.components.notes import Notes
+from parch.components.perspective import PerspectivePad
 from parch.components.priorities import Priorities
 from parch.components.projects import ProjectsBoard, ProjectsIndex, ProjectTicket
 from parch.components.quarter import QuarterGrid
@@ -52,6 +53,7 @@ type Component = (
     | FutureLogPage
     | HabitGrid
     | LinedPad
+    | PerspectivePad
     | MonthlyCalendarList
     | MonthlyTaskWell
     | RapidLogPage
@@ -83,7 +85,9 @@ type Component = (
 # Page-lead unions. Layout matches these — not a PageKind string list.
 # Nested Component members (AnnualMonth, tickets, bands, …) never lead.
 # New pad: add the type here + a match arm (and to Component if new).
-type ChromeComponent = CoverTitle | EngineeringPad | StenoPad | DotGridPad | LinedPad
+type ChromeComponent = (
+    CoverTitle | EngineeringPad | StenoPad | DotGridPad | LinedPad | PerspectivePad
+)
 
 type WellComponent = (
     AnnualGrid
@@ -125,6 +129,7 @@ def as_page_component(item: Component) -> PageComponent:
             | StenoPad()
             | DotGridPad()
             | LinedPad()
+            | PerspectivePad()
             | AnnualGrid()
             | FavoritesPage()
             | My100Page()
@@ -183,6 +188,7 @@ __all__ = [
     "FavoritesPage",
     "HabitGrid",
     "LinedPad",
+    "PerspectivePad",
     "MeetingAgenda",
     "MeetingIndex",
     "MeetingSlot",

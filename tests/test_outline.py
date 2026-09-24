@@ -50,6 +50,7 @@ _EXCLUDED_KINDS = frozenset(
         "steno",
         "dotgrid",
         "lined",
+        "perspective",
         "monthly_tasks",
         "rapid_log",
     }

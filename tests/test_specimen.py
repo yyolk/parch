@@ -21,6 +21,8 @@ from parch.specimen import (
     LINED_DOTGRID_NOTEBOOK_STEMS,
     LINED_NOTEBOOK_STEMS,
     LINED_STEMS,
+    PERSPECTIVE_NOTEBOOK_STEMS,
+    PERSPECTIVE_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
     STENO_STEMS,
@@ -86,6 +88,11 @@ def test_gallery_groups_split_optional_extras():
     assert groups["steno-pad"] == ("Steno pad", STENO_STEMS)
     assert groups["dotgrid-pad"] == ("Dotgrid pad", DOTGRID_STEMS)
     assert groups["lined-pad"] == ("Lined pad", LINED_STEMS)
+    assert groups["perspective-pad"] == ("Perspective pad", PERSPECTIVE_STEMS)
+    assert groups["perspective-notebook"] == (
+        "Perspective notebook",
+        PERSPECTIVE_NOTEBOOK_STEMS,
+    )
     assert groups["dotgrid-notebook"] == (
         "Dotgrid notebook",
         DOTGRID_NOTEBOOK_STEMS,
@@ -150,9 +157,13 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="lined-notebook"') < html.index(
         'id="lined-dotgrid-mix-notebook"'
     )
-    assert html.index('id="lined-dotgrid-mix-notebook"') < html.index('id="steno-pad"')
+    assert html.index('id="lined-dotgrid-mix-notebook"') < html.index(
+        'id="perspective-notebook"'
+    )
+    assert html.index('id="perspective-notebook"') < html.index('id="steno-pad"')
     assert html.index('id="steno-pad"') < html.index('id="dotgrid-pad"')
     assert html.index('id="dotgrid-pad"') < html.index('id="lined-pad"')
+    assert html.index('id="lined-pad"') < html.index('id="perspective-pad"')
     year_html = html[
         html.index('id="year-planner"') : html.index('id="optional-extras"')
     ]
@@ -531,6 +542,10 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     )
     assert any(
         spec.book == "year-planner" and spec.lined_sheets == 1 for spec in presses
+    )
+    assert any(spec.book == "perspective-notebook" for spec in presses)
+    assert any(
+        spec.book == "year-planner" and spec.perspective_sheets == 1 for spec in presses
     )
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:

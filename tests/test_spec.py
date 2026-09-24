@@ -72,6 +72,7 @@ def test_dest_names_from_tstrings():
     assert spec.steno_sheets == 0
     assert spec.dotgrid_sheets == 0
     assert spec.lined_sheets == 0
+    assert spec.perspective_sheets == 0
     assert spec.lined_dotgrid_sheets == 0
     assert spec.dotgrid_lined_sheets == 0
     assert spec.outline is False

@@ -25,6 +25,7 @@ from parch.components import (
     MonthlyTaskWell,
     My100Page,
     Notes,
+    PerspectivePad,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -73,6 +74,7 @@ from parch.layouts.planner.painters import (
     paint_my_100,
     paint_nav,
     paint_notes,
+    paint_perspective_page,
     paint_project,
     paint_projects_index,
     paint_quarter,
@@ -120,7 +122,12 @@ class PlannerLayout:
         plotter.ramp = self.ramp
         match page.lead:
             case (
-                CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad()
+                CoverTitle()
+                | EngineeringPad()
+                | StenoPad()
+                | DotGridPad()
+                | LinedPad()
+                | PerspectivePad()
             ) as chrome:
                 self._paint_chrome(chrome, plotter, device)
             case well:
@@ -157,6 +164,8 @@ class PlannerLayout:
                 paint_dotgrid_page(plotter, device, pad, ramp=self.ramp)
             case LinedPad() as pad:
                 paint_lined_page(plotter, device, pad, ramp=self.ramp)
+            case PerspectivePad() as pad:
+                paint_perspective_page(plotter, device, pad, ramp=self.ramp)
             case _ as unseen:
                 assert_never(unseen)
 
@@ -280,7 +289,14 @@ def _header_meta(page: Page) -> str:
         case Notes() as notes:
             label = notes.label
             return label.rsplit(" ", 1)[-1] if " " in label else page.dest[:4]
-        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | PerspectivePad()
+        ):
             return ""
         case _ as unseen:
             assert_never(unseen)
@@ -324,6 +340,7 @@ def _header_meta_dest(page: Page) -> str | None:
             | StenoPad()
             | DotGridPad()
             | LinedPad()
+            | PerspectivePad()
         ):
             return None
         case _ as unseen:
@@ -369,6 +386,7 @@ def _header_chip(page: Page) -> str:
             | StenoPad()
             | DotGridPad()
             | LinedPad()
+            | PerspectivePad()
         ):
             return ""
         case _ as unseen:
@@ -414,6 +432,7 @@ def _header_chip_dest(page: Page) -> str | None:
             | StenoPad()
             | DotGridPad()
             | LinedPad()
+            | PerspectivePad()
         ):
             return None
         case _ as unseen:
