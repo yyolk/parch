@@ -13,10 +13,10 @@ from parch.devices.registry import NOMAD, SCRIBE, known_device_ids
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
-    ENG_PITCH_MM,
     GHOST,
     HEADER_H,
     MUTED,
+    PERSPECTIVE_PITCH_MM,
     PERSPECTIVE_RAY_STEP_DEG,
     RULE,
     RULE_C,
@@ -61,7 +61,8 @@ def test_falloff_is_symmetric_on_each_device(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
     grid = perspective_grid(page)
-    assert grid.pitch == ENG_PITCH_MM
+    assert PERSPECTIVE_PITCH_MM == 7.0
+    assert grid.pitch == PERSPECTIVE_PITCH_MM
     assert grid.cx == pytest.approx(page.w / 2)
     assert grid.cy == pytest.approx(page.h / 2)
     assert grid.falloff_left == pytest.approx(grid.falloff_right)

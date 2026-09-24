@@ -3405,7 +3405,13 @@ def _edge_falloff(
     return lines[0] - lo, hi - lines[-1]
 
 
-def perspective_grid(page: Rect, *, pitch: float = ENG_PITCH_MM) -> PerspectiveGrid:
+# This page only. Engineering and dotgrid keep their own pitches. Not a TOML knob.
+PERSPECTIVE_PITCH_MM = 7.0
+
+
+def perspective_grid(
+    page: Rect, *, pitch: float = PERSPECTIVE_PITCH_MM
+) -> PerspectiveGrid:
     """Square grid across ``page``, vanishing point in the middle of a cell.
 
     Vertical lines are at ``cx ± pitch/2 + k·pitch`` and horizontal lines at
