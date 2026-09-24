@@ -1,4 +1,4 @@
-"""Full-bleed perspective grid: symmetric squares, center VP, equal-angle rays."""
+"""Full-bleed perspective grid: symmetric squares, center VP, grid-locked rays."""
 
 import math
 from pathlib import Path
@@ -23,7 +23,6 @@ from parch.layouts.planner.painters import (
 )
 from parch.perspective import (
     PERSPECTIVE_PITCH_MM,
-    PERSPECTIVE_RAY_STEP_DEG,
     perspective_falloff,
     perspective_mesh,
     perspective_pages,
@@ -39,6 +38,43 @@ def _texts(plotter: RecordingPlotter) -> list[str]:
 
 def _lines(plotter: RecordingPlotter) -> list[tuple]:
     return [op for op in plotter.ops if op[0] == "line"]
+
+
+def _chord_angle(ray) -> float:
+    theta = math.degrees(math.atan2(ray.y2 - ray.y1, ray.x2 - ray.x1))
+    if theta < 0.0:
+        theta += 180.0
+    if theta >= 180.0 - 1e-9:
+        theta = 0.0
+    return theta
+
+
+def _endpoints(ray) -> tuple[tuple[float, float], tuple[float, float]]:
+    return tuple(
+        sorted(
+            ((round(ray.x1, 4), round(ray.y1, 4)), (round(ray.x2, 4), round(ray.y2, 4)))
+        )
+    )
+
+
+def _reflect_x(ray, cx: float):
+    return type(ray)(2 * cx - ray.x1, ray.y1, 2 * cx - ray.x2, ray.y2, ray.dark)
+
+
+def _reflect_y(ray, cy: float):
+    return type(ray)(ray.x1, 2 * cy - ray.y1, ray.x2, 2 * cy - ray.y2, ray.dark)
+
+
+def _crossings(ray, mesh, page: Rect) -> int:
+    found = 0
+    for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
+        on_tb = y == pytest.approx(page.y) or y == pytest.approx(page.bottom)
+        on_lr = x == pytest.approx(page.x) or x == pytest.approx(page.right)
+        on_v = any(x == pytest.approx(vx) for vx in mesh.verticals)
+        on_h = any(y == pytest.approx(hy) for hy in mesh.horizontals)
+        if (on_tb and on_v) or (on_lr and on_h):
+            found += 1
+    return found
 
 
 def _on_boundary(x: float, y: float, box: Rect) -> bool:
@@ -140,57 +176,59 @@ def test_falloff_mm_on_each_profile():
     )
 
 
+def test_ray_count_per_profile():
+    assert len(perspective_mesh(NOMAD.page_rect()).rays) == 22
+    assert len(perspective_mesh(SCRIBE.page_rect()).rays) == 30
+
+
 @pytest.mark.parametrize("device_id", known_device_ids())
-def test_rays_are_equal_angle_and_clipped_to_the_page(device_id: str):
+def test_rays_lock_to_every_second_crossing(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
     mesh = perspective_mesh(page)
-    assert PERSPECTIVE_RAY_STEP_DEG == 5.0
-    assert len(mesh.rays) == 72
-    assert [ray.k for ray in mesh.rays] == list(range(72))
-    dark = [ray for ray in mesh.rays if ray.dark]
-    light = [ray for ray in mesh.rays if not ray.dark]
-    assert len(dark) == len(light) == 36
+    angles = [_chord_angle(ray) for ray in mesh.rays]
+    assert angles == sorted(angles)
+    horizontal = next(
+        ray
+        for ray in mesh.rays
+        if ray.y1 == pytest.approx(mesh.cy) and ray.y2 == pytest.approx(mesh.cy)
+    )
+    vertical = next(
+        ray
+        for ray in mesh.rays
+        if ray.x1 == pytest.approx(mesh.cx) and ray.x2 == pytest.approx(mesh.cx)
+    )
+    assert horizontal.dark is True
+    assert vertical.dark is True
+    assert _chord_angle(horizontal) == pytest.approx(0.0)
+    assert _chord_angle(vertical) == pytest.approx(90.0)
+    vertical_at = mesh.rays.index(vertical)
+    for i, (a, b) in enumerate(zip(mesh.rays, mesh.rays[1:], strict=False)):
+        if i in {vertical_at - 1, vertical_at}:
+            assert a.dark and b.dark
+        else:
+            assert a.dark != b.dark
+    assert mesh.rays[-1].dark != horizontal.dark
+    keys = {_endpoints(ray) for ray in mesh.rays}
     for ray in mesh.rays:
-        assert ray.dark is (ray.k % 2 == 0)
-        assert ray.x1 == pytest.approx(mesh.cx)
-        assert ray.y1 == pytest.approx(mesh.cy)
-        assert _inside(ray.x1, ray.y1, page)
-        assert _inside(ray.x2, ray.y2, page)
+        assert _endpoints(_reflect_x(ray, mesh.cx)) in keys
+        assert _endpoints(_reflect_y(ray, mesh.cy)) in keys
+        assert _on_boundary(ray.x1, ray.y1, page)
         assert _on_boundary(ray.x2, ray.y2, page)
-        mid_x = (ray.x1 + ray.x2) / 2
-        mid_y = (ray.y1 + ray.y2) / 2
-        assert _inside(mid_x, mid_y, page)
-        angle = math.degrees(math.atan2(ray.y2 - mesh.cy, ray.x2 - mesh.cx)) % 360
-        assert angle == pytest.approx(ray.k * PERSPECTIVE_RAY_STEP_DEG, abs=1e-6)
-    steps = [
-        (
-            math.degrees(math.atan2(b.y2 - mesh.cy, b.x2 - mesh.cx))
-            - math.degrees(math.atan2(a.y2 - mesh.cy, a.x2 - mesh.cx))
-        )
-        % 360
-        for a, b in zip(mesh.rays, mesh.rays[1:], strict=False)
-    ]
-    assert steps == pytest.approx([PERSPECTIVE_RAY_STEP_DEG] * 71)
-    first = mesh.rays[0]
-    last = mesh.rays[-1]
-    wrap = (
-        math.degrees(math.atan2(first.y2 - mesh.cy, first.x2 - mesh.cx))
-        - math.degrees(math.atan2(last.y2 - mesh.cy, last.x2 - mesh.cx))
-    ) % 360
-    assert wrap == pytest.approx(PERSPECTIVE_RAY_STEP_DEG)
-    horizontal = mesh.rays[0]
-    vertical = mesh.rays[18]
-    assert horizontal.k == 0 and horizontal.dark is True
-    assert vertical.k == 18 and vertical.dark is True
-    assert horizontal.y2 == pytest.approx(mesh.cy)
-    assert vertical.x2 == pytest.approx(mesh.cx)
-    left_line = max(x for x in mesh.verticals if x < mesh.cx)
-    right_line = min(x for x in mesh.verticals if x > mesh.cx)
-    above = max(y for y in mesh.horizontals if y < mesh.cy)
-    below = min(y for y in mesh.horizontals if y > mesh.cy)
-    assert left_line < mesh.cx < right_line
-    assert above < mesh.cy < below
+        assert (ray.x1 + ray.x2) / 2 == pytest.approx(mesh.cx)
+        assert (ray.y1 + ray.y2) / 2 == pytest.approx(mesh.cy)
+        if ray is horizontal or ray is vertical:
+            continue
+        assert _crossings(ray, mesh, page) == 2
+        for x, _y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
+            on_vertical = any(x == pytest.approx(vx) for vx in mesh.verticals)
+            on_horizontal = any(_y == pytest.approx(hy) for hy in mesh.horizontals)
+            if on_vertical:
+                half = round((x - mesh.cx) / (mesh.pitch / 2))
+                assert abs(half) % 4 == 1
+            if on_horizontal:
+                half = round((_y - mesh.cy) / (mesh.pitch / 2))
+                assert abs(half) % 4 == 1
 
 
 def test_paint_is_full_bleed_without_frame_or_header():
@@ -230,7 +268,8 @@ def test_paint_is_full_bleed_without_frame_or_header():
         )
         dark = [op for op in rays if op[6] == pytest.approx(MUTED)]
         light = [op for op in rays if op[6] == pytest.approx(GHOST)]
-        assert len(dark) == len(light)
+        assert len(dark) == sum(ray.dark for ray in mesh.rays)
+        assert len(light) == sum(not ray.dark for ray in mesh.rays)
         assert all(op[5] == pytest.approx(HAIR) for op in dark)
         assert all(op[5] == pytest.approx(RULE) for op in light)
         frame = device.content_frame()

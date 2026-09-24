@@ -6,9 +6,21 @@ vanishing point is the center of a square and opposite edges share one fall-off:
     x = cx + (k + 1/2) · p
     y = cy + (k + 1/2) · p
 
-Rays leave that center at equal angles ``θ = k · PERSPECTIVE_RAY_STEP_DEG``
-(page y grows down). Even ``k`` is dark, odd ``k`` is light. Opposite rays are
-one chord, so 72 rays are 36 chords through the vanishing point.
+Each perspective chord runs edge to edge through that center and one grid
+line where it meets the page (vertical lines at the top edge, horizontal
+lines at the left edge). The half-pitch index is ``h = 2k + 1`` (the line
+sits at ``center + h · p/2``). ``|h| = 1`` is the crossing nearest each axis.
+Keeping ``|h| ≡ 1 (mod 4)`` takes those nearest crossings and then every
+second pair outward. ``h`` and ``-h`` stay together, so the fan mirrors
+left/right and top/bottom.
+
+Even ``|k|`` does not: it keeps the nearest line on the positive side
+(``k = 0``) and skips the nearest line on the negative side (``k = -1``).
+
+The horizontal and vertical lines through the vanishing point are extra
+chords (they are not grid lines). Chords are sorted by undirected angle.
+Even positions are dark; the vertical axis lands on an odd position because
+mirror pairs fill ``(0°, 90°)`` evenly, so that axis is forced dark.
 """
 
 import math
@@ -21,19 +33,16 @@ from parch.spec import Spec
 
 # This page only. Not a Spec/TOML knob, and not the engineering/dotgrid pitch.
 PERSPECTIVE_PITCH_MM = 7.0
-# Equal-angle fan. Not a Spec/TOML knob. 360 / 5 = 72 rays, 36 chords.
-PERSPECTIVE_RAY_STEP_DEG = 5.0
 
 
 @dataclass(frozen=True, slots=True)
 class PerspectiveRay:
-    """Ray from the vanishing point to the page edge at ``k`` steps."""
+    """One undirected chord of the page through the vanishing point."""
 
     x1: float
     y1: float
     x2: float
     y2: float
-    k: int
     dark: bool
 
 
@@ -65,8 +74,8 @@ def perspective_mesh(box: Rect, pitch: float = PERSPECTIVE_PITCH_MM) -> Perspect
     """Grid and rays for *box*. ``pitch`` defaults to this page's 7 mm square.
 
     Grid indices are the integers in ``center + (index + 1/2) · pitch`` that
-    still meet the page. Rays are ``θ = k · PERSPECTIVE_RAY_STEP_DEG`` for
-    ``k = 0 .. 360/step - 1``, each clipped from the page center to the edge.
+    still meet the page. Rays are edge-to-edge chords through every second
+    grid-line/edge crossing (``|2k+1| ≡ 1 (mod 4)``) plus the two axes.
     """
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
@@ -74,7 +83,7 @@ def perspective_mesh(box: Rect, pitch: float = PERSPECTIVE_PITCH_MM) -> Perspect
     ms = _indices(cy, box.y, box.bottom, pitch)
     verticals = tuple(cx + (k + 0.5) * pitch for k in ks)
     horizontals = tuple(cy + (m + 0.5) * pitch for m in ms)
-    rays = _rays(cx, cy, box)
+    rays = _rays(cx, cy, ks, ms, pitch, box)
     return PerspectiveMesh(pitch, cx, cy, verticals, horizontals, rays)
 
 
@@ -113,53 +122,49 @@ def _indices(center: float, lo: float, hi: float, pitch: float) -> tuple[int, ..
     return tuple(found)
 
 
-def _direction(k: int) -> tuple[float, float]:
-    """Unit direction at ``k`` steps. 0° is +x; 90° is +y (page down)."""
-    theta = math.radians(k * PERSPECTIVE_RAY_STEP_DEG)
-    dx = math.cos(theta)
-    dy = math.sin(theta)
-    if abs(dx) < 1e-9:
-        dx = 0.0
-    if abs(dy) < 1e-9:
-        dy = 0.0
-    return dx, dy
+def _every_second(indices: tuple[int, ...]) -> tuple[int, ...]:
+    """Indices whose half-pitch ``|2k+1| ≡ 1 (mod 4)``: nearest, then every second."""
+    return tuple(k for k in indices if abs(2 * k + 1) % 4 == 1)
 
 
-def _rays(cx: float, cy: float, box: Rect) -> tuple[PerspectiveRay, ...]:
-    count = int(round(360.0 / PERSPECTIVE_RAY_STEP_DEG))
+def _rays(
+    cx: float,
+    cy: float,
+    ks: tuple[int, ...],
+    ms: tuple[int, ...],
+    pitch: float,
+    box: Rect,
+) -> tuple[PerspectiveRay, ...]:
+    chords: list[tuple[float, float, float, float]] = []
+    for k in _every_second(ks):
+        x = cx + (k + 0.5) * pitch
+        chords.append((x, box.y, 2 * cx - x, box.bottom))
+    for m in _every_second(ms):
+        y = cy + (m + 0.5) * pitch
+        chords.append((box.x, y, box.right, 2 * cy - y))
+    chords.append((box.x, cy, box.right, cy))
+    chords.append((cx, box.y, cx, box.bottom))
+    chords.sort(key=lambda chord: _angle(*chord))
     rays: list[PerspectiveRay] = []
-    for k in range(count):
-        dx, dy = _direction(k)
-        x2, y2 = _clip_ray(cx, cy, dx, dy, box)
-        rays.append(PerspectiveRay(cx, cy, x2, y2, k, dark=(k % 2 == 0)))
+    for i, (x1, y1, x2, y2) in enumerate(chords):
+        axis = _is_horizontal_axis(y1, y2, cy) or _is_vertical_axis(x1, x2, cx)
+        rays.append(PerspectiveRay(x1, y1, x2, y2, dark=axis or i % 2 == 0))
     return tuple(rays)
 
 
-def _snap(value: float, lo: float, hi: float) -> float:
-    if abs(value - lo) <= 1e-6:
-        return lo
-    if abs(value - hi) <= 1e-6:
-        return hi
-    return value
+def _angle(x1: float, y1: float, x2: float, y2: float) -> float:
+    """Undirected direction in ``[0, π)``. 0 is +x; π/2 is +y (page down)."""
+    theta = math.atan2(y2 - y1, x2 - x1)
+    if theta < 0.0:
+        theta += math.pi
+    if theta >= math.pi - 1e-12:
+        theta = 0.0
+    return theta
 
 
-def _clip_ray(
-    cx: float, cy: float, dx: float, dy: float, box: Rect
-) -> tuple[float, float]:
-    """First page-edge hit of the ray from ``(cx, cy)`` along ``(dx, dy)``."""
-    hits: list[float] = []
-    if dx > 0.0:
-        hits.append((box.right - cx) / dx)
-    elif dx < 0.0:
-        hits.append((box.x - cx) / dx)
-    if dy > 0.0:
-        hits.append((box.bottom - cy) / dy)
-    elif dy < 0.0:
-        hits.append((box.y - cy) / dy)
-    if not hits:
-        raise ValueError("perspective ray has no direction")
-    t = min(hits)
-    return (
-        _snap(cx + t * dx, box.x, box.right),
-        _snap(cy + t * dy, box.y, box.bottom),
-    )
+def _is_horizontal_axis(y1: float, y2: float, cy: float) -> bool:
+    return abs(y1 - cy) <= 1e-6 and abs(y2 - cy) <= 1e-6
+
+
+def _is_vertical_axis(x1: float, x2: float, cx: float) -> bool:
+    return abs(x1 - cx) <= 1e-6 and abs(x2 - cx) <= 1e-6

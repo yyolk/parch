@@ -3363,8 +3363,9 @@ def paint_perspective_page(
     """Single-face full-bleed perspective grid. No header, frame, or chrome.
 
     Square grid is ``PERSPECTIVE_PITCH_MM`` on the full page rect (not
-    ``content_frame``). Rays leave the page center every 5°; even steps are
-    ``MUTED``, odd steps are ``GHOST``. The grid is ``RULE_C``. Nothing
+    ``content_frame``). Rays are chords through every second grid-line/edge
+    crossing, plus the horizontal and vertical axes. Dark chords are
+    ``MUTED``, light chords are ``GHOST``. The grid is ``RULE_C``. Nothing
     outlines the page.
     """
     _bound_ramp(plotter, ramp)
