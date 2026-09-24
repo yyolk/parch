@@ -1,7 +1,8 @@
 # Single-face edge-to-edge perspective grid. Pad-only — no cover.
 # Sibling book (cover + sheets): examples/perspective-notebook.toml.
-# Full-bleed page rect, PERSPECTIVE_PITCH_MM (7 mm) square grid, vanishing point at
-# the page center (middle of a cell). Rays every 5° from that point.
+# Full-bleed page rect, PERSPECTIVE_PITCH_MM (10 mm) square grid, vanishing point at
+# the page center (middle of a cell). Chords through that point meet every
+# grid line at the page edge, plus the horizontal and vertical axes.
 # ``perspective_sheets > 0``
 # presses this ledger alone on year-planner (mix with other pads raises):
 #   parch press examples/perspective-pad.toml -o out/perspective-pad.pdf
