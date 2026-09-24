@@ -16,6 +16,7 @@ from parch.fonts.ramp import TYPE_STEPS, TypeOverlay, require_overlay
 _WEEK_STARTS = {"monday": 0, "sunday": 6}
 _MIX_BOOK = "lined-dotgrid-mix-notebook"
 _DOTGRID_BOOK = "dotgrid-notebook"
+_PERSPECTIVE_BOOK = "perspective-notebook"
 _PAIR_ORDERS = frozenset({"lined-dotgrid", "dotgrid-lined"})
 _BOOKS = frozenset(
     {
@@ -24,20 +25,22 @@ _BOOKS = frozenset(
         "engineering-notebook",
         _DOTGRID_BOOK,
         "lined-notebook",
+        _PERSPECTIVE_BOOK,
         _MIX_BOOK,
         "bullet-journal",
     }
 )
 _BOOK_CHOICES = (
     "year-planner, projects-notebook, engineering-notebook, "
-    "bullet-journal, dotgrid-notebook, lined-notebook, or "
-    "lined-dotgrid-mix-notebook"
+    "bullet-journal, dotgrid-notebook, lined-notebook, "
+    "perspective-notebook, or lined-dotgrid-mix-notebook"
 )
 _EXCLUSIVE_NOTEBOOKS = frozenset(
     {
         "engineering-notebook",
         _DOTGRID_BOOK,
         "lined-notebook",
+        _PERSPECTIVE_BOOK,
     }
 )
 _TYPOGRAPHY_KEYS = frozenset({"overlay"})
@@ -318,6 +321,7 @@ class Spec:
     lined_sheets: int = 0  # full-bleed lined pages; 0 keeps year-planner press
     lined_dotgrid_sheets: int = 0  # duplex lined front / dotgrid back
     dotgrid_lined_sheets: int = 0  # duplex dotgrid front / lined back
+    perspective_sheets: int = 0  # full-bleed perspective grid; 0 keeps year-planner
     outline: bool = False  # reader sidebar outline; default off
     favorites_pages: int = 0  # 0 keeps year-planner press; 1 adds favorites-{year}
     my_100: bool = False  # optional My 100 list; default off
@@ -343,6 +347,8 @@ class Spec:
             raise ConfigError("engineering-notebook cannot set dotgrid_sheets")
         if self.book == "engineering-notebook" and self.lined_sheets:
             raise ConfigError("engineering-notebook cannot set lined_sheets")
+        if self.book == "engineering-notebook" and self.perspective_sheets:
+            raise ConfigError("engineering-notebook cannot set perspective_sheets")
         if self.book == _DOTGRID_BOOK and self.dotgrid_sheets < 1:
             raise ConfigError(f"{_DOTGRID_BOOK} requires dotgrid_sheets >= 1")
         if self.book == _DOTGRID_BOOK and self.engineering_sheets:
@@ -351,6 +357,8 @@ class Spec:
             raise ConfigError(f"{_DOTGRID_BOOK} cannot set steno_sheets")
         if self.book == _DOTGRID_BOOK and self.lined_sheets:
             raise ConfigError(f"{_DOTGRID_BOOK} cannot set lined_sheets")
+        if self.book == _DOTGRID_BOOK and self.perspective_sheets:
+            raise ConfigError(f"{_DOTGRID_BOOK} cannot set perspective_sheets")
         if self.lined_dotgrid_sheets and self.dotgrid_lined_sheets:
             raise ConfigError(
                 "cannot set both lined_dotgrid_sheets and dotgrid_lined_sheets"
@@ -363,6 +371,7 @@ class Spec:
                 self.engineering_sheets
                 or self.steno_sheets
                 or self.dotgrid_sheets
+                or self.perspective_sheets
                 or _pair
             )
         ):
@@ -377,11 +386,26 @@ class Spec:
                 or self.steno_sheets
                 or self.dotgrid_sheets
                 or self.lined_sheets
+                or self.perspective_sheets
             )
         ):
             raise ConfigError(
                 "year-planner cannot mix duplex lined/dotgrid sheets with other "
                 "pad counts"
+            )
+        if (
+            self.book == "year-planner"
+            and self.perspective_sheets
+            and (
+                self.engineering_sheets
+                or self.steno_sheets
+                or self.dotgrid_sheets
+                or self.lined_sheets
+                or _pair
+            )
+        ):
+            raise ConfigError(
+                "year-planner cannot mix perspective_sheets with other pad counts"
             )
         if self.book == "lined-notebook" and self.lined_sheets < 1:
             raise ConfigError("lined-notebook requires lined_sheets >= 1")
@@ -391,6 +415,18 @@ class Spec:
             raise ConfigError("lined-notebook cannot set steno_sheets")
         if self.book == "lined-notebook" and self.dotgrid_sheets:
             raise ConfigError("lined-notebook cannot set dotgrid_sheets")
+        if self.book == "lined-notebook" and self.perspective_sheets:
+            raise ConfigError("lined-notebook cannot set perspective_sheets")
+        if self.book == _PERSPECTIVE_BOOK and self.perspective_sheets < 1:
+            raise ConfigError(f"{_PERSPECTIVE_BOOK} requires perspective_sheets >= 1")
+        if self.book == _PERSPECTIVE_BOOK and self.engineering_sheets:
+            raise ConfigError(f"{_PERSPECTIVE_BOOK} cannot set engineering_sheets")
+        if self.book == _PERSPECTIVE_BOOK and self.steno_sheets:
+            raise ConfigError(f"{_PERSPECTIVE_BOOK} cannot set steno_sheets")
+        if self.book == _PERSPECTIVE_BOOK and self.dotgrid_sheets:
+            raise ConfigError(f"{_PERSPECTIVE_BOOK} cannot set dotgrid_sheets")
+        if self.book == _PERSPECTIVE_BOOK and self.lined_sheets:
+            raise ConfigError(f"{_PERSPECTIVE_BOOK} cannot set lined_sheets")
         if self.book == _MIX_BOOK and not (
             self.lined_dotgrid_sheets or self.dotgrid_lined_sheets
         ):
@@ -405,6 +441,8 @@ class Spec:
             raise ConfigError(f"{_MIX_BOOK} cannot set engineering_sheets")
         if self.book == _MIX_BOOK and self.steno_sheets:
             raise ConfigError(f"{_MIX_BOOK} cannot set steno_sheets")
+        if self.book == _MIX_BOOK and self.perspective_sheets:
+            raise ConfigError(f"{_MIX_BOOK} cannot set perspective_sheets")
         if self.book in _EXCLUSIVE_NOTEBOOKS and self.lined_dotgrid_sheets:
             raise ConfigError(f"{self.book} cannot set lined_dotgrid_sheets")
         if self.book in _EXCLUSIVE_NOTEBOOKS and self.dotgrid_lined_sheets:
@@ -446,6 +484,8 @@ class Spec:
             raise ConfigError("lined_dotgrid_sheets must be 0–100")
         if not 0 <= self.dotgrid_lined_sheets <= 100:
             raise ConfigError("dotgrid_lined_sheets must be 0–100")
+        if not 0 <= self.perspective_sheets <= 100:
+            raise ConfigError("perspective_sheets must be 0–100")
         if not 0 <= self.favorites_pages <= 1:
             raise ConfigError("favorites_pages must be 0–1")
         if not 1 <= self.bujo_index_pages <= 6:
@@ -707,6 +747,14 @@ class Spec:
             raise ConfigError(f"lined sheet out of range: {sheet}")
         return _dest(t"lined-{self.year:04d}-{sheet:02d}")
 
+    def dest_for_perspective_pad(self, sheet: int) -> str:
+        """1-based single-face dest, e.g. ``perspective-2026-01``."""
+        if self.perspective_sheets < 1:
+            raise ConfigError("perspective_sheets must be >= 1 to name a pad dest")
+        if not 1 <= sheet <= self.perspective_sheets:
+            raise ConfigError(f"perspective sheet out of range: {sheet}")
+        return _dest(t"perspective-{self.year:04d}-{sheet:02d}")
+
     def dest_for_duplex_pair_pad(self, order: str, sheet: int, face: str) -> str:
         """1-based duplex dest, e.g. ``lined-dotgrid-2026-01-front``."""
         if order not in _PAIR_ORDERS:
@@ -762,6 +810,8 @@ class Spec:
         lined_dotgrid_table = lined_dotgrid if isinstance(lined_dotgrid, dict) else {}
         dotgrid_lined = data.get("dotgrid-lined")
         dotgrid_lined_table = dotgrid_lined if isinstance(dotgrid_lined, dict) else {}
+        perspective = data.get("perspective")
+        perspective_table = perspective if isinstance(perspective, dict) else {}
         bujo_index_pages, bujo_collections = _parse_bujo(data)
         return cls(
             year=int(data.get("year", 2026)),
@@ -807,6 +857,9 @@ class Spec:
             ),
             dotgrid_lined_sheets=int(
                 dotgrid_lined_table.get("sheets", data.get("dotgrid_lined_sheets", 0))
+            ),
+            perspective_sheets=int(
+                perspective_table.get("sheets", data.get("perspective_sheets", 0))
             ),
             outline=_parse_bool(data.get("outline", False), "outline"),
             favorites_pages=_parse_favorites_pages(data),
@@ -869,6 +922,7 @@ class Spec:
             "lined": {"sheets": self.lined_sheets},
             "lined-dotgrid": {"sheets": self.lined_dotgrid_sheets},
             "dotgrid-lined": {"sheets": self.dotgrid_lined_sheets},
+            "perspective": {"sheets": self.perspective_sheets},
             "bujo": {
                 "index_pages": self.bujo_index_pages,
                 "collections": self.bujo_collections,
@@ -945,6 +999,9 @@ class Spec:
                 "",
                 "[dotgrid-lined]",
                 f"sheets = {self.dotgrid_lined_sheets}",
+                "",
+                "[perspective]",
+                f"sheets = {self.perspective_sheets}",
                 "",
                 "[bujo]",
                 f"index_pages = {self.bujo_index_pages}",

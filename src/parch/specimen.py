@@ -23,11 +23,13 @@ from parch.books.bullet_journal import BulletJournal
 from parch.books.dotgrid_notebook import DotGridNotebook
 from parch.books.lined_dotgrid_notebook import LinedDotGridNotebook
 from parch.books.lined_notebook import LinedNotebook
+from parch.books.perspective_notebook import PerspectiveNotebook
 from parch.books.projects_notebook import ProjectsNotebook
 from parch.books.year_planner import YearPlanner
 from parch.devices import get_device
 from parch.dotgrid import dotgrid_pages
 from parch.lined import lined_pages
+from parch.perspective import perspective_pages
 from parch.sections.page import Page
 from parch.sections.steno import StenoPadSection
 from parch.spec import Spec
@@ -73,8 +75,14 @@ DOTGRID_STEMS = ("dotgrid",)
 # Pad-only full-bleed lined sheet (lined_sheets=1).
 LINED_STEMS = ("lined",)
 
+# Pad-only full-bleed perspective sheet (perspective_sheets=1).
+PERSPECTIVE_STEMS = ("perspective",)
+
 # Lined notebook — cover + one full-bleed lined page (sibling dests).
 LINED_NOTEBOOK_STEMS = ("lined-cover", "lined-page")
+
+# Perspective notebook — cover + one full-bleed perspective page.
+PERSPECTIVE_NOTEBOOK_STEMS = ("perspective-cover", "perspective-page")
 
 # Lined / dotgrid notebook — cover + first lined + first dotgrid.
 LINED_DOTGRID_NOTEBOOK_STEMS = (
@@ -112,9 +120,11 @@ def gallery_groups(
             "Lined / dotgrid mix notebook",
             LINED_DOTGRID_NOTEBOOK_STEMS,
         ),
+        ("perspective-notebook", "Perspective notebook", PERSPECTIVE_NOTEBOOK_STEMS),
         ("steno-pad", "Steno pad", STENO_STEMS),
         ("dotgrid-pad", "Dotgrid pad", DOTGRID_STEMS),
         ("lined-pad", "Lined pad", LINED_STEMS),
+        ("perspective-pad", "Perspective pad", PERSPECTIVE_STEMS),
     )
 
 
@@ -175,6 +185,15 @@ def lined_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     )
 
 
+def perspective_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """One full-bleed perspective sheet for the catalog."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        perspective_sheets=1,
+        title="Perspective",
+    )
+
+
 def lined_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
     """Lined notebook press for catalog cover + one lined page."""
     return replace(
@@ -182,6 +201,16 @@ def lined_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
         book="lined-notebook",
         title="Lined",
         lined_sheets=1,
+    )
+
+
+def perspective_notebook_specimen_spec(device_id: str, *, year: int = 2026) -> Spec:
+    """Perspective notebook press for catalog cover + one perspective page."""
+    return replace(
+        specimen_spec(device_id, year=year),
+        book="perspective-notebook",
+        title="Perspective",
+        perspective_sheets=1,
     )
 
 
@@ -266,11 +295,24 @@ def lined_dests(spec: Spec) -> dict[str, str]:
     return {"lined": spec.dest_for_lined_pad(1)}
 
 
+def perspective_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for the pad-only perspective catalog stem."""
+    return {"perspective": spec.dest_for_perspective_pad(1)}
+
+
 def lined_notebook_dests(spec: Spec) -> dict[str, str]:
     """Named dest for each lined-notebook catalog stem."""
     return {
         "lined-cover": spec.cover_dest,
         "lined-page": spec.dest_for_lined_pad(1),
+    }
+
+
+def perspective_notebook_dests(spec: Spec) -> dict[str, str]:
+    """Named dest for each perspective-notebook catalog stem."""
+    return {
+        "perspective-cover": spec.cover_dest,
+        "perspective-page": spec.dest_for_perspective_pad(1),
     }
 
 
@@ -355,11 +397,27 @@ def lined_page_numbers(
     return _page_numbers(lined_pages(spec), lined_dests(spec), stems)
 
 
+def perspective_page_numbers(
+    spec: Spec, stems: Sequence[str] = PERSPECTIVE_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the pad-only perspective walk."""
+    return _page_numbers(perspective_pages(spec), perspective_dests(spec), stems)
+
+
 def lined_notebook_page_numbers(
     spec: Spec, stems: Sequence[str] = LINED_NOTEBOOK_STEMS
 ) -> dict[str, int]:
     """1-based page numbers from the lined-notebook walk."""
     return _page_numbers(LinedNotebook().pages(spec), lined_notebook_dests(spec), stems)
+
+
+def perspective_notebook_page_numbers(
+    spec: Spec, stems: Sequence[str] = PERSPECTIVE_NOTEBOOK_STEMS
+) -> dict[str, int]:
+    """1-based page numbers from the perspective-notebook walk."""
+    return _page_numbers(
+        PerspectiveNotebook().pages(spec), perspective_notebook_dests(spec), stems
+    )
 
 
 def lined_dotgrid_notebook_page_numbers(
@@ -667,6 +725,26 @@ def write_specimens(
         lined_pdf = Path(tmp) / "lined-pad.pdf"
         press(lined_spec, lined_pdf, proof=True)
         _render_stems(lined_pdf, dest, lined_page_numbers(lined_spec), LINED_STEMS)
+        perspective_spec = perspective_specimen_spec(device_id, year=year)
+        perspective_pdf = Path(tmp) / "perspective-pad.pdf"
+        press(perspective_spec, perspective_pdf, proof=True)
+        _render_stems(
+            perspective_pdf,
+            dest,
+            perspective_page_numbers(perspective_spec),
+            PERSPECTIVE_STEMS,
+        )
+        perspective_notebook_spec = perspective_notebook_specimen_spec(
+            device_id, year=year
+        )
+        perspective_notebook_pdf = Path(tmp) / "perspective-notebook.pdf"
+        press(perspective_notebook_spec, perspective_notebook_pdf, proof=True)
+        _render_stems(
+            perspective_notebook_pdf,
+            dest,
+            perspective_notebook_page_numbers(perspective_notebook_spec),
+            PERSPECTIVE_NOTEBOOK_STEMS,
+        )
     write_device_index(dest, spec.device, groups=gallery_groups(stems), commit=commit)
     return dest
 

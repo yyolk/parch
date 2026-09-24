@@ -77,6 +77,54 @@ def test_lined_notebook_rejects_dotgrid_sheets():
         Spec(book="lined-notebook", lined_sheets=1, dotgrid_sheets=1)
 
 
+def test_engineering_notebook_rejects_perspective_sheets():
+    with pytest.raises(
+        ConfigError, match="engineering-notebook cannot set perspective_sheets"
+    ):
+        Spec(book="engineering-notebook", engineering_sheets=1, perspective_sheets=1)
+
+
+def test_dotgrid_notebook_rejects_perspective_sheets():
+    with pytest.raises(
+        ConfigError, match="dotgrid-notebook cannot set perspective_sheets"
+    ):
+        Spec(book="dotgrid-notebook", dotgrid_sheets=1, perspective_sheets=1)
+
+
+def test_lined_notebook_rejects_perspective_sheets():
+    with pytest.raises(
+        ConfigError, match="lined-notebook cannot set perspective_sheets"
+    ):
+        Spec(book="lined-notebook", lined_sheets=1, perspective_sheets=1)
+
+
+def test_perspective_notebook_rejects_other_pad_sheets():
+    with pytest.raises(
+        ConfigError, match="perspective-notebook cannot set engineering_sheets"
+    ):
+        Spec(book="perspective-notebook", perspective_sheets=1, engineering_sheets=1)
+    with pytest.raises(
+        ConfigError, match="perspective-notebook cannot set steno_sheets"
+    ):
+        Spec(book="perspective-notebook", perspective_sheets=1, steno_sheets=1)
+    with pytest.raises(
+        ConfigError, match="perspective-notebook cannot set dotgrid_sheets"
+    ):
+        Spec(book="perspective-notebook", perspective_sheets=1, dotgrid_sheets=1)
+    with pytest.raises(
+        ConfigError, match="perspective-notebook cannot set lined_sheets"
+    ):
+        Spec(book="perspective-notebook", perspective_sheets=1, lined_sheets=1)
+    with pytest.raises(
+        ConfigError, match="perspective-notebook cannot set lined_dotgrid_sheets"
+    ):
+        Spec(
+            book="perspective-notebook",
+            perspective_sheets=1,
+            lined_dotgrid_sheets=1,
+        )
+
+
 def test_lined_dotgrid_notebook_rejects_engineering_sheets():
     with pytest.raises(
         ConfigError, match="lined-dotgrid-mix-notebook cannot set engineering_sheets"

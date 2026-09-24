@@ -21,6 +21,8 @@ from parch.specimen import (
     LINED_DOTGRID_NOTEBOOK_STEMS,
     LINED_NOTEBOOK_STEMS,
     LINED_STEMS,
+    PERSPECTIVE_NOTEBOOK_STEMS,
+    PERSPECTIVE_STEMS,
     PROJECTS_STEMS,
     SAMPLE_STEMS,
     STENO_STEMS,
@@ -44,6 +46,12 @@ from parch.specimen import (
     lined_notebook_specimen_spec,
     lined_page_numbers,
     lined_specimen_spec,
+    perspective_dests,
+    perspective_notebook_dests,
+    perspective_notebook_page_numbers,
+    perspective_notebook_specimen_spec,
+    perspective_page_numbers,
+    perspective_specimen_spec,
     projects_dests,
     projects_page_numbers,
     projects_specimen_spec,
@@ -86,6 +94,11 @@ def test_gallery_groups_split_optional_extras():
     assert groups["steno-pad"] == ("Steno pad", STENO_STEMS)
     assert groups["dotgrid-pad"] == ("Dotgrid pad", DOTGRID_STEMS)
     assert groups["lined-pad"] == ("Lined pad", LINED_STEMS)
+    assert groups["perspective-pad"] == ("Perspective pad", PERSPECTIVE_STEMS)
+    assert groups["perspective-notebook"] == (
+        "Perspective notebook",
+        PERSPECTIVE_NOTEBOOK_STEMS,
+    )
     assert groups["dotgrid-notebook"] == (
         "Dotgrid notebook",
         DOTGRID_NOTEBOOK_STEMS,
@@ -150,9 +163,13 @@ def test_specimen_index_html_section_anchors():
     assert html.index('id="lined-notebook"') < html.index(
         'id="lined-dotgrid-mix-notebook"'
     )
-    assert html.index('id="lined-dotgrid-mix-notebook"') < html.index('id="steno-pad"')
+    assert html.index('id="lined-dotgrid-mix-notebook"') < html.index(
+        'id="perspective-notebook"'
+    )
+    assert html.index('id="perspective-notebook"') < html.index('id="steno-pad"')
     assert html.index('id="steno-pad"') < html.index('id="dotgrid-pad"')
     assert html.index('id="dotgrid-pad"') < html.index('id="lined-pad"')
+    assert html.index('id="lined-pad"') < html.index('id="perspective-pad"')
     year_html = html[
         html.index('id="year-planner"') : html.index('id="optional-extras"')
     ]
@@ -361,6 +378,33 @@ def test_lined_dests_and_pages():
     assert numbers == {"lined": 1}
 
 
+def test_perspective_dests_and_pages():
+    spec = perspective_specimen_spec("supernote-nomad")
+    assert spec.perspective_sheets == 1
+    dests = perspective_dests(spec)
+    assert (
+        dests["perspective"]
+        == spec.dest_for_perspective_pad(1)
+        == "perspective-2026-01"
+    )
+    numbers = perspective_page_numbers(spec)
+    assert numbers == {"perspective": 1}
+
+
+def test_perspective_notebook_dests_and_pages():
+    spec = perspective_notebook_specimen_spec("kindle-scribe")
+    assert spec.book == "perspective-notebook"
+    assert spec.device == "kindle-scribe"
+    assert spec.perspective_sheets == 1
+    dests = perspective_notebook_dests(spec)
+    assert dests["perspective-cover"] == spec.cover_dest == "cover"
+    assert dests["perspective-page"] == spec.dest_for_perspective_pad(1)
+    numbers = perspective_notebook_page_numbers(spec)
+    assert set(numbers) == set(PERSPECTIVE_NOTEBOOK_STEMS)
+    assert numbers["perspective-cover"] == 1
+    assert numbers["perspective-page"] == 2
+
+
 def test_lined_notebook_dests_and_pages():
     spec = lined_notebook_specimen_spec("kindle-scribe")
     assert spec.book == "lined-notebook"
@@ -531,6 +575,10 @@ def test_write_specimens_presses_notebooks_and_steno(tmp_path: Path, monkeypatch
     )
     assert any(
         spec.book == "year-planner" and spec.lined_sheets == 1 for spec in presses
+    )
+    assert any(spec.book == "perspective-notebook" for spec in presses)
+    assert any(
+        spec.book == "year-planner" and spec.perspective_sheets == 1 for spec in presses
     )
     html = (dest / "index.html").read_text(encoding="utf-8")
     for stem in GALLERY_STEMS:

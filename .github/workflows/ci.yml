@@ -69,10 +69,13 @@ jobs:
             test -s out/specimens/$device/steno.png
             test -s out/specimens/$device/dotgrid.png
             test -s out/specimens/$device/lined.png
+            test -s out/specimens/$device/perspective.png
             test -s out/specimens/$device/dotgrid-cover.png
             test -s out/specimens/$device/dotgrid-page.png
             test -s out/specimens/$device/lined-cover.png
             test -s out/specimens/$device/lined-page.png
+            test -s out/specimens/$device/perspective-cover.png
+            test -s out/specimens/$device/perspective-page.png
             test -s out/specimens/$device/lined-dotgrid-cover.png
             test -s out/specimens/$device/lined-dotgrid-lined.png
             test -s out/specimens/$device/lined-dotgrid-dotgrid.png
@@ -89,10 +92,13 @@ jobs:
             grep -q 'src="steno.png"' out/specimens/$device/index.html
             grep -q 'src="dotgrid.png"' out/specimens/$device/index.html
             grep -q 'src="lined.png"' out/specimens/$device/index.html
+            grep -q 'src="perspective.png"' out/specimens/$device/index.html
             grep -q 'src="dotgrid-cover.png"' out/specimens/$device/index.html
             grep -q 'src="dotgrid-page.png"' out/specimens/$device/index.html
             grep -q 'src="lined-cover.png"' out/specimens/$device/index.html
             grep -q 'src="lined-page.png"' out/specimens/$device/index.html
+            grep -q 'src="perspective-cover.png"' out/specimens/$device/index.html
+            grep -q 'src="perspective-page.png"' out/specimens/$device/index.html
             grep -q 'src="lined-dotgrid-cover.png"' out/specimens/$device/index.html
             grep -q 'src="lined-dotgrid-lined.png"' out/specimens/$device/index.html
             grep -q 'src="lined-dotgrid-dotgrid.png"' out/specimens/$device/index.html
@@ -108,10 +114,12 @@ jobs:
             grep -q 'id="bullet-journal"' out/specimens/$device/index.html
             grep -q 'id="dotgrid-notebook"' out/specimens/$device/index.html
             grep -q 'id="lined-notebook"' out/specimens/$device/index.html
+            grep -q 'id="perspective-notebook"' out/specimens/$device/index.html
             grep -q 'id="lined-dotgrid-mix-notebook"' out/specimens/$device/index.html
             grep -q 'id="steno-pad"' out/specimens/$device/index.html
             grep -q 'id="dotgrid-pad"' out/specimens/$device/index.html
             grep -q 'id="lined-pad"' out/specimens/$device/index.html
+            grep -q 'id="perspective-pad"' out/specimens/$device/index.html
             grep -q 'href="#year-planner"' out/specimens/$device/index.html
             grep -q 'href="#optional-extras"' out/specimens/$device/index.html
             grep -q 'href="#bullet-journal"' out/specimens/$device/index.html
@@ -120,9 +128,11 @@ jobs:
             grep -q '<h2>Bullet Journal</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dotgrid notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined notebook</h2>' out/specimens/$device/index.html
+            grep -q '<h2>Perspective notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined / dotgrid mix notebook</h2>' out/specimens/$device/index.html
             grep -q '<h2>Dotgrid pad</h2>' out/specimens/$device/index.html
             grep -q '<h2>Lined pad</h2>' out/specimens/$device/index.html
+            grep -q '<h2>Perspective pad</h2>' out/specimens/$device/index.html
             grep -q "github.com/.*/commit/" out/specimens/$device/index.html
             ! grep -q '<script' out/specimens/$device/index.html
             ! grep -q 'href="cover.png"' out/specimens/$device/index.html
