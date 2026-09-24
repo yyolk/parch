@@ -97,7 +97,7 @@ def press(
     ``lined_sheets`` on year-planner with no other pad counts presses
     ``lined_pages`` alone — no cover. Mixing lined with engineering /
     steno / dotgrid on year-planner raises ``ConfigError`` (P5
-    compose without lined is unchanged).     ``book = "lined-notebook"``
+    compose without lined is unchanged). ``book = "lined-notebook"``
     presses cover + lined pages through ``Book``. Exclusive notebooks
     reject mixed pad counts. ``perspective_sheets`` on year-planner
     with no other pad counts presses ``perspective_pages`` alone — no

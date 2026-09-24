@@ -3364,9 +3364,10 @@ def paint_perspective_page(
 
     Square grid is ``PERSPECTIVE_PITCH_MM`` on the full page rect (not
     ``content_frame``). Rays are chords through every second grid-line/edge
-    crossing, plus the horizontal and vertical axes. Dark chords are
-    ``MUTED``, light chords are ``GHOST``. The grid is ``RULE_C``. Nothing
-    outlines the page.
+    crossing after the nearest pair, plus the horizontal and vertical axes.
+    Axis chords are ``MUTED``. Grid chords alternate ``GHOST`` / ``MUTED``
+    from the horizontal axis in one quadrant, then mirror. The grid is
+    ``RULE_C``. Nothing outlines the page.
     """
     _bound_ramp(plotter, ramp)
     page = device.page_rect()

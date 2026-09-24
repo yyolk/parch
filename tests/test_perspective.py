@@ -40,6 +40,21 @@ def _lines(plotter: RecordingPlotter) -> list[tuple]:
     return [op for op in plotter.ops if op[0] == "line"]
 
 
+def _angle_off_horizontal(ray) -> float:
+    angle = _chord_angle(ray)
+    return min(angle, 180.0 - angle)
+
+
+def _quadrant_hit(ray, mesh, page: Rect) -> tuple[float, float] | None:
+    """Endpoint on the top edge right of center, or the right edge above center."""
+    for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
+        on_top = y == pytest.approx(page.y) and x > mesh.cx
+        on_right = x == pytest.approx(page.right) and y < mesh.cy
+        if on_top or on_right:
+            return x, y
+    return None
+
+
 def _chord_angle(ray) -> float:
     theta = math.degrees(math.atan2(ray.y2 - ray.y1, ray.x2 - ray.x1))
     if theta < 0.0:
@@ -177,8 +192,8 @@ def test_falloff_mm_on_each_profile():
 
 
 def test_ray_count_per_profile():
-    assert len(perspective_mesh(NOMAD.page_rect()).rays) == 22
-    assert len(perspective_mesh(SCRIBE.page_rect()).rays) == 30
+    assert len(perspective_mesh(NOMAD.page_rect()).rays) == 20
+    assert len(perspective_mesh(SCRIBE.page_rect()).rays) == 26
 
 
 @pytest.mark.parametrize("device_id", known_device_ids())
@@ -202,33 +217,42 @@ def test_rays_lock_to_every_second_crossing(device_id: str):
     assert vertical.dark is True
     assert _chord_angle(horizontal) == pytest.approx(0.0)
     assert _chord_angle(vertical) == pytest.approx(90.0)
-    vertical_at = mesh.rays.index(vertical)
-    for i, (a, b) in enumerate(zip(mesh.rays, mesh.rays[1:], strict=False)):
-        if i in {vertical_at - 1, vertical_at}:
-            assert a.dark and b.dark
-        else:
-            assert a.dark != b.dark
-    assert mesh.rays[-1].dark != horizontal.dark
-    keys = {_endpoints(ray) for ray in mesh.rays}
-    for ray in mesh.rays:
-        assert _endpoints(_reflect_x(ray, mesh.cx)) in keys
-        assert _endpoints(_reflect_y(ray, mesh.cy)) in keys
+    grid = [ray for ray in mesh.rays if ray is not horizontal and ray is not vertical]
+    nearest = min(grid, key=_angle_off_horizontal)
+    assert nearest.dark is False
+    tone = {_endpoints(ray): ray.dark for ray in mesh.rays}
+    quadrant: list[tuple[float, bool]] = []
+    for ray in grid:
+        assert _endpoints(_reflect_x(ray, mesh.cx)) in tone
+        assert _endpoints(_reflect_y(ray, mesh.cy)) in tone
+        assert tone[_endpoints(_reflect_x(ray, mesh.cx))] is ray.dark
+        assert tone[_endpoints(_reflect_y(ray, mesh.cy))] is ray.dark
         assert _on_boundary(ray.x1, ray.y1, page)
         assert _on_boundary(ray.x2, ray.y2, page)
         assert (ray.x1 + ray.x2) / 2 == pytest.approx(mesh.cx)
         assert (ray.y1 + ray.y2) / 2 == pytest.approx(mesh.cy)
-        if ray is horizontal or ray is vertical:
-            continue
         assert _crossings(ray, mesh, page) == 2
-        for x, _y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
+        for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
             on_vertical = any(x == pytest.approx(vx) for vx in mesh.verticals)
-            on_horizontal = any(_y == pytest.approx(hy) for hy in mesh.horizontals)
+            on_horizontal = any(y == pytest.approx(hy) for hy in mesh.horizontals)
             if on_vertical:
                 half = round((x - mesh.cx) / (mesh.pitch / 2))
-                assert abs(half) % 4 == 1
+                assert abs(half) % 4 == 3
             if on_horizontal:
-                half = round((_y - mesh.cy) / (mesh.pitch / 2))
-                assert abs(half) % 4 == 1
+                half = round((y - mesh.cy) / (mesh.pitch / 2))
+                assert abs(half) % 4 == 3
+        hit = _quadrant_hit(ray, mesh, page)
+        if hit is not None:
+            qx, qy = hit
+            quadrant.append((math.atan2(mesh.cy - qy, qx - mesh.cx), ray.dark))
+    quadrant.sort(key=lambda item: item[0])
+    assert quadrant
+    assert [dark for _ang, dark in quadrant] == [
+        i % 2 == 1 for i in range(len(quadrant))
+    ]
+    for ray in (horizontal, vertical):
+        assert tone[_endpoints(_reflect_x(ray, mesh.cx))] is True
+        assert tone[_endpoints(_reflect_y(ray, mesh.cy))] is True
 
 
 def test_paint_is_full_bleed_without_frame_or_header():

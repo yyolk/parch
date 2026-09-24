@@ -9,18 +9,16 @@ vanishing point is the center of a square and opposite edges share one fall-off:
 Each perspective chord runs edge to edge through that center and one grid
 line where it meets the page (vertical lines at the top edge, horizontal
 lines at the left edge). The half-pitch index is ``h = 2k + 1`` (the line
-sits at ``center + h · p/2``). ``|h| = 1`` is the crossing nearest each axis.
-Keeping ``|h| ≡ 1 (mod 4)`` takes those nearest crossings and then every
-second pair outward. ``h`` and ``-h`` stay together, so the fan mirrors
-left/right and top/bottom.
-
-Even ``|k|`` does not: it keeps the nearest line on the positive side
-(``k = 0``) and skips the nearest line on the negative side (``k = -1``).
+sits at ``center + h · p/2``). ``|h| = 1`` is the crossing nearest each axis
+and is skipped. Keeping ``|h| ≡ 3 (mod 4)`` — 3, 7, 11, … — takes every
+second crossing after that. ``h`` and ``-h`` stay together, so the fan
+mirrors left/right and top/bottom.
 
 The horizontal and vertical lines through the vanishing point are extra
-chords (they are not grid lines). Chords are sorted by undirected angle.
-Even positions are dark; the vertical axis lands on an odd position because
-mirror pairs fill ``(0°, 90°)`` evenly, so that axis is forced dark.
+dark chords (they are not grid lines). Grid-chord tones come from one
+quadrant: the half-rays that hit the top edge right of center or the right
+edge above center, sorted from the horizontal axis outward, alternating
+light, dark, light, …. The same tone is copied onto the mirror chord.
 """
 
 import math
@@ -75,7 +73,8 @@ def perspective_mesh(box: Rect, pitch: float = PERSPECTIVE_PITCH_MM) -> Perspect
 
     Grid indices are the integers in ``center + (index + 1/2) · pitch`` that
     still meet the page. Rays are edge-to-edge chords through every second
-    grid-line/edge crossing (``|2k+1| ≡ 1 (mod 4)``) plus the two axes.
+    grid-line/edge crossing after the nearest pair (``|2k+1| ≡ 3 (mod 4)``)
+    plus the two axes.
     """
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
@@ -122,9 +121,13 @@ def _indices(center: float, lo: float, hi: float, pitch: float) -> tuple[int, ..
     return tuple(found)
 
 
-def _every_second(indices: tuple[int, ...]) -> tuple[int, ...]:
-    """Indices whose half-pitch ``|2k+1| ≡ 1 (mod 4)``: nearest, then every second."""
-    return tuple(k for k in indices if abs(2 * k + 1) % 4 == 1)
+# Edge-to-edge endpoints of one chord: (x1, y1, x2, y2).
+type _Ends = tuple[float, float, float, float]
+
+
+def _kept(indices: tuple[int, ...]) -> tuple[int, ...]:
+    """Half-pitch ``|2k+1| ≡ 3 (mod 4)``: every second crossing, nearest pair skipped."""
+    return tuple(k for k in indices if abs(2 * k + 1) % 4 == 3)
 
 
 def _rays(
@@ -135,20 +138,36 @@ def _rays(
     pitch: float,
     box: Rect,
 ) -> tuple[PerspectiveRay, ...]:
-    chords: list[tuple[float, float, float, float]] = []
-    for k in _every_second(ks):
+    # One quadrant assigns the tone. Positive h hits the top edge right of
+    # center, or the right edge above center. Angle 0 is the horizontal axis,
+    # increasing toward the top of the page.
+    quadrant: list[tuple[float, _Ends, _Ends]] = []
+    for k in _kept(ks):
+        half = 2 * k + 1
+        if half < 0:
+            continue
         x = cx + (k + 0.5) * pitch
-        chords.append((x, box.y, 2 * cx - x, box.bottom))
-    for m in _every_second(ms):
+        pos = (x, box.y, 2 * cx - x, box.bottom)
+        mirror = (2 * cx - x, box.y, x, box.bottom)
+        quadrant.append((math.atan2(cy - box.y, x - cx), pos, mirror))
+    for m in _kept(ms):
+        half = 2 * m + 1
+        if half < 0:
+            continue
         y = cy + (m + 0.5) * pitch
-        chords.append((box.x, y, box.right, 2 * cy - y))
-    chords.append((box.x, cy, box.right, cy))
-    chords.append((cx, box.y, cx, box.bottom))
-    chords.sort(key=lambda chord: _angle(*chord))
+        y_right = 2 * cy - y
+        pos = (box.x, y, box.right, y_right)
+        mirror = (box.x, y_right, box.right, y)
+        quadrant.append((math.atan2(cy - y_right, box.right - cx), pos, mirror))
+    quadrant.sort(key=lambda item: item[0])
     rays: list[PerspectiveRay] = []
-    for i, (x1, y1, x2, y2) in enumerate(chords):
-        axis = _is_horizontal_axis(y1, y2, cy) or _is_vertical_axis(x1, x2, cx)
-        rays.append(PerspectiveRay(x1, y1, x2, y2, dark=axis or i % 2 == 0))
+    for i, (_ang, pos, mirror) in enumerate(quadrant):
+        dark = i % 2 == 1
+        rays.append(PerspectiveRay(*pos, dark=dark))
+        rays.append(PerspectiveRay(*mirror, dark=dark))
+    rays.append(PerspectiveRay(box.x, cy, box.right, cy, dark=True))
+    rays.append(PerspectiveRay(cx, box.y, cx, box.bottom, dark=True))
+    rays.sort(key=lambda ray: _angle(ray.x1, ray.y1, ray.x2, ray.y2))
     return tuple(rays)
 
 
@@ -160,11 +179,3 @@ def _angle(x1: float, y1: float, x2: float, y2: float) -> float:
     if theta >= math.pi - 1e-12:
         theta = 0.0
     return theta
-
-
-def _is_horizontal_axis(y1: float, y2: float, cy: float) -> bool:
-    return abs(y1 - cy) <= 1e-6 and abs(y2 - cy) <= 1e-6
-
-
-def _is_vertical_axis(x1: float, x2: float, cx: float) -> bool:
-    return abs(x1 - cx) <= 1e-6 and abs(x2 - cx) <= 1e-6
