@@ -13,11 +13,11 @@ from parch.devices.registry import NOMAD, SCRIBE
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
-    ENG_PITCH_MM,
     GHOST,
     HAIR,
     HEADER_H,
     MUTED,
+    PERSPECTIVE_PITCH_MM,
     PERSPECTIVE_RAY_STEP_DEG,
     RULE,
     RULE_C,
@@ -132,21 +132,25 @@ def test_press_selects_notebook_from_toml(tmp_path: Path):
     ],
 )
 def test_opposite_edges_share_falloff_and_center_is_a_cell(page: Rect):
-    grid = perspective_grid(page, ENG_PITCH_MM)
+    grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
     left, right, top, bottom = grid.falloff
     assert left == pytest.approx(right)
     assert top == pytest.approx(bottom)
-    assert 0.0 <= left < ENG_PITCH_MM
-    assert 0.0 <= top < ENG_PITCH_MM
+    assert 0.0 <= left < PERSPECTIVE_PITCH_MM
+    assert 0.0 <= top < PERSPECTIVE_PITCH_MM
     cx, cy = grid.center
     assert cx == pytest.approx(page.x + page.w / 2)
     assert cy == pytest.approx(page.y + page.h / 2)
     assert grid.verticals
     assert grid.horizontals
-    assert min(abs(x - cx) for x in grid.verticals) == pytest.approx(ENG_PITCH_MM / 2)
-    assert min(abs(y - cy) for y in grid.horizontals) == pytest.approx(ENG_PITCH_MM / 2)
-    assert cx - ENG_PITCH_MM / 2 == pytest.approx(
-        min(grid.verticals, key=lambda x: abs(x - (cx - ENG_PITCH_MM / 2)))
+    assert min(abs(x - cx) for x in grid.verticals) == pytest.approx(
+        PERSPECTIVE_PITCH_MM / 2
+    )
+    assert min(abs(y - cy) for y in grid.horizontals) == pytest.approx(
+        PERSPECTIVE_PITCH_MM / 2
+    )
+    assert cx - PERSPECTIVE_PITCH_MM / 2 == pytest.approx(
+        min(grid.verticals, key=lambda x: abs(x - (cx - PERSPECTIVE_PITCH_MM / 2)))
     )
     visible_left = grid.verticals[0] - page.x
     visible_right = page.right - grid.verticals[-1]
@@ -155,22 +159,25 @@ def test_opposite_edges_share_falloff_and_center_is_a_cell(page: Rect):
     visible_bottom = page.bottom - grid.horizontals[-1]
     assert visible_top == pytest.approx(visible_bottom)
     assert left == pytest.approx(
-        0.0 if visible_left <= 1e-6 else ENG_PITCH_MM - visible_left
+        0.0 if visible_left <= 1e-6 else PERSPECTIVE_PITCH_MM - visible_left
     )
     assert top == pytest.approx(
-        0.0 if visible_top <= 1e-6 else ENG_PITCH_MM - visible_top
+        0.0 if visible_top <= 1e-6 else PERSPECTIVE_PITCH_MM - visible_top
     )
 
 
 def test_zero_falloff_puts_a_grid_line_on_each_edge():
-    page = Rect(0.0, 0.0, 55.0, 55.0)
-    grid = perspective_grid(page, 5.0)
+    pitch = PERSPECTIVE_PITCH_MM
+    assert pitch == 7.0
+    span = pitch * 11
+    page = Rect(0.0, 0.0, span, span)
+    grid = perspective_grid(page, pitch)
     assert grid.falloff == pytest.approx((0.0, 0.0, 0.0, 0.0))
     assert grid.verticals[0] == pytest.approx(0.0)
-    assert grid.verticals[-1] == pytest.approx(55.0)
+    assert grid.verticals[-1] == pytest.approx(span)
     assert grid.horizontals[0] == pytest.approx(0.0)
-    assert grid.horizontals[-1] == pytest.approx(55.0)
-    wide = perspective_grid(Rect(0.0, 0.0, 55.0, 40.0), 5.0)
+    assert grid.horizontals[-1] == pytest.approx(span)
+    wide = perspective_grid(Rect(0.0, 0.0, span, pitch * 10), pitch)
     assert wide.falloff[0] == pytest.approx(0.0)
     assert wide.falloff[2] > 0.0
 
@@ -187,7 +194,7 @@ def test_rays_are_equal_angle_and_clipped_to_the_page():
         Rect(0.0, 0.0, 55.0, 40.0),
     )
     for page in pages:
-        grid = perspective_grid(page, ENG_PITCH_MM)
+        grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
         cx, cy = grid.center
         assert PERSPECTIVE_RAY_STEP_DEG == pytest.approx(5.0)
         assert count == 72
@@ -220,13 +227,15 @@ def test_rays_are_equal_angle_and_clipped_to_the_page():
 def test_vanishing_point_is_the_page_center_not_the_content_frame():
     page = SCRIBE.page_rect()
     frame = SCRIBE.content_frame()
-    grid = perspective_grid(page, ENG_PITCH_MM)
+    grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
     cx, cy = grid.center
     assert cx == pytest.approx(page.w / 2)
     assert cy == pytest.approx(page.h / 2)
     assert cy != pytest.approx(frame.y + frame.h / 2)
-    assert grid.verticals[0] < frame.x
-    assert grid.horizontals[0] == pytest.approx(page.y, abs=ENG_PITCH_MM)
+    assert grid.page == page
+    assert grid.verticals[0] - page.x < PERSPECTIVE_PITCH_MM
+    assert page.right - grid.verticals[-1] < PERSPECTIVE_PITCH_MM
+    assert grid.horizontals[0] == pytest.approx(page.y, abs=PERSPECTIVE_PITCH_MM)
 
 
 def test_paint_covers_the_physical_page_without_a_frame():
@@ -235,7 +244,7 @@ def test_paint_covers_the_physical_page_without_a_frame():
         ink = RecordingPlotter()
         paint_perspective_page(ink, device, pad)
         page = device.page_rect()
-        grid = perspective_grid(page, ENG_PITCH_MM)
+        grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
         lines = _lines(ink)
         grid_lines = [
             op
@@ -258,8 +267,8 @@ def test_paint_covers_the_physical_page_without_a_frame():
         assert all(op[4] == pytest.approx(device.page_height) for op in verticals)
         assert all(op[1] == pytest.approx(0.0) for op in horizontals)
         assert all(op[3] == pytest.approx(device.page_width) for op in horizontals)
-        assert min(op[2] for op in horizontals) < device.top_clearance + ENG_PITCH_MM
-        assert min(op[1] for op in verticals) < device.writing_clearance
+        assert min(op[2] for op in horizontals) < PERSPECTIVE_PITCH_MM
+        assert min(op[1] for op in verticals) < PERSPECTIVE_PITCH_MM
         frames = [op for op in ink.ops if op[0] == "rect"]
         assert frames == []
         assert _texts(ink) == []

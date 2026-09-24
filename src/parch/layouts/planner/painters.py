@@ -3352,7 +3352,8 @@ def paint_lined_page(
     paint_lines(plotter, device.page_rect())
 
 
-# Equal-angle fan around the vanishing point. Not a Spec/TOML knob.
+# Square pitch and equal-angle fan for this page only. Not Spec/TOML knobs.
+PERSPECTIVE_PITCH_MM = 7.0
 PERSPECTIVE_RAY_STEP_DEG = 5.0
 
 
@@ -3529,7 +3530,7 @@ def paint_perspective_page(
 
 def _paint_perspective(plotter: Plotter, page: Rect) -> None:
     """``RULE_C`` square grid, then alternating ``MUTED`` / ``GHOST`` rays."""
-    grid = perspective_grid(page, ENG_PITCH_MM)
+    grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
     for x in grid.verticals:
         plotter.line(x, page.y, x, page.bottom, stroke_width=RULE, stroke_gray=RULE_C)
     for y in grid.horizontals:
