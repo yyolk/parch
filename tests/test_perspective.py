@@ -17,6 +17,7 @@ from parch.layouts.planner.painters import (
     GHOST,
     HEADER_H,
     MUTED,
+    PERSPECTIVE_RAY_STEP_DEG,
     RULE,
     RULE_C,
     paint_perspective_page,
@@ -102,65 +103,48 @@ def test_small_page_matches_half_step_lines():
     assert grid.falloff_right == pytest.approx(4.0)
     assert grid.falloff_top == pytest.approx(1.0)
     assert grid.falloff_bottom == pytest.approx(1.0)
-    rays = perspective_rays(page, pitch=5.0)
-    assert len(rays) == len(grid.verticals) + len(grid.horizontals)
-    chords = {
-        (round(ray.x1, 5), round(ray.y1, 5), round(ray.x2, 5), round(ray.y2, 5))
-        for ray in rays
-    }
-    assert chords == {
-        (14.0, 0.0, 9.0, 17.0),
-        (14.0, 17.0, 9.0, 0.0),
-        (19.0, 0.0, 4.0, 17.0),
-        (19.0, 17.0, 4.0, 0.0),
-        (0.0, 11.0, 23.0, 6.0),
-        (0.0, 6.0, 23.0, 11.0),
-        (0.0, 16.0, 23.0, 1.0),
-        (0.0, 1.0, 23.0, 16.0),
-    }
+
+
+def _ray_degrees(ray) -> float:
+    """Mathematical degrees of a ray. 0° is +x; counterclockwise, y up."""
+    return math.degrees(math.atan2(-(ray.y2 - ray.y1), ray.x2 - ray.x1)) % 360
 
 
 @pytest.mark.parametrize("device_id", known_device_ids())
-def test_rays_alternate_and_stay_on_the_page(device_id: str):
+def test_rays_are_equal_angle_and_clipped(device_id: str):
     page = get_device(device_id).page_rect()
     grid = perspective_grid(page)
     rays = perspective_rays(page)
-    assert rays
-    assert len(rays) == len(grid.verticals) + len(grid.horizontals)
-    assert {ray.gray for ray in rays} == {MUTED, GHOST}
+    step = PERSPECTIVE_RAY_STEP_DEG
+    assert step == 5.0
+    assert len(rays) == int(round(360 / step)) == 72
     assert [ray.gray for ray in rays] == [
-        MUTED if i % 2 == 0 else GHOST for i in range(len(rays))
+        MUTED if k % 2 == 0 else GHOST for k in range(len(rays))
     ]
-    angles = [math.atan2(ray.y2 - ray.y1, ray.x2 - ray.x1) % math.pi for ray in rays]
-    assert angles == sorted(angles)
-    assert all(b > a for a, b in zip(angles, angles[1:], strict=False))
-    for ray in rays:
-        assert _on_boundary(ray.x1, ray.y1, page)
+    for k, ray in enumerate(rays):
+        assert _ray_degrees(ray) == pytest.approx(k * step, abs=1e-6)
+        assert ray.x1 == pytest.approx(grid.cx)
+        assert ray.y1 == pytest.approx(grid.cy)
         assert _on_boundary(ray.x2, ray.y2, page)
-        assert (ray.x1 + ray.x2) / 2 == pytest.approx(grid.cx)
-        assert (ray.y1 + ray.y2) / 2 == pytest.approx(grid.cy)
-        assert page.x <= ray.x1 <= page.right
         assert page.x <= ray.x2 <= page.right
-        assert page.y <= ray.y1 <= page.bottom
         assert page.y <= ray.y2 <= page.bottom
-    for x in grid.verticals:
-        assert any(
-            (
-                ray.x1 == pytest.approx(x)
-                and (
-                    ray.y1 == pytest.approx(page.y)
-                    or ray.y1 == pytest.approx(page.bottom)
-                )
-            )
-            or (
-                ray.x2 == pytest.approx(x)
-                and (
-                    ray.y2 == pytest.approx(page.y)
-                    or ray.y2 == pytest.approx(page.bottom)
-                )
-            )
-            for ray in rays
-        )
+        assert page.x < ray.x1 < page.right
+        assert page.y < ray.y1 < page.bottom
+    # 0° and 90° run through the middle of the center square, parallel to the grid.
+    assert rays[0].y2 == pytest.approx(grid.cy)
+    assert rays[0].x2 == pytest.approx(page.right)
+    assert rays[18].x2 == pytest.approx(grid.cx)
+    assert rays[18].y2 == pytest.approx(page.y)
+    assert all(y != pytest.approx(grid.cy) for y in grid.horizontals)
+    assert all(x != pytest.approx(grid.cx) for x in grid.verticals)
+    # Opposite directions are one chord, and they share a tone (36 is even).
+    half = len(rays) // 2
+    for k in range(half):
+        assert rays[k].gray == rays[k + half].gray
+        forward = (rays[k].x2 - grid.cx, rays[k].y2 - grid.cy)
+        back = (rays[k + half].x2 - grid.cx, rays[k + half].y2 - grid.cy)
+        cross = forward[0] * back[1] - forward[1] * back[0]
+        assert cross == pytest.approx(0.0, abs=1e-6)
 
 
 @pytest.mark.parametrize("device", (NOMAD, SCRIBE))

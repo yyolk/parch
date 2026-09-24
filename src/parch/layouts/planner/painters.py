@@ -3369,7 +3369,7 @@ class PerspectiveGrid:
 
 @dataclass(frozen=True, slots=True)
 class PerspectiveRay:
-    """One chord through the page center, both ends on the page boundary."""
+    """One ray from the page center to the page boundary."""
 
     x1: float
     y1: float
@@ -3433,73 +3433,65 @@ def perspective_grid(page: Rect, *, pitch: float = ENG_PITCH_MM) -> PerspectiveG
     )
 
 
-def _chord_key(
-    x1: float, y1: float, x2: float, y2: float
-) -> tuple[tuple[float, float], tuple[float, float]]:
-    a = (round(x1, 5), round(y1, 5))
-    b = (round(x2, 5), round(y2, 5))
-    return (a, b) if a <= b else (b, a)
+# Equal-angle fan. Not a Spec/TOML knob. 360/5 = 72 rays, 36 chords.
+PERSPECTIVE_RAY_STEP_DEG = 5.0
 
 
-def _undirected_angle(x1: float, y1: float, x2: float, y2: float) -> float:
-    """Line orientation in ``[0, π)``. Opposite directions share one angle."""
-    angle = math.atan2(y2 - y1, x2 - x1)
-    if angle < 0:
-        angle += math.pi
-    if angle >= math.pi:
-        angle -= math.pi
-    return angle
+def _ray_direction(k: int) -> tuple[float, float]:
+    """Unit step at ``θ = k · PERSPECTIVE_RAY_STEP_DEG``.
 
-
-def perspective_rays(
-    page: Rect, *, pitch: float = ENG_PITCH_MM
-) -> tuple[PerspectiveRay, ...]:
-    """Chords through the page center, clipped to the page edges.
-
-    The square grid does not pass through the center (the center is the
-    middle of a cell). Each chord is the line that joins one grid line's
-    meeting with a page edge to the mirrored meeting on the opposite edge,
-    so the line runs through ``(cx, cy)``:
-
-    - vertical grid line at ``x = cx + d`` (``d > 0``) contributes
-      ``(cx+d, top)–(cx−d, bottom)`` and ``(cx+d, bottom)–(cx−d, top)``
-    - horizontal grid line at ``y = cy + e`` (``e > 0``) contributes
-      ``(left, cy+e)–(right, cy−e)`` and ``(left, cy−e)–(right, cy+e)``
-
-    Both endpoints sit on the page boundary, so the stroke is the clipped
-    chord. Steep chords (from vertical lines) and shallow chords (from
-    horizontal lines) meet only if a grid line lands on a page corner;
-    that shared diagonal is kept once. Sorted by undirected angle, chords
-    alternate ``MUTED`` then ``GHOST``.
+    ``θ = 0`` points along +x. Angles increase counterclockwise in
+    mathematical coordinates, so page-down ``y`` uses ``−sin θ``.
     """
-    grid = perspective_grid(page, pitch=pitch)
-    cx, cy = grid.cx, grid.cy
-    chords: dict[
-        tuple[tuple[float, float], tuple[float, float]],
-        tuple[float, float, float, float],
-    ] = {}
+    theta = math.radians(k * PERSPECTIVE_RAY_STEP_DEG)
+    dx = math.cos(theta)
+    dy = -math.sin(theta)
+    if abs(dx) < 1e-12:
+        dx = 0.0
+    if abs(dy) < 1e-12:
+        dy = 0.0
+    return dx, dy
 
-    def add(x1: float, y1: float, x2: float, y2: float) -> None:
-        chords.setdefault(_chord_key(x1, y1, x2, y2), (x1, y1, x2, y2))
 
-    for x in grid.verticals:
-        offset = x - cx
-        if offset <= 0:
-            continue
-        add(cx + offset, page.y, cx - offset, page.bottom)
-        add(cx + offset, page.bottom, cx - offset, page.y)
-    for y in grid.horizontals:
-        offset = y - cy
-        if offset <= 0:
-            continue
-        add(page.x, cy + offset, page.right, cy - offset)
-        add(page.x, cy - offset, page.right, cy + offset)
+def _ray_hit(
+    page: Rect, cx: float, cy: float, dx: float, dy: float
+) -> tuple[float, float]:
+    """Where the ray from ``(cx, cy)`` along ``(dx, dy)`` meets the page edge."""
+    times: list[float] = []
+    if dx > 0:
+        times.append((page.right - cx) / dx)
+    elif dx < 0:
+        times.append((page.x - cx) / dx)
+    if dy > 0:
+        times.append((page.bottom - cy) / dy)
+    elif dy < 0:
+        times.append((page.y - cy) / dy)
+    t = min(times)
+    x = min(page.right, max(page.x, cx + t * dx))
+    y = min(page.bottom, max(page.y, cy + t * dy))
+    return x, y
 
-    ordered = sorted(chords.values(), key=lambda seg: _undirected_angle(*seg))
-    return tuple(
-        PerspectiveRay(x1, y1, x2, y2, MUTED if i % 2 == 0 else GHOST)
-        for i, (x1, y1, x2, y2) in enumerate(ordered)
-    )
+
+def perspective_rays(page: Rect) -> tuple[PerspectiveRay, ...]:
+    """Equal-angle rays from the page center, clipped to the page.
+
+    ``θ = k · 5°`` for ``k = 0 … 71`` (a full turn). Each stroke runs from
+    the vanishing point to the first page edge in that direction. Opposite
+    rays (``k`` and ``k + 36``) are one chord through the center, so the
+    fan is 36 chords. ``k`` even is ``MUTED`` (0°, 10°, 20°…); ``k`` odd
+    is ``GHOST`` (5°, 15°…). ``0°`` and ``90°`` pass through the middle of
+    the center cell, parallel to the grid.
+    """
+    cx = page.x + page.w / 2
+    cy = page.y + page.h / 2
+    count = int(round(360 / PERSPECTIVE_RAY_STEP_DEG))
+    rays: list[PerspectiveRay] = []
+    for k in range(count):
+        dx, dy = _ray_direction(k)
+        x2, y2 = _ray_hit(page, cx, cy, dx, dy)
+        gray = MUTED if k % 2 == 0 else GHOST
+        rays.append(PerspectiveRay(cx, cy, x2, y2, gray))
+    return tuple(rays)
 
 
 def paint_perspective_page(
