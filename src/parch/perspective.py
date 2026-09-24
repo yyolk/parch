@@ -6,10 +6,9 @@ vanishing point is the center of a square and opposite edges share one fall-off:
     x = cx + (k + 1/2) · p
     y = cy + (k + 1/2) · p
 
-Each perspective line is the page chord through that center and one outer grid
-corner: the top intersection of every vertical line, and the left intersection
-of every horizontal line. Corners that share a direction are one line. Lines
-are sorted by angle and alternate dark, light.
+Rays leave that center at equal angles ``θ = k · PERSPECTIVE_RAY_STEP_DEG``
+(page y grows down). Even ``k`` is dark, odd ``k`` is light. Opposite rays are
+one chord, so 72 rays are 36 chords through the vanishing point.
 """
 
 import math
@@ -20,15 +19,19 @@ from parch.geom import Rect
 from parch.sections.page import Page
 from parch.spec import Spec
 
+# Equal-angle fan. Not a Spec/TOML knob. 360 / 5 = 72 rays, 36 chords.
+PERSPECTIVE_RAY_STEP_DEG = 5.0
+
 
 @dataclass(frozen=True, slots=True)
 class PerspectiveRay:
-    """One undirected chord of the page through the vanishing point."""
+    """Ray from the vanishing point to the page edge at ``k`` steps."""
 
     x1: float
     y1: float
     x2: float
     y2: float
+    k: int
     dark: bool
 
 
@@ -59,12 +62,9 @@ def perspective_falloff(
 def perspective_mesh(box: Rect, pitch: float) -> PerspectiveMesh:
     """Grid and rays for *box*. ``pitch`` is the square size (engineering 5 mm).
 
-    Vertical indices ``k`` and horizontal indices ``m`` are the integers in
-    ``center + (index + 1/2) · pitch`` that still meet the page. Outer corners
-    are ``(x_k, y_{m_min})`` and ``(x_{k_min}, y_m)``. The direction of a
-    corner is the odd pair ``(2k+1, 2m+1)`` reduced by ``gcd``, with the first
-    component kept positive so each undirected line is stored once. The chord
-    is that line clipped to *box*.
+    Grid indices are the integers in ``center + (index + 1/2) · pitch`` that
+    still meet the page. Rays are ``θ = k · PERSPECTIVE_RAY_STEP_DEG`` for
+    ``k = 0 .. 360/step - 1``, each clipped from the page center to the edge.
     """
     cx = box.x + box.w / 2
     cy = box.y + box.h / 2
@@ -72,7 +72,7 @@ def perspective_mesh(box: Rect, pitch: float) -> PerspectiveMesh:
     ms = _indices(cy, box.y, box.bottom, pitch)
     verticals = tuple(cx + (k + 0.5) * pitch for k in ks)
     horizontals = tuple(cy + (m + 0.5) * pitch for m in ms)
-    rays = _rays(cx, cy, ks, ms, box)
+    rays = _rays(cx, cy, box)
     return PerspectiveMesh(pitch, cx, cy, verticals, horizontals, rays)
 
 
@@ -111,34 +111,25 @@ def _indices(center: float, lo: float, hi: float, pitch: float) -> tuple[int, ..
     return tuple(found)
 
 
-def _reduce(a: int, b: int) -> tuple[int, int]:
-    g = math.gcd(a, b)
-    a //= g
-    b //= g
-    if a < 0:
-        a, b = -a, -b
-    return a, b
+def _direction(k: int) -> tuple[float, float]:
+    """Unit direction at ``k`` steps. 0° is +x; 90° is +y (page down)."""
+    theta = math.radians(k * PERSPECTIVE_RAY_STEP_DEG)
+    dx = math.cos(theta)
+    dy = math.sin(theta)
+    if abs(dx) < 1e-9:
+        dx = 0.0
+    if abs(dy) < 1e-9:
+        dy = 0.0
+    return dx, dy
 
 
-def _rays(
-    cx: float,
-    cy: float,
-    ks: tuple[int, ...],
-    ms: tuple[int, ...],
-    box: Rect,
-) -> tuple[PerspectiveRay, ...]:
-    k0 = ks[0]
-    m0 = ms[0]
-    dirs: set[tuple[int, int]] = set()
-    for k in ks:
-        dirs.add(_reduce(2 * k + 1, 2 * m0 + 1))
-    for m in ms:
-        dirs.add(_reduce(2 * k0 + 1, 2 * m + 1))
-    ordered = sorted(dirs, key=lambda ab: math.atan2(ab[1], ab[0]))
+def _rays(cx: float, cy: float, box: Rect) -> tuple[PerspectiveRay, ...]:
+    count = int(round(360.0 / PERSPECTIVE_RAY_STEP_DEG))
     rays: list[PerspectiveRay] = []
-    for i, (a, b) in enumerate(ordered):
-        x1, y1, x2, y2 = _clip_chord(cx, cy, float(a), float(b), box)
-        rays.append(PerspectiveRay(x1, y1, x2, y2, dark=(i % 2 == 0)))
+    for k in range(count):
+        dx, dy = _direction(k)
+        x2, y2 = _clip_ray(cx, cy, dx, dy, box)
+        rays.append(PerspectiveRay(cx, cy, x2, y2, k, dark=(k % 2 == 0)))
     return tuple(rays)
 
 
@@ -150,27 +141,23 @@ def _snap(value: float, lo: float, hi: float) -> float:
     return value
 
 
-def _clip_chord(
+def _clip_ray(
     cx: float, cy: float, dx: float, dy: float, box: Rect
-) -> tuple[float, float, float, float]:
-    """Page chord through ``(cx, cy)`` in direction ``(dx, dy)``."""
-    spans: list[tuple[float, float, float]] = []
-    if dx != 0.0:
-        for x_edge in (box.x, box.right):
-            t = (x_edge - cx) / dx
-            y = cy + t * dy
-            if box.y - 1e-6 <= y <= box.bottom + 1e-6:
-                spans.append((t, x_edge, _snap(y, box.y, box.bottom)))
-    if dy != 0.0:
-        for y_edge in (box.y, box.bottom):
-            t = (y_edge - cy) / dy
-            x = cx + t * dx
-            if box.x - 1e-6 <= x <= box.right + 1e-6:
-                spans.append((t, _snap(x, box.x, box.right), y_edge))
-    neg = [item for item in spans if item[0] < 0.0]
-    pos = [item for item in spans if item[0] > 0.0]
-    if not neg or not pos:
-        raise ValueError("perspective ray does not cross the page")
-    _tn, x1, y1 = max(neg, key=lambda item: item[0])
-    _tp, x2, y2 = min(pos, key=lambda item: item[0])
-    return x1, y1, x2, y2
+) -> tuple[float, float]:
+    """First page-edge hit of the ray from ``(cx, cy)`` along ``(dx, dy)``."""
+    hits: list[float] = []
+    if dx > 0.0:
+        hits.append((box.right - cx) / dx)
+    elif dx < 0.0:
+        hits.append((box.x - cx) / dx)
+    if dy > 0.0:
+        hits.append((box.bottom - cy) / dy)
+    elif dy < 0.0:
+        hits.append((box.y - cy) / dy)
+    if not hits:
+        raise ValueError("perspective ray has no direction")
+    t = min(hits)
+    return (
+        _snap(cx + t * dx, box.x, box.right),
+        _snap(cy + t * dy, box.y, box.bottom),
+    )
