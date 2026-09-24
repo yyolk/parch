@@ -124,6 +124,7 @@ def test_cannot_set_both_duplex_orders():
         {"engineering_sheets": 1},
         {"steno_sheets": 1},
         {"dotgrid_sheets": 1},
+        {"perspective_sheets": 1},
     ],
 )
 def test_year_planner_rejects_duplex_mixed_with_other_pads(kwargs):

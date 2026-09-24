@@ -19,6 +19,7 @@ from parch.fonts import (
 )
 from parch.fonts.ramp import OverlayData
 from parch.lined import lined_pages
+from parch.perspective import perspective_pages
 from parch.plotter.fpdf2 import Fpdf2Plotter
 from parch.plotter.protocol import Plotter
 from parch.sections.engineering import EngineeringPadSection
@@ -96,9 +97,13 @@ def press(
     ``lined_sheets`` on year-planner with no other pad counts presses
     ``lined_pages`` alone — no cover. Mixing lined with engineering /
     steno / dotgrid on year-planner raises ``ConfigError`` (P5
-    compose without lined is unchanged). ``book = "lined-notebook"``
+    compose without lined is unchanged).     ``book = "lined-notebook"``
     presses cover + lined pages through ``Book``. Exclusive notebooks
-    reject mixed pad counts. ``book = "lined-dotgrid-mix-notebook"``
+    reject mixed pad counts. ``perspective_sheets`` on year-planner
+    with no other pad counts presses ``perspective_pages`` alone — no
+    cover. Mixing perspective with other pads raises ``ConfigError``.
+    ``book = "perspective-notebook"`` presses cover + perspective pages
+    through ``Book``. ``book = "lined-dotgrid-mix-notebook"``
     prefixes cover then one duplex pair section (exactly one of
     ``lined_dotgrid_sheets`` / ``dotgrid_lined_sheets``). Pad-only
     year-planner still presses one duplex pair type — no cover.
@@ -156,6 +161,15 @@ def press(
     elif spec.book == "year-planner" and spec.lined_sheets > 0:
         plot_pages(
             lambda: lined_pages(spec),
+            plotter,
+            ramp=resolved,
+            device=spec.device,
+            outline=spec.outline,
+            top_clearance=spec.top_clearance,
+        )
+    elif spec.book == "year-planner" and spec.perspective_sheets > 0:
+        plot_pages(
+            lambda: perspective_pages(spec),
             plotter,
             ramp=resolved,
             device=spec.device,

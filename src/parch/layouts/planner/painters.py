@@ -28,6 +28,7 @@ from parch.components import (
     MonthlyTaskWell,
     My100Page,
     Notes,
+    PerspectivePad,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -56,6 +57,7 @@ from parch.fonts.metrics import (
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
+from parch.perspective import perspective_mesh
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
 from parch.tracks import columns, rows
@@ -2987,7 +2989,14 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Day"] = page.dest
         case CollectionLeaf():
             dests["Col"] = page.dest
-        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | PerspectivePad()
+        ):
             pass
         case _ as unseen:
             assert_never(unseen)
@@ -3044,7 +3053,14 @@ def strip_active(page: Page) -> str:
             return "Task"
         case ReviewIndex() | ReviewWeekPage():
             return "Rev"
-        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | PerspectivePad()
+        ):
             return ""
         case BujoKey():
             return "Key"
@@ -3335,6 +3351,40 @@ def paint_lined_page(
     """Single-face full-bleed lined page. No header, holes, or chrome."""
     _bound_ramp(plotter, ramp)
     paint_lines(plotter, device.page_rect())
+
+
+def paint_perspective_page(
+    plotter: Plotter,
+    device: Device,
+    pad: PerspectivePad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face full-bleed perspective grid. No header, frame, or chrome.
+
+    Square grid is ``ENG_PITCH_MM`` on the full page rect (not
+    ``content_frame``). Rays alternate ``MUTED`` / ``GHOST``; the grid is
+    ``RULE_C``. Nothing outlines the page.
+    """
+    _bound_ramp(plotter, ramp)
+    page = device.page_rect()
+    mesh = perspective_mesh(page, ENG_PITCH_MM)
+    for x in mesh.verticals:
+        plotter.line(x, page.y, x, page.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    for y in mesh.horizontals:
+        plotter.line(page.x, y, page.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+    for ray in mesh.rays:
+        if ray.dark:
+            continue
+        plotter.line(
+            ray.x1, ray.y1, ray.x2, ray.y2, stroke_width=RULE, stroke_gray=GHOST
+        )
+    for ray in mesh.rays:
+        if not ray.dark:
+            continue
+        plotter.line(
+            ray.x1, ray.y1, ray.x2, ray.y2, stroke_width=HAIR, stroke_gray=MUTED
+        )
 
 
 def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:

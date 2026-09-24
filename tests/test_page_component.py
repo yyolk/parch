@@ -16,6 +16,7 @@ from parch.components import (
     LinedPad,
     Notes,
     PageComponent,
+    PerspectivePad,
     Schedule,
     StenoPad,
     WellComponent,
@@ -86,7 +87,14 @@ def test_chrome_and_well_unions_are_closed_page_leads():
     well = _union_members(WellComponent)
     page = _union_members(PageComponent)
     component = _union_members(Component)
-    assert chrome == {CoverTitle, EngineeringPad, StenoPad, DotGridPad, LinedPad}
+    assert chrome == {
+        CoverTitle,
+        EngineeringPad,
+        StenoPad,
+        DotGridPad,
+        LinedPad,
+        PerspectivePad,
+    }
     assert LinedPad in chrome
     assert chrome.isdisjoint(well)
     assert page == chrome | well
