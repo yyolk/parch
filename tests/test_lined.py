@@ -164,6 +164,7 @@ def test_press_example_toml_is_one_page(tmp_path: Path):
         {"engineering_sheets": 1},
         {"steno_sheets": 1},
         {"dotgrid_sheets": 1},
+        {"perspective_sheets": 1},
         {"lined_dotgrid_sheets": 1},
         {"dotgrid_lined_sheets": 1},
         {"engineering_sheets": 1, "steno_sheets": 1, "dotgrid_sheets": 1},

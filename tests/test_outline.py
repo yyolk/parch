@@ -10,6 +10,7 @@ from parch.books import (
     EngineeringNotebook,
     LinedDotGridNotebook,
     LinedNotebook,
+    PerspectiveNotebook,
     ProjectsNotebook,
     YearPlanner,
     outline_entries,
@@ -100,6 +101,16 @@ def test_lined_notebook_outline_empty_when_enabled():
     dests = plotter.dests()
     assert spec.cover_dest in dests
     assert spec.dest_for_lined_pad(1) in dests
+
+
+def test_perspective_notebook_outline_empty_when_enabled():
+    spec = Spec(book="perspective-notebook", perspective_sheets=2, outline=True)
+    plotter = RecordingPlotter()
+    PerspectiveNotebook().plot(spec, plotter)
+    assert plotter.outlines() == []
+    dests = plotter.dests()
+    assert spec.cover_dest in dests
+    assert spec.dest_for_perspective_pad(1) in dests
 
 
 def test_lined_dotgrid_notebook_outline_empty_when_enabled():
@@ -322,6 +333,23 @@ def test_press_pdf_lined_outline_empty_when_enabled(tmp_path: Path):
     assert reader.outline == []
     dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
     assert spec.dest_for_lined_pad(1) in dests
+    assert spec.cover_dest in dests
+
+
+def test_example_perspective_notebook_toml_enables_outline():
+    spec = Spec.from_path(Path("examples/perspective-notebook.toml"))
+    assert spec.outline is True
+    assert spec.book == "perspective-notebook"
+
+
+def test_press_pdf_perspective_outline_empty_when_enabled(tmp_path: Path):
+    spec = Spec(book="perspective-notebook", perspective_sheets=2, outline=True)
+    out = tmp_path / "perspective-outline.pdf"
+    press(spec, out)
+    reader = PdfReader(out)
+    assert reader.outline == []
+    dests = {str(key).lstrip("/") for key in (reader.named_destinations or {})}
+    assert spec.dest_for_perspective_pad(1) in dests
     assert spec.cover_dest in dests
 
 

@@ -74,6 +74,7 @@ def test_dest_names_from_tstrings():
     assert spec.lined_sheets == 0
     assert spec.lined_dotgrid_sheets == 0
     assert spec.dotgrid_lined_sheets == 0
+    assert spec.perspective_sheets == 0
     assert spec.outline is False
     assert spec.my_100 is False
     assert spec.my_100_dest == "my-100-2026"
@@ -194,6 +195,23 @@ def test_habit_columns_from_toml_keys():
     )
     assert Spec.from_path(Path("examples/lined-notebook.toml")).book == "lined-notebook"
     assert Spec.from_path(Path("examples/lined-notebook.toml")).lined_sheets == 12
+    assert (
+        Spec.from_mapping(
+            {"book": "perspective-notebook", "perspective": {"sheets": 1}}
+        ).book
+        == "perspective-notebook"
+    )
+    assert (
+        Spec.from_path(Path("examples/perspective-notebook.toml")).book
+        == "perspective-notebook"
+    )
+    assert (
+        Spec.from_path(Path("examples/perspective-notebook.toml")).perspective_sheets
+        == 12
+    )
+    assert Spec.from_path(Path("examples/perspective-pad.toml")).perspective_sheets == 1
+    with pytest.raises(ConfigError, match="perspective-notebook requires"):
+        Spec(book="perspective-notebook")
     with pytest.raises(ConfigError, match="lined-notebook requires"):
         Spec(book="lined-notebook")
     assert (

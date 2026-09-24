@@ -6,6 +6,7 @@ from parch.books import (
     EngineeringNotebook,
     LinedDotGridNotebook,
     LinedNotebook,
+    PerspectiveNotebook,
     ProjectsNotebook,
 )
 from parch.components import CoverTitle
@@ -123,6 +124,25 @@ def test_lined_title_is_headline():
     texts = _paint_texts(page)
     assert "Notes" in texts
     assert "Lined" not in texts
+    assert "Year Book" not in texts
+
+
+def test_perspective_omitted_title_keeps_perspective_headline():
+    spec = Spec(book="perspective-notebook", perspective_sheets=1)
+    page, cover = _cover_page(PerspectiveNotebook().pages(spec))
+    assert cover.display_title == "Perspective"
+    texts = _paint_texts(page)
+    assert "Perspective" in texts
+    assert "Year Book" not in texts
+
+
+def test_perspective_title_is_headline():
+    spec = Spec(book="perspective-notebook", perspective_sheets=1, title="Guide")
+    page, cover = _cover_page(PerspectiveNotebook().pages(spec))
+    assert cover.display_title == "Guide"
+    texts = _paint_texts(page)
+    assert "Guide" in texts
+    assert "Perspective" not in texts
     assert "Year Book" not in texts
 
 

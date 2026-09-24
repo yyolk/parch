@@ -28,6 +28,7 @@ from parch.components import (
     MonthlyTaskWell,
     My100Page,
     Notes,
+    PerspectivePad,
     Priorities,
     ProjectsBoard,
     ProjectsIndex,
@@ -2987,7 +2988,14 @@ def strip_items(page: Page) -> tuple[tuple[str, str], ...]:
             dests["Day"] = page.dest
         case CollectionLeaf():
             dests["Col"] = page.dest
-        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | PerspectivePad()
+        ):
             pass
         case _ as unseen:
             assert_never(unseen)
@@ -3044,7 +3052,14 @@ def strip_active(page: Page) -> str:
             return "Task"
         case ReviewIndex() | ReviewWeekPage():
             return "Rev"
-        case CoverTitle() | EngineeringPad() | StenoPad() | DotGridPad() | LinedPad():
+        case (
+            CoverTitle()
+            | EngineeringPad()
+            | StenoPad()
+            | DotGridPad()
+            | LinedPad()
+            | PerspectivePad()
+        ):
             return ""
         case BujoKey():
             return "Key"
@@ -3335,6 +3350,187 @@ def paint_lined_page(
     """Single-face full-bleed lined page. No header, holes, or chrome."""
     _bound_ramp(plotter, ramp)
     paint_lines(plotter, device.page_rect())
+
+
+@dataclass(frozen=True, slots=True)
+class PerspectiveRay:
+    """One perspective line through the vanishing point, clipped to the page."""
+
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    gray: float
+    angle: float
+
+
+@dataclass(frozen=True, slots=True)
+class PerspectiveGrid:
+    """Full-bleed square grid. The page center is the center of a cell.
+
+    Verticals are ``cx + (k + 1/2) * pitch`` and horizontals are
+    ``cy + (k + 1/2) * pitch``. ``falloff`` is ``(left, right, top, bottom)``:
+    millimetres of the edge square that lie past that page edge. Opposite
+    edges match because the cell is centered on the page.
+    """
+
+    page: Rect
+    pitch: float
+    verticals: tuple[float, ...]
+    horizontals: tuple[float, ...]
+    rays: tuple[PerspectiveRay, ...]
+    falloff: tuple[float, float, float, float]
+
+    @property
+    def center(self) -> tuple[float, float]:
+        page = self.page
+        return (page.x + page.w / 2.0, page.y + page.h / 2.0)
+
+
+def _grid_coords(
+    center: float, pitch: float, lo: float, hi: float
+) -> tuple[float, ...]:
+    """``center + (k + 1/2) * pitch`` positions that lie on ``[lo, hi]``."""
+    k_min = math.ceil((lo - center) / pitch - 0.5 - 1e-9)
+    k_max = math.floor((hi - center) / pitch - 0.5 + 1e-9)
+    coords: list[float] = []
+    for k in range(k_min, k_max + 1):
+        value = center + (k + 0.5) * pitch
+        if value < lo - 1e-6 or value > hi + 1e-6:
+            continue
+        if abs(value - lo) <= 1e-6:
+            value = lo
+        elif abs(value - hi) <= 1e-6:
+            value = hi
+        coords.append(value)
+    return tuple(coords)
+
+
+def _edge_falloff(center: float, pitch: float, edge: float, *, outward: int) -> float:
+    """Millimetres of the edge square past ``edge``.
+
+    ``outward`` is -1 on the low edge and +1 on the high edge. A grid line
+    that lands on the edge has fall-off 0. Otherwise the next line past the
+    edge is one pitch beyond the last line still inside.
+    """
+    radius = (center - edge) if outward < 0 else (edge - center)
+    k = math.floor(radius / pitch - 0.5 + 1e-9)
+    if k < 0:
+        return 0.5 * pitch - radius
+    inside = (k + 0.5) * pitch
+    if abs(inside - radius) <= 1e-6:
+        return 0.0
+    return (inside + pitch) - radius
+
+
+def _line_angle(dx: float, dy: float) -> float:
+    """Undirected angle in ``[0, π)``. Opposite directions are one line."""
+    ang = math.atan2(dy, dx)
+    if ang < 0.0:
+        ang += math.pi
+    if ang >= math.pi:
+        ang = 0.0
+    return ang
+
+
+def perspective_grid(page: Rect, pitch: float) -> PerspectiveGrid:
+    """Square mesh plus perspective lines on the full page rect.
+
+    Grid lines are ``cx ± pitch/2 + k·pitch`` (and the same in y), clipped
+    to the page. Perspective lines pass through the vanishing point
+    ``(cx, cy)`` and one boundary target: each grid line's meeting with the
+    page edge, the four page corners, and the four edge points of the
+    horizontal and vertical through the vanishing point. A target and its
+    point reflection through the center are the same line. Lines are sorted
+    by angle and alternate ``MUTED`` then ``GHOST``. Each line is the chord
+    between its two boundary intersections, so it is clipped to the page.
+    """
+    cx = page.x + page.w / 2.0
+    cy = page.y + page.h / 2.0
+    verticals = _grid_coords(cx, pitch, page.x, page.right)
+    horizontals = _grid_coords(cy, pitch, page.y, page.bottom)
+    falloff = (
+        _edge_falloff(cx, pitch, page.x, outward=-1),
+        _edge_falloff(cx, pitch, page.right, outward=1),
+        _edge_falloff(cy, pitch, page.y, outward=-1),
+        _edge_falloff(cy, pitch, page.bottom, outward=1),
+    )
+    targets: list[tuple[float, float]] = [
+        (page.x, page.y),
+        (page.right, page.y),
+        (cx, page.y),
+        (page.x, cy),
+    ]
+    targets.extend((x, page.y) for x in verticals)
+    targets.extend((page.x, y) for y in horizontals)
+    by_angle = sorted((_line_angle(x - cx, y - cy), x, y) for x, y in targets)
+    unique: list[tuple[float, float, float]] = []
+    for ang, x, y in by_angle:
+        if unique and abs(ang - unique[-1][0]) < 1e-7:
+            continue
+        unique.append((ang, x, y))
+    rays: list[PerspectiveRay] = []
+    for index, (ang, x, y) in enumerate(unique):
+        x1 = page.x if abs(x - page.x) <= 1e-6 else x
+        y1 = page.y if abs(y - page.y) <= 1e-6 else y
+        x1 = page.right if abs(x1 - page.right) <= 1e-6 else x1
+        y1 = page.bottom if abs(y1 - page.bottom) <= 1e-6 else y1
+        x2 = 2.0 * cx - x1
+        y2 = 2.0 * cy - y1
+        x2 = min(max(x2, page.x), page.right)
+        y2 = min(max(y2, page.y), page.bottom)
+        rays.append(
+            PerspectiveRay(
+                x1=x1,
+                y1=y1,
+                x2=x2,
+                y2=y2,
+                gray=MUTED if index % 2 == 0 else GHOST,
+                angle=ang,
+            )
+        )
+    return PerspectiveGrid(
+        page=page,
+        pitch=pitch,
+        verticals=verticals,
+        horizontals=horizontals,
+        rays=tuple(rays),
+        falloff=falloff,
+    )
+
+
+def paint_perspective_page(
+    plotter: Plotter,
+    device: Device,
+    pad: PerspectivePad,
+    *,
+    ramp: TypeRamp | None = None,
+) -> None:
+    """Single-face full-bleed perspective page. No header, frame, or chrome.
+
+    The mesh is the physical page rect, not ``content_frame``. Clearance
+    bands are painted through.
+    """
+    _bound_ramp(plotter, ramp)
+    _paint_perspective(plotter, device.page_rect())
+
+
+def _paint_perspective(plotter: Plotter, page: Rect) -> None:
+    """``RULE_C`` square grid, then alternating ``MUTED`` / ``GHOST`` rays."""
+    grid = perspective_grid(page, ENG_PITCH_MM)
+    for x in grid.verticals:
+        plotter.line(x, page.y, x, page.bottom, stroke_width=RULE, stroke_gray=RULE_C)
+    for y in grid.horizontals:
+        plotter.line(page.x, y, page.right, y, stroke_width=RULE, stroke_gray=RULE_C)
+    for ray in grid.rays:
+        plotter.line(
+            ray.x1,
+            ray.y1,
+            ray.x2,
+            ray.y2,
+            stroke_width=HAIR,
+            stroke_gray=ray.gray,
+        )
 
 
 def _paint_steno_dots(plotter: Plotter, x0: float, x1: float, y: float) -> None:
