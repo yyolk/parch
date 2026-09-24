@@ -3352,17 +3352,18 @@ def paint_lined_page(
     paint_lines(plotter, device.page_rect())
 
 
-# Square pitch and equal-angle fan for this page only. Not Spec/TOML knobs.
+# Square pitch for this page only. Not a Spec/TOML knob.
 PERSPECTIVE_PITCH_MM = 7.0
-PERSPECTIVE_RAY_STEP_DEG = 5.0
+
+_RAY_ANGLE_EPS = 1e-8
 
 
 @dataclass(frozen=True, slots=True)
 class PerspectiveRay:
-    """One ray from the vanishing point to the page edge.
+    """One chord through the vanishing point, clipped to the page.
 
-    ``angle`` is radians from +x, in ``[0, 2π)``. ``(x1, y1)`` is the
-    vanishing point and ``(x2, y2)`` is the clipped end on the page boundary.
+    ``angle`` is the undirected direction in ``[0, π)``. Both endpoints lie
+    on the page boundary, and the midpoint is the vanishing point.
     """
 
     x1: float
@@ -3432,65 +3433,93 @@ def _edge_falloff(center: float, pitch: float, edge: float, *, outward: int) -> 
     return (inside + pitch) - radius
 
 
-def _clip_ray(page: Rect, cx: float, cy: float, theta: float) -> tuple[float, float]:
-    """Page-boundary hit of the ray from ``(cx, cy)`` at ``theta`` radians."""
-    dx = math.cos(theta)
-    dy = math.sin(theta)
-    if abs(dx) < 1e-12:
-        dx = 0.0
-    if abs(dy) < 1e-12:
-        dy = 0.0
-    spans: list[float] = []
-    if dx > 0.0:
-        spans.append((page.right - cx) / dx)
-    elif dx < 0.0:
-        spans.append((page.x - cx) / dx)
-    if dy > 0.0:
-        spans.append((page.bottom - cy) / dy)
-    elif dy < 0.0:
-        spans.append((page.y - cy) / dy)
-    t = min(spans)
-    x = cx + t * dx
-    y = cy + t * dy
-    if abs(x - page.x) <= 1e-6:
+def _line_angle(dx: float, dy: float) -> float:
+    """Undirected angle in ``[0, π)``. Opposite directions are one chord."""
+    ang = math.atan2(dy, dx)
+    if ang < 0.0:
+        ang += math.pi
+    if ang >= math.pi - 1e-12:
+        ang = 0.0
+    return ang
+
+
+def _is_axis_angle(angle: float) -> bool:
+    return abs(angle) <= _RAY_ANGLE_EPS or abs(angle - math.pi / 2) <= _RAY_ANGLE_EPS
+
+
+def _snap_boundary(page: Rect, x: float, y: float) -> tuple[float, float]:
+    if x < page.x or abs(x - page.x) <= 1e-6:
         x = page.x
-    elif abs(x - page.right) <= 1e-6:
+    elif x > page.right or abs(x - page.right) <= 1e-6:
         x = page.right
-    if abs(y - page.y) <= 1e-6:
+    if y < page.y or abs(y - page.y) <= 1e-6:
         y = page.y
-    elif abs(y - page.bottom) <= 1e-6:
+    elif y > page.bottom or abs(y - page.bottom) <= 1e-6:
         y = page.bottom
     return (x, y)
 
 
-def _perspective_rays(page: Rect, cx: float, cy: float) -> tuple[PerspectiveRay, ...]:
-    """``360 / step`` rays at ``θ = k · step``. Even ``k`` is ``MUTED``."""
-    count = round(360.0 / PERSPECTIVE_RAY_STEP_DEG)
+def _chord(
+    page: Rect, cx: float, cy: float, x: float, y: float
+) -> tuple[float, float, float, float]:
+    """Edge-to-edge chord through ``(cx, cy)`` and ``(x, y)``."""
+    x1, y1 = _snap_boundary(page, x, y)
+    x2, y2 = _snap_boundary(page, 2.0 * cx - x1, 2.0 * cy - y1)
+    return (x1, y1, x2, y2)
+
+
+def _perspective_rays(
+    page: Rect,
+    cx: float,
+    cy: float,
+    verticals: tuple[float, ...],
+    horizontals: tuple[float, ...],
+) -> tuple[PerspectiveRay, ...]:
+    """Chords through each grid-line/edge crossing, plus the two axes.
+
+    A vertical meets the top and bottom edges; a horizontal meets the left
+    and right edges. The opposite meeting is the same chord, so duplicates
+    drop out. Page corners are not extra targets. The horizontal and vertical
+    through the vanishing point are added and painted ``MUTED``. Other chords
+    alternate ``MUTED`` / ``GHOST`` in angle order. If that phase would paint
+    an axis light, alternation restarts at the axis so the axis stays dark.
+    """
+    targets: list[tuple[float, float]] = [(x, page.y) for x in verticals]
+    targets.extend((x, page.bottom) for x in verticals)
+    targets.extend((page.x, y) for y in horizontals)
+    targets.extend((page.right, y) for y in horizontals)
+    targets.append((page.right, cy))
+    targets.append((cx, page.bottom))
+    keyed = [(_line_angle(x - cx, y - cy), x, y) for x, y in targets]
+    keyed.sort(key=lambda item: item[0])
+    unique: list[tuple[float, float, float]] = []
+    for ang, x, y in keyed:
+        if unique and abs(ang - unique[-1][0]) <= _RAY_ANGLE_EPS:
+            if _is_axis_angle(ang):
+                unique[-1] = (ang, x, y)
+            continue
+        unique.append((ang, x, y))
     rays: list[PerspectiveRay] = []
-    for k in range(count):
-        theta = math.radians(k * PERSPECTIVE_RAY_STEP_DEG)
-        x2, y2 = _clip_ray(page, cx, cy, theta)
-        rays.append(
-            PerspectiveRay(
-                x1=cx,
-                y1=cy,
-                x2=x2,
-                y2=y2,
-                gray=MUTED if k % 2 == 0 else GHOST,
-                angle=theta,
-            )
-        )
+    dark_next = True
+    for ang, x, y in unique:
+        if _is_axis_angle(ang):
+            gray = MUTED
+            dark_next = False
+        else:
+            gray = MUTED if dark_next else GHOST
+            dark_next = not dark_next
+        x1, y1, x2, y2 = _chord(page, cx, cy, x, y)
+        rays.append(PerspectiveRay(x1=x1, y1=y1, x2=x2, y2=y2, gray=gray, angle=ang))
     return tuple(rays)
 
 
 def perspective_grid(page: Rect, pitch: float) -> PerspectiveGrid:
-    """Square mesh plus an equal-angle fan on the full page rect.
+    """Square mesh plus grid-locked chords on the full page rect.
 
     Grid lines are ``cx ± pitch/2 + k·pitch`` (and the same in y), clipped
-    to the page, so the vanishing point is the center of a cell. Rays leave
-    that point at ``θ = k · PERSPECTIVE_RAY_STEP_DEG`` and stop on the page
-    edge. Even ``k`` (multiples of 10°) is ``MUTED``; odd ``k`` (the 5°
-    offsets) is ``GHOST``. Opposite rays are one chord through the center.
+    to the page, so the vanishing point is the center of a cell. Each ray is
+    the edge-to-edge chord through that point and a place where a grid line
+    meets the page edge, plus the horizontal and vertical through the center.
     """
     cx = page.x + page.w / 2.0
     cy = page.y + page.h / 2.0
@@ -3507,7 +3536,7 @@ def perspective_grid(page: Rect, pitch: float) -> PerspectiveGrid:
         pitch=pitch,
         verticals=verticals,
         horizontals=horizontals,
-        rays=_perspective_rays(page, cx, cy),
+        rays=_perspective_rays(page, cx, cy, verticals, horizontals),
         falloff=falloff,
     )
 

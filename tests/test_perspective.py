@@ -18,9 +18,9 @@ from parch.layouts.planner.painters import (
     HEADER_H,
     MUTED,
     PERSPECTIVE_PITCH_MM,
-    PERSPECTIVE_RAY_STEP_DEG,
     RULE,
     RULE_C,
+    PerspectiveGrid,
     paint_perspective_page,
     perspective_grid,
 )
@@ -182,46 +182,88 @@ def test_zero_falloff_puts_a_grid_line_on_each_edge():
     assert wide.falloff[2] > 0.0
 
 
-def test_rays_are_equal_angle_and_clipped_to_the_page():
-    step = math.radians(PERSPECTIVE_RAY_STEP_DEG)
-    count = round(360.0 / PERSPECTIVE_RAY_STEP_DEG)
+def _is_axis(angle: float) -> bool:
+    return abs(angle) <= 1e-8 or abs(angle - math.pi / 2) <= 1e-8
+
+
+def _is_crossing(page: Rect, grid: PerspectiveGrid, x: float, y: float) -> bool:
+    on_horizontal_edge = abs(y - page.y) <= 1e-5 or abs(y - page.bottom) <= 1e-5
+    on_vertical_edge = abs(x - page.x) <= 1e-5 or abs(x - page.right) <= 1e-5
+    if on_horizontal_edge and any(abs(x - vx) <= 1e-5 for vx in grid.verticals):
+        return True
+    if on_vertical_edge and any(abs(y - hy) <= 1e-5 for hy in grid.horizontals):
+        return True
+    return False
+
+
+def _is_corner(page: Rect, x: float, y: float) -> bool:
+    on_x = abs(x - page.x) <= 1e-5 or abs(x - page.right) <= 1e-5
+    on_y = abs(y - page.y) <= 1e-5 or abs(y - page.bottom) <= 1e-5
+    return on_x and on_y
+
+
+def test_rays_lock_to_grid_crossings_and_keep_axes_dark():
     pages = (
         NOMAD.page_rect(),
         SCRIBE.page_rect(),
         Rect(0.0, 0.0, 100.0, 63.0),
         Rect(1.5, 2.25, 90.0, 130.4),
-        Rect(0.0, 0.0, 55.0, 55.0),
-        Rect(0.0, 0.0, 55.0, 40.0),
+        Rect(0.0, 0.0, 77.0, 77.0),
+        Rect(0.0, 0.0, 77.0, 70.0),
     )
     for page in pages:
         grid = perspective_grid(page, PERSPECTIVE_PITCH_MM)
         cx, cy = grid.center
-        assert PERSPECTIVE_RAY_STEP_DEG == pytest.approx(5.0)
-        assert count == 72
-        assert len(grid.rays) == count
-        for k, ray in enumerate(grid.rays):
-            assert ray.angle == pytest.approx(k * step)
-            assert ray.gray == pytest.approx(MUTED if k % 2 == 0 else GHOST)
-            assert ray.x1 == pytest.approx(cx)
-            assert ray.y1 == pytest.approx(cy)
+        rays = grid.rays
+        assert len(rays) >= 2
+        angles = [ray.angle for ray in rays]
+        assert angles == sorted(angles)
+        assert all(angles[i] < angles[i + 1] for i in range(len(angles) - 1))
+        assert all(0.0 <= ray.angle < math.pi for ray in rays)
+        axes = [ray for ray in rays if _is_axis(ray.angle)]
+        assert len(axes) == 2
+        horizontal = min(axes, key=lambda ray: ray.angle)
+        vertical = max(axes, key=lambda ray: ray.angle)
+        assert horizontal.gray == pytest.approx(MUTED)
+        assert vertical.gray == pytest.approx(MUTED)
+        assert horizontal.y1 == pytest.approx(cy)
+        assert horizontal.y2 == pytest.approx(cy)
+        assert vertical.x1 == pytest.approx(cx)
+        assert vertical.x2 == pytest.approx(cx)
+        expect_light = False
+        for ray in rays:
+            assert _on_boundary(page, ray.x1, ray.y1)
             assert _on_boundary(page, ray.x2, ray.y2)
-            assert page.x - 1e-6 <= ray.x2 <= page.right + 1e-6
-            assert page.y - 1e-6 <= ray.y2 <= page.bottom + 1e-6
-        half = count // 2
-        for k in range(half):
-            near = grid.rays[k]
-            far = grid.rays[k + half]
-            assert near.gray == pytest.approx(far.gray)
-            dx1, dy1 = near.x2 - cx, near.y2 - cy
-            dx2, dy2 = far.x2 - cx, far.y2 - cy
-            assert dx1 * dy2 - dy1 * dx2 == pytest.approx(0.0, abs=1e-6)
-            assert dx1 * dx2 + dy1 * dy2 < 0.0
-        axis_h = grid.rays[0]
-        axis_v = grid.rays[round(90.0 / PERSPECTIVE_RAY_STEP_DEG)]
-        assert axis_h.y2 == pytest.approx(cy)
-        assert axis_h.x2 == pytest.approx(page.right)
-        assert axis_v.x2 == pytest.approx(cx)
-        assert axis_v.y2 == pytest.approx(page.bottom)
+            assert (ray.x1 + ray.x2) / 2 == pytest.approx(cx)
+            assert (ray.y1 + ray.y2) / 2 == pytest.approx(cy)
+            if _is_axis(ray.angle):
+                assert ray.gray == pytest.approx(MUTED)
+                expect_light = True
+                continue
+            assert _is_crossing(page, grid, ray.x1, ray.y1)
+            assert _is_crossing(page, grid, ray.x2, ray.y2)
+            for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
+                if _is_corner(page, x, y):
+                    assert _is_crossing(page, grid, x, y)
+            if expect_light:
+                assert ray.gray == pytest.approx(GHOST)
+            else:
+                assert ray.gray == pytest.approx(MUTED)
+            expect_light = ray.gray == pytest.approx(MUTED)
+    nomad = perspective_grid(NOMAD.page_rect(), PERSPECTIVE_PITCH_MM)
+    scribe = perspective_grid(SCRIBE.page_rect(), PERSPECTIVE_PITCH_MM)
+    assert (len(nomad.verticals), len(nomad.horizontals), len(nomad.rays)) == (
+        16,
+        22,
+        40,
+    )
+    assert (len(scribe.verticals), len(scribe.horizontals), len(scribe.rays)) == (
+        22,
+        30,
+        54,
+    )
+    assert len(nomad.rays) == len(nomad.verticals) + len(nomad.horizontals) + 2
+    assert len(scribe.rays) == len(scribe.verticals) + len(scribe.horizontals) + 2
 
 
 def test_vanishing_point_is_the_page_center_not_the_content_frame():

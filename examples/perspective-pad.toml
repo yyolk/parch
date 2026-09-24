@@ -1,7 +1,8 @@
 # Single-face edge-to-edge perspective grid. Pad-only — no cover.
 # Sibling book (cover + sheets): examples/perspective-notebook.toml.
 # Full-bleed page rect (not content_frame). 7 mm squares, page center in the
-# middle of a cell. Rays every 5° from that point, clipped to the page.
+# middle of a cell. A chord through every grid line at the page edge, plus
+# the horizontal and vertical through that center.
 #   parch press examples/perspective-pad.toml -o out/perspective-pad.pdf
 device = "supernote-nomad"
 title = "Perspective"
