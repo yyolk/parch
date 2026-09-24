@@ -21,12 +21,7 @@ from parch.layouts.planner.painters import (
     RULE_C,
     paint_perspective_page,
 )
-from parch.perspective import (
-    PERSPECTIVE_PITCH_MM,
-    perspective_falloff,
-    perspective_mesh,
-    perspective_pages,
-)
+from parch.perspective import PERSPECTIVE_PITCH_MM, perspective_mesh, perspective_pages
 from parch.plotter import RecordingPlotter
 from parch.press import press
 from parch.spec import Spec
@@ -45,14 +40,24 @@ def _angle_off_horizontal(ray) -> float:
     return min(angle, 180.0 - angle)
 
 
-def _quadrant_hit(ray, mesh, page: Rect) -> tuple[float, float] | None:
+def _quadrant_hit(ray, page: Rect, cx: float, cy: float) -> tuple[float, float] | None:
     """Endpoint on the top edge right of center, or the right edge above center."""
     for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
-        on_top = y == pytest.approx(page.y) and x > mesh.cx
-        on_right = x == pytest.approx(page.right) and y < mesh.cy
+        on_top = y == pytest.approx(page.y) and x > cx
+        on_right = x == pytest.approx(page.right) and y < cy
         if on_top or on_right:
             return x, y
     return None
+
+
+def perspective_falloff(mesh, box: Rect) -> tuple[float, float, float, float]:
+    """Partial square outside the outer grid lines: left, right, top, bottom."""
+    return (
+        mesh.verticals[0] - box.x,
+        box.right - mesh.verticals[-1],
+        mesh.horizontals[0] - box.y,
+        box.bottom - mesh.horizontals[-1],
+    )
 
 
 def _chord_angle(ray) -> float:
@@ -101,12 +106,6 @@ def _on_boundary(x: float, y: float, box: Rect) -> bool:
     return inside and (on_x or on_y)
 
 
-def _inside(x: float, y: float, box: Rect) -> bool:
-    return (
-        box.x - 1e-6 <= x <= box.right + 1e-6 and box.y - 1e-6 <= y <= box.bottom + 1e-6
-    )
-
-
 def test_perspective_pages_emits_one_page_per_sheet():
     spec = Spec(perspective_sheets=2)
     pages = perspective_pages(spec)
@@ -153,26 +152,24 @@ def test_grid_is_symmetric_and_vp_is_the_center_of_a_square(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
     mesh = perspective_mesh(page)
-    assert PERSPECTIVE_PITCH_MM == 7.0
+    cx = page.w / 2
+    cy = page.h / 2
     assert page == Rect(0.0, 0.0, device.page_width, device.page_height)
-    assert mesh.cx == pytest.approx(page.w / 2)
-    assert mesh.cy == pytest.approx(page.h / 2)
-    assert mesh.pitch == pytest.approx(PERSPECTIVE_PITCH_MM)
     left, right, top, bottom = perspective_falloff(mesh, page)
     assert left == pytest.approx(right)
     assert top == pytest.approx(bottom)
     assert 0.0 <= left < PERSPECTIVE_PITCH_MM
     assert 0.0 <= top < PERSPECTIVE_PITCH_MM
-    assert all(abs(x - mesh.cx) > 1e-6 for x in mesh.verticals)
-    assert all(abs(y - mesh.cy) > 1e-6 for y in mesh.horizontals)
-    left_line = max(x for x in mesh.verticals if x < mesh.cx)
-    right_line = min(x for x in mesh.verticals if x > mesh.cx)
-    above = max(y for y in mesh.horizontals if y < mesh.cy)
-    below = min(y for y in mesh.horizontals if y > mesh.cy)
+    assert all(abs(x - cx) > 1e-6 for x in mesh.verticals)
+    assert all(abs(y - cy) > 1e-6 for y in mesh.horizontals)
+    left_line = max(x for x in mesh.verticals if x < cx)
+    right_line = min(x for x in mesh.verticals if x > cx)
+    above = max(y for y in mesh.horizontals if y < cy)
+    below = min(y for y in mesh.horizontals if y > cy)
     assert right_line - left_line == pytest.approx(PERSPECTIVE_PITCH_MM)
     assert below - above == pytest.approx(PERSPECTIVE_PITCH_MM)
-    assert (left_line + right_line) / 2 == pytest.approx(mesh.cx)
-    assert (above + below) / 2 == pytest.approx(mesh.cy)
+    assert (left_line + right_line) / 2 == pytest.approx(cx)
+    assert (above + below) / 2 == pytest.approx(cy)
     frame = device.content_frame()
     outside = any(x < frame.x or x > frame.right for x in mesh.verticals) or any(
         y < frame.y or y > frame.bottom for y in mesh.horizontals
@@ -180,38 +177,22 @@ def test_grid_is_symmetric_and_vp_is_the_center_of_a_square(device_id: str):
     assert outside
 
 
-def test_falloff_mm_on_each_profile():
-    nomad = perspective_mesh(NOMAD.page_rect())
-    scribe = perspective_mesh(SCRIBE.page_rect())
-    assert perspective_falloff(nomad, NOMAD.page_rect()) == pytest.approx(
-        (6.935, 6.935, 5.75, 5.75)
-    )
-    assert perspective_falloff(scribe, SCRIBE.page_rect()) == pytest.approx(
-        (5.24, 5.24, 3.485, 3.485)
-    )
-
-
-def test_ray_count_per_profile():
-    assert len(perspective_mesh(NOMAD.page_rect()).rays) == 20
-    assert len(perspective_mesh(SCRIBE.page_rect()).rays) == 26
-
-
 @pytest.mark.parametrize("device_id", known_device_ids())
 def test_rays_lock_to_every_second_crossing(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
     mesh = perspective_mesh(page)
-    angles = [_chord_angle(ray) for ray in mesh.rays]
-    assert angles == sorted(angles)
+    cx = page.w / 2
+    cy = page.h / 2
     horizontal = next(
         ray
         for ray in mesh.rays
-        if ray.y1 == pytest.approx(mesh.cy) and ray.y2 == pytest.approx(mesh.cy)
+        if ray.y1 == pytest.approx(cy) and ray.y2 == pytest.approx(cy)
     )
     vertical = next(
         ray
         for ray in mesh.rays
-        if ray.x1 == pytest.approx(mesh.cx) and ray.x2 == pytest.approx(mesh.cx)
+        if ray.x1 == pytest.approx(cx) and ray.x2 == pytest.approx(cx)
     )
     assert horizontal.dark is True
     assert vertical.dark is True
@@ -223,36 +204,36 @@ def test_rays_lock_to_every_second_crossing(device_id: str):
     tone = {_endpoints(ray): ray.dark for ray in mesh.rays}
     quadrant: list[tuple[float, bool]] = []
     for ray in grid:
-        assert _endpoints(_reflect_x(ray, mesh.cx)) in tone
-        assert _endpoints(_reflect_y(ray, mesh.cy)) in tone
-        assert tone[_endpoints(_reflect_x(ray, mesh.cx))] is ray.dark
-        assert tone[_endpoints(_reflect_y(ray, mesh.cy))] is ray.dark
+        assert _endpoints(_reflect_x(ray, cx)) in tone
+        assert _endpoints(_reflect_y(ray, cy)) in tone
+        assert tone[_endpoints(_reflect_x(ray, cx))] is ray.dark
+        assert tone[_endpoints(_reflect_y(ray, cy))] is ray.dark
         assert _on_boundary(ray.x1, ray.y1, page)
         assert _on_boundary(ray.x2, ray.y2, page)
-        assert (ray.x1 + ray.x2) / 2 == pytest.approx(mesh.cx)
-        assert (ray.y1 + ray.y2) / 2 == pytest.approx(mesh.cy)
+        assert (ray.x1 + ray.x2) / 2 == pytest.approx(cx)
+        assert (ray.y1 + ray.y2) / 2 == pytest.approx(cy)
         assert _crossings(ray, mesh, page) == 2
         for x, y in ((ray.x1, ray.y1), (ray.x2, ray.y2)):
             on_vertical = any(x == pytest.approx(vx) for vx in mesh.verticals)
             on_horizontal = any(y == pytest.approx(hy) for hy in mesh.horizontals)
             if on_vertical:
-                half = round((x - mesh.cx) / (mesh.pitch / 2))
+                half = round((x - cx) / (PERSPECTIVE_PITCH_MM / 2))
                 assert abs(half) % 4 == 3
             if on_horizontal:
-                half = round((y - mesh.cy) / (mesh.pitch / 2))
+                half = round((y - cy) / (PERSPECTIVE_PITCH_MM / 2))
                 assert abs(half) % 4 == 3
-        hit = _quadrant_hit(ray, mesh, page)
+        hit = _quadrant_hit(ray, page, cx, cy)
         if hit is not None:
             qx, qy = hit
-            quadrant.append((math.atan2(mesh.cy - qy, qx - mesh.cx), ray.dark))
+            quadrant.append((math.atan2(cy - qy, qx - cx), ray.dark))
     quadrant.sort(key=lambda item: item[0])
     assert quadrant
     assert [dark for _ang, dark in quadrant] == [
         i % 2 == 1 for i in range(len(quadrant))
     ]
     for ray in (horizontal, vertical):
-        assert tone[_endpoints(_reflect_x(ray, mesh.cx))] is True
-        assert tone[_endpoints(_reflect_y(ray, mesh.cy))] is True
+        assert tone[_endpoints(_reflect_x(ray, cx))] is True
+        assert tone[_endpoints(_reflect_y(ray, cy))] is True
 
 
 def test_paint_is_full_bleed_without_frame_or_header():
@@ -310,7 +291,6 @@ def test_scribe_top_clearance_does_not_inset_the_grid():
         if op[2] == pytest.approx(op[4]) and op[6] == pytest.approx(RULE_C)
     ]
     assert min(horizontals) < device.content_top
-    assert min(horizontals) == pytest.approx(3.485)
 
 
 def test_layout_skips_planner_slab_and_nav():

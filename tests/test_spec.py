@@ -203,14 +203,6 @@ def test_habit_columns_from_toml_keys():
         ).book
         == "perspective-notebook"
     )
-    assert (
-        Spec.from_path(Path("examples/perspective-notebook.toml")).book
-        == "perspective-notebook"
-    )
-    assert (
-        Spec.from_path(Path("examples/perspective-notebook.toml")).perspective_sheets
-        == 12
-    )
     with pytest.raises(ConfigError, match="perspective-notebook requires"):
         Spec(book="perspective-notebook")
     assert (

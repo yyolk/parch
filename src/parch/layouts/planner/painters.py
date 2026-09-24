@@ -57,7 +57,7 @@ from parch.fonts.metrics import (
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
-from parch.perspective import PERSPECTIVE_PITCH_MM, perspective_mesh
+from parch.perspective import perspective_mesh
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
 from parch.tracks import columns, rows
@@ -3371,22 +3371,15 @@ def paint_perspective_page(
     """
     _bound_ramp(plotter, ramp)
     page = device.page_rect()
-    mesh = perspective_mesh(page, PERSPECTIVE_PITCH_MM)
+    mesh = perspective_mesh(page)
     for x in mesh.verticals:
         plotter.line(x, page.y, x, page.bottom, stroke_width=RULE, stroke_gray=RULE_C)
     for y in mesh.horizontals:
         plotter.line(page.x, y, page.right, y, stroke_width=RULE, stroke_gray=RULE_C)
-    for ray in mesh.rays:
-        if ray.dark:
-            continue
+    for ray in sorted(mesh.rays, key=lambda r: r.dark):
+        width, gray = (HAIR, MUTED) if ray.dark else (RULE, GHOST)
         plotter.line(
-            ray.x1, ray.y1, ray.x2, ray.y2, stroke_width=RULE, stroke_gray=GHOST
-        )
-    for ray in mesh.rays:
-        if not ray.dark:
-            continue
-        plotter.line(
-            ray.x1, ray.y1, ray.x2, ray.y2, stroke_width=HAIR, stroke_gray=MUTED
+            ray.x1, ray.y1, ray.x2, ray.y2, stroke_width=width, stroke_gray=gray
         )
 
 
