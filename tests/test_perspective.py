@@ -13,7 +13,6 @@ from parch.devices.registry import NOMAD, SCRIBE
 from parch.geom import Rect
 from parch.layouts.planner import PlannerLayout
 from parch.layouts.planner.painters import (
-    ENG_PITCH_MM,
     GHOST,
     HAIR,
     HEADER_H,
@@ -23,6 +22,7 @@ from parch.layouts.planner.painters import (
     paint_perspective_page,
 )
 from parch.perspective import (
+    PERSPECTIVE_PITCH_MM,
     PERSPECTIVE_RAY_STEP_DEG,
     perspective_falloff,
     perspective_mesh,
@@ -101,39 +101,42 @@ def test_spec_perspective_dests_and_toml():
 def test_grid_is_symmetric_and_vp_is_the_center_of_a_square(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
-    mesh = perspective_mesh(page, ENG_PITCH_MM)
+    mesh = perspective_mesh(page)
+    assert PERSPECTIVE_PITCH_MM == 7.0
     assert page == Rect(0.0, 0.0, device.page_width, device.page_height)
     assert mesh.cx == pytest.approx(page.w / 2)
     assert mesh.cy == pytest.approx(page.h / 2)
-    assert mesh.pitch == pytest.approx(ENG_PITCH_MM)
+    assert mesh.pitch == pytest.approx(PERSPECTIVE_PITCH_MM)
     left, right, top, bottom = perspective_falloff(mesh, page)
     assert left == pytest.approx(right)
     assert top == pytest.approx(bottom)
-    assert 0.0 <= left < ENG_PITCH_MM
-    assert 0.0 <= top < ENG_PITCH_MM
+    assert 0.0 <= left < PERSPECTIVE_PITCH_MM
+    assert 0.0 <= top < PERSPECTIVE_PITCH_MM
     assert all(abs(x - mesh.cx) > 1e-6 for x in mesh.verticals)
     assert all(abs(y - mesh.cy) > 1e-6 for y in mesh.horizontals)
     left_line = max(x for x in mesh.verticals if x < mesh.cx)
     right_line = min(x for x in mesh.verticals if x > mesh.cx)
     above = max(y for y in mesh.horizontals if y < mesh.cy)
     below = min(y for y in mesh.horizontals if y > mesh.cy)
-    assert right_line - left_line == pytest.approx(ENG_PITCH_MM)
-    assert below - above == pytest.approx(ENG_PITCH_MM)
+    assert right_line - left_line == pytest.approx(PERSPECTIVE_PITCH_MM)
+    assert below - above == pytest.approx(PERSPECTIVE_PITCH_MM)
     assert (left_line + right_line) / 2 == pytest.approx(mesh.cx)
     assert (above + below) / 2 == pytest.approx(mesh.cy)
     frame = device.content_frame()
-    assert any(x < frame.x or x > frame.right for x in mesh.verticals)
-    assert any(y < frame.y or y > frame.bottom for y in mesh.horizontals)
+    outside = any(x < frame.x or x > frame.right for x in mesh.verticals) or any(
+        y < frame.y or y > frame.bottom for y in mesh.horizontals
+    )
+    assert outside
 
 
 def test_falloff_mm_on_each_profile():
-    nomad = perspective_mesh(NOMAD.page_rect(), ENG_PITCH_MM)
-    scribe = perspective_mesh(SCRIBE.page_rect(), ENG_PITCH_MM)
+    nomad = perspective_mesh(NOMAD.page_rect())
+    scribe = perspective_mesh(SCRIBE.page_rect())
     assert perspective_falloff(nomad, NOMAD.page_rect()) == pytest.approx(
-        (1.935, 1.935, 1.75, 1.75)
+        (6.935, 6.935, 5.75, 5.75)
     )
     assert perspective_falloff(scribe, SCRIBE.page_rect()) == pytest.approx(
-        (1.24, 1.24, 2.485, 2.485)
+        (5.24, 5.24, 3.485, 3.485)
     )
 
 
@@ -141,7 +144,7 @@ def test_falloff_mm_on_each_profile():
 def test_rays_are_equal_angle_and_clipped_to_the_page(device_id: str):
     device = get_device(device_id)
     page = device.page_rect()
-    mesh = perspective_mesh(page, ENG_PITCH_MM)
+    mesh = perspective_mesh(page)
     assert PERSPECTIVE_RAY_STEP_DEG == 5.0
     assert len(mesh.rays) == 72
     assert [ray.k for ray in mesh.rays] == list(range(72))
@@ -196,7 +199,7 @@ def test_paint_is_full_bleed_without_frame_or_header():
         ink = RecordingPlotter()
         paint_perspective_page(ink, device, pad)
         page = device.page_rect()
-        mesh = perspective_mesh(page, ENG_PITCH_MM)
+        mesh = perspective_mesh(page)
         assert not [op for op in ink.ops if op[0] == "rect"]
         assert _texts(ink) == []
         lines = _lines(ink)
@@ -244,7 +247,7 @@ def test_scribe_top_clearance_does_not_inset_the_grid():
         if op[2] == pytest.approx(op[4]) and op[6] == pytest.approx(RULE_C)
     ]
     assert min(horizontals) < device.content_top
-    assert min(horizontals) == pytest.approx(2.485)
+    assert min(horizontals) == pytest.approx(3.485)
 
 
 def test_layout_skips_planner_slab_and_nav():

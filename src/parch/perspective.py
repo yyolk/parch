@@ -19,6 +19,8 @@ from parch.geom import Rect
 from parch.sections.page import Page
 from parch.spec import Spec
 
+# This page only. Not a Spec/TOML knob, and not the engineering/dotgrid pitch.
+PERSPECTIVE_PITCH_MM = 7.0
 # Equal-angle fan. Not a Spec/TOML knob. 360 / 5 = 72 rays, 36 chords.
 PERSPECTIVE_RAY_STEP_DEG = 5.0
 
@@ -59,8 +61,8 @@ def perspective_falloff(
     )
 
 
-def perspective_mesh(box: Rect, pitch: float) -> PerspectiveMesh:
-    """Grid and rays for *box*. ``pitch`` is the square size (engineering 5 mm).
+def perspective_mesh(box: Rect, pitch: float = PERSPECTIVE_PITCH_MM) -> PerspectiveMesh:
+    """Grid and rays for *box*. ``pitch`` defaults to this page's 7 mm square.
 
     Grid indices are the integers in ``center + (index + 1/2) · pitch`` that
     still meet the page. Rays are ``θ = k · PERSPECTIVE_RAY_STEP_DEG`` for

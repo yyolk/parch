@@ -1,6 +1,6 @@
 # Single-face edge-to-edge perspective grid. Pad-only — no cover.
 # Sibling book (cover + sheets): examples/perspective-notebook.toml.
-# Full-bleed page rect, ENG_PITCH_MM square grid, vanishing point at the
+# Full-bleed page rect, PERSPECTIVE_PITCH_MM square grid, vanishing point at the
 # page center (center of a square). ``perspective_sheets > 0`` presses
 # this ledger alone on year-planner (mix with other pads raises):
 #   parch press examples/perspective.toml -o out/perspective.pdf

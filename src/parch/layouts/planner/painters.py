@@ -57,7 +57,7 @@ from parch.fonts.metrics import (
 from parch.fonts.ramp import EffectiveRamp, Pt, TypeInk, TypeRamp, TypeRef
 from parch.geom import Rect
 from parch.layouts.planner.hour_shade import shade_painted_hour
-from parch.perspective import perspective_mesh
+from parch.perspective import PERSPECTIVE_PITCH_MM, perspective_mesh
 from parch.plotter.protocol import Plotter, TextAlign
 from parch.sections.page import Page
 from parch.tracks import columns, rows
@@ -3362,14 +3362,14 @@ def paint_perspective_page(
 ) -> None:
     """Single-face full-bleed perspective grid. No header, frame, or chrome.
 
-    Square grid is ``ENG_PITCH_MM`` on the full page rect (not
+    Square grid is ``PERSPECTIVE_PITCH_MM`` on the full page rect (not
     ``content_frame``). Rays leave the page center every 5°; even steps are
     ``MUTED``, odd steps are ``GHOST``. The grid is ``RULE_C``. Nothing
     outlines the page.
     """
     _bound_ramp(plotter, ramp)
     page = device.page_rect()
-    mesh = perspective_mesh(page, ENG_PITCH_MM)
+    mesh = perspective_mesh(page, PERSPECTIVE_PITCH_MM)
     for x in mesh.verticals:
         plotter.line(x, page.y, x, page.bottom, stroke_width=RULE, stroke_gray=RULE_C)
     for y in mesh.horizontals:
