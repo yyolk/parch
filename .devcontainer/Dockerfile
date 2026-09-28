@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:0.12.17 AS uv
+FROM ghcr.io/astral-sh/uv:0.12.19 AS uv
 FROM mcr.microsoft.com/devcontainers/python:3.14
 
 USER root
