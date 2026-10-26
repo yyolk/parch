@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Printing",
 ]
 dependencies = [
-    "fpdf2==2.8.8",
+    "fpdf2==2.8.9",
     "tomlrange==0.3.1",
 ]
 
