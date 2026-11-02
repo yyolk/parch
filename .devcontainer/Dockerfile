@@ -1,5 +1,5 @@
-FROM ghcr.io/astral-sh/uv:0.12.19 AS uv
-FROM mcr.microsoft.com/devcontainers/python:3.14
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
+FROM mcr.microsoft.com/devcontainers/python:3.15
 
 USER root
 RUN apt-get update \
